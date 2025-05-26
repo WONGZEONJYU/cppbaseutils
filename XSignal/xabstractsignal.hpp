@@ -113,6 +113,7 @@ protected:
     virtual void Unregister() = 0;
     virtual ~XAbstractSignal() = default;
 };
+
 XTD_NAMESPACE_END
 
 #endif

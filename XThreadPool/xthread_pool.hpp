@@ -8,45 +8,52 @@
 #include <atomic>
 #include <condition_variable>
 #include <memory>
+#include "../XHelper/xhelper.hpp"
 
-namespace xtd {
-	class XTask;
+XTD_NAMESPACE_BEGIN
 
-	class XThreadPool {
-		std::shared_ptr<XTask> get_Task();
-		void Run();
-	public:
-		XThreadPool(const XThreadPool&) = delete;
-		XThreadPool& operator=(const XThreadPool&) = delete;
+class XTask;
+class XThreadPool;
+using XThreadPool_Ptr = std::shared_ptr<XThreadPool>;
 
-		explicit XThreadPool() = default;
+class XThreadPool {
+	X_DISABLE_COPY(XThreadPool)
+	std::shared_ptr<XTask> get_task();
+	void Run();
+	struct Private{explicit Private() = default;};
+public:
+	/*
+	 * 线程池数量
+	 */
+	void init(const uint64_t &num = std::thread::hardware_concurrency());
 
-		/*
-		 * 线程池数量
-		 */
-		void Init(const uint64_t &num = std::thread::hardware_concurrency());
+	void start();
 
-		void Start();
+	void stop();
 
-		void Stop();
+	void add_task(const std::shared_ptr<XTask> &);
 
-		void add_Task(const std::shared_ptr<XTask> &);
+	void remove_task(const std::shared_ptr<XTask> &);
 
-		inline auto is_exit() const{ return m_is_exit_.load(); }
+	inline auto is_exit() const{ return m_is_exit_.load(); }
 
-		inline auto task_run_count() const{ return task_run_count_.load(); }
+	inline auto task_run_count() const{ return task_run_count_.load(); }
 
-		virtual ~XThreadPool() { Stop(); }
+	virtual ~XThreadPool();
 
-	private:
-		std::mutex m_mux_{};
-		using Threads_Ptr = std::shared_ptr<std::thread>;
-		std::vector<Threads_Ptr> m_threads_{};
-		std::list<std::shared_ptr<XTask> > m_tasks_{};
-		std::condition_variable_any m_cv_{};
-		std::atomic_uint64_t m_thread_num_{},task_run_count_ {};
-		std::atomic_bool m_is_exit_{};
-	};
-}
+private:
+	std::mutex m_mux_{};
+	using Threads_Ptr = std::shared_ptr<std::thread>;
+	std::vector<Threads_Ptr> m_threads_{};
+	std::list<std::shared_ptr<XTask> > m_tasks_{};
+	std::condition_variable_any m_cv_{};
+	std::atomic_uint64_t m_thread_num_{},task_run_count_ {};
+	std::atomic_bool m_is_exit_{};
+public:
+	explicit XThreadPool(Private){}
+	static XThreadPool_Ptr create();
+};
+
+XTD_NAMESPACE_END
 
 #endif

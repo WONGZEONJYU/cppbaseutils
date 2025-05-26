@@ -1,7 +1,7 @@
-#ifndef _XHELPER_H
-#define _XHELPER_H
+#ifndef X_HELPER_HPP_
+#define X_HELPER_HPP_
 
-#include <memory>
+#include <utility>
 
 #define XTD_VERSION "0.0.1"
 #define XTD_NAMESPACE_BEGIN namespace xtd { inline namespace v1{
@@ -37,7 +37,7 @@ public:
 
 private:
     F fn;
-    std::atomic_bool is_destroy{};
+    uint32_t is_destroy:1{};
     X_DISABLE_COPY(Destroyer)
 };
 
