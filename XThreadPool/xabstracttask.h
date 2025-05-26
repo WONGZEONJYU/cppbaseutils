@@ -8,8 +8,8 @@
 
 XTD_NAMESPACE_BEGIN
 
-class XAbstractTask {
-    X_DISABLE_COPY(XAbstractTask)
+class XAbstractTask : NonCopyable{
+
     void swap(XAbstractTask &) noexcept;
 protected:
     using exit_t = std::function<bool()>;
@@ -26,7 +26,7 @@ protected:
         return m_return_.get_future().get();
     }
 
-    [[nodiscard]] auto is_exit_()const{return m_is_exit_();}
+    [[maybe_unused]] [[nodiscard]] auto is_exit_()const{return m_is_exit_();}
 
 private:
     exit_t m_is_exit_{};
@@ -35,7 +35,7 @@ protected:
     XAbstractTask() = default;
     XAbstractTask(XAbstractTask &&) noexcept;
     XAbstractTask& operator=(XAbstractTask && )noexcept;
-    virtual ~XAbstractTask() = default;
+    ~XAbstractTask() override = default;
 };
 
 XTD_NAMESPACE_END

@@ -18,8 +18,26 @@
 
 XTD_NAMESPACE_BEGIN
 
+class NonCopyable {
+protected:
+    NonCopyable() = default;
+    virtual ~NonCopyable() = default;
+public:
+    NonCopyable(const NonCopyable&) = delete;
+    NonCopyable &operator=(const NonCopyable&) = delete;
+};
+
+class [[maybe_unused]] NonCopyMoveable : NonCopyable {
+protected:
+    NonCopyMoveable() = default;
+    ~NonCopyMoveable() override = default;
+public:
+    NonCopyMoveable(NonCopyMoveable &&) noexcept = delete;
+    NonCopyMoveable &operator=(NonCopyMoveable&&) noexcept = delete;
+};
+
 template<typename F>
-class Destroyer final{
+class [[maybe_unused]] Destroyer final : NonCopyMoveable{
 public:
     constexpr inline explicit Destroyer(F &&f):
     fn(std::move(f)){}
@@ -31,21 +49,20 @@ public:
         }
     }
 
-    constexpr inline ~Destroyer() {
+    constexpr inline ~Destroyer() override {
         destroy();
     }
 
 private:
     F fn;
     uint32_t is_destroy:1{};
-    X_DISABLE_COPY(Destroyer)
 };
 
 template<typename F2>
-class XRAII final {
+class [[maybe_unused]] XRAII final : NonCopyMoveable{
 
 public:
-    constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
+    [[maybe_unused]] constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
     m_f2(std::move(f2)){
         f1();
     }
@@ -57,14 +74,13 @@ public:
         }
     }
 
-    constexpr inline ~XRAII(){
+    constexpr inline ~XRAII() override{
         destroy();
     }
 
 private:
     F2 m_f2{};
     uint32_t m_is_destroy_:1{};
-    X_DISABLE_COPY(XRAII)
 };
 
 XTD_NAMESPACE_END

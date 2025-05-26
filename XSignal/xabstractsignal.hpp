@@ -10,8 +10,8 @@
 
 XTD_NAMESPACE_BEGIN
 
-class XAbstractSignal {
-    X_DISABLE_COPY_MOVE(XAbstractSignal)
+class XAbstractSignal : NonCopyMoveable{
+
 protected:
     XAbstractSignal() = default;
     class XAbstractCallable {
@@ -29,7 +29,7 @@ protected:
             m_callable_();
         }
     public:
-        constexpr explicit XCallable(Callable_ &&call,Private):
+        [[maybe_unused]] constexpr explicit XCallable(Callable_ &&call,Private):
         m_callable_{std::forward<Callable_>(call)}{}
         ~XCallable() override = default;
     private:
@@ -68,7 +68,7 @@ protected:
             return std::__invoke(std::get<Ind_>(std::move(m_M_t))...);
         }
     public:
-        explicit XInvoker(Tuple_ &&t,Private):m_M_t{std::forward<Tuple_>(t)}{}
+        [[maybe_unused]] constexpr explicit XInvoker(Tuple_ &&t,Private):m_M_t{std::forward<Tuple_>(t)}{}
 
         inline typename result_<Tuple_>::type operator()() {
 #if defined(__APPLE__) || defined(__MACH__)
@@ -106,12 +106,12 @@ protected:
 
     using Callable_Ptr = std::shared_ptr<XAbstractCallable>;
     virtual void set_call(const Callable_Ptr &) = 0;
-
-    [[nodiscard]] virtual int sig() const & = 0;
-    [[nodiscard]] virtual const siginfo_t& siginfo() const & = 0;
-    [[nodiscard]] virtual ucontext_t* context() const & = 0;
-    virtual void Unregister() = 0;
-    virtual ~XAbstractSignal() = default;
+public:
+    [[nodiscard]] [[maybe_unused]] virtual int sig() const & = 0;
+    [[nodiscard]] [[maybe_unused]] virtual const siginfo_t& siginfo() const & = 0;
+    [[nodiscard]] [[maybe_unused]] virtual ucontext_t* context() const & = 0;
+    [[maybe_unused]] virtual void Unregister() = 0;
+    ~XAbstractSignal() override = default;
 };
 
 XTD_NAMESPACE_END

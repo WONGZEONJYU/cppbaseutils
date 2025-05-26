@@ -1,6 +1,5 @@
 #include "xsignal.hpp"
 #include <unistd.h>
-#include <string>
 #include <sstream>
 #include <unordered_map>
 
@@ -8,7 +7,7 @@ XTD_NAMESPACE_BEGIN
 
 class XSignal_Impl final: public XSignal {
 
-    X_DISABLE_COPY_MOVE(XSignal_Impl)
+    //X_DISABLE_COPY_MOVE(XSignal_Impl)
 
     struct Private{ explicit Private() = default; };
 
@@ -47,19 +46,19 @@ class XSignal_Impl final: public XSignal {
     }
 
 public:
-    [[nodiscard]] int sig() const & override {
+    [[nodiscard]] [[maybe_unused]] int sig() const & override {
         return m_sig_;
     }
 
-    [[nodiscard]] const siginfo_t &siginfo() const & override {
+    [[nodiscard]] [[maybe_unused]] const siginfo_t &siginfo() const & override {
         return m_info_;
     }
 
-    [[nodiscard]] ucontext_t* context() const & override {
+    [[nodiscard]] [[maybe_unused]] ucontext_t* context() const & override {
         return static_cast<ucontext_t*>(m_context_);
     }
 
-    void Unregister() override {
+    [[maybe_unused]] void Unregister() override {
         Unregister_helper();
         sm_callable_map_.erase(m_sig_);
     }
@@ -112,7 +111,7 @@ public:
     }
 };
 
-siginfo_t XSignal::siginfo(const int &sig){
+[[maybe_unused]] siginfo_t XSignal::siginfo(const int &sig){
     return XSignal_Impl::siginfo(sig);
 }
 
@@ -120,7 +119,7 @@ void XSignal::Unregister(const int &sig){
     XSignal_Impl::Unregister(sig);
 }
 
-bool XSignal::Send_signal(const int &pid_,const int &sig_,const sigval &val_){
+[[maybe_unused]] bool XSignal::Send_signal(const int &pid_,const int &sig_,const sigval &val_){
 #if defined(__APPLE__) || defined(__MACH__)
     (void)val_;
     return !kill(pid_,sig_);
