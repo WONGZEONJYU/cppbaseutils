@@ -10,8 +10,8 @@
 
 XTD_NAMESPACE_BEGIN
 
-class XAbstractSignal : NonCopyMoveable{
-
+class XAbstractSignal {
+    X_DISABLE_COPY_MOVE(XAbstractSignal)
 protected:
     XAbstractSignal() = default;
     class XAbstractCallable {
@@ -111,7 +111,7 @@ public:
     [[nodiscard]] [[maybe_unused]] virtual const siginfo_t& siginfo() const & = 0;
     [[nodiscard]] [[maybe_unused]] virtual ucontext_t* context() const & = 0;
     [[maybe_unused]] virtual void Unregister() = 0;
-    ~XAbstractSignal() override = default;
+    virtual ~XAbstractSignal() = default;
 };
 
 XTD_NAMESPACE_END

@@ -16,7 +16,7 @@ class XTask;
 class XThreadPool;
 using XThreadPool_Ptr = std::shared_ptr<XThreadPool>;
 
-class [[maybe_unused]] XThreadPool :NonCopyable {
+class [[maybe_unused]] XThreadPool final{
 
 	std::shared_ptr<XTask> get_task();
 	void Run();
@@ -39,7 +39,7 @@ public:
 
 	inline auto task_run_count() const{ return task_run_count_.load(); }
 
-	~XThreadPool() override;
+	~XThreadPool();
 
 private:
 	std::mutex m_mux_{};

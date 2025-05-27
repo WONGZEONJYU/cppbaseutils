@@ -7,12 +7,12 @@
 XTD_NAMESPACE_BEGIN
 
 class XTask : public XAbstractTask {
-
+	X_DISABLE_COPY(XTask)
 	friend class XThreadPool;
 	virtual int64_t run() {return 0;}
 	[[nodiscard]][[maybe_unused]] virtual int64_t run() const {return 0;}
 protected:
-    explicit XTask() = default;
+    XTask() = default;
 public:
     using XAbstractTask::get_return;
 	XTask(XTask &&) noexcept;

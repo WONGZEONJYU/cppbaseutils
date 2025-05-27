@@ -4,7 +4,7 @@
 #include <utility>
 
 #define XTD_VERSION "0.0.1"
-#define XTD_NAMESPACE_BEGIN namespace xtd { inline namespace v1{
+#define XTD_NAMESPACE_BEGIN namespace xtd { inline namespace v1 {
 #define XTD_NAMESPACE_END }}
 
 #define X_DISABLE_COPY(Class) \
@@ -18,26 +18,9 @@
 
 XTD_NAMESPACE_BEGIN
 
-class NonCopyable {
-protected:
-    NonCopyable() = default;
-    virtual ~NonCopyable() = default;
-public:
-    NonCopyable(const NonCopyable&) = delete;
-    NonCopyable &operator=(const NonCopyable&) = delete;
-};
-
-class [[maybe_unused]] NonCopyMoveable : NonCopyable {
-protected:
-    NonCopyMoveable() = default;
-    ~NonCopyMoveable() override = default;
-public:
-    NonCopyMoveable(NonCopyMoveable &&) noexcept = delete;
-    NonCopyMoveable &operator=(NonCopyMoveable&&) noexcept = delete;
-};
-
 template<typename F>
-class [[maybe_unused]] Destroyer final : NonCopyMoveable{
+class [[maybe_unused]] Destroyer final {
+    X_DISABLE_COPY_MOVE(Destroyer)
 public:
     constexpr inline explicit Destroyer(F &&f):
     fn(std::move(f)){}
@@ -49,7 +32,7 @@ public:
         }
     }
 
-    constexpr inline ~Destroyer() override {
+    constexpr inline ~Destroyer() {
         destroy();
     }
 
@@ -59,8 +42,8 @@ private:
 };
 
 template<typename F2>
-class [[maybe_unused]] XRAII final : NonCopyMoveable{
-
+class [[maybe_unused]] XRAII final {
+    X_DISABLE_COPY_MOVE(XRAII)
 public:
     [[maybe_unused]] constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
     m_f2(std::move(f2)){
@@ -74,7 +57,7 @@ public:
         }
     }
 
-    constexpr inline ~XRAII() override{
+    constexpr inline ~XRAII() {
         destroy();
     }
 

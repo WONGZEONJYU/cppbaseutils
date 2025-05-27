@@ -9,6 +9,7 @@ class XSignal;
 using Signal_Ptr = std::shared_ptr<XSignal>;
 
 class XSignal : public XAbstractSignal {
+    X_DISABLE_COPY_MOVE(XSignal)
     static Signal_Ptr create(const int &,const int &);
 protected:
     explicit XSignal() = default;
