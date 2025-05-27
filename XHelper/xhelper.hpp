@@ -38,7 +38,7 @@ public:
 
 private:
     F fn;
-    uint32_t is_destroy:1{};
+    unsigned int is_destroy:1{};
 };
 
 template<typename F2>
@@ -63,7 +63,7 @@ public:
 
 private:
     F2 m_f2{};
-    uint32_t m_is_destroy_:1{};
+    unsigned int m_is_destroy_:1{};
 };
 
 XTD_NAMESPACE_END
