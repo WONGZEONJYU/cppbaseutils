@@ -16,6 +16,10 @@
     Class(Class &&) = delete; \
     Class &operator=(Class &&) = delete;
 
+#define X_IN
+#define X_OUT
+#define X_IN_OUT
+
 XTD_NAMESPACE_BEGIN
 
 template<typename F>
