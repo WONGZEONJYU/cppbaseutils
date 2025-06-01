@@ -1,0 +1,54 @@
+#ifndef XTHREAD_HPP
+#define XTHREAD_HPP
+
+#include "../XHelper/xhelper.hpp"
+#include <any>
+#include <atomic>
+#include <thread>
+#include <mutex>
+
+class XAbstractThread {
+    X_DISABLE_COPY_MOVE(XAbstractThread)
+    virtual void Main() = 0;
+    void _stop_();
+    void _wait_();
+    void _exit_();
+
+public:
+    void set_next(XAbstractThread *next){
+        m_next_ = next;
+    }
+
+    virtual void next(std::any &arg) {
+        if (m_next_){
+            m_next_.load()->doWork(arg);
+        }
+    }
+
+    virtual void doWork(std::any &) {}
+
+    virtual ~XAbstractThread() = default;
+
+    inline auto is_exit() const &{
+        return m_is_exit_.load();
+    }
+
+    virtual void start();
+
+    virtual void stop();
+
+    virtual void quit();
+
+    virtual void wait();
+
+private:
+    std::atomic<XAbstractThread*> m_next_{};
+    std::atomic_bool m_is_exit_{};
+    std::mutex m_mux_lock_{};
+    std::thread m_th_{};
+
+protected:
+    explicit XAbstractThread() = default;
+};
+
+#endif
