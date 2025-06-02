@@ -7,6 +7,9 @@
 #include <thread>
 #include <mutex>
 
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
 class XAbstractThread {
     X_DISABLE_COPY_MOVE(XAbstractThread)
     virtual void Main() = 0;
@@ -50,5 +53,8 @@ private:
 protected:
     explicit XAbstractThread() = default;
 };
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
 
 #endif

@@ -9,7 +9,7 @@
 #define XTD_NAMESPACE_END }
 
 #define XTD_INLINE_NAMESPACE_BEGIN(name) inline namespace name {
-#define XTD_INLINE_NAMESPACE_END }
+#define XTD_INLINE_NAMESPACE_END XTD_NAMESPACE_END
 
 #define X_DISABLE_COPY(Class) \
     Class(const Class &) = delete;\

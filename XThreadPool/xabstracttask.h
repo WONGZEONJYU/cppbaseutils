@@ -7,6 +7,7 @@
 #include "../XHelper/xhelper.hpp"
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XAbstractTask {
     X_DISABLE_COPY(XAbstractTask)
@@ -38,6 +39,7 @@ protected:
     virtual ~XAbstractTask() = default;
 };
 
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
 #endif

@@ -4,10 +4,11 @@
 #include <unordered_map>
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XSignal_Impl final: public XSignal {
 
-    //X_DISABLE_COPY_MOVE(XSignal_Impl)
+    X_DISABLE_COPY_MOVE(XSignal_Impl)
 
     struct Private{ explicit Private() = default; };
 
@@ -132,4 +133,5 @@ Signal_Ptr XSignal::create(const int &sig,const int &flags){
     return XSignal_Impl::create(sig,flags);
 }
 
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

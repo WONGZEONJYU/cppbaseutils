@@ -3,6 +3,7 @@
 #include <iostream>
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 using namespace std;
 using namespace this_thread;
@@ -106,4 +107,5 @@ XThreadPool_Ptr XThreadPool::create() {
 	return make_shared<XThreadPool>(Private{});
 }
 
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

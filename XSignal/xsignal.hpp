@@ -4,6 +4,7 @@
 #include "xabstractsignal.hpp"
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XSignal;
 using Signal_Ptr = std::shared_ptr<XSignal>;
@@ -41,6 +42,8 @@ template<typename Fn,typename... Args>
 [[maybe_unused]] static inline void Signal_Unregister(const int &sig){
     XSignal::Unregister(sig);
 }
+
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
 #endif

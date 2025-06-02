@@ -5,6 +5,7 @@
 #include "xabstracttask.h"
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XTask : public XAbstractTask {
 	X_DISABLE_COPY(XTask)
@@ -20,6 +21,7 @@ public:
 	~XTask() override = default;
 };
 
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
 #endif

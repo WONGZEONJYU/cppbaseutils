@@ -11,6 +11,7 @@
 #include "../XHelper/xhelper.hpp"
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XTask;
 class XThreadPool;
@@ -54,6 +55,7 @@ public:
 	static XThreadPool_Ptr create();
 };
 
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
 #endif
