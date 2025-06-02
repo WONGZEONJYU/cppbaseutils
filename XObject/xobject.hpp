@@ -3,20 +3,25 @@
 
 #include "../XHelper/xhelper.hpp"
 #include <memory>
-#include <atomic>
 
-class XPrivateData;
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+class XObjectPrivate;
 
 class XObject {
+
     X_DISABLE_COPY_MOVE(XObject)
-public:
-    using type_ptr = XObject*;
+    X_DECLARE_PRIVATE_D(m_d_,XObjectPrivate)
+
 protected:
     explicit XObject();
     virtual ~XObject();
 private:
-    type_ptr m_this_{};
-    std::unique_ptr<XPrivateData> m_d_{};
+    std::unique_ptr<XObjectPrivate> m_d_{};
 };
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
 
 #endif
