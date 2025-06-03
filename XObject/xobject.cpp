@@ -10,10 +10,10 @@ xtd::v1::ExternalRefCountData * xtd::v1::ExternalRefCountData::getAndRef(const X
     }
 
     try{
-        auto x{::new ExternalRefCountData()};
+        auto x{::new ExternalRefCountData(Private{})};
         decltype(x) ret{};
         x->m_ref_.fetch_add(1);
-        if (d->m_sharedRefcount_.compare_exchange_strong(ret,x)){
+        if (d->m_sharedRefcount_.compare_exchange_strong(ret,x,std::memory_order_acquire,std::memory_order_acq_rel)){
             ret = x;
         }else{
 

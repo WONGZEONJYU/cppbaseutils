@@ -10,11 +10,11 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XObject;
 
 class ExternalRefCountData{
-
+    enum class Private{};
 public:
-    explicit ExternalRefCountData() = default;
+    explicit ExternalRefCountData(Private) {}
     std::atomic_int m_ref_{};
-    static ExternalRefCountData * getAndRef(const XObject *);
+    static ExternalRefCountData *getAndRef(const XObject *);
 };
 
 class XObjectPrivate final {
