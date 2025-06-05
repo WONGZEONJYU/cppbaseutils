@@ -1,20 +1,20 @@
 #include "xobject_p.hpp"
 
-xtd::v1::ExternalRefCountData * xtd::v1::ExternalRefCountData::getAndRef(const XObject *obj){
+[[maybe_unused]] xtd::v1::ExternalRefCountData * xtd::v1::ExternalRefCountData::getAndRef(const XObject *obj){
 
-    //X_ASSERT(obj);
+    X_ASSERT(obj);
     const auto d{XObjectPrivate::get(const_cast<XObject*>(obj))};
-    if (const auto that{d->m_sharedRefcount_.load(std::memory_order_acquire)}){
-        that->m_ref_.fetch_add(1);
+    if (const auto that{d->m_sharedRefcount_.loadAcquire()}){
+        that->m_ref_.ref();
         return that;
     }
 
     try{
         auto x{::new ExternalRefCountData(Private{})};
         decltype(x) ret{};
-        x->m_ref_.fetch_add(1);
-        if (d->m_sharedRefcount_.compare_exchange_strong(ret,x,
-            std:: memory_order_acq_rel,std::memory_order_acquire)){
+
+        x->m_ref_.ref();
+        if (d->m_sharedRefcount_.testAndSetOrdered(nullptr,x,ret)){
             ret = x;
         }else{
 
@@ -30,9 +30,9 @@ xtd::XObject::XObject():m_d_(std::make_unique<XObjectPrivate>()) {
 }
 
 xtd::XObject::~XObject() {
-    if (const auto x{m_d_->m_sharedRefcount_.load()};
-    x && 1 == x->m_ref_.fetch_sub(1)){
-        m_d_->m_sharedRefcount_ = {};
+    if (const auto x{m_d_->m_sharedRefcount_.loadRelaxed()};
+    x && !x->m_ref_.deref()){
+        m_d_->m_sharedRefcount_.storeRelease(nullptr);
         delete x;
     }
 }

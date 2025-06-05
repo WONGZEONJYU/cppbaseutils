@@ -98,12 +98,12 @@ public:
 #endif
 };
 
-class XAtomicInt : public XAtomicInteger<int>{
+class [[maybe_unused]] XAtomicInt : public XAtomicInteger<int>{
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    constexpr XAtomicInt(const int &value = {}) noexcept : XAtomicInteger(value) {}
+    constexpr explicit XAtomicInt(const int &value = {}) noexcept : XAtomicInteger(value) {}
 };
 
 // High-level atomic pointer operations

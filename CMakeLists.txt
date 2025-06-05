@@ -9,12 +9,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-#set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-
 # 定义动态库
 add_library(${PROJECT_NAME} SHARED)
 
-# 包含子目录（不包含 Test）
+# 包含子目录
 add_subdirectory(XAtomic)
 add_subdirectory(XGlobal)
 add_subdirectory(XHelper)
@@ -23,12 +21,17 @@ add_subdirectory(XSignal)
 add_subdirectory(XThread)
 add_subdirectory(XThreadPool)
 
-# 指定库的包含目录，确保 XHelper 的头文件对所有模块可用
-target_include_directories(${PROJECT_NAME} PUBLIC
+# 指定库的包含目录
+# PUBLIC 包含目录用于暴露给测试和外部调用者
+# PRIVATE 包含目录仅用于构建 XLib，确保 xobject_p.hpp 可用
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>)
+        $<INSTALL_INTERFACE:include>
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/XObject # 确保 xobject_p.hpp 在构建 XLib 时可用
+)
 
-message(STATUS $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 # 安装规则
 install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}Targets
@@ -38,7 +41,7 @@ install(TARGETS ${PROJECT_NAME}
         INCLUDES DESTINATION include
 )
 
-# 安装头文件
+# 安装头文件，排除带 _p 的文件
 install(DIRECTORY
         ${CMAKE_CURRENT_SOURCE_DIR}/XAtomic/
         ${CMAKE_CURRENT_SOURCE_DIR}/XGlobal/
@@ -48,7 +51,10 @@ install(DIRECTORY
         ${CMAKE_CURRENT_SOURCE_DIR}/XThread/
         ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
         DESTINATION include
-        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*_p.hpp" EXCLUDE # 排除 xobject_p.hpp 等私有头文件
 )
 
 # 导出库配置供其他项目使用

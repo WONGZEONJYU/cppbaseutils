@@ -12,7 +12,7 @@ class XBasicAtomicInteger{
     static_assert(std::is_integral_v<T>, "template parameter is not an integral type");
     static_assert(XAtomicOpsSupport<sizeof(T)>::IsSupported, "template parameter is an integral of a size not supported on this platform");
 public:
-    using Type = T;
+    using Type [[maybe_unused]] = T;
     using Ops = XAtomicOps<T>;
     using AtomicType = typename Ops::Type;
     AtomicType m_x_value{};
@@ -141,7 +141,7 @@ public:
     XBasicAtomicInteger &operator=(const XBasicAtomicInteger &) volatile = delete;
 };
 
-using XBasicAtomicInt = XBasicAtomicInteger<int>;
+using XBasicAtomicInt [[maybe_unused]] = XBasicAtomicInteger<int>;
 
 template <typename X>
 class XBasicAtomicPointer{
