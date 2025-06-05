@@ -7,6 +7,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ cppbaseutils.out)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 
+include_directories(${XAtomic_PATH})
+message(STATUS ${XAtomic_PATH})
+
 file(GLOB SRC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 add_executable(${PROJECT_NAME} ${SRC_FILE} )
 
