@@ -142,7 +142,7 @@ template <> inline bool XAtomicTraits<2>::isLockFree()
 { return false; }
 #endif
 
-#if !defined(QT_BOOTSTRAPPED) && QT_CONFIG(std_atomic64)
+#if !defined(X_BOOTSTRAPPED)
 template<> struct XAtomicOpsSupport<8> { enum { IsSupported = 1 }; };
 #  define X_ATOMIC_INT64_IS_SUPPORTED
 #  if ATOMIC_LLONG_LOCK_FREE == 2

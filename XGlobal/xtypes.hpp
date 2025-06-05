@@ -1,8 +1,8 @@
 #ifndef XTYPES_HPP
 #define XTYPES_HPP
 
-#include <../XGlobal/xprocessordetection.hpp>
-#include <../XHelper/xhelper.hpp>
+#include <XGlobal/xprocessordetection.hpp>
+#include <XHelper/xhelper.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -22,11 +22,12 @@ template <>  struct XIntegerForSize<2> { typedef xuint16 Unsigned; typedef xint1
 template <>  struct XIntegerForSize<4> { typedef xuint32 Unsigned; typedef xint32 Signed; };
 template <>  struct XIntegerForSize<8> { typedef xuint64 Unsigned; typedef xint64 Signed; };
 
-template <class T> struct XIntegerForSizeof: XIntegerForSize<sizeof(T)> { };
+template <typename T> struct XIntegerForSizeof: XIntegerForSize<sizeof(T)> { };
 using xregisterint = XIntegerForSize<X_PROCESSOR_WORDSIZE>::Signed;
 using xregisteruint = XIntegerForSize<X_PROCESSOR_WORDSIZE>::Unsigned;
 using xuintptr = XIntegerForSizeof<void *>::Unsigned;
 using xptrdiff = XIntegerForSizeof<void *>::Signed;
+//typedef XIntegerForSizeof<void *>::Signed xptrdiff;
 using xintptr = xptrdiff;
 using xsizetype = XIntegerForSizeof<std::size_t>::Signed;
 

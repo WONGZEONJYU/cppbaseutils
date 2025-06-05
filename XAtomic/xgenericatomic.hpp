@@ -1,7 +1,8 @@
 #ifndef X_GENERIC_ATOMIC_HPP
 #define X_GENERIC_ATOMIC_HPP 1
 
-#include <../XGlobal/xtypes.hpp>
+#include <XHelper/xhelper.hpp>
+#include <XGlobal/xtypes.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

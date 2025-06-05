@@ -7,12 +7,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ cppbaseutils.out)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(${XAtomic_PATH})
-message(STATUS ${XAtomic_PATH})
+file(GLOB H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
+aux_source_directory(. SRC_FILES)
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${H_FILES})
 
-file(GLOB SRC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-add_executable(${PROJECT_NAME} ${SRC_FILE} )
-
-target_link_libraries(${PROJECT_NAME} PUBLIC XSignal XHelper)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
+target_link_libraries(${PROJECT_NAME} PRIVATE XLib)

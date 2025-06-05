@@ -1,7 +1,7 @@
 #ifndef QATOMIC_H
 #define QATOMIC_H
 
-#include "qbasicatomic.h"
+#include "xbasicatomic.h"
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -11,7 +11,6 @@ template <typename T>
 class XAtomicInteger : public XBasicAtomicInteger<T>{
 public:
     // Non-atomic API
-    XAtomicInteger() =default;
     constexpr explicit XAtomicInteger(const T &value = {}) noexcept : XBasicAtomicInteger<T>(value) {}
 
     inline XAtomicInteger(const XAtomicInteger &other) noexcept
@@ -104,7 +103,6 @@ public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    XAtomicInt() = default;
     constexpr XAtomicInt(const int &value = {}) noexcept : XAtomicInteger(value) {}
 };
 
@@ -113,7 +111,7 @@ template <typename T>
 class XAtomicPointer : public XBasicAtomicPointer<T>
 {
 public:
-    XAtomicPointer() = default;
+
     constexpr explicit XAtomicPointer(T *value = nullptr) noexcept : XBasicAtomicPointer<T>(value) {}
 
     inline XAtomicPointer(const XAtomicPointer &other) noexcept

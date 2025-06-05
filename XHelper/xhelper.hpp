@@ -68,6 +68,7 @@ template<typename F2>
 class [[maybe_unused]] XRAII final {
     X_DISABLE_COPY_MOVE(XRAII)
 public:
+
     [[maybe_unused]] constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
     m_f2(std::move(f2)){
         f1();

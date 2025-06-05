@@ -2,7 +2,7 @@
 
 xtd::v1::ExternalRefCountData * xtd::v1::ExternalRefCountData::getAndRef(const XObject *obj){
 
-    X_ASSERT(obj);
+    //X_ASSERT(obj);
     const auto d{XObjectPrivate::get(const_cast<XObject*>(obj))};
     if (const auto that{d->m_sharedRefcount_.load(std::memory_order_acquire)}){
         that->m_ref_.fetch_add(1);
@@ -13,7 +13,8 @@ xtd::v1::ExternalRefCountData * xtd::v1::ExternalRefCountData::getAndRef(const X
         auto x{::new ExternalRefCountData(Private{})};
         decltype(x) ret{};
         x->m_ref_.fetch_add(1);
-        if (d->m_sharedRefcount_.compare_exchange_strong(ret,x,std::memory_order_acquire,std::memory_order_acq_rel)){
+        if (d->m_sharedRefcount_.compare_exchange_strong(ret,x,
+            std:: memory_order_acq_rel,std::memory_order_acquire)){
             ret = x;
         }else{
 

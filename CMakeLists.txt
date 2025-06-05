@@ -1,11 +1,72 @@
 cmake_minimum_required(VERSION 3.31.6)
 
-project(cppbaseutils)
+# 定义项目名称、版本和语言
+project(XLib VERSION 1.0 LANGUAGES CXX)
 
+# 设置 C++ 标准
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+#set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+
+# 定义动态库
+add_library(${PROJECT_NAME} SHARED)
+
+# 包含子目录（不包含 Test）
+add_subdirectory(XAtomic)
+add_subdirectory(XGlobal)
 add_subdirectory(XHelper)
-add_subdirectory(XThreadPool)
+add_subdirectory(XObject)
 add_subdirectory(XSignal)
 add_subdirectory(XThread)
-add_subdirectory(XObject)
-add_subdirectory(XGlobal)
-add_subdirectory(XAtomic)
+add_subdirectory(XThreadPool)
+
+# 指定库的包含目录，确保 XHelper 的头文件对所有模块可用
+target_include_directories(${PROJECT_NAME} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>)
+
+message(STATUS $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+# 安装规则
+install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}Targets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+)
+
+# 安装头文件
+install(DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR}/XAtomic/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XGlobal/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XHelper/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XThread/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+# 导出库配置供其他项目使用
+install(EXPORT ${PROJECT_NAME}Targets
+        FILE ${PROJECT_NAME}Targets.cmake
+        NAMESPACE XLib::
+        DESTINATION lib/cmake/${PROJECT_NAME}
+)
+
+# 生成 CMake 配置文件
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        DESTINATION lib/cmake/${PROJECT_NAME}
+)
