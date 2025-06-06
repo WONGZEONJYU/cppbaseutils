@@ -14,15 +14,15 @@ class ExternalRefCountData {
 protected:
     enum class Private{};
 public:
+    using Type = ExternalRefCountData;
     explicit ExternalRefCountData(Private) {}
-
     XAtomicInt m_weak_ref{}, m_strong_ref{};
     ~ExternalRefCountData() {
         X_ASSERT(!m_weak_ref.loadRelaxed());
         X_ASSERT(m_strong_ref.loadRelaxed() <= 0);
     }
 
-    [[maybe_unused]] static ExternalRefCountData *getAndRef(const XObject *);
+    [[maybe_unused]] static Type *getAndRef(const XObject *);
 };
 
 template<typename T>
@@ -35,10 +35,10 @@ class XPointer final {
 
     static_assert(!std::is_pointer_v<T>, "XPointer's template type must not be a pointer type");
 
-    template <typename X>
-    using if_convertible = std::enable_if_t<std::is_convertible_v<X*, T*>, bool>;
-    friend class XObject;
-    using XObjectType = std::conditional_t<std::is_const_v<T>, const XObject, XObject>;
+//    template <typename X>
+//    using if_convertible = std::enable_if_t<std::is_convertible_v<X*, T*>, bool>;
+//    friend class XObject;
+//    using XObjectType = std::conditional_t<std::is_const_v<T>, const XObject, XObject>;
 
 public:
     XPointer() = default;
@@ -71,8 +71,12 @@ public:
         std::swap(m_d_, rhs.m_d_);
     }
 
-    bool isNull() const{
+    [[nodiscard]] bool isNull() const{
         return m_d_ == nullptr || m_ptr_ == nullptr || !m_d_->m_strong_ref.loadRelaxed();
+    }
+
+    [[maybe_unused]] [[nodiscard]] bool is_empty() const{
+        return isNull();
     }
 
     explicit operator bool() const{

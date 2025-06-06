@@ -51,6 +51,7 @@ install(DIRECTORY
         ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
         ${CMAKE_CURRENT_SOURCE_DIR}/XThread/
         ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
+        ${CMAKE_CURRENT_SOURCE_DIR}/XTools/
         DESTINATION include
         FILES_MATCHING
         PATTERN "*.h"
