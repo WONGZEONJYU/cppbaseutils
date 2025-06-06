@@ -10,7 +10,7 @@ void XAbstractThread::_stop_(){
 
 void XAbstractThread::_wait_(){
 
-    if (m_is_exit_.load(std::memory_order_relaxed)){
+    if (!m_is_exit_.load(std::memory_order_relaxed)){
         std::cerr << "Please call the stop function first\n";
         return;
     }
