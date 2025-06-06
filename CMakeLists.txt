@@ -20,6 +20,7 @@ add_subdirectory(XObject)
 add_subdirectory(XSignal)
 add_subdirectory(XThread)
 add_subdirectory(XThreadPool)
+add_subdirectory(XTools)
 
 # 指定库的包含目录
 # PUBLIC 包含目录用于暴露给测试和外部调用者

@@ -172,7 +172,7 @@ template <> inline bool XAtomicTraits<8>::isLockFree()
 #  endif
 #endif
 
-template <typename X> class XAtomicOps final{
+template <typename X> class XAtomicOps final {
 public:
     using Type = std::atomic<X>;
 

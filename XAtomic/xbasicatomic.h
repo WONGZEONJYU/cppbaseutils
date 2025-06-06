@@ -12,20 +12,20 @@ class XBasicAtomicInteger{
     static_assert(std::is_integral_v<T>, "template parameter is not an integral type");
     static_assert(XAtomicOpsSupport<sizeof(T)>::IsSupported, "template parameter is an integral of a size not supported on this platform");
 public:
-    using Type [[maybe_unused]] = T;
+    using Type = T;
     using Ops = XAtomicOps<T>;
     using AtomicType = typename Ops::Type;
     AtomicType m_x_value{};
 
     // Everything below is either implemented in ../arch/qatomic_XXX.h or (as
     // fallback) in qgenericatomic.h
-    T loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
-    void storeRelaxed(const T &newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
+    Type loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
+    void storeRelaxed(const Type &newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
 
-    T loadAcquire() const noexcept { return Ops::loadAcquire(m_x_value); }
-    void storeRelease(const T &newValue) noexcept { Ops::storeRelease(m_x_value, newValue); }
-    operator T() const noexcept { return loadAcquire(); }
-    T operator=(const T &newValue) noexcept { storeRelease(newValue); return newValue; }
+    Type loadAcquire() const noexcept { return Ops::loadAcquire(m_x_value); }
+    void storeRelease(const Type &newValue) noexcept { Ops::storeRelease(m_x_value, newValue); }
+    operator Type() const noexcept { return loadAcquire(); }
+    Type operator=(const Type &newValue) noexcept { storeRelease(newValue); return newValue; }
 
     static constexpr bool isReferenceCountingNative() noexcept { return Ops::isReferenceCountingNative(); }
     static constexpr bool isReferenceCountingWaitFree() noexcept { return Ops::isReferenceCountingWaitFree(); }
@@ -229,7 +229,7 @@ public:
     { return fetchAndSubOrdered(valueToSub) - valueToSub; }
 
     XBasicAtomicPointer() = default;
-    explicit constexpr XBasicAtomicPointer(Type value) noexcept : m_x_value(value) {}
+    explicit constexpr XBasicAtomicPointer(const Type &value) noexcept : m_x_value(value) {}
     XBasicAtomicPointer(const XBasicAtomicPointer &) = delete;
     XBasicAtomicPointer &operator=(const XBasicAtomicPointer &) = delete;
     XBasicAtomicPointer &operator=(const XBasicAtomicPointer &) volatile = delete;
