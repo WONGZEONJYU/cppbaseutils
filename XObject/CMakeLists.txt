@@ -9,6 +9,5 @@ set(CMAKE_CXX_STANDARD 20)
 target_sources(XLib PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
-    PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
 )
