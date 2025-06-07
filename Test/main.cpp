@@ -30,8 +30,16 @@ public:
 
 using namespace std;
 
+void f(std::any data_){
+    std::any_cast<string&>(data_) = "0123456789";
+}
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
+
+    std::string s("123");
+    f(s);
+    std::cout << "s = " << s << std::endl;
 
     A a;
     a.start();
