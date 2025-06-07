@@ -27,19 +27,11 @@ public:
 
 template<typename T>
 class XPointer final {
-
     using Type = T;
     using Ptype = Type*;
     using RefType = Type&;
     using Data = ExternalRefCountData;
-
     static_assert(!std::is_pointer_v<T>, "XPointer's template type must not be a pointer type");
-
-//    template <typename X>
-//    using if_convertible = std::enable_if_t<std::is_convertible_v<X*, T*>, bool>;
-//    friend class XObject;
-//    using XObjectType = std::conditional_t<std::is_const_v<T>, const XObject, XObject>;
-
 public:
     XPointer() = default;
     explicit constexpr XPointer(std::nullptr_t){}
@@ -66,6 +58,18 @@ public:
         return *this;
     }
 
+    XPointer& operator=(T *ptr) noexcept{
+        if (ptr){
+            XPointer(ptr).swap(*this);
+        }
+        return *this;
+    }
+
+    void assign(T* ptr){
+        if (!ptr){return;}
+        XPointer(ptr).swap(*this);
+    }
+
     void swap(XPointer& rhs) noexcept{
         std::swap(m_ptr_, rhs.m_ptr_);
         std::swap(m_d_, rhs.m_d_);
@@ -84,7 +88,7 @@ public:
     }
 
     bool operator!() const{
-        return !isNull();
+        return isNull();
     }
 
     Ptype get() const{
@@ -95,7 +99,7 @@ public:
         return get();
     }
 
-    operator Ptype() const{
+    explicit operator Ptype() const{
         return get();
     }
 

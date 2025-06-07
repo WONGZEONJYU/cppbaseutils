@@ -4,7 +4,7 @@
 
 #include <functional>
 #include <future>
-#include "../XHelper/xhelper.hpp"
+#include <XHelper/xhelper.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
