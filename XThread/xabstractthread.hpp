@@ -51,7 +51,7 @@ public:
         _wait_();
     }
 
-protected:
+private:
     XPointer<XAbstractThread> m_next_{};
     std::atomic_bool m_is_exit_{};
     std::mutex m_mux_lock_{};

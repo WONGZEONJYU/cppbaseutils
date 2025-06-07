@@ -6,7 +6,6 @@ class A : public xtd::XAbstractThread{
     void Main() override{
         std::cout << __PRETTY_FUNCTION__ << " Begin!\n";
         while (!is_exit()){
-            std::cout << std::boolalpha << m_next_.isNull() << std::endl;
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
         std::cout << __PRETTY_FUNCTION__ << " End!\n";
