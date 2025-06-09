@@ -13,19 +13,18 @@ XTD_NAMESPACE_BEGIN
 class XAbstractSignal {
     X_DISABLE_COPY_MOVE(XAbstractSignal)
 protected:
-    XAbstractSignal() = default;
     class XAbstractCallable {
     public:
-        virtual void call() {}
+        virtual void call() const{}
         virtual ~XAbstractCallable() = default;
     protected:
         XAbstractCallable() = default;
-        struct Private{explicit Private() = default;};
+        enum class Private{};
     };
 
     template<typename Callable_>
     class XCallable final: public XAbstractCallable{
-        void call() override{
+        void call() const override {
             m_callable_();
         }
     public:
@@ -49,33 +48,29 @@ protected:
     class XAbstractInvoker{
     protected:
         XAbstractInvoker() = default;
-        struct Private{explicit Private() = default;};
+        enum class Private{};
     };
 
     template<typename Tuple_>
     class XInvoker final : public XAbstractInvoker {
+
         template<typename> struct result_{};
 
         template<typename Fn_, typename... Args_>
         struct result_<std::tuple<Fn_, Args_...>> : std::invoke_result<Fn_, Args_...>{};
 
+        using result_t = typename result_<Tuple_>::type;
+
         template<size_t... Ind_>
-#if defined(__APPLE__) || defined(__MACH__)
-        typename result_<Tuple_>::type M_invoke_(std::__tuple_indices<Ind_...>) {
-#else
-        typename result_<Tuple_>::type M_invoke_(std::_Index_tuple<Ind_...>) {
-#endif
-            return std::__invoke(std::get<Ind_>(std::move(m_M_t))...);
+        inline result_t M_invoke_(std::index_sequence<Ind_...>) {
+            return std::__invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...);
         }
+
     public:
         [[maybe_unused]] constexpr explicit XInvoker(Tuple_ &&t,Private):m_M_t{std::forward<Tuple_>(t)}{}
 
-        inline typename result_<Tuple_>::type operator()() {
-#if defined(__APPLE__) || defined(__MACH__)
-            using Indices_ = typename std::__make_tuple_indices<std::tuple_size_v<Tuple_>>::type;
-#else
-            using Indices_ = typename std::_Build_index_tuple<std::tuple_size_v<Tuple_>>::__type;
-#endif
+        inline result_t operator()() {
+            using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple_>>;
             return M_invoke_(Indices_{});
         }
     private:
@@ -106,6 +101,8 @@ protected:
 
     using Callable_Ptr = std::shared_ptr<XAbstractCallable>;
     virtual void set_call(const Callable_Ptr &) = 0;
+    XAbstractSignal() = default;
+
 public:
     [[nodiscard]] [[maybe_unused]] virtual int sig() const & = 0;
     [[nodiscard]] [[maybe_unused]] virtual const siginfo_t& siginfo() const & = 0;

@@ -13,8 +13,7 @@ class XSignal : public XAbstractSignal {
     X_DISABLE_COPY_MOVE(XSignal)
     static Signal_Ptr create(const int &,const int &);
 protected:
-    explicit XSignal() = default;
-
+    XSignal() = default;
 public:
     template<typename Fn,typename... Args>
     inline static auto Register(const int &sig,const int &flags,

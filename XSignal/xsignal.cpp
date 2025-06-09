@@ -10,7 +10,7 @@ class XSignal_Impl final: public XSignal {
 
     X_DISABLE_COPY_MOVE(XSignal_Impl)
 
-    struct Private{ explicit Private() = default; };
+    enum class Private{};
 
     static inline void no_sig_(const int &sig){
         std::stringstream msg{};

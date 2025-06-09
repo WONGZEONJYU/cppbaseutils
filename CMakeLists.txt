@@ -33,7 +33,7 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/XObject # 确保 xobject_p.hpp 在构建 XLib 时可用
 )
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/xlib")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/xlib")
 
 # 安装规则
 install(TARGETS ${PROJECT_NAME}

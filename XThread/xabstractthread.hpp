@@ -12,7 +12,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XAbstractThread : public XObject{
+class XAbstractThread : public XObject {
     X_DISABLE_COPY_MOVE(XAbstractThread)
     virtual void Main() = 0;
     void _stop_();
@@ -23,13 +23,21 @@ public:
         m_next_ = next;
     }
 
-    virtual void next(std::any &arg) {
+    /*建议传递指针,主要针对的是对象,会涉及到拷贝操作*/
+    virtual void next(const std::any &arg) {
         if (m_next_){
             m_next_->doWork(arg);
         }
     }
 
-    virtual void doWork(std::any &) {}
+    virtual void next(void * const data_){
+        if (m_next_){
+            m_next_->doWork(data_);
+        }
+    }
+
+    virtual void doWork(const std::any &) {}
+    virtual void doWork(void * const ){}
 
     ~XAbstractThread() override;
 
@@ -56,7 +64,6 @@ private:
     std::atomic_bool m_is_exit_{};
     std::mutex m_mux_lock_{};
     std::thread m_th_{};
-
 protected:
     explicit XAbstractThread() = default;
 };

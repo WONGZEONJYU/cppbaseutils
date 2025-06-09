@@ -4,7 +4,7 @@ project(test)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ cppbaseutils.out)
 
-#set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/xlib")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/xlib")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
