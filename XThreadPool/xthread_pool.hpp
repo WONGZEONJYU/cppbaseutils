@@ -8,7 +8,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <memory>
-#include "../XHelper/xhelper.hpp"
+#include <XHelper/xhelper.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

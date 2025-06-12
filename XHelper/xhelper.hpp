@@ -12,13 +12,25 @@
 #define XTD_INLINE_NAMESPACE_END XTD_NAMESPACE_END
 
 #define X_DISABLE_COPY(Class) \
-    Class(const Class &) = delete;\
+    Class (const Class &) = delete;\
     Class &operator=(const Class &) = delete;
 
 #define X_DISABLE_COPY_MOVE(Class) \
     X_DISABLE_COPY(Class) \
-    Class(Class &&) = delete; \
+    Class (Class &&) = delete; \
     Class &operator=(Class &&) = delete;
+
+#define X_DEFAULT_COPY(Class) \
+    Class (const Class &) = default;\
+    Class &operator=(const Class &) = default;
+
+#define X_DEFAULT_MOVE(Class)\
+    Class (Class &&) = default;\
+    Class &operator=(Class &&) = default;
+
+#define X_DEFAULT_COPY_MOVE(Class) \
+    X_DEFAULT_COPY(Class) \
+    X_DEFAULT_MOVE(Class)\
 
 template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
 template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
@@ -26,7 +38,7 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype
 
 #define X_DECLARE_PRIVATE_D(D_ptr, Class) \
     inline Class* d_func() noexcept \
-    { return reinterpret_cast<Class *>(xGetPtrHelper(D_ptr)); } \
+    { return reinterpret_cast<Class*>(xGetPtrHelper(D_ptr)); } \
     inline const Class* d_func() const noexcept \
     { return reinterpret_cast<const Class *>(xGetPtrHelper(D_ptr)); } \
     friend class Class;
