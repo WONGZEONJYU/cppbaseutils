@@ -32,18 +32,19 @@ private:
     Mode m_mode_{};
     std::mutex m_mtx_{};
     std::condition_variable_any m_cond_{};
+    std::condition_variable_any m_exit_cond_{};
     using XThread_ptr = std::shared_ptr<XThread_>;
     std::unordered_map<idtype_t, XThread_ptr> m_threadsContainer{};
     std::queue<XAbstractTask2_Ptr> m_tasksQueue_{};
     std::atomic_bool m_is_poolRunning_{};
 #if defined(__LP64__)
     std::atomic_uint64_t m_initThreadsSize_{},
-    m_idleTaskSize_{},
+    m_idleThreadSize_{},
     m_threadsSizeThreshold_{MAX_THREADS_SIZE},
     m_tasksSizeThreshold_{MAX_TASKS_SIZE};
 #else
     std::atomic_uint32_t m_initThreadsSize_{},
-    m_idleTaskSize_{},
+    m_idleThreadSize_{},
     m_threadsSizeThreshold_{},
     m_tasksSizeThreshold_{};
 #endif
@@ -53,7 +54,7 @@ public:
 
     void stop();
 
-    void joinTask(const XAbstractTask2_Ptr &);
+    XAbstractTask2_Ptr joinTask(const XAbstractTask2_Ptr &);
 
     void setMode(const Mode &mode){
         m_mode_ = mode;
@@ -65,6 +66,10 @@ public:
 
     inline void setTasksSizeThreshold(const uint64_t &n){
         m_tasksSizeThreshold_ = n;
+    }
+
+    auto idleThreadsSize()const {
+        return m_idleThreadSize_.load(std::memory_order_relaxed);
     }
 
     explicit XThreadPool2(const Mode &mode,Private);

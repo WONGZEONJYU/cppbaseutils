@@ -94,7 +94,7 @@ shared_ptr<XTask> XThreadPool::get_task(){
 		return {};
 	}
 
-	const auto &task{m_tasks_.front()};
+	const auto task{m_tasks_.front()};
 	m_tasks_.pop_front();
 	return task;
 }

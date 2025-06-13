@@ -9,16 +9,15 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XAbstractTask2 {
-    std::future<std::any> m_result_{};
+    std::promise<std::any> m_promise_{};
 protected:
     XAbstractTask2() = default;
 public:
-    X_DISABLE_COPY(XAbstractTask2)
-    X_DEFAULT_MOVE(XAbstractTask2)
     virtual ~XAbstractTask2() = default;
-    template <typename T>
-    T result(){
-        return std::any_cast<T>(m_result_.get());
+    template<typename T>
+    T result() noexcept(false){
+        const auto v{m_promise_.get_future().get()};
+        return v.has_value() ? std::any_cast<T>(v) : T{};
     }
 private:
     void exec();
