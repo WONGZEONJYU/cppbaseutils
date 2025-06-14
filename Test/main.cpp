@@ -15,6 +15,10 @@ class A final : public xtd::XAbstractTask2{
 
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
+    const auto pool2{xtd::XThreadPool2::create()};
+    pool2->start();
+    pool2->joinTask(std::make_shared<A>());
+    pool2->joinTask(std::make_shared<A>());
 
     return 0;
 }
