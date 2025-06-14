@@ -19,6 +19,7 @@ class XThreadPool2 final {
 #if defined(__LP64__)
     static constexpr uint64_t MAX_THREADS_SIZE{1024},
     MAX_TASKS_SIZE{UINT64_MAX};
+    //MAX_TASKS_SIZE{0};
     using idtype_t = uint64_t;
 #else
     static constexpr uint32_t MAX_THREADS_SIZE{UINT32_MAX};
@@ -31,8 +32,8 @@ public:
 private:
     Mode m_mode_{};
     std::mutex m_mtx_{};
-    std::condition_variable_any m_cond_{};
-    std::condition_variable_any m_exit_cond_{};
+    std::condition_variable_any m_taskQue_Cond_{};
+    std::condition_variable_any m_exit_Cond_{};
     using XThread_ptr = std::shared_ptr<XThread_>;
     std::unordered_map<idtype_t, XThread_ptr> m_threadsContainer{};
     std::queue<XAbstractTask2_Ptr> m_tasksQueue_{};
@@ -72,6 +73,8 @@ public:
         return m_idleThreadSize_.load(std::memory_order_relaxed);
     }
 
+    uint64_t currentThreadsSize();
+
     explicit XThreadPool2(const Mode &mode,Private);
 
     ~XThreadPool2();
@@ -81,6 +84,7 @@ public:
 
 private:
     void run(const idtype_t &threadId);
+    XAbstractTask2_Ptr acquireTask();
     X_DISABLE_COPY_MOVE(XThreadPool2)
 };
 
