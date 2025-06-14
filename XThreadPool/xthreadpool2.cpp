@@ -48,8 +48,13 @@ void XThreadPool2::start(const uint64_t &threadSize){
     m_initThreadsSize_ = threadSize;
 
     for (uint64_t i {}; i < threadSize; ++i){
-        auto th {std::make_shared<XThread_>([this](const auto &id){run(id);})};
-        m_threadsContainer[th->get_id()] = std::move(th);
+        try {
+            auto th{std::make_shared<XThread_>([this](const auto &id){run(id);})};
+            m_threadsContainer[th->get_id()] = std::move(th);
+        } catch (const std::exception &) {
+
+        }
+
     }
 
     m_is_poolRunning_ = true;

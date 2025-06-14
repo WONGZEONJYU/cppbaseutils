@@ -38,17 +38,17 @@ int main(const int argc,const char **const argv){
     // p->start();
     // getchar();
 
-    std::condition_variable cond{};
-    std::mutex mutex{};
-    bool exit_ = false;
-    cond.notify_all();
-    std::thread t([&]{
-        while (!exit_){
-            std::unique_lock lock(mutex);
-            cond.wait(lock);
-        }
-    });
-    t.join();
+//    std::condition_variable cond{};
+//    std::mutex mutex{};
+//    bool exit_ = false;
+//    cond.notify_all();
+//    std::thread t([&]{
+//        while (!exit_){
+//            std::unique_lock lock(mutex);
+//            cond.wait(lock);
+//        }
+//    });
+//    t.join();
 
     return 0;
 }
