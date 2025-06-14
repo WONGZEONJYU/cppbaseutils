@@ -27,16 +27,28 @@ class B final: public xtd::XTask{
 
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
-      const auto pool{xtd::XThreadPool2::create()};
-      pool->start();
-      const auto task{std::make_shared<A>()};
-      pool->joinTask(task);
-    std::cout << std::boolalpha << task->result<bool>() << "\n";
-    pool->stop();
+      // const auto pool{xtd::XThreadPool2::create()};
+      // pool->start();
+      // const auto task{std::make_shared<A>()};
+      // pool->joinTask(task);
 
-    pool->start();
-    pool->joinTask(task);
-    std::cout << std::boolalpha << task->result<bool>() << "\n";
-    //getchar();
+    // const auto p{xtd::XThreadPool::create()};
+    // p->init();
+    // p->add_task(std::make_shared<B>());
+    // p->start();
+    // getchar();
+
+    std::condition_variable cond{};
+    std::mutex mutex{};
+    bool exit_ = false;
+    cond.notify_all();
+    std::thread t([&]{
+        while (!exit_){
+            std::unique_lock lock(mutex);
+            cond.wait(lock);
+        }
+    });
+    t.join();
+
     return 0;
 }
