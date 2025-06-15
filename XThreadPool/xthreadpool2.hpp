@@ -1,86 +1,46 @@
 #ifndef X_THREADPOOL2_HPP
 #define X_THREADPOOL2_HPP
 
-#include <XHelper/xhelper.hpp>
-#include <atomic>
-#include <queue>
-#include <condition_variable>
-#include <memory>
-#include <unordered_map>
-#include <thread>
 #include "xabstracttask2.hpp"
+#include <thread>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XThreadPool2 final {
     enum class Private{};
-    class XThread_;
-#if defined(__LP64__)
-    static constexpr uint64_t MAX_THREADS_SIZE{1024},
-    MAX_TASKS_SIZE{UINT64_MAX};
-    //MAX_TASKS_SIZE{0};
-    using idtype_t = uint64_t;
-#else
-    static constexpr uint32_t MAX_THREADS_SIZE{UINT32_MAX};
-    using idtype_t = uint32_t;
-#endif
+    class XThreadPool2Private;
+    using XThreadPool2Private_Ptr = std::shared_ptr<XThreadPool2Private>;
+    XThreadPool2Private_Ptr m_d_{};
+    X_DECLARE_PRIVATE_D(m_d_,XThreadPool2Private)
 public:
-    enum class Mode {
-        FIXED,CACHE
-    };
+    enum class Mode {FIXED,CACHE};
 private:
     Mode m_mode_{};
-    std::mutex m_mtx_{};
-    std::condition_variable_any m_taskQue_Cond_{};
-    std::condition_variable_any m_exit_Cond_{};
-    using XThread_ptr = std::shared_ptr<XThread_>;
-    std::unordered_map<idtype_t, XThread_ptr> m_threadsContainer{};
-    std::queue<XAbstractTask2_Ptr> m_tasksQueue_{};
-    std::atomic_bool m_is_poolRunning_{};
-#if defined(__LP64__)
-    std::atomic_uint64_t m_initThreadsSize_{},
-    m_idleThreadSize_{},
-    m_threadsSizeThreshold_{MAX_THREADS_SIZE},
-    m_tasksSizeThreshold_{MAX_TASKS_SIZE};
-#else
-    std::atomic_uint32_t m_initThreadsSize_{},
-    m_idleThreadSize_{},
-    m_threadsSizeThreshold_{},
-    m_tasksSizeThreshold_{};
-#endif
-
 public:
-    void start(const uint64_t &threadSize = std::thread::hardware_concurrency());
+    [[maybe_unused]] void start(const uint64_t &threadSize = std::thread::hardware_concurrency());
 
     void stop();
 
-    XAbstractTask2_Ptr joinTask(const XAbstractTask2_Ptr &);
+    [[maybe_unused]] XAbstractTask2_Ptr joinTask(const XAbstractTask2_Ptr &);
 
-    void setMode(const Mode &mode){
-        m_mode_ = mode;
-    }
+    [[maybe_unused]] void setMode(const Mode &mode);
 
-    inline void setThreadsSizeThreshold(const uint64_t &n){
-        m_threadsSizeThreshold_ = n;
-    }
+    [[maybe_unused]] void setThreadsSizeThreshold(const uint64_t &);
 
-    inline void setTasksSizeThreshold(const uint64_t &n){
-        m_tasksSizeThreshold_ = n;
-    }
+    [[maybe_unused]] void setTasksSizeThreshold(const uint64_t &);
 
-    auto idleThreadsSize()const {
-        return m_idleThreadSize_.load(std::memory_order_relaxed);
-    }
+    [[maybe_unused]] uint64_t idleThreadsSize() const;
 
-    uint64_t currentThreadsSize();
+    [[maybe_unused]] uint64_t currentThreadsSize() ;
 
     explicit XThreadPool2(const Mode &mode,Private);
 
     ~XThreadPool2();
 
     using XThreadPool2_Ptr = std::shared_ptr<XThreadPool2>;
-    static XThreadPool2_Ptr create(const Mode &mode = Mode::FIXED);
+
+    [[maybe_unused]] static XThreadPool2_Ptr create(const Mode &mode = Mode::FIXED);
 
 private:
     void run(const idtype_t &threadId);

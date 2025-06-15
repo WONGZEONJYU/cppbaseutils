@@ -43,6 +43,8 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype
     { return reinterpret_cast<const Class *>(xGetPtrHelper(D_ptr)); } \
     friend class Class;
 
+#define X_D(Class) auto * const d{d_func()}
+
 #define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : xtd::x_assert(#cond, __FILE__, __LINE__))
 #define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : xtd::x_assert_what(where, what, __FILE__, __LINE__))
 
