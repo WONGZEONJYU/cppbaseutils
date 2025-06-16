@@ -17,8 +17,6 @@ public:
     using AtomicType = typename Ops::Type;
     AtomicType m_x_value{};
 
-    // Everything below is either implemented in ../arch/qatomic_XXX.h or (as
-    // fallback) in qgenericatomic.h
     Type loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
     void storeRelaxed(const Type &newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
 
