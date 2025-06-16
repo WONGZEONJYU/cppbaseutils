@@ -20,13 +20,13 @@ public:
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     const auto pool2{xtd::XThreadPool2::create()};
-    pool2->setMode(xtd::XThreadPool2::Mode::CACHE);
+    //pool2->setMode(xtd::XThreadPool2::Mode::CACHE);
     pool2->start();
     for (int i{};i < 20;++i){
         pool2->joinTask(std::make_shared<A>(i));
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(90));
+    std::this_thread::sleep_for(std::chrono::seconds(5));
     pool2->joinTask(std::make_shared<A>(21));
     return 0;
 }
