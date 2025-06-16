@@ -38,6 +38,8 @@ public:
 
     [[maybe_unused]] [[nodiscard]] Size_t currentThreadsSize() const;
 
+    [[maybe_unused]] [[nodiscard]] Size_t busyThreadsSize() const;
+
     explicit XThreadPool2(const Mode &,Private);
 
     ~XThreadPool2();

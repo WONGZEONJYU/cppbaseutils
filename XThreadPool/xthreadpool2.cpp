@@ -159,17 +159,31 @@ public:
     }
 
     void stop(){
+        //std::cout << __PRETTY_FUNCTION__ << " begin\n";
         m_is_poolRunning.store({},std::memory_order_release);
         std::unique_lock lock(m_mtx_);
         m_taskQue_Cond_.notify_all();
         m_exit_Cond_.wait(lock,[this]{
             return m_threadsContainer_.empty();
         });
+        //std::cout << __PRETTY_FUNCTION__ << " end\n";
     }
 
     void run(const uint64_t &threadId){
         //std::cout << __PRETTY_FUNCTION__ << " threadId = " << threadId <<" begin\n";
-        while (m_is_poolRunning.load(std::memory_order_relaxed)){
+#if 1
+        do {
+            if (const auto task{acquireTask()}){
+                m_idleThreadSize.fetchAndSubRelease(1);
+                task->exec_();
+                m_idleThreadSize.fetchAndAddRelease(1);
+            }else if (Mode::CACHE == m_mode){
+                std::cout << "timeout exit\n";
+                break;
+            }else{ }
+        } while (m_is_poolRunning.load(std::memory_order_acquire));
+#else
+        while (m_is_poolRunning.load(std::memory_order_acquire)){
             if (const auto task{acquireTask()}){
                 m_idleThreadSize.fetchAndSubRelease(1);
                 task->exec_();
@@ -179,6 +193,7 @@ public:
                 break;
             }else{ }
         }
+#endif
         {
             std::unique_lock lock(m_mtx_);
             m_threadsContainer_.erase(threadId);
@@ -195,13 +210,18 @@ public:
 };
 
 [[maybe_unused]] uint64_t XThreadPool2::currentThreadsSize() const{
-    X_D(XThreadPool2Private);
+    X_D();
     return d->currentThreadsSize();
 }
 
 [[maybe_unused]] uint64_t XThreadPool2::idleThreadsSize() const {
     X_D();
     return d->m_idleThreadSize.loadAcquire();
+}
+
+Size_t XThreadPool2::busyThreadsSize() const {
+    X_D();
+    return d->currentThreadsSize() - d->m_idleThreadSize.loadAcquire();
 }
 
 XThreadPool2::XThreadPool2(const Mode &mode,Private):
@@ -261,6 +281,8 @@ void XThreadPool2::stop(){
         return {};
     }
 }
+
+
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
