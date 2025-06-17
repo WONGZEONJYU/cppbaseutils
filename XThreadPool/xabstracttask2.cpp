@@ -65,7 +65,7 @@ void XAbstractTask2::set_exit_function_(std::function<bool()> &&f) const {
 
 XAbstractTask2_Ptr XAbstractTask2::joinThreadPool(const XThreadPool2_Ptr & pool) {
     if (pool){
-        pool->joinTask(shared_from_this());
+        pool->taskJoin(shared_from_this());
         pool->start();
     }
     return shared_from_this();

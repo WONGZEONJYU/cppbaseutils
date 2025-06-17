@@ -28,7 +28,13 @@ public:
 
     void stop();
 
-    [[maybe_unused]] XAbstractTask2_Ptr joinTask(const XAbstractTask2_Ptr &);
+    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr &);
+
+    template<typename Fn,typename... Args>
+    XAbstractTask2_Ptr tempTaskJoin(Fn &&fn,Args && ...args){
+        using Class_t = XTempTask<Fn,Args...>;
+        return taskJoin(Class_t::create(std::forward<Fn>(fn),std::forward<Args>(args)...));
+    }
 
     [[maybe_unused]] void setMode(const Mode &);
 

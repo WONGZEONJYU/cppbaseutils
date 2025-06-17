@@ -98,7 +98,7 @@ public:
         return task;
     }
 
-    XAbstractTask2_Ptr joinTask(const XAbstractTask2_Ptr& task){
+    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr& task){
         if (!task){
             std::cerr << __PRETTY_FUNCTION__ << " tips: task is empty!\n";
             return {};
@@ -268,9 +268,9 @@ void XThreadPool2::setTasksSizeThreshold(const uint64_t &n){
     d->m_tasksSizeThreshold.storeRelease(n);
 }
 
-XAbstractTask2_Ptr XThreadPool2::joinTask(const XAbstractTask2_Ptr& task){
+XAbstractTask2_Ptr XThreadPool2::taskJoin(const XAbstractTask2_Ptr& task){
     X_D();
-    return d->joinTask(task);
+    return d->taskJoin(task);
 }
 
 XThreadPool2_Ptr XThreadPool2::create(const Mode& mode){
