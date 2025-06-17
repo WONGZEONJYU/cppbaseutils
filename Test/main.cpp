@@ -3,6 +3,26 @@
 #include <XThreadPool/xthreadpool2.hpp>
 #include <memory>
 
+struct Functor {
+    auto operator()(const int id) const{
+        for (int i {}; i < 3 ;++i){
+            std::cout << __PRETTY_FUNCTION__ << " id = " << id << "\n";
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        return id;
+    }
+};
+
+struct Functor2 {
+    auto operator()() const{
+        for (int i {}; i < 3 ;++i){
+            std::cout << __PRETTY_FUNCTION__ << " id = " << 30001 << "\n";
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        return 30001;
+    }
+};
+
 class A final : public xtd::XAbstractTask2 {
     std::any run() override {
         for (int i {}; i < 3 ;++i){
@@ -25,13 +45,16 @@ int main(const int argc,const char **const argv){
     }
     //std::this_thread::sleep_for(std::chrono::seconds(10));
     std::make_shared<A>(20)->joinThreadPool(pool2);
-    int ar = 21;
-    const auto r = pool2->tempTaskJoin([](const int &id){
+
+    const auto r = pool2->tempTaskJoin([](const int id){
         for (int i {}; i < 3;++i){
             std::cout << __PRETTY_FUNCTION__ << " id = " << id << "\n";
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-    },std::ref(ar));
+    },21);
+
+    pool2->tempTaskJoin(Functor(),2000);
+    pool2->tempTaskJoin(Functor2());
 
     return 0;
 }
