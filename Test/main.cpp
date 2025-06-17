@@ -3,11 +3,10 @@
 #include <XThreadPool/xthreadpool2.hpp>
 #include <memory>
 
-class A final : public xtd::XAbstractTask2{
-
+class A final : public xtd::XAbstractTask2 {
     std::any run() override {
         for (int i {}; i < 3 ;++i){
-            std::cerr << __PRETTY_FUNCTION__ << " id = " << m_id_ << "\n";
+            std::cout << __PRETTY_FUNCTION__ << " id = " << m_id_ << "\n";
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         return {};
@@ -21,12 +20,10 @@ int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     const auto pool2{xtd::XThreadPool2::create()};
     //pool2->setMode(xtd::XThreadPool2::Mode::CACHE);
-    pool2->start();
     for (int i{};i < 20;++i){
-        pool2->joinTask(std::make_shared<A>(i));
+       std::make_shared<A>(i)->joinThreadPool(pool2);
     }
-
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    pool2->joinTask(std::make_shared<A>(21));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::make_shared<A>(20)->joinThreadPool(pool2);
     return 0;
 }
