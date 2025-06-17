@@ -6,15 +6,30 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+class XAtomicBool : public XBasicAtomic<bool>{
+    using Base_ = XBasicAtomic;
+public:
+    constexpr explicit XAtomicBool(const bool & value = {}) : XBasicAtomic(value){}
+
+    inline XAtomicBool(const XAtomicBool &other) noexcept{
+        this->storeRelease(other.loadAcquire());
+    }
+
+    inline XAtomicBool &operator=(const XAtomicBool &other) noexcept{
+        this->storeRelease(other.loadAcquire());
+        return *this;
+    }
+};
+
 // High-level atomic integer operations
 template <typename T>
 class XAtomicInteger : public XBasicAtomicInteger<T>{
+    using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
     constexpr explicit XAtomicInteger(const T &value = {}) noexcept : XBasicAtomicInteger<T>(value) {}
 
-    inline XAtomicInteger(const XAtomicInteger &other) noexcept
-        : XBasicAtomicInteger<T>(){
+    inline XAtomicInteger(const XAtomicInteger &other) noexcept{
         this->storeRelease(other.loadAcquire());
     }
 

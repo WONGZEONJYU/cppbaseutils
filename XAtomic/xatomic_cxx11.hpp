@@ -172,7 +172,7 @@ template <> inline bool XAtomicTraits<8>::isLockFree()
 #  endif
 #endif
 
-template <typename X> class XAtomicOps final {
+template <typename X> class XAtomicOpsBase {
 public:
     using Type = std::atomic<X>;
 
@@ -222,33 +222,12 @@ public:
     }
 
     static inline bool isReferenceCountingNative() noexcept { return isTestAndSetNative(); }
-    static inline constexpr bool isReferenceCountingWaitFree() noexcept { return false; }
-    template <typename T>
-    static inline bool ref(std::atomic<T> &_x_value){
-        /* Conceptually, we want to
-         *    return ++_x_value != 0;
-         * However, that would be sequentially consistent, and thus stronger
-         * than what we need. Based on
-         * http://eel.is/c++draft/atomics.types.memop#6, we know that
-         * pre-increment is equivalent to fetch_add(1) + 1. Unlike
-         * pre-increment, fetch_add takes a memory order argument, so we can get
-         * the desired acquire-release semantics.
-         * One last gotcha is that fetch_add(1) + 1 would need to be converted
-         * back to T, because it's susceptible to integer promotion. To sidestep
-         * this issue and to avoid UB on signed overflow, we rewrite the
-         * expression to:
-         */
-        return _x_value.fetch_add(1, std::memory_order_acq_rel) != T(-1);
-    }
 
-    template <typename T>
-    static inline bool deref(std::atomic<T> &_x_value) noexcept{
-        // compare with ref
-        return _x_value.fetch_sub(1, std::memory_order_acq_rel) != T(1);
-    }
+    static inline constexpr bool isReferenceCountingWaitFree() noexcept { return false; }
 
     static inline bool isTestAndSetNative() noexcept
     { return XAtomicTraits<sizeof(X)>::isLockFree(); }
+
     static inline constexpr bool isTestAndSetWaitFree() noexcept { return false; }
 
     template <typename T>
@@ -298,6 +277,34 @@ public:
 
     static inline bool isFetchAndStoreNative() noexcept { return isTestAndSetNative(); }
     static inline constexpr bool isFetchAndStoreWaitFree() noexcept { return false; }
+};
+
+template <typename X> class XAtomicOps final : public XAtomicOpsBase<X> {
+    using Base_ = XAtomicOpsBase<X>;
+public:
+    template <typename T>
+    static inline bool ref(std::atomic<T> &_x_value){
+        /* Conceptually, we want to
+         *    return ++_x_value != 0;
+         * However, that would be sequentially consistent, and thus stronger
+         * than what we need. Based on
+         * http://eel.is/c++draft/atomics.types.memop#6, we know that
+         * pre-increment is equivalent to fetch_add(1) + 1. Unlike
+         * pre-increment, fetch_add takes a memory order argument, so we can get
+         * the desired acquire-release semantics.
+         * One last gotcha is that fetch_add(1) + 1 would need to be converted
+         * back to T, because it's susceptible to integer promotion. To sidestep
+         * this issue and to avoid UB on signed overflow, we rewrite the
+         * expression to:
+         */
+        return _x_value.fetch_add(1, std::memory_order_acq_rel) != T(-1);
+    }
+
+    template <typename T>
+    static inline bool deref(std::atomic<T> &_x_value) noexcept{
+        // compare with ref
+        return _x_value.fetch_sub(1, std::memory_order_acq_rel) != T(1);
+    }
 
     template <typename T>
     static T fetchAndStoreRelaxed(std::atomic<T> &_x_value,const T &newValue) noexcept{
@@ -319,7 +326,7 @@ public:
         return _x_value.exchange(newValue, std::memory_order_acq_rel);
     }
 
-    static inline bool isFetchAndAddNative() noexcept { return isTestAndSetNative(); }
+    static inline bool isFetchAndAddNative() noexcept { return Base_::isTestAndSetNative(); }
     static inline constexpr bool isFetchAndAddWaitFree() noexcept { return false; }
 
     template <typename T> static inline
