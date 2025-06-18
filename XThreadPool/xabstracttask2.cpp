@@ -30,7 +30,7 @@ bool XAbstractTask2::is_running_() const {
     return m_d_->m_is_running && m_d_->m_is_running();
 }
 
-void XAbstractTask2::exec_() {
+void XAbstractTask2::operator()() {
     try {
         set_result_(run());
     } catch (const std::exception &e) {
@@ -53,22 +53,23 @@ void XAbstractTask2::set_exit_function_(std::function<bool()> &&f) const {
     m_d_->m_is_running = std::move(f);
 }
 
-[[maybe_unused]] void XAbstractTask2::set_nextHandler(const std::weak_ptr<XAbstractTask2> &next_) {
+void XAbstractTask2::set_nextHandler(const std::weak_ptr<XAbstractTask2> &next_) {
     m_d_->m_next = next_;
 }
 
-[[maybe_unused]] void XAbstractTask2::requestHandler(const std::any &arg) {
+void XAbstractTask2::requestHandler(const std::any &arg) {
     if (const auto p{m_d_->m_next.lock()}){
         p->responseHandler(arg);
     }
 }
 
 XAbstractTask2_Ptr XAbstractTask2::joinThreadPool(const XThreadPool2_Ptr & pool) {
+    const auto ret{shared_from_this()};
     if (pool){
-        pool->taskJoin(shared_from_this());
+        pool->taskJoin(ret);
         pool->start();
     }
-    return shared_from_this();
+    return ret;
 }
 
 XTD_INLINE_NAMESPACE_END
