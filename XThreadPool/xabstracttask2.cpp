@@ -67,7 +67,6 @@ XAbstractTask2_Ptr XAbstractTask2::joinThreadPool(const XThreadPool2_Ptr & pool)
     const auto ret{shared_from_this()};
     if (pool){
         pool->taskJoin(ret);
-        pool->start();
     }
     return ret;
 }
