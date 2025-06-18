@@ -45,7 +45,7 @@ protected:
         }
     };
 
-    class XAbstractInvoker{
+    class XAbstractInvoker {
     protected:
         XAbstractInvoker() = default;
         enum class Private{};
@@ -54,7 +54,7 @@ protected:
     template<typename Tuple_>
     class XInvoker final : public XAbstractInvoker {
 
-        Tuple_ m_M_t{};
+        mutable Tuple_ m_M_t{};
 
         template<typename> struct result_{};
 
@@ -79,13 +79,14 @@ protected:
 
     class XFactoryInvoker final: public XAbstractInvoker {
         XFactoryInvoker() = default;
-    public:
+
         template<typename... Tp_>
         using decayed_tuple_ = std::tuple<std::decay_t<Tp_>...>;
 
         template<typename Callable_, typename... Args_>
         using Invoker_ = XInvoker<decayed_tuple_<Callable_, Args_...>>;
 
+    public:
         template<typename Callable_, typename... Args_>
         static inline auto create(Callable_&& callable_, Args_&&... args_) {
             return Invoker_<Callable_,Args_...>{{std::forward<Callable_>(callable_),
