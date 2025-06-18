@@ -26,7 +26,7 @@ protected:
     class XCallable final: public XAbstractCallable{
         mutable Callable_ m_callable_{};
     public:
-        [[maybe_unused]] constexpr explicit XCallable(Callable_ &&call,Private):
+        constexpr explicit XCallable(Callable_ &&call,Private):
         m_callable_{std::forward<Callable_>(call)}{}
         ~XCallable() override = default;
     private:
