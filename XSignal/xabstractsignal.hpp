@@ -36,8 +36,9 @@ protected:
     };
 
     class XFactoryCallable final: public XAbstractCallable {
-        XFactoryCallable() = default;
+
     public:
+        XFactoryCallable() = delete;
         template<typename Callable_>
         static inline auto create(Callable_ &&call){
             using XCallable_t = XCallable<Callable_>;
@@ -78,7 +79,6 @@ protected:
     };
 
     class XFactoryInvoker final: public XAbstractInvoker {
-        XFactoryInvoker() = default;
 
         template<typename... Tp_>
         using decayed_tuple_ = std::tuple<std::decay_t<Tp_>...>;
@@ -87,6 +87,7 @@ protected:
         using Invoker_ = XInvoker<decayed_tuple_<Callable_, Args_...>>;
 
     public:
+        XFactoryInvoker() = delete;
         template<typename Callable_, typename... Args_>
         static inline auto create(Callable_&& callable_, Args_&&... args_) {
             return Invoker_<Callable_,Args_...>{{std::forward<Callable_>(callable_),
