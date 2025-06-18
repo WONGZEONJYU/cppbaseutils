@@ -1,4 +1,3 @@
-#include "main.hpp"
 #include <iostream>
 #include <XThreadPool/xthreadpool2.hpp>
 #include <XSignal/xsignal.hpp>
@@ -25,11 +24,11 @@ struct Functor2 {
         for (int i {}; i < 3 ;++i){
             {
                 std::unique_lock lock(mtx);
-                std::cout << __PRETTY_FUNCTION__ << " id = " << 23 << "\n";
+                std::cout << __PRETTY_FUNCTION__ << " id = " << 33 << "\n";
             }
             std::this_thread::sleep_for(std::chrono::seconds(wait_time));
         }
-        return 23;
+        return 33;
     }
 };
 
@@ -79,17 +78,30 @@ int main(const int argc,const char **const argv){
 
     bool exit_{};
 
-    const auto sig{xtd::Signal_Register(SIGTERM,{},[&]{
+    const auto sigterm{xtd::Signal_Register(SIGTERM,{},[&]{
+        exit_ = true;
+    })};
+
+    const auto sigint{xtd::Signal_Register(SIGINT,{},[&]{
+        exit_ = true;
+    })};
+
+    const auto sigkill {xtd::Signal_Register(SIGKILL,{},[&]{
         exit_ = true;
     })};
 
     const auto pool2{xtd::XThreadPool2::create()};
-    pool2->setMode(xtd::XThreadPool2::Mode::CACHE);
-    for (int i{};i < 20;++i){
+    //pool2->setMode(xtd::XThreadPool2::Mode::CACHE);
+#if 1
+    //pool2->start();
+    for (int i{};i < 30;++i){
        std::make_shared<A>(i)->joinThreadPool(pool2);
+       //pool2->taskJoin(std::make_shared<A>(i));
     }
     //std::this_thread::sleep_for(std::chrono::seconds(10));
+    //pool2->stop();
     const auto r = pool2->tempTaskJoin([&](const int id){
+
         for (int i {}; i < 3;++i){
             {
                 std::unique_lock lock(mtx);
@@ -97,19 +109,19 @@ int main(const int argc,const char **const argv){
             }
             std::this_thread::sleep_for(std::chrono::seconds(wait_time));
         }
-    },21);
+    },31);
 
-    pool2->tempTaskJoin(Functor(),22);
+    pool2->tempTaskJoin(Functor(),32);
     pool2->tempTaskJoin(Functor2());
 
     Functor3 f3{
         .m_name = "fuck"
     };
-    const auto p1 {pool2->tempTaskJoin(&Functor3::func, std::addressof(f3), "24")} ,
-        p2{pool2->tempTaskJoin(Double,25.0)};
+    const auto p1 {pool2->tempTaskJoin(&Functor3::func, std::addressof(f3), "34")} ,
+        p2{pool2->tempTaskJoin(Double,35.0)};
 
     const auto last_time {std::chrono::system_clock::now()};
-    while (std::chrono::system_clock::now() - last_time < std::chrono::seconds(120)){
+    while (std::chrono::system_clock::now() - last_time < std::chrono::seconds(5)){
         if (exit_){return -1;}
 
         {
@@ -126,5 +138,8 @@ int main(const int argc,const char **const argv){
      std::cout << p1->result<std::string>() << "\n";
      std::cout << p2->result<double>() << '\n';
 
+#else
+     std::make_shared<A>(1)->joinThreadPool(pool2);
+#endif
     return 0;
 }
