@@ -15,7 +15,7 @@ class XAbstractSignal {
 protected:
     class XAbstractCallable {
     public:
-        virtual void call() const{}
+        virtual void operator()() {}
         virtual ~XAbstractCallable() = default;
     protected:
         XAbstractCallable() = default;
@@ -24,15 +24,15 @@ protected:
 
     template<typename Callable_>
     class XCallable final: public XAbstractCallable{
-        void call() const override {
-            m_callable_();
-        }
+        mutable Callable_ m_callable_{};
     public:
         [[maybe_unused]] constexpr explicit XCallable(Callable_ &&call,Private):
         m_callable_{std::forward<Callable_>(call)}{}
         ~XCallable() override = default;
     private:
-        Callable_ m_callable_{};
+        void operator()() override {
+            m_callable_();
+        }
     };
 
     class XFactoryCallable final: public XAbstractCallable {
@@ -54,6 +54,8 @@ protected:
     template<typename Tuple_>
     class XInvoker final : public XAbstractInvoker {
 
+        Tuple_ m_M_t{};
+
         template<typename> struct result_{};
 
         template<typename Fn_, typename... Args_>
@@ -73,11 +75,9 @@ protected:
             using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple_>>;
             return M_invoke_(Indices_{});
         }
-    private:
-        Tuple_ m_M_t{};
     };
 
-    class XFactoryInvoker final: public XAbstractInvoker{
+    class XFactoryInvoker final: public XAbstractInvoker {
         XFactoryInvoker() = default;
     public:
         template<typename... Tp_>

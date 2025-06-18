@@ -30,7 +30,7 @@ class XSignal_Impl final: public XSignal {
         this_->m_context_ = ctx;
         this_->m_sig_ = sig;
         this_->m_info_ = *info;
-        this_->m_call_->call();
+        (*this_->m_call_)();
     }
 
     void Unregister_helper() {
