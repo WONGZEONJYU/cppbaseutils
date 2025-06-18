@@ -30,10 +30,10 @@ public:
         return reinterpret_cast<Tid_t>(std::addressof(m_taskFunc_));
     }
 
-    using XThread_ptr = std::unique_ptr<XThread_>;
-    static XThread_ptr create(auto &&t){
+    using XThread_Ptr = std::shared_ptr<XThread_>;
+    static XThread_Ptr create(auto &&t){
         try{
-            return std::make_unique<XThread_>(std::forward<decltype(t)>(t),Private{});
+            return std::make_shared<XThread_>(std::forward<decltype(t)>(t),Private{});
         }catch (const std::exception &){
             std::cerr << "create Thread err!\n";
             return {};
@@ -46,20 +46,20 @@ class XThreadPool2::XThreadPool2Private final {
     enum class Private{};
     static constexpr auto WAIT_MINUTES {60};
 #if defined(__LP64__)
-    static constexpr auto MAX_TASKS_SIZE{INT64_MAX},
-            MAX_THREADS_SIZE{1024LL};
+    static constexpr auto MAX_THREADS_SIZE{1024LL},
+    MAX_TASKS_SIZE{INT64_MAX};
 #else
     static constexpr auto
-            MAX_THREADS_SIZE{1024L},MAX_TASKS_SIZE{INT32_MAX};
+    MAX_THREADS_SIZE{1024L},MAX_TASKS_SIZE{INT32_MAX};
 #endif
     std::deque<XAbstractTask2_Ptr> m_tasksQueue_{};
-    std::unordered_map<Tid_t, XThread_::XThread_ptr> m_threadsContainer_{};
+    std::unordered_map<Tid_t, XThread_::XThread_Ptr> m_threadsContainer_{};
     mutable std::recursive_mutex m_mtx_{};
     std::condition_variable_any m_taskQue_Cond_{},m_exit_Cond_{};
 public:
     Mode m_mode{};
     XAtomicBool m_is_poolRunning{};
-    XAtomicInteger<XSize_t> m_initThreadsSize{},m_idleThreadsSize{},
+    XAtomicInteger<XSize_t> m_initThreadsSize{},m_idleThreadsSize{},m_busyThreadsSize{},
         m_threadsSizeThreshold{MAX_THREADS_SIZE},
         m_tasksSizeThreshold{MAX_TASKS_SIZE};
 
@@ -131,53 +131,72 @@ public:
         m_tasksQueue_.push_back(task);
         m_taskQue_Cond_.notify_all();
 
-        if (Mode::CACHE == m_mode
+        if (Mode::CACHE == m_mode && m_is_poolRunning.loadAcquire()
             && m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire()
             && m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
-            if (auto th{XThread_::create([this](const auto &id){run(id);})}){
+
+            if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
+                m_threadsContainer_[th->get_id()] = th;
                 std::cout << "new Thread\n" << std::flush;
-                const auto p{th.get()};
-                m_threadsContainer_[th->get_id()] = std::move(th);
-                lock.unlock();
-                m_idleThreadsSize.fetchAndAddRelease(1);
-                p->start();
+                m_idleThreadsSize.fetchAndAddOrdered(1);
+                th->start();
             }
         }
+
         return task;
     }
 
     void start(const XSize_t &threadSize){
+
         if (m_is_poolRunning.loadAcquire()){
             return;
         }
 
-        std::cout << __PRETTY_FUNCTION__ << " Pool Start Running\n" << std::flush;
+        auto thSize{threadSize};
 
-        if (threadSize >= m_threadsSizeThreshold.loadAcquire()){
+        std::cout << " Pool Start Running\n" << std::flush;
+
+        if (thSize > m_threadsSizeThreshold.loadAcquire()){
             std::cerr << "threadSize Reached the upper limit\n";
-            m_threadsSizeThreshold.storeRelease(std::thread::hardware_concurrency());
+            thSize = m_threadsSizeThreshold.loadAcquire();
         }
-
-        m_initThreadsSize.storeRelease(threadSize);
+#if 1
+        if (Mode::CACHE == m_mode && m_tasksQueue_.size() > thSize){
+            auto diff{m_tasksQueue_.size() - thSize};
+            if (diff > m_threadsSizeThreshold.loadAcquire()){
+                diff = m_threadsSizeThreshold.loadAcquire();
+            }
+            thSize = static_cast<decltype(thSize)>(diff);
+        }
+#endif
+        m_initThreadsSize.storeRelease(thSize);
 
         std::unique_lock lock(m_mtx_);
 
-        for (uint64_t i {}; i < threadSize; ++i){
+        for (decltype(thSize) i{}; i < thSize; ++i){
             if (auto th{XThread_::create([this](const auto &id){run(id);})}){
                 m_threadsContainer_[th->get_id()] = std::move(th);
+                m_idleThreadsSize.fetchAndAddRelease(1);
             }
         }
 
         m_is_poolRunning.storeRelease(true);
 
         for (const auto& item : m_threadsContainer_ | std::views::values){
-            m_idleThreadsSize.fetchAndAddRelease(1);
             item->start();
         }
     }
 
     void stop(){
+#if 0
+        if (!m_is_poolRunning.loadAcquire()){
+            for (const auto &item:m_tasksQueue_){
+                item->set_result_({});
+            }
+        }
+#endif
         m_is_poolRunning.storeRelease({});
+        m_taskQue_Cond_.notify_all();
         std::unique_lock lock(m_mtx_);
         m_taskQue_Cond_.notify_all();
         m_exit_Cond_.wait(lock,[this]{
@@ -196,7 +215,7 @@ public:
                     std::cerr << __PRETTY_FUNCTION__ << " exception: " << e.what() << "\n" << std::flush;
                 }
             }else{
-                std::cerr << __PRETTY_FUNCTION__ << " threadId = " << threadId <<" end\n";
+                std::cerr << "threadId = " << threadId <<" end\n" << std::flush;
                 break;
             }
         }
@@ -205,6 +224,7 @@ public:
             std::unique_lock lock(m_mtx_);
             m_threadsContainer_.erase(threadId);
         }
+        m_idleThreadsSize.fetchAndSubRelease(1);
         m_exit_Cond_.notify_all();
     }
 
