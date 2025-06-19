@@ -34,7 +34,11 @@ public:
 
     [[maybe_unused]] virtual void requestHandler(const std::any &);
 
-    [[maybe_unused]] XAbstractTask2_Ptr joinThreadPool(const std::shared_ptr<XThreadPool2> &) ;
+    /// 把自身加入线程池,会按照默认线程数量启动线程池,如果需要调整数量,请自行调用线程池start函数输入线程数量
+    /// @param pool
+    /// @return 任务对象
+    ///
+    [[maybe_unused]] XAbstractTask2_Ptr joinThreadPool(const std::shared_ptr<XThreadPool2> &pool) ;
 
 protected:
     XAbstractTask2();
