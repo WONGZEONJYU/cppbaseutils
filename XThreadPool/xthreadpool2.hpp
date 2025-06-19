@@ -1,10 +1,8 @@
 #ifndef X_THREADPOOL2_HPP
 #define X_THREADPOOL2_HPP
 
-#include <iostream>
-
 #include "xabstracttask2.hpp"
-#include <thread>
+
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -74,38 +72,80 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
     };
 
 public:
-    enum class Mode {FIXED,CACHE};
 
-    [[maybe_unused]] void start(const XSize_t &threadSize = std::thread::hardware_concurrency());
+    enum class Mode {
+        FIXED,/*固定线程数模式*/
+        CACHE /*动态线程数*/
+    };
 
+    /// @return 返回CPU线程数量
+    static unsigned cpuThreadsCount();
+
+    /// 启动线程池,多次调用和在线程池内部线程调用无效,在CACHE模式下,默认线程数量无效
+    /// @param threadSize
+    [[maybe_unused]] void start(const XSize_t &threadSize = cpuThreadsCount());
+
+    ///停止线程池,线程池内部的线程调用无效
     void stop();
 
-    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr &);
+    /// 加入任务,如果没有在此函数前显式调用start,本函数会调用start启动
+    /// 对于加入失败的任务,会对任务设置一个空的返回值以防止外部被阻塞
+    /// 本函数如果在线程池管理的线程调用是无效的,不会导致程序崩溃
+    /// @param task
+    /// @return task
+    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr &task);
 
+    /// 临时任务,生命周期需自行管理,支持全局函数(静态和非静态)、仿函数、Lambda、成员函数(静态和非静态)、函数包装器
+    /// @tparam Args
+    /// @param args
+    /// @return task对象
     template<typename... Args>
-    XAbstractTask2_Ptr tempTaskJoin(Args && ...args){
-        return taskJoin(TempTaskFactory::tempTaskCreate(std::forward<Args>(args)...));
+    auto tempTaskJoin(Args && ...args){
+        return taskJoin(TempTaskFactory::tempTaskCreate(std::forward<decltype(args)>(args)...));
     }
 
-    [[maybe_unused]] void setMode(const Mode &);
+    /// 模式设置,线程池启动后设置无效
+    /// @param mode
+    [[maybe_unused]] void setMode(const Mode &mode);
 
-    [[maybe_unused]] void setThreadsSizeThreshold(const XSize_t &);
+    /// @return 获取当前线程池模式
+    [[maybe_unused]][[nodiscard]] Mode getMode() const;
 
-    [[maybe_unused]] void setTasksSizeThreshold(const XSize_t &);
+    /// 线程数阈值设置,线程池启动后设置无效
+    /// @param num
+    [[maybe_unused]] void setThreadsSizeThreshold(const XSize_t &num);
 
+    /// @return 线程池线程数量阈值
+    [[maybe_unused]] [[nodiscard]] XSize_t getThreadsSizeThreshold() const;
+
+    /// 任务数阈值设置,线程池启动后设置无效
+    /// @param num
+    [[maybe_unused]] void setTasksSizeThreshold(const XSize_t &num);
+
+    /// @return 线程池任务数量阈值
+    [[maybe_unused]] [[nodiscard]] XSize_t getTasksSizeThreshold() const;
+
+    /// @return 空闲线程数量
     [[maybe_unused]] [[nodiscard]] XSize_t idleThreadsSize() const;
 
+    /// @return 当前线程数量
     [[maybe_unused]] [[nodiscard]] XSize_t currentThreadsSize() const;
 
+    /// @return 忙线程数量
     [[maybe_unused]] [[nodiscard]] XSize_t busyThreadsSize() const;
 
+    /// @return 当前任务数量
     [[maybe_unused]] [[nodiscard]] XSize_t currentTasksSize() const;
 
     explicit XThreadPool2(const Mode &,XThreadPool2Private_Ptr);
 
     ~XThreadPool2();
 
+    /// 创建线程池对象,默认模式为FIXED
+    /// @param mode
+    /// @return 线程池对象
     [[maybe_unused]] static XThreadPool2_Ptr create(const Mode &mode = Mode::FIXED);
+
     X_DISABLE_COPY_MOVE(XThreadPool2)
 };
 
