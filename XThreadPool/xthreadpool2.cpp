@@ -96,9 +96,12 @@ public:
                         dur >= WAIT_MINUTES){
                         std::cerr << " acquireTask timeout\n";
                         return {};
-                    }else{
-                        //std::cout << "no task duration: " << dur << " seconds\n" << std::flush;
                     }
+#if 0
+                    else{
+                        std::cout << "no task duration: " << dur << " seconds\n" << std::flush;
+                    }
+#endif
                 }
             }else{
                 m_taskQue_Cond_.wait(lock);
@@ -140,6 +143,7 @@ public:
             m_is_poolRunning.loadAcquire() &&
             m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire() &&
             m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
+#if 0
             if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
                 m_threadsContainer_[th->get_id()] = th;
                 std::cout << "new Thread\n" << std::flush;
@@ -147,8 +151,23 @@ public:
                 th->start();
                 m_taskQue_Cond_.notify_all();
             }
+#else
+            if (m_tasksQueue_.size() < m_threadsSizeThreshold.loadAcquire()){
+                const auto thSize{static_cast<XSize_t>(m_tasksQueue_.size())};
+                for (XSize_t i{};i < thSize;++i){
+                        if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
+                            m_threadsContainer_[th->get_id()] = th;
+                            std::cout << "new Thread\n" << std::flush;
+                            m_idleThreadsSize.fetchAndAddOrdered(1);
+                            th->start();
+                            m_taskQue_Cond_.notify_all();
+                    }
+                }
+            }
+#endif
         }
-
+        lock.unlock();
+        m_taskQue_Cond_.notify_all();
         return task;
     }
 
@@ -209,13 +228,6 @@ public:
     }
 
     void stop(){
-#if 0
-        if (!m_is_poolRunning.loadAcquire()){
-            for (const auto &item:m_tasksQueue_){
-                item->set_result_({});
-            }
-        }
-#endif
         if (sm_isWorkingThread_){
             std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
             return;
