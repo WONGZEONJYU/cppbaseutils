@@ -39,7 +39,9 @@ void XAbstractTask2::operator()() {
 }
 
 std::any XAbstractTask2::result_() const{
+    std::cout << __PRETTY_FUNCTION__ << " begin\n" << std::flush;
     m_d_->m_semaphore.acquire();
+    std::cout << __PRETTY_FUNCTION__ << " end\n" << std::flush;
     return m_d_->m_result.get_future().get();
 }
 
@@ -67,7 +69,6 @@ XAbstractTask2_Ptr XAbstractTask2::joinThreadPool(const XThreadPool2_Ptr & pool)
     const auto ret{shared_from_this()};
     if (pool){
         pool->taskJoin(ret);
-        pool->start();
     }
     return ret;
 }
