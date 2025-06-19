@@ -139,9 +139,7 @@ public:
         if (Mode::CACHE == m_mode &&
             m_is_poolRunning.loadAcquire() &&
             m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire() &&
-            m_tasksQueue_.size() > m_busyThreadsSize.loadAcquire() &&
-            m_busyThreadsSize.loadAcquire() > m_idleThreadsSize.loadAcquire()){
-
+            m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
             if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
                 m_threadsContainer_[th->get_id()] = th;
                 std::cout << "new Thread\n" << std::flush;
