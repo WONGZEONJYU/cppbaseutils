@@ -1,4 +1,5 @@
 #include "xthreadpool2.hpp"
+#include <thread>
 #include <condition_variable>
 #include <mutex>
 #include <unordered_map>
@@ -52,6 +53,7 @@ class XThreadPool2::XThreadPool2Private final {
     static constexpr auto
     MAX_THREADS_SIZE{1024L},MAX_TASKS_SIZE{INT32_MAX};
 #endif
+    static inline thread_local bool sm_isWorkingThread_{};
     std::deque<XAbstractTask2_Ptr> m_tasksQueue_{};
     std::unordered_map<Tid_t, XThread_::XThread_Ptr> m_threadsContainer_{};
     mutable std::recursive_mutex m_mtx_{};
@@ -64,12 +66,14 @@ public:
         m_tasksSizeThreshold{MAX_TASKS_SIZE};
 
     explicit XThreadPool2Private(Private){}
+
     ~XThreadPool2Private() = default;
+
     static XThreadPool2Private_Ptr create(){
         try {
             return std::make_unique<XThreadPool2Private>(Private{});
         } catch (const std::exception &) {
-            std::cerr << "XThreadPool2 data mem alloc failed\n";
+            std::cerr << "XThreadPool2 data mem alloc failed\n" << std::flush;
             return {};
         }
     }
@@ -111,8 +115,9 @@ public:
     }
 
     XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr& task){
+
         if (!task){
-            std::cerr << __PRETTY_FUNCTION__ << " tips: task is empty!\n";
+            std::cerr << __PRETTY_FUNCTION__ << " tips: task is empty!\n" << std::flush;
             return {};
         }
 
@@ -122,7 +127,7 @@ public:
             return m_tasksQueue_.size() < m_tasksSizeThreshold.loadAcquire();
         })){
             task->set_result_({});
-            std::cerr << "task queue is full, join task failed.\n";
+            std::cerr << "task queue is full, join task failed.\n" << std::flush;
             return task;
         }
 
@@ -131,15 +136,18 @@ public:
         m_tasksQueue_.push_back(task);
         m_taskQue_Cond_.notify_all();
 
-        if (Mode::CACHE == m_mode && m_is_poolRunning.loadAcquire()
-            && m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire()
-            && m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
+        if (Mode::CACHE == m_mode &&
+            m_is_poolRunning.loadAcquire() &&
+            m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire() &&
+            m_tasksQueue_.size() > m_busyThreadsSize.loadAcquire() &&
+            m_busyThreadsSize.loadAcquire() > m_idleThreadsSize.loadAcquire()){
 
             if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
                 m_threadsContainer_[th->get_id()] = th;
                 std::cout << "new Thread\n" << std::flush;
                 m_idleThreadsSize.fetchAndAddOrdered(1);
                 th->start();
+                m_taskQue_Cond_.notify_all();
             }
         }
 
@@ -148,8 +156,20 @@ public:
 
     void start(const XSize_t &threadSize){
 
+        if (sm_isWorkingThread_){
+            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+            return;
+        }
+
         if (m_is_poolRunning.loadAcquire()){
             return;
+        }
+
+        {
+            std::unique_lock lock(m_mtx_);
+            if(!m_threadsContainer_.empty() || m_idleThreadsSize.loadAcquire() > 0 || m_busyThreadsSize.loadAcquire() > 0){
+                return;
+            }
         }
 
         auto thSize{threadSize};
@@ -157,19 +177,21 @@ public:
         std::cout << " Pool Start Running\n" << std::flush;
 
         if (thSize > m_threadsSizeThreshold.loadAcquire()){
-            std::cerr << "threadSize Reached the upper limit\n";
+            std::cerr << "threadsSize Reached the upper limit\n" << std::flush;
             thSize = m_threadsSizeThreshold.loadAcquire();
         }
 #if 1
-        if (Mode::CACHE == m_mode && m_tasksQueue_.size() > thSize){
-            auto diff{m_tasksQueue_.size() - thSize};
-            if (diff > m_threadsSizeThreshold.loadAcquire()){
-                diff = m_threadsSizeThreshold.loadAcquire();
+        if (Mode::CACHE == m_mode){
+            std::unique_lock lock(m_mtx_);
+            if (const auto tasksSize{static_cast<decltype(thSize)>(m_tasksQueue_.size())};
+                tasksSize > m_tasksSizeThreshold.loadAcquire()){
+                thSize = m_tasksSizeThreshold.loadAcquire();
+            }else{
+                thSize = tasksSize > 0 ? tasksSize : thSize;
             }
-            thSize = static_cast<decltype(thSize)>(diff);
         }
 #endif
-        m_initThreadsSize.storeRelease(thSize);
+        m_initThreadsSize.storeRelease(0);
 
         std::unique_lock lock(m_mtx_);
 
@@ -177,6 +199,7 @@ public:
             if (auto th{XThread_::create([this](const auto &id){run(id);})}){
                 m_threadsContainer_[th->get_id()] = std::move(th);
                 m_idleThreadsSize.fetchAndAddRelease(1);
+                m_initThreadsSize.fetchAndAddRelease(1);
             }
         }
 
@@ -195,6 +218,10 @@ public:
             }
         }
 #endif
+        if (sm_isWorkingThread_){
+            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+            return;
+        }
         m_is_poolRunning.storeRelease({});
         m_taskQue_Cond_.notify_all();
         std::unique_lock lock(m_mtx_);
@@ -207,13 +234,15 @@ public:
     void run(const XSize_t &threadId){
         while (true){
             if (const auto task{acquireTask()}){
-                try{
+                const XRAII raii{[this]{
+                    m_busyThreadsSize.fetchAndAddRelease(1);
                     m_idleThreadsSize.fetchAndSubRelease(1);
-                    (*task)();
+                    sm_isWorkingThread_ = true;
+                },[this]{
                     m_idleThreadsSize.fetchAndAddRelease(1);
-                }catch(const std::exception &e){
-                    std::cerr << __PRETTY_FUNCTION__ << " exception: " << e.what() << "\n" << std::flush;
-                }
+                    m_busyThreadsSize.fetchAndSubRelease(1);
+                }};
+                (*task)();
             }else{
                 std::cerr << "threadId = " << threadId <<" end\n" << std::flush;
                 break;
@@ -239,6 +268,10 @@ public:
     }
 };
 
+unsigned XThreadPool2::cpuThreadsCount(){
+    return std::thread::hardware_concurrency();
+}
+
 XSize_t XThreadPool2::currentThreadsSize() const {
     X_D();
     return d->currentThreadsSize();
@@ -251,7 +284,7 @@ XSize_t XThreadPool2::idleThreadsSize() const {
 
 XSize_t XThreadPool2::busyThreadsSize() const {
     X_D();
-    return 0;
+    return d->m_busyThreadsSize.loadAcquire();
 }
 
 XSize_t XThreadPool2::currentTasksSize() const {
@@ -286,6 +319,11 @@ void XThreadPool2::setMode(const Mode &mode){
     d->m_mode = mode;
 }
 
+XThreadPool2::Mode XThreadPool2::getMode() const{
+    X_D();
+    return d->m_mode;
+}
+
 void XThreadPool2::setThreadsSizeThreshold(const XSize_t &n){
     X_D(XThreadPool2Private);
     if (d->m_is_poolRunning.loadAcquire()){
@@ -293,6 +331,11 @@ void XThreadPool2::setThreadsSizeThreshold(const XSize_t &n){
         return;
     }
     d->m_threadsSizeThreshold.storeRelease(n);
+}
+
+XSize_t XThreadPool2::getThreadsSizeThreshold() const{
+    X_D();
+    return d->m_threadsSizeThreshold.loadAcquire();
 }
 
 void XThreadPool2::setTasksSizeThreshold(const XSize_t &n){
@@ -304,9 +347,16 @@ void XThreadPool2::setTasksSizeThreshold(const XSize_t &n){
     d->m_tasksSizeThreshold.storeRelease(n);
 }
 
+XSize_t XThreadPool2::getTasksSizeThreshold() const{
+    X_D();
+    return d->m_tasksSizeThreshold.loadAcquire();
+}
+
 XAbstractTask2_Ptr XThreadPool2::taskJoin(const XAbstractTask2_Ptr& task){
     X_D();
-    return d->taskJoin(task);
+    const auto retTask{d->taskJoin(task)};
+    start();
+    return retTask;
 }
 
 XThreadPool2_Ptr XThreadPool2::create(const Mode& mode){
