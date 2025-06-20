@@ -137,17 +137,40 @@ public:
     /// @return 当前任务数量
     [[maybe_unused]] [[nodiscard]] XSize_t currentTasksSize() const;
 
-    explicit XThreadPool2(const Mode &,XThreadPool2Private_Ptr);
-
-    ~XThreadPool2();
-
     /// 创建线程池对象,默认模式为FIXED
     /// @param mode
     /// @return 线程池对象
     [[maybe_unused]] static XThreadPool2_Ptr create(const Mode &mode = Mode::FIXED);
 
+    explicit XThreadPool2(const Mode &,XThreadPool2Private_Ptr);
+
+    ~XThreadPool2();
     X_DISABLE_COPY_MOVE(XThreadPool2)
 };
+
+void sleep_for_ns(const XSize_t& ns);
+
+void sleep_for_us(const XSize_t& us);
+
+void sleep_for_ms(const XSize_t& ms);
+
+void sleep_for_s(const XSize_t& s);
+
+void sleep_for_mins(const XSize_t& mins);
+
+void sleep_for_hours(const XSize_t& h);
+
+void sleep_until_ns(const XSize_t& ns);
+
+void sleep_until_us(const XSize_t& us);
+
+void sleep_until_ms(const XSize_t& ms);
+
+void sleep_until_s(const XSize_t& s);
+
+void sleep_until_mins(const XSize_t& mins);
+
+void sleep_until_hours(const XSize_t& h);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
