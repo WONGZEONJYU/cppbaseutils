@@ -42,14 +42,8 @@ bool XAbstractTask2::is_running_() const {
 
 void XAbstractTask2::operator()() {
     try {
-#if 0
-        m_d_->sm_isWorkThread = true;
-        set_result_(run());
-        m_d_->sm_isWorkThread = false;
-#else
         m_d_->sm_isSelf = this;
         set_result_(run());
-#endif
     } catch (const std::exception &e) {
         std::cerr << __PRETTY_FUNCTION__ << " exception msg : " << e.what() << "\n";
     }
