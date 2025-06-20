@@ -17,17 +17,17 @@ using Tid_t = XSize_t;
 class XThread_ final {
     enum class Private{};
     using task_t = std::function<void(const Tid_t &)>;
-    task_t m_taskFunc_{};
+    mutable task_t m_taskFunc_{};
 public:
     X_DEFAULT_COPY_MOVE(XThread_)
     explicit XThread_(task_t &&t,Private):m_taskFunc_(std::move(t)){}
     ~XThread_() = default;
 
-    void start() {
+    void start() const {
         std::thread(m_taskFunc_,get_id()).detach();
     }
 
-    [[nodiscard]] Tid_t get_id()const{
+    [[nodiscard]] Tid_t get_id() const {
         return reinterpret_cast<Tid_t>(std::addressof(m_taskFunc_));
     }
 
@@ -45,7 +45,7 @@ public:
 class XThreadPool2::XThreadPool2Private final {
     X_DISABLE_COPY_MOVE(XThreadPool2Private)
     enum class Private{};
-    static constexpr auto WAIT_MINUTES {60};
+    static constexpr auto WAIT_MINUTES{60};
 #if defined(__LP64__)
     static constexpr auto MAX_THREADS_SIZE{1024LL},
     MAX_TASKS_SIZE{INT64_MAX};
@@ -53,15 +53,15 @@ class XThreadPool2::XThreadPool2Private final {
     static constexpr auto
     MAX_THREADS_SIZE{1024L},MAX_TASKS_SIZE{INT32_MAX};
 #endif
-    static inline thread_local bool sm_isWorkingThread_{};
-    std::deque<XAbstractTask2_Ptr> m_tasksQueue_{};
-    std::unordered_map<Tid_t, XThread_::XThread_Ptr> m_threadsContainer_{};
+    static inline thread_local void *sm_isCurrentTask_{};
+    mutable std::deque<XAbstractTask2_Ptr> m_tasksQueue_{};
+    mutable std::unordered_map<Tid_t, XThread_::XThread_Ptr> m_threadsContainer_{};
     mutable std::recursive_mutex m_mtx_{};
-    std::condition_variable_any m_taskQue_Cond_{},m_exit_Cond_{};
+    mutable std::condition_variable_any m_taskQue_Cond_{},m_exit_Cond_{};
 public:
-    Mode m_mode{};
-    XAtomicBool m_is_poolRunning{};
-    XAtomicInteger<XSize_t> m_initThreadsSize{},m_idleThreadsSize{},m_busyThreadsSize{},
+    mutable Mode m_mode{};
+    mutable XAtomicBool m_is_poolRunning{};
+    mutable XAtomicInteger<XSize_t> m_initThreadsSize{},m_idleThreadsSize{},m_busyThreadsSize{},
         m_threadsSizeThreshold{MAX_THREADS_SIZE},
         m_tasksSizeThreshold{MAX_TASKS_SIZE};
 
@@ -69,7 +69,7 @@ public:
 
     ~XThreadPool2Private() = default;
 
-    static XThreadPool2Private_Ptr create(){
+    static XThreadPool2Private_Ptr create() {
         try {
             return std::make_unique<XThreadPool2Private>(Private{});
         } catch (const std::exception &) {
@@ -78,7 +78,7 @@ public:
         }
     }
 
-    XAbstractTask2_Ptr acquireTask(){
+    XAbstractTask2_Ptr acquireTask() const {
 
         const auto last_time{std::chrono::high_resolution_clock::now()};
 
@@ -103,7 +103,7 @@ public:
                     }
 #endif
                 }
-            }else{
+            }else {
                 m_taskQue_Cond_.wait(lock);
             }
         }
@@ -117,24 +117,28 @@ public:
         return task;
     }
 
-    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr& task){
+    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr& task) const {
 
         if (!task){
             std::cerr << __PRETTY_FUNCTION__ << " tips: task is empty!\n" << std::flush;
-            return {};
+            return task;
+        }
+
+        if (task.get() == sm_isCurrentTask_){
+            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+            return task;
         }
 
         std::unique_lock lock(m_mtx_);
 
         if(!m_taskQue_Cond_.wait_for(lock,std::chrono::seconds(1),[this]{
-            return m_tasksQueue_.size() < m_tasksSizeThreshold.loadAcquire();
-        })){
-            task->set_result_({});
+            return m_tasksQueue_.size() < m_tasksSizeThreshold.loadAcquire();})){
             std::cerr << "task queue is full, join task failed.\n" << std::flush;
             return task;
         }
 
         task->set_exit_function_([this]{return m_is_poolRunning.loadAcquire();});
+        task->set_occupy_();
 
         m_tasksQueue_.push_back(task);
         m_taskQue_Cond_.notify_all();
@@ -171,14 +175,14 @@ public:
         return task;
     }
 
-    void start(const XSize_t &threadSize){
+    void start(const XSize_t &threadSize) const {
 
-        if (sm_isWorkingThread_){
-            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+        if (m_is_poolRunning.loadAcquire()){
             return;
         }
 
-        if (m_is_poolRunning.loadAcquire()){
+        if (sm_isCurrentTask_){
+            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
             return;
         }
 
@@ -191,7 +195,7 @@ public:
 
         auto thSize{threadSize};
 
-        std::cout << " Pool Start Running\n" << std::flush;
+        std::cout << "Pool Start Running\n" << std::flush;
 
         if (thSize > m_threadsSizeThreshold.loadAcquire()){
             std::cerr << "threadsSize Reached the upper limit\n" << std::flush;
@@ -227,8 +231,8 @@ public:
         }
     }
 
-    void stop(){
-        if (sm_isWorkingThread_){
+    void stop() const {
+        if (sm_isCurrentTask_){
             std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
             return;
         }
@@ -241,20 +245,20 @@ public:
         });
     }
 
-    void run(const XSize_t &threadId){
+    void run(const XSize_t &threadId) const {
         while (true){
             if (const auto task{acquireTask()}){
-                const XRAII raii{[this]{
+                const XRAII raii{[&]{
                     m_busyThreadsSize.fetchAndAddRelease(1);
                     m_idleThreadsSize.fetchAndSubRelease(1);
-                    sm_isWorkingThread_ = true;
+                    sm_isCurrentTask_ = task.get();
                 },[this]{
                     m_idleThreadsSize.fetchAndAddRelease(1);
                     m_busyThreadsSize.fetchAndSubRelease(1);
                 }};
                 (*task)();
             }else{
-                std::cerr << "threadId = " << threadId <<" end\n" << std::flush;
+                std::cerr << "threadId = " << std::this_thread::get_id() <<" end\n" << std::flush;
                 break;
             }
         }
@@ -316,7 +320,7 @@ void XThreadPool2::start(const XSize_t &threadSize){
     d->start(threadSize);
 }
 
-void XThreadPool2::stop(){
+void XThreadPool2::stop() {
     X_D();
     d->stop();
 }
@@ -377,6 +381,58 @@ XThreadPool2_Ptr XThreadPool2::create(const Mode& mode){
     }catch (const std::exception &){
         return {};
     }
+}
+
+void sleep_for_ns(const XSize_t& ns){
+    std::this_thread::sleep_for(std::chrono::nanoseconds(ns));
+}
+
+void sleep_for_us(const XSize_t& us){
+    std::this_thread::sleep_for(std::chrono::microseconds(us));
+}
+
+void sleep_for_ms(const XSize_t& ms){
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+
+void sleep_for_s(const XSize_t& s){
+    std::this_thread::sleep_for(std::chrono::seconds(s));
+}
+
+void sleep_for_mins(const XSize_t& mins){
+    std::this_thread::sleep_for(std::chrono::minutes(mins));
+}
+
+void sleep_for_hours(const XSize_t& h){
+    std::this_thread::sleep_for(std::chrono::hours(h));
+}
+
+static auto now_(){
+    return std::chrono::high_resolution_clock::now();
+}
+
+void sleep_until_ns(const XSize_t& ns){
+    std::this_thread::sleep_until(now_() + std::chrono::nanoseconds(ns));
+}
+
+void sleep_until_us(const XSize_t& us){
+    std::this_thread::sleep_until(now_() + std::chrono::microseconds(us));
+}
+
+void sleep_until_ms(const XSize_t& ms){
+    std::this_thread::sleep_until(now_() + std::chrono::milliseconds(ms));
+}
+
+void sleep_until_s(const XSize_t& s){
+    std::this_thread::sleep_until(now_() + std::chrono::seconds(s));
+}
+
+void sleep_until_mins(const XSize_t& mins){
+    std::this_thread::sleep_until(now_() + std::chrono::minutes(mins));
+}
+
+void sleep_until_hours(const XSize_t& h){
+    std::this_thread::sleep_until(now_() + std::chrono::hours(h));
 }
 
 XTD_INLINE_NAMESPACE_END
