@@ -25,7 +25,7 @@ public:
     virtual ~XAbstractTask2() = default;
 
     /// 用于获取线程执行完毕的返回值,如果没有可忽略
-    /// 没有加入线程池直接调用会导致永远阻塞和多次调用也会永远阻塞
+    /// 没有加入线程池或多次调用无效,不会阻塞但有警告提示
     /// 如果有返回值,T类型错误,本函数会抛出异常
     /// @tparam T
     /// @return T类型
@@ -70,6 +70,7 @@ private:
     void operator()();
     void set_result_(const std::any &) const;
     void set_exit_function_(std::function<bool()> &&) const;
+    void set_occupy_() const;
 };
 
 XTD_INLINE_NAMESPACE_END

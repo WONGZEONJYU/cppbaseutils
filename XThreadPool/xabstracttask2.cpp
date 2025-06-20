@@ -18,6 +18,8 @@ class XAbstractTask2::XAbstractTask2Private final {
     enum class Private{};
 public:
     static inline thread_local bool sm_isWorkThread{};
+    static inline thread_local void * sm_isSelf{};
+    XAtomicBool m_occupy{};
 #if USE_ATOMIC
     XAtomicBool m_allow{};
 #else
@@ -49,6 +51,7 @@ void XAbstractTask2::operator()() {
         set_result_(run());
         m_d_->sm_isWorkThread = false;
 #else
+        m_d_->sm_isSelf = this;
         set_result_(run());
 #endif
     } catch (const std::exception &e) {
@@ -56,22 +59,35 @@ void XAbstractTask2::operator()() {
     }
 }
 
+void XAbstractTask2::set_occupy_() const{
+    m_d_->m_occupy.storeRelease(true);
+}
+
 std::any XAbstractTask2::result_() const {
-#if 0
-    if (m_d_->sm_isWorkThread){
-        std::cerr << __PRETTY_FUNCTION__ << " tips: WorkThread call invalid\n" << std::flush;
+
+    constexpr std::string_view selfname{__PRETTY_FUNCTION__};
+    const XRAII raii{[&selfname]{
+        std::cout << selfname << " begin\n" << std::flush;
+    },[&selfname]{
+        std::cout << selfname << " end\n" << std::flush;
+    }};
+
+    if (this == m_d_->sm_isSelf){
+        std::cerr << selfname << " tips: Working Thread Call invalid\n" << std::flush;
         return {};
     }
-#endif
 
-    std::cout << __PRETTY_FUNCTION__ << " begin\n" << std::flush;
+    if (!m_d_->m_is_running || !m_d_->m_occupy.loadAcquire()){
+        std::cerr << selfname << " tips: Repeated calls or tasks not added\n" << std::flush;
+        return {};
+    }
+    m_d_->m_occupy.storeRelease({});
 #if USE_ATOMIC
     m_d_->m_allow.m_x_value.wait({},std::memory_order_acquire);
     m_d_->m_allow.storeRelease({});
 #else
     m_d_->m_allow.acquire();
 #endif
-    std::cout << __PRETTY_FUNCTION__ << " end\n" << std::flush;
     return m_d_->m_result.get_future().get();
 }
 
