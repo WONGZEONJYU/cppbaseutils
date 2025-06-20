@@ -3,7 +3,6 @@
 #include <XSignal/xsignal.hpp>
 #include <thread>
 
-
 static std::mutex mtx{};
 
 static constexpr auto wait_time{2};
@@ -15,7 +14,7 @@ struct Functor {
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " id = " << id << "\n";
             }
-            std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+            xtd::sleep_for_s(wait_time);
         }
         return id;
     }
@@ -28,7 +27,7 @@ struct Functor2 {
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " id = " << 33 << "\n";
             }
-            std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+            xtd::sleep_for_s(wait_time);
         }
         return 33;
     }
@@ -42,7 +41,7 @@ struct Functor3 {
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " name = " << name << "\n";
             }
-            std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+            xtd::sleep_for_s(wait_time);
         }
         return name + m_name;
     }
@@ -54,7 +53,7 @@ static double Double(const double f){
             std::unique_lock lock(mtx);
             std::cout << __PRETTY_FUNCTION__ << " f = " << f << "\n";
         }
-        std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+        xtd::sleep_for_s(wait_time);
     }
     return f + 100.0;
 }
@@ -66,9 +65,9 @@ class A final : public xtd::XAbstractTask2 {
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " id = " << m_id_ << "\n";
             }
-            std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+            xtd::sleep_for_s(wait_time);
         }
-        return {};
+        return std::string(__PRETTY_FUNCTION__) + "end";
     }
     int m_id_{};
 public:
@@ -90,17 +89,15 @@ public:
         exit_ = true;
     })};
 
-    const auto pool2{xtd::XThreadPool2::create()};
-    pool2->setMode(xtd::XThreadPool2::Mode::CACHE);
-
-#if 1
+    const auto pool2{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)};
+#if 0
+    //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
     //pool2->start();
     for (int i{};i < 30;++i){
        std::make_shared<A>(i)->joinThreadPool(pool2);
-       //pool2->taskJoin(std::make_shared<A>(i));
     }
+
     //std::this_thread::sleep_for(std::chrono::seconds(10));
-    //pool2->stop();
 
     Functor3 f3{
             .m_name = "test"
@@ -145,17 +142,22 @@ public:
      std::cout << p2->result<double>() << '\n'; //与上同理
 #else
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
-    decltype(pool2->taskJoin({})) task1{};
-
+    decltype(pool2->taskJoin({})) task1{},task2{};
     task1 = pool2->tempTaskJoin([&](const auto &data_){
-        //task1->joinThreadPool(pool2); //会反复套娃
+        pool2->stop();
+        task1->joinThreadPool(pool2);//安全
+        task2 = pool2->taskJoin(std::make_shared<A>(456));
         for (int i{};i < 3;++i){
             {
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " data = " << data_ << "\n";
             }
-            std::this_thread::sleep_for(std::chrono::seconds(wait_time));
+            xtd::sleep_for_s(wait_time);
         }
+        std::cerr <<
+            "task2->result<const char *>(): " <<
+            task2->result<std::string>() << "\n" << std::flush;
+        task2->joinThreadPool(pool2);
         return data_;
     },123);
 
@@ -170,20 +172,46 @@ public:
                       "tasks :" << pool2->currentTasksSize() << "\n" <<
                       std::flush;
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        xtd::sleep_for_s(1);
     }
     std::cerr << "task1 return: " << task1->result<int>() << "\n";
+    std::cerr << "task1 return: " << task1->result<int>() << "\n";
+    std::cerr << "task2 return: " << task2->result<std::string>() << "\n";
+    std::cerr << "task2 return: " << task2->result<std::string>() << "\n";
+
+    std::cerr << "sss:" << std::make_shared<A>(0)->result<std::string>() << "\n";
 #endif
 }
 
 [[maybe_unused]] static inline void test2(){
 
-    std::unordered_map<int,std::string> m_map{{1,"fuck1"},{2,"fuck2"},{3,"fuck3"},};
-    m_map.insert({3,"fuck3"});
+    // std::unordered_map<int,std::string> m_map{{1,"fuck1"},{2,"fuck2"},{3,"fuck3"},};
+    // m_map.insert({3,"fuck3"});
+    //
+    // for (const auto &[key,value]:m_map){
+    //     std::cerr << "key: " << key << " value: " << value << "\n";
+    // }
+    bool exit_{};
+    std::atomic_bool b{};
+    std::thread{[&]{
+        while (!exit_){
+            xtd::sleep_for_s(10);
+            b.wait({},std::memory_order_acquire);
+            std::cerr << __PRETTY_FUNCTION__ << "\n";
+            b.store({},std::memory_order_release);
+        }
+    }}.detach();
 
-    for (const auto &[key,value]:m_map){
-        std::cerr << "key: " << key << " value: " << value << "\n";
+    while (true){
+        int v{};
+        std::cin >> v;
+        if (v < 0){
+            break;
+        }
+        b.store(true,std::memory_order_release);
+        b.notify_all();
     }
+    exit_ = true;
 }
 
 int main(const int argc,const char **const argv){
