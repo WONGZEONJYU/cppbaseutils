@@ -18,21 +18,28 @@ class XAbstractTask2 : public std::enable_shared_from_this<XAbstractTask2> {
     class XAbstractTask2Private;
     mutable std::shared_ptr<XAbstractTask2Private> m_d_{};
     X_DECLARE_PRIVATE_D(m_d_,XAbstractTask2Private)
-    std::any result_() const;
 
 public:
     X_DEFAULT_COPY_MOVE(XAbstractTask2)
     virtual ~XAbstractTask2() = default;
 
+    enum class Model{
+        BLOCK,///@brief 阻塞
+        NONBLOCK,///@brief 非阻塞
+    };
+
+    static constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
     /// 用于获取线程执行完毕的返回值,如果没有可忽略
     /// 没有加入线程池或多次调用无效,不会阻塞但有警告提示
     /// 如果有返回值,T类型错误,本函数会抛出异常
-    /// @tparam T
+    /// 选择非阻塞模式,无论有无值,立即返回
+    /// @param model_
+    /// @tparam Ty
     /// @return T类型
-    template<typename T>
-    [[maybe_unused]] [[nodiscard]] T result() const noexcept(false) {
-        const auto v{result_()};
-        return v.has_value() ? std::any_cast<T>(v) : T{};
+    template<typename Ty>
+    [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = BlockModel) const noexcept(false) {
+        const auto v{result_(model_)};
+        return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
     }
 
     /// 设置责任链,开发者可以重写
@@ -43,10 +50,8 @@ public:
     /// @param arg 任意类型,开发者可重写
     [[maybe_unused]] virtual void requestHandler(const std::any &arg);
 
-    /// 把自身加入线程池,会按照默认线程数量启动线程池,
+    /// 加入线程池,会按照默认线程数量启动线程池
     /// 如果需要调整数量(需在FIXED模式才有意义),请自行调用线程池start函数输入线程数量
-    /// 如果在自身线程下调用再把自己加入,会出现无限加入的情况,请勿在这样操作
-    /// 目前考虑是否禁止在自身线程下调用本函数(本备注随时删除)
     /// @param pool
     /// @return 任务对象
     [[maybe_unused]] XAbstractTask2_Ptr joinThreadPool(const std::shared_ptr<XThreadPool2> &pool) ;
@@ -71,6 +76,7 @@ private:
     void set_result_(const std::any &) const;
     void set_exit_function_(std::function<bool()> &&) const;
     void set_occupy_() const;
+    std::any result_(const Model &) const;
 };
 
 XTD_INLINE_NAMESPACE_END

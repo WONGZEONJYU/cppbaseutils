@@ -2,14 +2,10 @@
 #include "xthreadpool2.hpp"
 #include <future>
 #include <iostream>
+#include <XAtomic/xatomic.hpp>
+#include <semaphore>
 
 #define USE_ATOMIC 1
-
-#if USE_ATOMIC
-#include <XAtomic/xatomic.hpp>
-#else
-#include <semaphore>
-#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -23,7 +19,7 @@ public:
 #if USE_ATOMIC
     mutable XAtomicBool m_allow{};
 #else
-    std::binary_semaphore m_allow{0};
+    mutable std::binary_semaphore m_allow{0};
 #endif
     mutable std::promise<std::any> m_result{};
     mutable std::weak_ptr<XAbstractTask2> m_next{};
@@ -59,11 +55,11 @@ void XAbstractTask2::operator()() {
     }
 }
 
-void XAbstractTask2::set_occupy_() const{
+void XAbstractTask2::set_occupy_() const {
     m_d_->m_occupy.storeRelease(true);
 }
 
-std::any XAbstractTask2::result_() const {
+std::any XAbstractTask2::result_(const Model & m) const {
 
     constexpr std::string_view selfname{__PRETTY_FUNCTION__};
     const XRAII raii{[&selfname]{
@@ -71,6 +67,11 @@ std::any XAbstractTask2::result_() const {
     },[&selfname]{
         std::cout << selfname << " end\n" << std::flush;
     }};
+
+    if (NonblockModel == m){
+        return m_d_->m_allow.loadAcquire() ? m_d_->m_allow.storeRelease({}),
+        m_d_->m_result.get_future().get() : std::any{};
+    }
 
     if (this == m_d_->sm_isSelf){
         std::cerr << selfname << " tips: Working Thread Call invalid\n" << std::flush;
@@ -86,7 +87,6 @@ std::any XAbstractTask2::result_() const {
         std::cerr << selfname << " tips: Repeated calls\n" << std::flush;
         return {};
     }
-
     m_d_->m_occupy.storeRelease({});
 #if USE_ATOMIC
     m_d_->m_allow.m_x_value.wait({},std::memory_order_acquire);
