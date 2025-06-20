@@ -1,8 +1,7 @@
 #ifndef X_THREADPOOL2_HPP
 #define X_THREADPOOL2_HPP
 
-#include "xabstracttask2.hpp"
-
+#include <XThreadPool/xabstracttask2.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -22,8 +21,7 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
 
     class XThreadPool2Private;
     using XThreadPool2Private_Ptr = std::unique_ptr<XThreadPool2Private>;
-    XThreadPool2Private_Ptr m_d_{};
-
+    mutable  XThreadPool2Private_Ptr m_d_{};
     X_DECLARE_PRIVATE_D(m_d_,XThreadPool2Private)
 
     class XTempTask {
