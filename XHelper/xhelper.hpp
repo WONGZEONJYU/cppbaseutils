@@ -58,16 +58,16 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 template<typename F>
 class [[maybe_unused]] Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
-    mutable F fn;
+    mutable F m_fn_;
     mutable unsigned int is_destroy:1{};
 public:
     constexpr inline explicit Destroyer(F &&f):
-    fn(std::move(f)){}
+    m_fn_(std::move(f)){}
 
     constexpr inline void destroy() const{
         if (!is_destroy) {
             is_destroy = true;
-            fn();
+            m_fn_();
         }
     }
 
@@ -79,18 +79,18 @@ public:
 template<typename F2>
 class [[maybe_unused]] XRAII final {
     X_DISABLE_COPY_MOVE(XRAII)
-    mutable F2 m_f2{};
+    mutable F2 m_f2_{};
     mutable unsigned int m_is_destroy_:1{};
 public:
     [[maybe_unused]] constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
-    m_f2(std::move(f2)){
+    m_f2_(std::move(f2)){
         f1();
     }
 
     constexpr inline void destroy() const{
         if (!m_is_destroy_){
             m_is_destroy_ = true;
-            m_f2();
+            m_f2_();
         }
     }
 
