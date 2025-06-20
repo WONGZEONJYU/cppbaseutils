@@ -70,11 +70,12 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
     };
 
 public:
-
     enum class Mode {
         FIXED,/*固定线程数模式*/
         CACHE /*动态线程数*/
     };
+
+    static constexpr auto FixedModel{Mode::FIXED},CacheModel{Mode::CACHE};
 
     /// @return 返回CPU线程数量
     static unsigned cpuThreadsCount();
@@ -85,6 +86,10 @@ public:
 
     ///停止线程池,线程池内部的线程调用无效
     void stop();
+
+    /// 检查线程池是否运行
+    /// @return ture or false
+    bool isRunning() const;
 
     /// 加入任务,如果没有在此函数前显式调用start,本函数会调用start启动
     /// 对于加入失败的任务,会对任务设置一个空的返回值以防止外部被阻塞
