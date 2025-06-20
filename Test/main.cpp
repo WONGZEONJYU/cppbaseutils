@@ -1,7 +1,8 @@
+#include <future>
 #include <iostream>
 #include <XThreadPool/xthreadpool2.hpp>
 #include <XSignal/xsignal.hpp>
-#include <thread>
+#include <semaphore>
 
 static std::mutex mtx{};
 
@@ -144,6 +145,8 @@ public:
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
     decltype(pool2->taskJoin({})) task1{},task2{};
     task1 = pool2->tempTaskJoin([&](const auto &data_){
+        std::cerr << "task1->result<int>(task2->NonblockModel): " <<
+            task1->result<int>(task2->NonblockModel) << "\n" << std::flush;
         pool2->stop();
         task1->joinThreadPool(pool2);//安全
         task2 = pool2->taskJoin(std::make_shared<A>(456));
@@ -155,7 +158,7 @@ public:
             xtd::sleep_for_s(wait_time);
         }
         std::cerr <<
-            "task2->result<const char *>(): " <<
+            "task2->result<std::string>(): " <<
             task2->result<std::string>() << "\n" << std::flush;
         task2->joinThreadPool(pool2);
         return data_;
@@ -174,14 +177,16 @@ public:
         }
         xtd::sleep_for_s(1);
     }
-    std::cerr << "task1 return: " << task1->result<int>() << "\n";
-    std::cerr << "task1 return: " << task1->result<int>() << "\n";
-    std::cerr << "task2 return: " << task2->result<std::string>() << "\n";
-    std::cerr << "task2 return: " << task2->result<std::string>() << "\n";
+    std::cerr << "task1 return: " << task1->result<int>(task1->NonblockModel) << "\n";
+    std::cerr << "task1 return: " << task1->result<int>(task1->NonblockModel) << "\n";
+    std::cerr << "task2 return: " << task2->result<std::string>(task2->NonblockModel) << "\n";
+    std::cerr << "task2 return: " << task2->result<std::string>(task2->NonblockModel) << "\n";
 
     std::cerr << "sss:" << std::make_shared<A>(0)->result<std::string>() << "\n";
 #endif
 }
+
+#include <thread>
 
 [[maybe_unused]] static inline void test2(){
 
@@ -208,16 +213,22 @@ public:
         if (v < 0){
             break;
         }
+        std::binary_semaphore bin{0};
         b.store(true,std::memory_order_release);
         b.notify_all();
     }
     exit_ = true;
 }
 
+[[maybe_unused]] static void test3(){
+
+}
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     test1();
     //test2();
+    //test3();
 
     return 0;
 }
