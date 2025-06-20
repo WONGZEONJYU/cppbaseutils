@@ -19,15 +19,15 @@ class XAbstractTask2::XAbstractTask2Private final {
 public:
     static inline thread_local bool sm_isWorkThread{};
     static inline thread_local void * sm_isSelf{};
-    XAtomicBool m_occupy{};
+    mutable XAtomicBool m_occupy{};
 #if USE_ATOMIC
-    XAtomicBool m_allow{};
+    mutable XAtomicBool m_allow{};
 #else
     std::binary_semaphore m_allow{0};
 #endif
-    std::promise<std::any> m_result{};
-    std::weak_ptr<XAbstractTask2> m_next{};
-    std::function<bool()> m_is_running{};
+    mutable std::promise<std::any> m_result{};
+    mutable std::weak_ptr<XAbstractTask2> m_next{};
+    mutable std::function<bool()> m_is_running{};
 
     explicit XAbstractTask2Private(Private){}
     ~XAbstractTask2Private() = default;
@@ -77,10 +77,16 @@ std::any XAbstractTask2::result_() const {
         return {};
     }
 
-    if (!m_d_->m_is_running || !m_d_->m_occupy.loadAcquire()){
-        std::cerr << selfname << " tips: Repeated calls or tasks not added\n" << std::flush;
+    if (!m_d_->m_is_running){
+        std::cerr << selfname << " tips: tasks not added\n" << std::flush;
         return {};
     }
+
+    if (!m_d_->m_occupy.loadAcquire()){
+        std::cerr << selfname << " tips: Repeated calls\n" << std::flush;
+        return {};
+    }
+
     m_d_->m_occupy.storeRelease({});
 #if USE_ATOMIC
     m_d_->m_allow.m_x_value.wait({},std::memory_order_acquire);

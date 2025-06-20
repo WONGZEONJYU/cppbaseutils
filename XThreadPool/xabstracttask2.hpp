@@ -16,7 +16,7 @@ using XAbstractTask2_Ptr = std::shared_ptr<XAbstractTask2>;
 class XAbstractTask2 : public std::enable_shared_from_this<XAbstractTask2> {
     friend class XThreadPool2;
     class XAbstractTask2Private;
-    std::shared_ptr<XAbstractTask2Private> m_d_{};
+    mutable std::shared_ptr<XAbstractTask2Private> m_d_{};
     X_DECLARE_PRIVATE_D(m_d_,XAbstractTask2Private)
     std::any result_() const;
 
