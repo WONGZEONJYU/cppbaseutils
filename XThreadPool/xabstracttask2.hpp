@@ -1,10 +1,12 @@
 #ifndef X_ABSTRACT_TASK2_HPP
 #define X_ABSTRACT_TASK2_HPP
 
+#include <XHelper/xhelper.hpp>
 #include <any>
 #include <memory>
 #include <functional>
-#include <XHelper/xhelper.hpp>
+#include <iostream>
+#include <semaphore>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -39,6 +41,36 @@ public:
     template<typename Ty>
     [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = BlockModel) const noexcept(false) {
         const auto v{result_(model_)};
+        return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
+    }
+
+    template<typename Ty,typename Rep_,typename Period_>
+    [[maybe_unused]] [[nodiscard]] Ty result_for(const std::chrono::duration<Rep_,Period_> &rel_time){
+        const auto v{result_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))};
+        return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
+    }
+
+    template<typename Ty,typename Clock_>
+    [[maybe_unused]] [[nodiscard]] Ty result_until(const std::chrono::time_point<Clock_> & abs_time_){
+
+        constexpr std::string_view selfname{__PRETTY_FUNCTION__};
+#if 1
+        const XRAII raii{[&selfname]{
+            std::cout << selfname << " begin\n" << std::flush;
+        },[&selfname]{
+            std::cout << selfname << " end\n" << std::flush;
+        }};
+#endif
+        if (!is_running_()){
+            std::cerr << selfname << " tips: tasks not added\n" << std::flush;
+            return {};
+        }
+
+        if (!(*this)(nullptr).try_acquire_until(abs_time_)){
+            return Ty{};
+        }
+
+        const auto v{Return_()};
         return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
     }
 
@@ -77,6 +109,9 @@ private:
     void set_exit_function_(std::function<bool()> &&) const;
     void set_occupy_() const;
     std::any result_(const Model &) const;
+    std::any result_for_(const std::chrono::nanoseconds &) const;
+    std::any Return_() const;
+    std::binary_semaphore &operator()(std::nullptr_t) const;
 };
 
 XTD_INLINE_NAMESPACE_END

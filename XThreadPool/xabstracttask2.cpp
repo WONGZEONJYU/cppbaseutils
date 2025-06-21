@@ -1,11 +1,8 @@
 #include "xabstracttask2.hpp"
 #include "xthreadpool2.hpp"
 #include <future>
-#include <iostream>
 #include <XAtomic/xatomic.hpp>
 #include <semaphore>
-
-#define USE_ATOMIC 1
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -13,14 +10,9 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XAbstractTask2::XAbstractTask2Private final {
     enum class Private{};
 public:
-    static inline thread_local bool sm_isWorkThread{};
     static inline thread_local void * sm_isSelf{};
     mutable XAtomicBool m_occupy{};
-#if USE_ATOMIC
-    mutable XAtomicBool m_allow{};
-#else
-    mutable std::binary_semaphore m_allow{0};
-#endif
+    mutable std::binary_semaphore m_allow_bin{0};
     mutable std::promise<std::any> m_result{};
     mutable std::weak_ptr<XAbstractTask2> m_next{};
     mutable std::function<bool()> m_is_running{};
@@ -63,7 +55,7 @@ std::any XAbstractTask2::result_(const Model & m) const {
     }};
 
     if (NonblockModel == m){
-        return m_d_->m_allow.loadAcquire() ? m_d_->m_allow.storeRelease({}),
+        return m_d_->m_allow_bin.try_acquire() ? m_d_->m_occupy.storeRelease({}),
         m_d_->m_result.get_future().get() : std::any{};
     }
 
@@ -82,24 +74,41 @@ std::any XAbstractTask2::result_(const Model & m) const {
         return {};
     }
     m_d_->m_occupy.storeRelease({});
-#if USE_ATOMIC
-    m_d_->m_allow.m_x_value.wait({},std::memory_order_acquire);
-    m_d_->m_allow.storeRelease({});
-#else
-    m_d_->m_allow.acquire();
-#endif
+
+    m_d_->m_allow_bin.acquire();
+
+    return m_d_->m_result.get_future().get();
+}
+
+std::any XAbstractTask2::result_for_(const std::chrono::nanoseconds &rel_time) const {
+    constexpr std::string_view selfname{__PRETTY_FUNCTION__};
+    const XRAII raii{[&selfname]{
+        std::cout << selfname << " begin\n" << std::flush;
+    },[&selfname]{
+        std::cout << selfname << " end\n" << std::flush;
+    }};
+
+    if (!m_d_->m_is_running){
+        std::cerr << selfname << " tips: tasks not added\n" << std::flush;
+        return {};
+    }
+
+    if (!m_d_->m_allow_bin.try_acquire_for(rel_time)){
+        std::cerr << selfname << " tips: timeout\n" << std::flush;
+        return {};
+    }
+
+    return m_d_->m_result.get_future().get();
+}
+
+std::any XAbstractTask2::Return_() const{
     return m_d_->m_result.get_future().get();
 }
 
 void XAbstractTask2::set_result_(const std::any &v) const {
     m_d_->m_result = {};
     m_d_->m_result.set_value(v);
-#if USE_ATOMIC
-    m_d_->m_allow.storeRelease(true);
-    m_d_->m_allow.m_x_value.notify_all();
-#else
-    m_d_->m_allow.release();
-#endif
+    m_d_->m_allow_bin.release();
 }
 
 void XAbstractTask2::set_exit_function_(std::function<bool()> &&f) const {
@@ -122,6 +131,10 @@ XAbstractTask2_Ptr XAbstractTask2::joinThreadPool(const XThreadPool2_Ptr & pool)
         pool->taskJoin(ret);
     }
     return ret;
+}
+
+std::binary_semaphore& XAbstractTask2::operator()(std::nullptr_t) const{
+    return m_d_->m_allow_bin;
 }
 
 XTD_INLINE_NAMESPACE_END
