@@ -146,7 +146,7 @@ public:
     decltype(pool2->taskJoin({})) task1{},task2{};
     task1 = pool2->tempTaskJoin([&](const auto &data_){
         std::cerr << "task1->result<int>(task2->NonblockModel): " <<
-            task1->result<int>(task2->NonblockModel) << "\n" << std::flush;
+            task1->result<int>(std::chrono::seconds(5)) << "\n" << std::flush;
         pool2->stop();
         task1->joinThreadPool(pool2);//安全
         task2 = pool2->taskJoin(std::make_shared<A>(456));
@@ -177,8 +177,8 @@ public:
         }
         xtd::sleep_for_s(1);
     }
-    std::cerr << "task1 return: " << task1->result<int>(task1->NonblockModel) << "\n";
-    std::cerr << "task1 return: " << task1->result<int>(task1->NonblockModel) << "\n";
+    std::cerr << "task1 return: " << task1->result<int>(std::chrono::seconds(5)) << "\n";
+    std::cerr << "task1 return: " << task1->result<int>(std::chrono::seconds(5)) << "\n";
     std::cerr << "task2 return: " << task2->result<std::string>(task2->NonblockModel) << "\n";
     std::cerr << "task2 return: " << task2->result<std::string>(task2->NonblockModel) << "\n";
 
