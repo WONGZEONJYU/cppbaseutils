@@ -12,7 +12,11 @@ class XAbstractTask2::XAbstractTask2Private final {
 public:
     static inline thread_local void * sm_isSelf{};
     mutable XAtomicBool m_occupy{};
+#if _LIBCPP_STD_VER >= 20
     mutable std::binary_semaphore m_allow_bin{0};
+#else
+    mutable Xbinary_Semaphore m_allow_bin{0};
+#endif
     mutable std::promise<std::any> m_result{};
     mutable std::weak_ptr<XAbstractTask2> m_next{};
     mutable std::function<bool()> m_is_running{};
@@ -133,9 +137,15 @@ XAbstractTask2_Ptr XAbstractTask2::joinThreadPool(const XThreadPool2_Ptr & pool)
     return ret;
 }
 
-std::binary_semaphore& XAbstractTask2::operator()(std::nullptr_t) const{
+#if _LIBCPP_STD_VER >= 20
+std::binary_semaphore& XAbstractTask2::operator()(std::nullptr_t) const {
     return m_d_->m_allow_bin;
 }
+#else
+Xbinary_Semaphore &XAbstractTask2::operator()(std::nullptr_t) const {
+    return m_d_->m_allow_bin;
+}
+#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
