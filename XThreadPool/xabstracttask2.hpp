@@ -6,7 +6,11 @@
 #include <memory>
 #include <functional>
 #include <iostream>
+#if _LIBCPP_STD_VER >= 20
 #include <semaphore>
+#else
+#include <XThreadPool/xsemaphore.hpp>
+#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -44,14 +48,25 @@ public:
         return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
     }
 
+    /// 带超时等待返回值
+    /// @tparam Ty
+    /// @tparam Rep_
+    /// @tparam Period_
+    /// @param rel_time
+    /// @return Ty类型数据
     template<typename Ty,typename Rep_,typename Period_>
-    [[maybe_unused]] [[nodiscard]] Ty result_for(const std::chrono::duration<Rep_,Period_> &rel_time){
+    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::duration<Rep_,Period_> &rel_time){
         const auto v{result_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))};
         return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
     }
 
-    template<typename Ty,typename Clock_>
-    [[maybe_unused]] [[nodiscard]] Ty result_until(const std::chrono::time_point<Clock_> & abs_time_){
+    /// 带指定时间等候返回值
+    /// @tparam Ty
+    /// @tparam Clock_
+    /// @param abs_time_
+    /// @return Ty类型
+    template<typename Ty,typename Clock_,typename Duration_>
+    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_){
 
         constexpr std::string_view selfname{__PRETTY_FUNCTION__};
 #if 1
@@ -111,7 +126,11 @@ private:
     std::any result_(const Model &) const;
     std::any result_for_(const std::chrono::nanoseconds &) const;
     std::any Return_() const;
+#if _LIBCPP_STD_VER >= 20
     std::binary_semaphore &operator()(std::nullptr_t) const;
+#else
+    Xbinary_Semaphore &operator()(std::nullptr_t) const;
+#endif
 };
 
 XTD_INLINE_NAMESPACE_END
