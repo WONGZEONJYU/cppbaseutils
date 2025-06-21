@@ -148,6 +148,7 @@ public:
     explicit XThreadPool2(const Mode &,XThreadPool2Private_Ptr);
 
     ~XThreadPool2();
+
     X_DISABLE_COPY_MOVE(XThreadPool2)
 };
 
