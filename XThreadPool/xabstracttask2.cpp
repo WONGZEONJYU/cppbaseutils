@@ -4,13 +4,21 @@
 #include <XAtomic/xatomic.hpp>
 #include <semaphore>
 
+#ifdef UNUSE_STD_THREAD_LOCAL
+#include "xthreadlocal.hpp"
+#endif
+
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XAbstractTask2::XAbstractTask2Private final {
     enum class Private{};
 public:
+#ifdef UNUSE_STD_THREAD_LOCAL
+    mutable XThreadLocal<void *> m_isSelf{};
+#else
     static inline thread_local void * sm_isSelf{};
+#endif
     mutable XAtomicBool m_occupy{};
 #if _LIBCPP_STD_VER >= 20
     mutable std::binary_semaphore m_allow_bin{0};
@@ -38,7 +46,11 @@ bool XAbstractTask2::is_running_() const {
 
 void XAbstractTask2::operator()() {
     try {
+#ifdef UNUSE_STD_THREAD_LOCAL
+        XThreadLocalRaii<void*> set(m_d_->m_isSelf,this);
+#else
         m_d_->sm_isSelf = this;
+#endif
         set_result_(run());
     } catch (const std::exception &e) {
         std::cerr << __PRETTY_FUNCTION__ << " exception msg : " << e.what() << "\n";
@@ -63,7 +75,11 @@ std::any XAbstractTask2::result_(const Model & m) const {
         m_d_->m_result.get_future().get() : std::any{};
     }
 
+#ifdef UNUSE_STD_THREAD_LOCAL
+    if (this == m_d_->m_isSelf.get().value_or(nullptr)) {
+#else
     if (this == m_d_->sm_isSelf){
+#endif
         std::cerr << selfname << " tips: Working Thread Call invalid\n" << std::flush;
         return {};
     }
@@ -86,11 +102,14 @@ std::any XAbstractTask2::result_(const Model & m) const {
 
 std::any XAbstractTask2::result_for_(const std::chrono::nanoseconds &rel_time) const {
     constexpr std::string_view selfname{__PRETTY_FUNCTION__};
+
+#if 0
     const XRAII raii{[&selfname]{
         std::cout << selfname << " begin\n" << std::flush;
     },[&selfname]{
         std::cout << selfname << " end\n" << std::flush;
     }};
+#endif
 
     if (!m_d_->m_is_running){
         std::cerr << selfname << " tips: tasks not added\n" << std::flush;
@@ -119,11 +138,11 @@ void XAbstractTask2::set_exit_function_(std::function<bool()> &&f) const {
     m_d_->m_is_running = std::move(f);
 }
 
-void XAbstractTask2::set_nextHandler(const std::weak_ptr<XAbstractTask2> &next_) {
+[[maybe_unused]] void XAbstractTask2::set_nextHandler(const std::weak_ptr<XAbstractTask2> &next_) {
     m_d_->m_next = next_;
 }
 
-void XAbstractTask2::requestHandler(const std::any &arg) {
+[[maybe_unused]] void XAbstractTask2::requestHandler(const std::any &arg) {
     if (const auto p{m_d_->m_next.lock()}){
         p->responseHandler(arg);
     }
