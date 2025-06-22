@@ -143,11 +143,11 @@ public:
      std::cout << p2->result<double>() << '\n'; //与上同理
 #else
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
-    decltype(pool2->taskJoin({})) task1{},task2{};
-    task1 = pool2->tempTaskJoin([&](const auto &data_){
-        std::cerr << "task1->result<int>(task2->NonblockModel): " <<
-            task1->result<int>(std::chrono::seconds(5)) << "\n" << std::flush;
-        pool2->stop();
+    xtd::XAbstractTask2_Ptr task1{},task2{};
+    task1 = pool2->taskJoin([&](const auto &data_){
+        std::cerr << "task1->result<int>(): " <<
+            task1->result<int>() << "\n" << std::flush;
+        pool2->stop();//安全
         task1->joinThreadPool(pool2);//安全
         task2 = pool2->taskJoin(std::make_shared<A>(456));
         for (int i{};i < 3;++i){
