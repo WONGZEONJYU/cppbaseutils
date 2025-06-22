@@ -24,7 +24,6 @@ class XAbstractTask2 : public std::enable_shared_from_this<XAbstractTask2> {
     class XAbstractTask2Private;
     mutable std::shared_ptr<XAbstractTask2Private> m_d_{};
     X_DECLARE_PRIVATE_D(m_d_,XAbstractTask2Private)
-
 public:
     X_DEFAULT_COPY_MOVE(XAbstractTask2)
     virtual ~XAbstractTask2() = default;
@@ -55,7 +54,7 @@ public:
     /// @param rel_time
     /// @return Ty类型数据
     template<typename Ty,typename Rep_,typename Period_>
-    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::duration<Rep_,Period_> &rel_time){
+    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::duration<Rep_,Period_> &rel_time) const noexcept(false) {
         const auto v{result_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))};
         return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
     }
@@ -66,7 +65,7 @@ public:
     /// @param abs_time_
     /// @return Ty类型
     template<typename Ty,typename Clock_,typename Duration_>
-    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_){
+    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false) {
 
         constexpr std::string_view selfname{__PRETTY_FUNCTION__};
 #if 1
@@ -81,7 +80,7 @@ public:
             return {};
         }
 
-        if (!(*this)(nullptr).try_acquire_until(abs_time_)){
+        if (operator()(nullptr).try_acquire_until(abs_time_)){
             return Ty{};
         }
 
@@ -118,6 +117,7 @@ protected:
     /// 开发者必须重写本函数,本函数为线程执行函数
     /// @return 任意类型
     virtual std::any run() = 0;
+
 private:
     void operator()();
     void set_result_(const std::any &) const;
