@@ -28,7 +28,7 @@ public:
     X_DEFAULT_COPY_MOVE(XAbstractTask2)
     virtual ~XAbstractTask2() = default;
 
-    enum class Model{
+    enum class Model {
         BLOCK,///@brief 阻塞
         NONBLOCK,///@brief 非阻塞
     };
