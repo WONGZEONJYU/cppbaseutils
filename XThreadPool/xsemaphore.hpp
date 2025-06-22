@@ -22,13 +22,13 @@ public:
         return LeastMaxValue;
     }
 
-    explicit XCounting_Semaphore(const std::ptrdiff_t &desired): count_(desired) {
+    [[maybe_unused]] explicit XCounting_Semaphore(const std::ptrdiff_t &desired): count_(desired) {
         assert(desired >= 0 && desired <= max());
     }
 
     ~XCounting_Semaphore() = default;
 
-    void release(const std::ptrdiff_t &update = 1) const{
+    [[maybe_unused]] void release(const std::ptrdiff_t &update = 1) const{
         std::unique_lock lock(m_mutex_);
         assert(update >= 0);
         assert(count_ <= max() - update);
@@ -36,13 +36,13 @@ public:
         m_cv_.notify_all();
     }
 
-    void acquire() const{
+    [[maybe_unused]] void acquire() const{
         std::unique_lock lock(m_mutex_);
         m_cv_.wait(lock,[this]{ return count_ > 0;});
         --count_;
     }
 
-    bool try_acquire() const noexcept {
+    [[maybe_unused]] [[nodiscard]] bool try_acquire() const noexcept {
         std::unique_lock lock(m_mutex_);
         if (count_ > 0) {
             --count_;
@@ -52,7 +52,7 @@ public:
     }
 
     template<class Rep_, class Period_>
-    auto try_acquire_for(const std::chrono::duration<Rep_, Period_>& del_time) const {
+    [[maybe_unused]] [[nodiscard]] auto try_acquire_for(const std::chrono::duration<Rep_, Period_>& del_time) const {
         std::unique_lock lock(m_mutex_);
         const auto acquired{m_cv_.wait_for(lock,del_time,[this] {
             return count_ > 0;
@@ -66,7 +66,7 @@ public:
     }
 
     template<typename Clock_, class Duration_>
-    auto try_acquire_until(const std::chrono::time_point<Clock_, Duration_>& abs_time_) const {
+    [[maybe_unused]] [[nodiscard]] auto try_acquire_until(const std::chrono::time_point<Clock_, Duration_>& abs_time_) const {
         std::unique_lock lock(m_mutex_);
         const auto acquired{m_cv_.wait_until(lock, abs_time_, [this] {
             return count_ > 0;
