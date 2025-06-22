@@ -104,13 +104,13 @@ public:
     template<typename... Args>
     auto taskJoin(Args && ...args){
 
-        using First = std::tuple_element_t<0,std::tuple<Args...>>;
+        using First_t [[maybe_unused]] = std::tuple_element_t<0,std::tuple<Args...>>;
 
-        if constexpr (is_smart_pointer_v<std::decay_t<First>>){
+        if constexpr (is_smart_pointer_v<std::decay_t<First_t>>){
 
-            using Derived_t = std::decay_t<decltype(std::declval<First>().operator*())>;
+            using Derived_t = std::decay_t<decltype(std::declval<First_t>().operator*())>;
 
-            static_assert(std::is_base_of_v<XAbstractTask2, Derived_t >);
+            static_assert(std::is_base_of_v<XAbstractTask2,Derived_t>,"Derived_t no base of XAbstractTask2");
 
             return taskJoin_(std::forward<decltype(args)>(args)...);
         }else{
