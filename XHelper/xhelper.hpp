@@ -1,15 +1,10 @@
 #ifndef X_HELPER_HPP_
 #define X_HELPER_HPP_
 
+#include <XHelper/xversion.hpp>
 #include <string_view>
 #include <utility>
-
-#define XTD_VERSION "0.0.1"
-#define XTD_NAMESPACE_BEGIN namespace xtd {
-#define XTD_NAMESPACE_END }
-
-#define XTD_INLINE_NAMESPACE_BEGIN(name) inline namespace name {
-#define XTD_INLINE_NAMESPACE_END XTD_NAMESPACE_END
+#include <XHelper/xtypetraits.hpp>
 
 #define X_DISABLE_COPY(Class) \
     Class (const Class &) = delete;\
