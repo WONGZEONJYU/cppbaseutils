@@ -2,6 +2,7 @@
 #define X_THREADPOOL2_HPP
 
 #include <XThreadPool/xabstracttask2.hpp>
+#include <utility>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -53,7 +54,8 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
         }
 
     public:
-        explicit XTempTaskImpl(Private,Fn &&fn,Args &&...args):m_tuple_(std::forward<Fn>(fn),std::forward<Args>(args)...){}
+        explicit XTempTaskImpl(Private,Fn &&fn,Args &&...args):
+        m_tuple_(std::forward<std::decay_t<Fn>>(fn),std::forward<std::decay_t<Args>>(args)...){}
     };
 
     class TempTaskFactory final : XTempTask {
@@ -69,6 +71,7 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
         }
     };
 
+    XAbstractTask2_Ptr taskJoin_(const XAbstractTask2_Ptr &task);
 public:
     enum class Mode {
         FIXED,/*固定线程数模式*/
@@ -89,30 +92,37 @@ public:
 
     /// 检查线程池是否运行
     /// @return ture or false
-    bool isRunning() const;
+    [[maybe_unused]][[nodiscard]] bool isRunning() const;
 
     /// 加入任务,如果没有在此函数前显式调用start,本函数会调用start启动
     /// 对于加入失败的任务,会对任务设置一个空的返回值以防止外部被阻塞
     /// 本函数如果在线程池管理的线程调用是无效的,不会导致程序崩溃
-    /// @param task
-    /// @return task
-    XAbstractTask2_Ptr taskJoin(const XAbstractTask2_Ptr &task);
-
     /// 临时任务,生命周期需自行管理,支持全局函数(静态和非静态)、仿函数、Lambda、成员函数(静态和非静态)、函数包装器
     /// @tparam Args
-    /// @param args
+    /// @param args(如果是)
     /// @return task对象
     template<typename... Args>
-    auto tempTaskJoin(Args && ...args){
-        return taskJoin(TempTaskFactory::tempTaskCreate(std::forward<decltype(args)>(args)...));
-    }
+    auto taskJoin(Args && ...args){
 
+        using First = std::tuple_element_t<0,std::tuple<Args...>>;
+
+        if constexpr (is_smart_pointer_v<std::decay_t<First>>){
+
+            using Derived_t = std::decay_t<decltype(std::declval<First>().operator*())>;
+
+            static_assert(std::is_base_of_v<XAbstractTask2, Derived_t >);
+
+            return taskJoin_(std::forward<decltype(args)>(args)...);
+        }else{
+            return taskJoin_(TempTaskFactory::tempTaskCreate(std::forward<decltype(args)>(args)...));
+        }
+    }
     /// 模式设置,线程池启动后设置无效
     /// @param mode
     [[maybe_unused]] void setMode(const Mode &mode);
 
     /// @return 获取当前线程池模式
-    [[maybe_unused]][[nodiscard]] Mode getMode() const;
+    [[maybe_unused]] [[maybe_unused]][[nodiscard]] Mode getMode() const;
 
     /// 线程数阈值设置,线程池启动后设置无效
     /// @param num
@@ -152,29 +162,29 @@ public:
     X_DISABLE_COPY_MOVE(XThreadPool2)
 };
 
-void sleep_for_ns(const XSize_t& ns);
+[[maybe_unused]] void sleep_for_ns(const XSize_t& ns);
 
-void sleep_for_us(const XSize_t& us);
+[[maybe_unused]] void sleep_for_us(const XSize_t& us);
 
-void sleep_for_ms(const XSize_t& ms);
+[[maybe_unused]] void sleep_for_ms(const XSize_t& ms);
 
-void sleep_for_s(const XSize_t& s);
+[[maybe_unused]] void sleep_for_s(const XSize_t& s);
 
-void sleep_for_mins(const XSize_t& mins);
+[[maybe_unused]] void sleep_for_mins(const XSize_t& mins);
 
-void sleep_for_hours(const XSize_t& h);
+[[maybe_unused]] void sleep_for_hours(const XSize_t& h);
 
-void sleep_until_ns(const XSize_t& ns);
+[[maybe_unused]] void sleep_until_ns(const XSize_t& ns);
 
-void sleep_until_us(const XSize_t& us);
+[[maybe_unused]] void sleep_until_us(const XSize_t& us);
 
-void sleep_until_ms(const XSize_t& ms);
+[[maybe_unused]] void sleep_until_ms(const XSize_t& ms);
 
-void sleep_until_s(const XSize_t& s);
+[[maybe_unused]] void sleep_until_s(const XSize_t& s);
 
-void sleep_until_mins(const XSize_t& mins);
+[[maybe_unused]] void sleep_until_mins(const XSize_t& mins);
 
-void sleep_until_hours(const XSize_t& h);
+[[maybe_unused]] void sleep_until_hours(const XSize_t& h);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
