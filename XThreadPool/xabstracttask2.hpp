@@ -80,7 +80,7 @@ public:
             return {};
         }
 
-        if (operator()(nullptr).try_acquire_until(abs_time_)){
+        if ((*this)(nullptr).try_acquire_until(abs_time_)){
             return Ty{};
         }
 
@@ -102,13 +102,13 @@ public:
     /// @return 任务对象
     [[maybe_unused]] XAbstractTask2_Ptr joinThreadPool(const std::shared_ptr<XThreadPool2> &pool) ;
 
-protected:
-
-    XAbstractTask2();
-
     /// 检查线程池是否运行
     /// @return  ture or false
     [[maybe_unused]] [[nodiscard]] bool is_running_() const;
+
+protected:
+
+    XAbstractTask2();
 
     ///响应责任链的请求,需开发者自行重写
     /// @param arg
@@ -127,9 +127,9 @@ private:
     std::any result_for_(const std::chrono::nanoseconds &) const;
     std::any Return_() const;
 #if _LIBCPP_STD_VER >= 20
-    std::binary_semaphore &operator()(std::nullptr_t) const;
+    std::binary_semaphore& operator()(std::nullptr_t) const;
 #else
-    Xbinary_Semaphore &operator()(std::nullptr_t) const;
+    Xbinary_Semaphore& operator()(std::nullptr_t) const;
 #endif
 };
 
