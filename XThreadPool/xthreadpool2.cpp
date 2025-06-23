@@ -142,7 +142,7 @@ public:
 #else
         if (task.get() == sm_isCurrentTask_){
 #endif
-            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+            std::cerr << __PRETTY_FUNCTION__ << " tips: Don't add yourself in your own thread\n" << std::flush;
             return task;
         }
 
