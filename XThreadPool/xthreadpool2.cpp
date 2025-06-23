@@ -90,7 +90,9 @@ public:
 
     XAbstractTask2_Ptr acquireTask() const {
 
-        const auto last_time{std::chrono::high_resolution_clock::now()};
+        using namespace std::chrono;
+
+        const auto last_time{high_resolution_clock::now()};
 
         std::unique_lock lock(m_mtx_);
 
@@ -103,8 +105,8 @@ public:
             if (Mode::CACHE == m_mode){
                 using std::chrono::operator""s;
                 if (std::cv_status::timeout == m_taskQue_Cond_.wait_for(lock,1s)) {
-                    if (const auto dur{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - last_time)};
-                        dur >= std::chrono::seconds (m_threadTimeout.loadAcquire())){
+                    if (const auto dur{duration_cast<seconds>(high_resolution_clock::now() - last_time)};
+                        dur >= seconds (m_threadTimeout.loadAcquire())){
                         std::cerr << "acquireTask timeout: " << m_threadTimeout.loadAcquire() << "\n" << std::flush;
                         return {};
                     }
@@ -145,6 +147,7 @@ public:
         }
 
         std::unique_lock lock(m_mtx_);
+
         using std::chrono::operator""s;
         if(!m_taskQue_Cond_.wait_for(lock,1s,[this]{
             return m_tasksQueue_.size() < m_tasksSizeThreshold.loadAcquire();})){
@@ -172,12 +175,12 @@ public:
             for (decltype(thSize) i{};i < thSize;++i){
                 if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
                     m_threadsContainer_[th->get_id()] = th;
-                    std::cout << "new Thread\n" << std::flush;
-                    m_idleThreadsSize.fetchAndAddOrdered(1);
+                    m_idleThreadsSize.fetchAndAddRelease(1);
                     th->start();
                     m_taskQue_Cond_.notify_all();
                 }
             }
+            std::cout << "new add ThreadSize: " << thSize << "\n" << std::flush;
         }
         lock.unlock();
         m_taskQue_Cond_.notify_all();
@@ -215,6 +218,7 @@ public:
         }
 #endif
         std::cout << "Pool Start Running\n" << std::flush;
+        std::cout << "Thread Initial quantity: " << thSize << "\n" << std::flush;
 
         m_initThreadsSize.storeRelease(0);
 

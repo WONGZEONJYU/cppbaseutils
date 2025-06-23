@@ -27,7 +27,7 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
     class XBaseTemporaryTasks {
     protected:
         XBaseTemporaryTasks() = default;
-        ~XBaseTemporaryTasks() = default;
+        virtual ~XBaseTemporaryTasks() = default;
         enum class Private{};
     };
 
@@ -41,10 +41,10 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
         std::any run() override {
             using indices = std::make_index_sequence<std::tuple_size_v<decayed_Tuple_>>;
             if constexpr (std::is_same_v<ReturnType,void>){
-                operator()(indices{});
+                (*this)(indices{});
                 return {};
             }else{
-                return operator()(indices{});
+                return (*this)(indices{});
             }
         }
 
@@ -56,6 +56,7 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
     public:
         explicit XTemporaryTasksImpl(Private,Fn && fn,Args && ...args):
         m_tuple_{std::forward<std::decay_t<Fn>>(fn),std::forward<std::decay_t<Args>>(args)...}{}
+        ~XTemporaryTasksImpl() override = default;
     };
 
     class XTemporaryTasksFactory final : XBaseTemporaryTasks {
