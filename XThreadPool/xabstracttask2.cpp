@@ -64,12 +64,13 @@ void XAbstractTask2::set_occupy_() const {
 std::any XAbstractTask2::result_(const Model & m) const {
 
     constexpr std::string_view selfname{__PRETTY_FUNCTION__};
+#if 0
     const XRAII raii{[&selfname]{
         std::cout << selfname << " begin\n" << std::flush;
     },[&selfname]{
         std::cout << selfname << " end\n" << std::flush;
     }};
-
+#endif
     if (NonblockModel == m){
         return m_d_->m_allow_bin.try_acquire() ? m_d_->m_occupy.storeRelease({}),
         m_d_->m_result.get_future().get() : std::any{};
