@@ -3,6 +3,8 @@
 #include <XThreadPool/xthreadpool2.hpp>
 #include <XSignal/xsignal.hpp>
 #include <semaphore>
+#include <list>
+#include <map>
 
 static std::mutex mtx{};
 
@@ -222,6 +224,29 @@ public:
 
 [[maybe_unused]] static void test3(){
 
+    using namespace std::chrono;
+
+    std::deque<xtd::XAbstractTask2_Ptr> tasks1,task2s{};
+    for (int i{};i < 1000000;++i){
+        tasks1.push_back(std::make_shared<A>(10));
+    }
+
+    auto last_time{system_clock::now()};
+    for (const auto &task : tasks1){
+        task2s.push_back(task);
+    }
+    auto runtime{duration_cast<milliseconds>(system_clock::now() - last_time).count()};
+    std::cerr <<  "deque w:" << runtime << std::endl;
+
+    std::unordered_map<void*,xtd::XAbstractTask2_Ptr> tasks2{};
+    last_time = system_clock::now();
+
+    for (const auto &task : tasks1){
+        tasks2[task.get()] = task;
+    }
+
+    runtime = duration_cast<milliseconds>(system_clock::now() - last_time).count();
+    std::cerr <<  "unordered_map:" << runtime << std::endl;
 }
 
 int main(const int argc,const char **const argv){
