@@ -71,6 +71,7 @@ public:
     mutable Mode m_mode{};
     mutable XAtomicBool m_is_poolRunning{};
     mutable XAtomicInteger<XSize_t> m_initThreadsSize{},m_idleThreadsSize{},m_busyThreadsSize{},
+        m_threadTimeout{WAIT_MINUTES},
         m_threadsSizeThreshold{MAX_THREADS_SIZE},
         m_tasksSizeThreshold{MAX_TASKS_SIZE};
 
@@ -103,8 +104,8 @@ public:
                 using std::chrono::operator""s;
                 if (std::cv_status::timeout == m_taskQue_Cond_.wait_for(lock,1s)) {
                     if (const auto dur{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - last_time)};
-                        dur >= std::chrono::seconds (WAIT_MINUTES)){
-                        std::cerr << " acquireTask timeout\n";
+                        dur >= std::chrono::seconds (m_threadTimeout.loadAcquire())){
+                        std::cerr << "acquireTask timeout: " << m_threadTimeout.loadAcquire() << "\n" << std::flush;
                         return {};
                     }
 #if 0
@@ -168,7 +169,7 @@ public:
                 thSize = m_threadsSizeThreshold.loadAcquire() - static_cast<decltype(thSize)>(m_threadsContainer_.size());
             }
 
-            for (XSize_t i{};i < thSize;++i){
+            for (decltype(thSize) i{};i < thSize;++i){
                 if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
                     m_threadsContainer_[th->get_id()] = th;
                     std::cout << "new Thread\n" << std::flush;
@@ -391,6 +392,19 @@ XAbstractTask2_Ptr XThreadPool2::taskJoin_(const XAbstractTask2_Ptr& task) {
     const auto retTask{d->taskJoin(task)};
     start();
     return retTask;
+}
+
+[[maybe_unused]] void XThreadPool2::setThreadTimeout(const XSize_t & seconds) const{
+    X_D();
+    if (d->m_is_poolRunning.loadAcquire()){
+        std::cerr << "setThreadTimeout Must be in a stopped state\n" << std::flush;
+        return;
+    }
+    if (seconds > 0){
+        d->m_threadTimeout.storeRelease(seconds);
+    } else{
+        std::cerr << "setThreadTimeout Cannot be negative,set failed!\n";
+    }
 }
 
 XThreadPool2_Ptr XThreadPool2::create(const Mode& mode) {

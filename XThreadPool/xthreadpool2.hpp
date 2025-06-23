@@ -156,6 +156,12 @@ public:
     /// @return 当前任务数量
     [[maybe_unused]] [[nodiscard]] XSize_t currentTasksSize() const;
 
+    /// 设置线程池在CACHE模式下线程等待任务的时间,如果线程超时则退出,默认是60s
+    /// 只在CACHE模式下有效
+    /// 线程池启动后设置无效
+    /// @param seconds 单位是秒
+    [[maybe_unused]] void setThreadTimeout(const XSize_t & seconds) const;
+
     /// 创建线程池对象,默认模式为FIXED
     /// @param mode
     /// @return 线程池对象
