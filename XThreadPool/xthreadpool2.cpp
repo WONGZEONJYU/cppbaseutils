@@ -161,16 +161,20 @@ public:
             m_is_poolRunning.loadAcquire() &&
             m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire() &&
             m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
-            if (m_tasksQueue_.size() < m_threadsSizeThreshold.loadAcquire()){
-                const auto thSize{static_cast<XSize_t>(m_tasksQueue_.size())};
-                for (XSize_t i{};i < thSize;++i){
-                    if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
-                        m_threadsContainer_[th->get_id()] = th;
-                        std::cout << "new Thread\n" << std::flush;
-                        m_idleThreadsSize.fetchAndAddOrdered(1);
-                        th->start();
-                        m_taskQue_Cond_.notify_all();
-                    }
+
+            auto thSize{static_cast<XSize_t>(m_tasksQueue_.size())};
+
+            if (thSize >= m_threadsSizeThreshold.loadAcquire()){
+                thSize = m_threadsSizeThreshold.loadAcquire() - static_cast<decltype(thSize)>(m_threadsContainer_.size());
+            }
+
+            for (XSize_t i{};i < thSize;++i){
+                if (const auto th{XThread_::create([this](const auto &id){run(id);})}){
+                    m_threadsContainer_[th->get_id()] = th;
+                    std::cout << "new Thread\n" << std::flush;
+                    m_idleThreadsSize.fetchAndAddOrdered(1);
+                    th->start();
+                    m_taskQue_Cond_.notify_all();
                 }
             }
         }
@@ -194,8 +198,6 @@ public:
 
         auto thSize{threadSize};
 
-        std::cout << "Pool Start Running\n" << std::flush;
-
         if (thSize > m_threadsSizeThreshold.loadAcquire()){
             std::cerr << "threadsSize Reached the upper limit\n" << std::flush;
             thSize = m_threadsSizeThreshold.loadAcquire();
@@ -211,6 +213,8 @@ public:
             }
         }
 #endif
+        std::cout << "Pool Start Running\n" << std::flush;
+
         m_initThreadsSize.storeRelease(0);
 
         std::unique_lock lock(m_mtx_);
