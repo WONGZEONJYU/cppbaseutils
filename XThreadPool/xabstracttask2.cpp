@@ -162,7 +162,7 @@ std::binary_semaphore& XAbstractTask2::operator()(std::nullptr_t) const {
     return m_d_->m_allow_bin;
 }
 #else
-Xbinary_Semaphore &XAbstractTask2::operator()(std::nullptr_t) const {
+Xbinary_Semaphore& XAbstractTask2::operator()(std::nullptr_t) const {
     return m_d_->m_allow_bin;
 }
 #endif
