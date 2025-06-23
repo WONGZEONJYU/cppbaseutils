@@ -93,23 +93,25 @@ public:
     })};
 
     const auto pool2{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)};
-#if 0
+#if 1
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
+    pool2->setThreadTimeout(70);
     //pool2->start();
+
     for (int i{};i < 30;++i){
        std::make_shared<A>(i)->joinThreadPool(pool2);
     }
 
-    //std::this_thread::sleep_for(std::chrono::seconds(10));
+    //pool2->stop();
 
     Functor3 f3{
             .m_name = "test"
     };
 
-    const auto p1{pool2->tempTaskJoin(&Functor3::func, std::addressof(f3), "34")} ,
-            p2{pool2->tempTaskJoin(Double,35.0)};
+    const auto p1{pool2->taskJoin(&Functor3::func, std::addressof(f3), "34")} ,
+            p2{pool2->taskJoin(Double,35.0)};
 
-    const auto r{pool2->tempTaskJoin([&](const int& id){
+    const auto r{pool2->taskJoin([&](const int& id){
         pool2->stop();
         pool2->start();
         std::cerr << "p1->result<std::string>(): " << p1->result<std::string>() << "\n" << std::flush;
@@ -123,8 +125,8 @@ public:
         return id + 10;
     },31)};
 
-    pool2->tempTaskJoin(Functor(),32);
-    pool2->tempTaskJoin(Functor2());
+    pool2->taskJoin(Functor(),32);
+    pool2->taskJoin(Functor2());
 
     const auto last_time{std::chrono::system_clock::now()};
     while (std::chrono::system_clock::now() - last_time < std::chrono::seconds(90)){
@@ -140,9 +142,9 @@ public:
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-     //std::cout << p1->result<std::string>() << "\n";
-    //std::cout << p1->result<std::string>() << "\n"; //会再次被阻塞,是一个bug
-     std::cout << p2->result<double>() << '\n'; //与上同理
+    std::cout << "r->result<int>(): " << r->result<int>() << "\n" << std::flush;
+     std::cout << "p1->result<std::string>(): " << p1->result<std::string>() << "\n"<< std::flush;
+     std::cout << "p2->result<double>(): " << p2->result<double>() << "\n" << std::flush;; //与上同理
 #else
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
     xtd::XAbstractTask2_Ptr task1{},task2{};
