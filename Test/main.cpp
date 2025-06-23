@@ -104,16 +104,16 @@ public:
 
     //pool2->stop();
 
-    Functor3 f3{
-            .m_name = "test"
-    };
+    Functor3 f3{.m_name = "test"};
 
     const auto p1{pool2->taskJoin(&Functor3::func, std::addressof(f3), "34")} ,
             p2{pool2->taskJoin(Double,35.0)};
 
-    const auto r{pool2->taskJoin([&](const int& id){
+    xtd::XAbstractTask2_Ptr lambda{};
+    lambda = pool2->taskJoin([&](const int& id){
         pool2->stop();
         pool2->start();
+        pool2->taskJoin(lambda);
         std::cerr << "p1->result<std::string>(): " << p1->result<std::string>() << "\n" << std::flush;
         for (int i {}; i < 3;++i){
             {
@@ -123,7 +123,7 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(wait_time));
         }
         return id + 10;
-    },31)};
+    },31);
 
     pool2->taskJoin(Functor(),32);
     pool2->taskJoin(Functor2());
@@ -142,7 +142,7 @@ public:
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    std::cout << "r->result<int>(): " << r->result<int>() << "\n" << std::flush;
+    std::cout << "lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
      std::cout << "p1->result<std::string>(): " << p1->result<std::string>() << "\n"<< std::flush;
      std::cout << "p2->result<double>(): " << p2->result<double>() << "\n" << std::flush;; //与上同理
 #else
@@ -194,12 +194,6 @@ public:
 
 [[maybe_unused]] static inline void test2(){
 
-    // std::unordered_map<int,std::string> m_map{{1,"fuck1"},{2,"fuck2"},{3,"fuck3"},};
-    // m_map.insert({3,"fuck3"});
-    //
-    // for (const auto &[key,value]:m_map){
-    //     std::cerr << "key: " << key << " value: " << value << "\n";
-    // }
     bool exit_{};
     std::atomic_bool b{};
     std::thread{[&]{
@@ -217,7 +211,6 @@ public:
         if (v < 0){
             break;
         }
-        std::binary_semaphore bin{0};
         b.store(true,std::memory_order_release);
         b.notify_all();
     }
