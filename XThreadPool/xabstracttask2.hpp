@@ -6,6 +6,8 @@
 #include <memory>
 #include <functional>
 #include <iostream>
+#include <XAtomic/xatomic.hpp>
+
 #if _LIBCPP_STD_VER >= 20
 #include <semaphore>
 #else
@@ -20,19 +22,41 @@ class XAbstractTask2;
 using XAbstractTask2_Ptr = std::shared_ptr<XAbstractTask2>;
 
 class XAbstractTask2 : public std::enable_shared_from_this<XAbstractTask2> {
-    friend class XThreadPool2;
-    class XAbstractTask2Private;
-    mutable std::shared_ptr<XAbstractTask2Private> m_d_{};
-    X_DECLARE_PRIVATE_D(m_d_,XAbstractTask2Private)
-public:
-    X_DEFAULT_COPY_MOVE(XAbstractTask2)
-    virtual ~XAbstractTask2() = default;
-
     enum class Model {
         BLOCK,///@brief 阻塞
         NONBLOCK,///@brief 非阻塞
     };
 
+    enum class FuncVer{
+        CONST,
+        NON_CONST,
+    };
+
+    class XAbstractTask2Private;
+    X_DECLARE_PRIVATE(XAbstractTask2)
+
+    class XAbstractTask2Data {
+        X_DISABLE_COPY_MOVE(XAbstractTask2Data)
+        friend class XAbstractTask2;
+        XAbstractTask2 * m_x_ptr_{};
+#if _LIBCPP_STD_VER >= 20
+        std::binary_semaphore&
+#else
+        Xbinary_Semaphore&
+#endif
+        operator()() const;
+        [[nodiscard]] std::any getResult() const;
+        [[nodiscard]] std::any result_(const Model &) const;
+        [[nodiscard]] std::any result_for_(const std::chrono::nanoseconds &) const;
+    protected:
+        XAbstractTask2Data() = default;
+    public:
+        virtual ~XAbstractTask2Data() = default;
+    };
+
+    mutable std::shared_ptr<XAbstractTask2Data> m_d_ptr_{};
+
+public:
     static constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
     /// 用于获取线程执行完毕的返回值,如果没有可忽略
     /// 没有加入线程池或多次调用无效,不会阻塞但有警告提示
@@ -43,8 +67,8 @@ public:
     /// @return T类型
     template<typename Ty>
     [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = BlockModel) const noexcept(false) {
-        const auto v{result_(model_)};
-        return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
+        const auto v{m_d_ptr_->result_(model_)};
+        return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{};
     }
 
     /// 带超时等待返回值
@@ -55,8 +79,8 @@ public:
     /// @return Ty类型数据
     template<typename Ty,typename Rep_,typename Period_>
     [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::duration<Rep_,Period_> &rel_time) const noexcept(false) {
-        const auto v{result_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))};
-        return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
+        const auto v{m_d_ptr_->result_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))};
+        return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{};
     }
 
     /// 带指定时间等候返回值
@@ -68,7 +92,7 @@ public:
     [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false) {
 
         constexpr std::string_view selfname{__PRETTY_FUNCTION__};
-#if 1
+#if 0
         const XRAII raii{[&selfname]{
             std::cout << selfname << " begin\n" << std::flush;
         },[&selfname]{
@@ -80,12 +104,14 @@ public:
             return {};
         }
 
-        if ((*this)(nullptr).try_acquire_until(abs_time_)){
+        if (const auto& until{*m_d_ptr_};
+            !until().try_acquire_until(abs_time_)){
+            std::cerr << selfname << " tips: timeout\n" << std::flush;
             return Ty{};
         }
 
-        const auto v{Return_()};
-        return v.has_value() ? std::any_cast<Ty>(v) : Ty{};
+        const auto v{m_d_ptr_->getResult()};
+        return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{};
     }
 
     /// 设置责任链,开发者可以重写
@@ -106,31 +132,47 @@ public:
     /// @return  ture or false
     [[maybe_unused]] [[nodiscard]] bool is_running_() const;
 
-protected:
+    virtual ~XAbstractTask2() = default;
 
-    XAbstractTask2();
+protected:
+    static constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
+    /// 如果重载的是 virtual std::any run() const;
+    /// is_OverrideConst = CONST_RUN
+    /// 如果是virtual std::any run();
+    /// is_OverrideConst = NON_CONST_RUN
+    /// 填错会在运行时出现提示
+    /// @param is_OverrideConst
+    explicit XAbstractTask2(const FuncVer& is_OverrideConst);
 
     ///响应责任链的请求,需开发者自行重写
     /// @param arg
     [[maybe_unused]] virtual void responseHandler(const std::any &arg) {(void )arg;}
 
-    /// 开发者必须重写本函数,本函数为线程执行函数
+    /// 开发者注意,重写那个版本需在构造函数写明ture or flase
     /// @return 任意类型
-    virtual std::any run() = 0;
+    virtual std::any run() {
+        std::cerr <<
+            __PRETTY_FUNCTION__ << " tips: You did not rewrite this function, "
+            "please pay attention to whether your constructor parameters are filled in incorrectly\n";
+        return {};
+    }
+
+    virtual std::any run () const {
+        std::cerr <<
+            __PRETTY_FUNCTION__ << " tips: You did not rewrite this function, "
+            "please pay attention to whether your constructor parameters are filled in incorrectly\n";
+        return {};
+    }
 
 private:
+    friend class XThreadPool2;
     void operator()();
-    void set_result_(const std::any &) const;
+    void operator()() const;
+    bool is_OverrideConst() const;
     void set_exit_function_(std::function<bool()> &&) const;
-    void set_occupy_() const;
-    std::any result_(const Model &) const;
-    std::any result_for_(const std::chrono::nanoseconds &) const;
-    std::any Return_() const;
-#if _LIBCPP_STD_VER >= 20
-    std::binary_semaphore& operator()(std::nullptr_t) const;
-#else
-    Xbinary_Semaphore& operator()(std::nullptr_t) const;
-#endif
+    void resetOccupy_() const;
+    XAtomicPointer<const void> &Owner() const;
+    X_DEFAULT_COPY_MOVE(XAbstractTask2)
 };
 
 XTD_INLINE_NAMESPACE_END
