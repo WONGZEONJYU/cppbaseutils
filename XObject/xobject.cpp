@@ -1,12 +1,12 @@
 #include "xobject_p.hpp"
 #include <iostream>
 
-xtd::XObject::XObject():m_d_(std::make_unique<XObjectPrivate>()) {
+xtd::XObject::XObject():m_d_ptr_(std::make_unique<XObjectPrivate>()) {
 
 }
 
 xtd::XObject::~XObject() {
-    if (const auto x{m_d_->m_sharedRefcount_.loadRelaxed()}){
+    if (const auto x{m_d_ptr_->m_sharedRefcount_.loadRelaxed()}){
         if (x->m_strong_ref.loadRelaxed() > 0){
             std::cerr << "XObject: shared XObject was deleted directly. The program is malformed and may crash.";
         }
