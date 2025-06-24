@@ -41,6 +41,9 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
     template<typename Fn,typename ...Args>
     class XTemporaryTasksImpl final: public XAbstractTask2,XBaseTemporaryTasks {
 
+        template<typename ,typename >
+        friend class virtual_override_checker;
+
         using ReturnType = std::invoke_result_t<std::decay_t<Fn>,std::decay_t<Args>...>;
         using decayed_Tuple_ = std::tuple<std::decay_t<Fn>,std::decay_t<Args>...>;
         mutable decayed_Tuple_ m_tuple_{};
@@ -62,7 +65,7 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
         }
 
     public:
-        explicit XTemporaryTasksImpl(Private,Fn && fn,Args && ...args):XAbstractTask2(CONST_RUN),
+        explicit XTemporaryTasksImpl(Private,Fn && fn,Args && ...args):XAbstractTask2(this),
         m_tuple_{std::forward<std::decay_t<Fn>>(fn),std::forward<std::decay_t<Args>>(args)...}{}
         ~XTemporaryTasksImpl() override = default;
     };

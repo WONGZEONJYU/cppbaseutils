@@ -7,6 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <XAtomic/xatomic.hpp>
+#include <XHelper/xtypetraits.hpp>
 
 #if _LIBCPP_STD_VER >= 20
 #include <semaphore>
@@ -134,6 +135,8 @@ public:
 
     virtual ~XAbstractTask2() = default;
 
+private:
+    explicit XAbstractTask2(const FuncVer& is_OverrideConst);
 protected:
     static constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
     /// 如果重载的是 virtual std::any run() const;
@@ -142,13 +145,18 @@ protected:
     /// is_OverrideConst = NON_CONST_RUN
     /// 填错会在运行时出现提示
     /// @param is_OverrideConst
-    explicit XAbstractTask2(const FuncVer& is_OverrideConst);
+
+    template<typename T>
+    explicit XAbstractTask2(T *):
+    XAbstractTask2(virtual_override_checker<XAbstractTask2,T>::derived_func_is_const ? CONST_RUN : NON_CONST_RUN){
+
+    }
 
     ///响应责任链的请求,需开发者自行重写
     /// @param arg
     [[maybe_unused]] virtual void responseHandler(const std::any &arg) {(void )arg;}
 
-    /// 开发者注意,重写那个版本需在构造函数写明ture or flase
+    /// 开发者注意,重写那个版本需在构造函数写明
     /// @return 任意类型
     virtual std::any run() {
         std::cerr <<
