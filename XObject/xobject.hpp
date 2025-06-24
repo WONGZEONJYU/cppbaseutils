@@ -11,12 +11,12 @@ class XObjectPrivate;
 
 class XObject {
     X_DISABLE_COPY_MOVE(XObject)
-    X_DECLARE_PRIVATE_D(m_d_,XObjectPrivate)
+    X_DECLARE_PRIVATE(XObject)
 protected:
     explicit XObject();
     virtual ~XObject();
 private:
-    std::unique_ptr<XObjectPrivate> m_d_{};
+    std::unique_ptr<XObjectPrivate> m_d_ptr_{};
 };
 
 XTD_INLINE_NAMESPACE_END
