@@ -74,7 +74,7 @@ class A final : public xtd::XAbstractTask2 {
     }
     int m_id_{};
 public:
-    explicit A(const int id):m_id_{id}{};
+    explicit A(const int id):XAbstractTask2(NON_CONST_RUN),m_id_{id}{};
 };
 
 [[maybe_unused]] static inline void test1() {
@@ -92,7 +92,8 @@ public:
         exit_ = true;
     })};
 
-    const auto pool2{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)};
+    const auto pool2{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)},
+                pool3{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)};
 #if 1
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
     pool2->setThreadTimeout(70);
@@ -124,7 +125,7 @@ public:
         }
         return id + 10;
     },31);
-
+    pool3->taskJoin(lambda);
     pool2->taskJoin(Functor(),32);
     pool2->taskJoin(Functor2());
 
@@ -145,6 +146,11 @@ public:
     std::cout << "lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
      std::cout << "p1->result<std::string>(): " << p1->result<std::string>() << "\n"<< std::flush;
      std::cout << "p2->result<double>(): " << p2->result<double>() << "\n" << std::flush;; //与上同理
+
+    pool3->taskJoin(lambda);
+
+    std::cout << "pool3 lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
+    std::cout << "pool3 lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
 #else
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
     xtd::XAbstractTask2_Ptr task1{},task2{};
