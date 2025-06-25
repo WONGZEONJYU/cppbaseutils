@@ -98,33 +98,28 @@ struct [[maybe_unused]] is_const_member_function<T(Args...) const> : std::true_t
 template<typename T, typename... Args>
 struct [[maybe_unused]] is_const_member_function<T(Args...)> : std::false_type {};
 
-#if 1
-// 检查派生类是否正确重写了基类的虚函数
 template<typename Base, typename Derived>
 class [[maybe_unused]] virtual_override_checker final {
 
     static_assert(std::is_base_of_v<Base,Derived>,"err!");
 
-private:
     // 检查func函数的const属性
     template<typename T>
     [[maybe_unused]] static auto check_func_const(int)
     -> decltype(std::declval<const T>().run(), std::true_type{}){
         return {};
-    };
+    }
 
     template<typename>
-    static std::false_type check_func_const(...){return {};};
+    static std::false_type check_func_const(...){return {};}
 
 public:
-
     static constexpr bool base_func_is_const {decltype(check_func_const<Base>(0))::value};
 
     static constexpr bool derived_func_is_const {decltype(check_func_const<Derived>(0))::value};
 
     [[maybe_unused]] static constexpr bool is_correctly_overridden {base_func_is_const == derived_func_is_const};
 };
-#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

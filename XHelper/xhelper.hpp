@@ -29,6 +29,8 @@
 template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
 template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
+template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
+{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 #define X_DECLARE_PRIVATE(Class) \
     inline Class##Private* d_func() noexcept \
@@ -66,7 +68,7 @@ template<typename F>
 class [[maybe_unused]] Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
     mutable F m_fn_;
-    mutable unsigned int is_destroy:1{};
+    mutable uint32_t is_destroy:1{};
 public:
     constexpr inline explicit Destroyer(F &&f):
     m_fn_(std::move(f)){}
@@ -87,21 +89,21 @@ template<typename F2>
 class [[maybe_unused]] XRAII final {
     X_DISABLE_COPY_MOVE(XRAII)
     mutable F2 m_f2_{};
-    mutable unsigned int m_is_destroy_:1{};
+    mutable uint32_t m_is_destroy_:1{};
 public:
     [[maybe_unused]] constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
     m_f2_(std::move(f2)){
         f1();
     }
 
-    constexpr inline void destroy() const{
+    constexpr inline void destroy() const {
         if (!m_is_destroy_){
             m_is_destroy_ = true;
             m_f2_();
         }
     }
 
-    constexpr inline ~XRAII(){
+    constexpr inline ~XRAII() {
         destroy();
     }
 };

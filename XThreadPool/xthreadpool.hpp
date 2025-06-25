@@ -1,7 +1,7 @@
 #ifndef X_THREADPOOL2_HPP
 #define X_THREADPOOL2_HPP
 
-#include <XThreadPool/xabstracttask2.hpp>
+#include <XThreadPool/xtask.hpp>
 #include <XHelper/xtypetraits.hpp>
 
 XTD_NAMESPACE_BEGIN
@@ -15,42 +15,41 @@ using XSize_t = int32_t;
 using XUSize_t = uint64_t;
 #endif
 
-class XThreadPool2;
-using XThreadPool2_Ptr = std::shared_ptr<XThreadPool2>;
+class XThreadPool;
+using XThreadPool_Ptr = std::shared_ptr<XThreadPool>;
 
-class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
-    class XThreadPool2Private;
-    class XThreadPool2Data {
-        X_DISABLE_COPY_MOVE(XThreadPool2Data)
+class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
+
+    class XThreadPoolPrivate;
+    X_DECLARE_PRIVATE(XThreadPool)
+
+    class XThreadPoolData {
+        X_DISABLE_COPY_MOVE(XThreadPoolData)
     protected:
-        XThreadPool2Data() = default;
+        XThreadPoolData() = default;
     public:
-        virtual ~XThreadPool2Data() = default;
+        virtual ~XThreadPoolData() = default;
     };
-    using XThreadPool2Data_Ptr = std::unique_ptr<XThreadPool2Data>;
-    mutable XThreadPool2Data_Ptr m_d_ptr_{};
-    X_DECLARE_PRIVATE(XThreadPool2)
+    using XThreadPoolData_Ptr = std::unique_ptr<XThreadPoolData>;
+    mutable XThreadPoolData_Ptr m_d_ptr_{};
 
-    class XBaseTemporaryTasks {
+
+    class XTemporaryTasksBase {
     protected:
-        XBaseTemporaryTasks() = default;
-        virtual ~XBaseTemporaryTasks() = default;
         enum class Private{};
+        XTemporaryTasksBase() = default;
+        virtual ~XTemporaryTasksBase() = default;
     };
 
     template<typename Fn,typename ...Args>
-    class XTemporaryTasksImpl final: public XAbstractTask2,XBaseTemporaryTasks {
+    class XTemporaryTasksImpl final: public XTask2<Const> , XTemporaryTasksBase {
 
-        template<typename ,typename >
-        friend class virtual_override_checker;
-
-        using ReturnType = std::invoke_result_t<std::decay_t<Fn>,std::decay_t<Args>...>;
         using decayed_Tuple_ = std::tuple<std::decay_t<Fn>,std::decay_t<Args>...>;
         mutable decayed_Tuple_ m_tuple_{};
+        using ReturnType = std::invoke_result_t<std::decay_t<Fn>,std::decay_t<Args>...>;
 
         std::any run() const override {
             using indices = std::make_index_sequence<std::tuple_size_v<decayed_Tuple_>>;
-            const auto& call{*this};
             if constexpr (std::is_same_v<ReturnType,void>){
                 call(indices{});
                 return {};
@@ -60,17 +59,17 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
         }
 
         template<size_t ...I>
-        ReturnType operator()(std::index_sequence<I...>) const{
+        ReturnType call(std::index_sequence<I...>) const {
             return std::invoke(std::get<I>(std::forward<decayed_Tuple_>(m_tuple_))...);
         }
 
     public:
-        explicit XTemporaryTasksImpl(Private,Fn && fn,Args && ...args):XAbstractTask2(this),
+        explicit XTemporaryTasksImpl(Private,Fn && fn,Args && ...args):
         m_tuple_{std::forward<std::decay_t<Fn>>(fn),std::forward<std::decay_t<Args>>(args)...}{}
         ~XTemporaryTasksImpl() override = default;
     };
 
-    class XTemporaryTasksFactory final : XBaseTemporaryTasks {
+    class XTemporaryTasksFactory final : XTemporaryTasksBase {
     public:
         XTemporaryTasksFactory() = delete;
 
@@ -87,13 +86,10 @@ class XThreadPool2 final : public std::enable_shared_from_this<XThreadPool2> {
         }
     };
 
-    XAbstractTask2_Ptr taskJoin_(const XAbstractTask2_Ptr &task);
+    XAbstractTask_Ptr taskJoin_(const XAbstractTask_Ptr &task);
 
 public:
-    enum class Mode {
-        FIXED,/*固定线程数模式*/
-        CACHE /*动态线程数*/
-    };
+    enum class Mode {FIXED,/*固定线程数模式*/CACHE /*动态线程数*/};
 
     static constexpr auto FixedModel{Mode::FIXED},CacheModel{Mode::CACHE};
 
@@ -114,7 +110,7 @@ public:
     /// 加入任务,如果没有在此函数前显式调用start,本函数会调用start启动
     /// 对于加入失败的任务,会对任务设置一个空的返回值以防止外部被阻塞
     /// 本函数如果在线程池管理的线程调用是无效的,不会导致程序崩溃
-    /// 临时任务,生命周期需自行管理,支持全局函数(静态和非静态)、仿函数、Lambda、成员函数(静态和非静态)、函数包装器
+    /// 支持临时任务,生命周期需自行管理,支持全局函数(静态和非静态)、仿函数、Lambda、成员函数(静态和非静态)、函数包装器
     /// @tparam Args
     /// @param args
     /// @return task对象
@@ -127,7 +123,7 @@ public:
 
             using Derived_t = std::decay_t<decltype(std::declval<First_t>().operator*())>;
 
-            static_assert(std::is_base_of_v<XAbstractTask2,Derived_t>,"Derived_t no base of XAbstractTask2");
+            static_assert(std::is_base_of_v<XAbstractTask,Derived_t>,"Derived_t no base of XAbstractTask2");
 
             return taskJoin_(std::forward<Args>(args)...);
         }else{
@@ -177,13 +173,13 @@ public:
     /// 创建线程池对象,默认模式为FIXED
     /// @param mode
     /// @return 线程池对象
-    [[maybe_unused]] [[nodiscard]] static XThreadPool2_Ptr create(const Mode &mode = FixedModel);
+    [[maybe_unused]] [[nodiscard]] static XThreadPool_Ptr create(const Mode &mode = FixedModel);
 
-    explicit XThreadPool2(const Mode &,XThreadPool2Data_Ptr &&);
+    explicit XThreadPool(const Mode &,XThreadPoolData_Ptr &&);
 
-    ~XThreadPool2();
+    ~XThreadPool();
 
-    X_DISABLE_COPY_MOVE(XThreadPool2)
+    X_DISABLE_COPY_MOVE(XThreadPool)
 };
 
 [[maybe_unused]] void sleep_for_ns(const XSize_t& ns);

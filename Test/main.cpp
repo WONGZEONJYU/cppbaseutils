@@ -1,10 +1,9 @@
 #include <future>
 #include <iostream>
-#include <XThreadPool/xthreadpool2.hpp>
+#include <XThreadPool/xthreadpool.hpp>
 #include <XSignal/xsignal.hpp>
 #include <semaphore>
 #include <list>
-#include <map>
 
 static std::mutex mtx{};
 
@@ -61,12 +60,13 @@ static double Double(const double f){
     return f + 100.0;
 }
 
-class A final : public xtd::XAbstractTask2 {
+class A final : public xtd::XTask2<xtd::NonConst> {
     std::any run() override {
         for (int i {}; i < 3 ;++i){
             {
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " id = " << m_id_ << "\n";
+                m_id_++;
             }
             xtd::sleep_for_s(wait_time);
         }
@@ -74,10 +74,11 @@ class A final : public xtd::XAbstractTask2 {
     }
     int m_id_{};
 public:
-    explicit A(const int id):XAbstractTask2(this),m_id_{id}{};
+    explicit A(const int id):m_id_{id}{}
+    ~A() override = default;
 };
 
-[[maybe_unused]] static inline void test1() {
+[[maybe_unused]] static void test1() {
     bool exit_{};
 
     const auto sigterm{xtd::Signal_Register(SIGTERM,{},[&]{
@@ -92,8 +93,8 @@ public:
         exit_ = true;
     })};
 
-    const auto pool2{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)},
-                pool3{xtd::XThreadPool2::create(xtd::XThreadPool2::Mode::CACHE)};
+    const auto pool2{xtd::XThreadPool::create(xtd::XThreadPool::Mode::CACHE)},
+                pool3{xtd::XThreadPool::create(xtd::XThreadPool::Mode::CACHE)};
 #if 1
     //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
     pool2->setThreadTimeout(70);
@@ -110,7 +111,7 @@ public:
     const auto p1{pool2->taskJoin(&Functor3::func, std::addressof(f3), "34")} ,
             p2{pool2->taskJoin(Double,35.0)};
 
-    xtd::XAbstractTask2_Ptr lambda{};
+    xtd::XAbstractTask_Ptr lambda{};
     lambda = pool2->taskJoin([&](const int& id){
         //pool2->stop();
         //pool2->start();
@@ -198,7 +199,7 @@ public:
 
 #include <thread>
 
-[[maybe_unused]] static inline void test2(){
+[[maybe_unused]] static void test2(){
 
     bool exit_{};
     std::atomic_bool b{};
@@ -227,7 +228,7 @@ public:
 
     using namespace std::chrono;
 
-    std::deque<xtd::XAbstractTask2_Ptr> tasks1,task2s{};
+    std::deque<xtd::XAbstractTask_Ptr> tasks1,task2s{};
     for (int i{};i < 1000000;++i){
         tasks1.push_back(std::make_shared<A>(10));
     }
@@ -239,7 +240,7 @@ public:
     auto runtime{duration_cast<milliseconds>(system_clock::now() - last_time).count()};
     std::cerr <<  "deque w:" << runtime << std::endl;
 
-    std::unordered_map<void*,xtd::XAbstractTask2_Ptr> tasks2{};
+    std::unordered_map<void*,xtd::XAbstractTask_Ptr> tasks2{};
     last_time = system_clock::now();
 
     for (const auto &task : tasks1){
@@ -255,6 +256,5 @@ int main(const int argc,const char **const argv){
     test1();
     //test2();
     //test3();
-
     return 0;
 }

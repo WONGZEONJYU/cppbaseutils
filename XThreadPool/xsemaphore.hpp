@@ -18,7 +18,7 @@ class [[maybe_unused]] XCounting_Semaphore final {
     static_assert(LeastMaxValue >= 0, "The least maximum value must be a positive number");
 
 public:
-    static constexpr std::ptrdiff_t max() noexcept {
+    static constexpr decltype(LeastMaxValue) max() noexcept {
         return LeastMaxValue;
     }
 
@@ -28,7 +28,7 @@ public:
 
     ~XCounting_Semaphore() = default;
 
-    [[maybe_unused]] void release(const std::ptrdiff_t &update = 1) const{
+    [[maybe_unused]] void release(const std::ptrdiff_t &update = 1) const {
         std::unique_lock lock(m_mutex_);
         assert(update >= 0);
         assert(count_ <= max() - update);
@@ -36,7 +36,7 @@ public:
         m_cv_.notify_all();
     }
 
-    [[maybe_unused]] void acquire() const{
+    [[maybe_unused]] void acquire() const {
         std::unique_lock lock(m_mutex_);
         m_cv_.wait(lock,[this]{ return count_ > 0;});
         --count_;
@@ -100,7 +100,7 @@ public:
     X_DISABLE_COPY_MOVE(XCounting_Semaphore)
 };
 
-using Xbinary_Semaphore = XCounting_Semaphore<1>;
+using XBinary_Semaphore = XCounting_Semaphore<1>;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

@@ -2,7 +2,6 @@
 #define X_THREAD_LOCAL_HPP 1
 
 #include <XHelper/xhelper.hpp>
-#include <XAtomic/xatomic.hpp>
 #include <unordered_map>
 #include <mutex>
 #include <thread>
@@ -48,8 +47,12 @@ private:
         }
     }
 
-    friend class XThreadLocalRaii<Ty>;
+    template<typename Ty_>
+    friend class XThreadLocalRaii<Ty_>;
 };
+
+using XThreadLocalVoid = XThreadLocalRaii<void*>;
+using XThreadLocalConstVoid = XThreadLocalRaii<const void*>;
 
 template<typename Ty>
 class XThreadLocalRaii final {
@@ -57,22 +60,19 @@ class XThreadLocalRaii final {
     mutable XThreadLocal<Ty> * m_tls_{};
 public:
     explicit XThreadLocalRaii(XThreadLocal<Ty> & tls,const Ty & v):
-    m_tls_(std::addressof(tls)) {
-        tls.set_val(v);
-    }
+    m_tls_(std::addressof(tls)) {tls.set_val(v);}
 
-    [[maybe_unused]] void reset_value(const Ty & v) const {
-        m_tls_->set_val(v);
-    };
+    [[maybe_unused]] void reset_value(const Ty & v) const {m_tls_->set_val(v);}
 
-    void remove_value() const {
-        m_tls_->remove_value();
-    };
+    void remove_value() const {m_tls_->remove_value();}
 
     ~XThreadLocalRaii() {
         remove_value();
     }
 };
+
+using XThreadLocalRaiiVoid = XThreadLocalRaii<void*>;
+using XThreadLocalRaiiConstVoid = XThreadLocalRaii<const void*>;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
