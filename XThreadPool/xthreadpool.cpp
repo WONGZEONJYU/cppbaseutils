@@ -163,7 +163,8 @@ public:
         }
 
         task->set_exit_function_([this]{return m_is_poolRunning.loadAcquire();});
-        task->resetOccupy_();
+        task->resetRecall_();
+        task->allow_get_();
 
         m_tasksQueue_.push_back(task);
         m_taskQue_Cond_.notify_all();

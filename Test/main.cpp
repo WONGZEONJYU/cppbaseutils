@@ -113,10 +113,10 @@ public:
 
     xtd::XAbstractTask_Ptr lambda{};
     lambda = pool2->taskJoin([&](const int& id){
-        //pool2->stop();
-        //pool2->start();
-        //pool2->taskJoin(lambda);
-        //std::cerr << "p1->result<std::string>(): " << p1->result<std::string>() << "\n" << std::flush;
+        pool2->stop();
+        pool2->start();
+        pool2->taskJoin(lambda);
+        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>() << "\n" << std::flush;
         for (int i {}; i < 3;++i){
             {
                 std::unique_lock lock(mtx);
@@ -126,7 +126,8 @@ public:
         }
         return id + 10;
     },31);
-    //pool3->taskJoin(lambda);
+
+    pool3->taskJoin(lambda);
     pool2->taskJoin(Functor(),32);
     pool2->taskJoin(Functor2());
 

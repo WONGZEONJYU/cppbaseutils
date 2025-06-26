@@ -10,9 +10,6 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename >
-class XThreadLocalRaii;
-
 template<typename Ty>
 class XThreadLocal final {
     X_DISABLE_COPY_MOVE(XThreadLocal)
@@ -34,12 +31,6 @@ public:
         return {};
     }
 
-private:
-    void set_val(const Ty &v) const {
-        std::unique_lock lock{m_mtx_};
-        m_storage_[Hash_id()] = v;
-    }
-
     void remove_value() const {
         std::unique_lock lock{m_mtx_};
         if (const auto it{m_storage_.find(Hash_id())};it != m_storage_.end()){
@@ -47,24 +38,37 @@ private:
         }
     }
 
+private:
+    void set_val(const Ty &v) const {
+        std::unique_lock lock{m_mtx_};
+        m_storage_[Hash_id()] = v;
+    }
+
     template<typename Ty_>
-    friend class XThreadLocalRaii<Ty_>;
+    friend class XThreadLocalRaii;
 };
 
-using XThreadLocalVoid = XThreadLocalRaii<void*>;
-using XThreadLocalConstVoid = XThreadLocalRaii<const void*>;
+using XThreadLocalVoid = XThreadLocal<void*>;
+using XThreadLocalConstVoid = XThreadLocal<const void*>;
 
 template<typename Ty>
 class XThreadLocalRaii final {
     X_DISABLE_COPY_MOVE(XThreadLocalRaii)
     mutable XThreadLocal<Ty> * m_tls_{};
+    uint32_t m_unfree_:1{};
 public:
-    explicit XThreadLocalRaii(XThreadLocal<Ty> & tls,const Ty & v):
-    m_tls_(std::addressof(tls)) {tls.set_val(v);}
+    explicit XThreadLocalRaii(XThreadLocal<Ty> & tls,const Ty & v,const bool & is_Unfree = {}):
+    m_tls_(std::addressof(tls)){
+        m_unfree_ = is_Unfree;
+        tls.set_val(v);
+    }
 
-    [[maybe_unused]] void reset_value(const Ty & v) const {m_tls_->set_val(v);}
-
-    void remove_value() const {m_tls_->remove_value();}
+    void remove_value() const {
+        if (m_unfree_){
+            return;
+        }
+        m_tls_->remove_value();
+    }
 
     ~XThreadLocalRaii() {
         remove_value();

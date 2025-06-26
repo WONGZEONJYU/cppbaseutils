@@ -7,12 +7,13 @@
 #include <functional>
 #include <iostream>
 #include <XAtomic/xatomic.hpp>
+#include <XThreadPool/xresult.hpp>
 
-#if _LIBCPP_STD_VER >= 20
-#include <semaphore>
-#else
-#include <XThreadPool/xsemaphore.hpp>
-#endif
+// #if _LIBCPP_STD_VER >= 20
+// #include <semaphore>
+// #else
+// #include <XThreadPool/xsemaphore.hpp>
+// #endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -33,19 +34,27 @@ class XAbstractTask : public std::enable_shared_from_this<XAbstractTask> {
     X_DECLARE_PRIVATE(XAbstractTask)
 
     class XAbstractTaskData {
-        X_DISABLE_COPY_MOVE(XAbstractTaskData)
         friend class XAbstractTask;
+        X_DISABLE_COPY_MOVE(XAbstractTaskData)
         XAbstractTask * m_x_ptr_{};
-        virtual
+        XResult m_result_{};
+
 #if _LIBCPP_STD_VER >= 20
-        std::binary_semaphore&
+        mutable std::binary_semaphore m_allow_bin{0};
 #else
-        XBinary_Semaphore&
+        mutable XBinary_Semaphore m_allow_bin{0};
 #endif
-        operator()() const = 0;
         [[nodiscard]] virtual std::any getResult() const = 0;
         [[nodiscard]] virtual std::any result_(const Model &) const = 0;
         [[nodiscard]] virtual std::any result_for_(const std::chrono::nanoseconds &) const = 0;
+        template<typename Clock_,typename Duration_>
+        std::any result_until_(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const {
+            if (m_allow_bin.try_acquire_until(abs_time_)){
+                std::cerr << __PRETTY_FUNCTION__ << " tips: timeout\n" << std::flush;
+                return {};
+            }
+            return std::move(getResult());
+        }
     protected:
         XAbstractTaskData() = default;
     public:
@@ -57,8 +66,7 @@ class XAbstractTask : public std::enable_shared_from_this<XAbstractTask> {
 public:
     X_DEFAULT_COPY_MOVE(XAbstractTask)
 
-    static constexpr auto BlockModel{Model::BLOCK},
-    NonblockModel{Model::NONBLOCK};
+    static constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
 
     /// 用于获取线程执行完毕的返回值,如果没有可忽略
     /// 没有加入线程池或多次调用无效,不会阻塞但有警告提示
@@ -69,8 +77,11 @@ public:
     /// @return T类型
     template<typename Ty>
     [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = BlockModel) const noexcept(false) {
-        const auto v{m_d_ptr_->result_(model_)};
-        return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{};
+        if (BlockModel == model_){
+            return std::move(m_d_ptr_->m_result_.get<Ty>());
+        }else{
+            return std::move(m_d_ptr_->m_result_.try_get<Ty>());
+        }
     }
 
     /// 带超时等待返回值
@@ -81,8 +92,7 @@ public:
     /// @return Ty类型数据
     template<typename Ty,typename Rep_,typename Period_>
     [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::duration<Rep_,Period_> &rel_time) const noexcept(false) {
-        const auto v{m_d_ptr_->result_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))};
-        return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{};
+        return std::move(m_d_ptr_->m_result_.get_for<Ty>(rel_time));
     }
 
     /// 带指定时间等候返回值
@@ -92,20 +102,7 @@ public:
     /// @return Ty类型
     template<typename Ty,typename Clock_,typename Duration_>
     [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false) {
-
-        if (!is_running()){
-            std::cerr << __PRETTY_FUNCTION__ << " tips: tasks not added\n" << std::flush;
-            return {};
-        }
-
-        if (const auto& until{*m_d_ptr_};
-            !until().try_acquire_until(abs_time_)){
-            std::cerr << __PRETTY_FUNCTION__ << " tips: timeout\n" << std::flush;
-            return Ty{};
-        }
-
-        const auto v{m_d_ptr_->getResult()};
-        return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{};
+        return std::move(m_d_ptr_->m_result_.get_until<Ty>(abs_time_));
     }
 
     /// 设置责任链,开发者可以重写
@@ -133,7 +130,7 @@ protected:
     enum class PrivateConstruct{};
     ///响应责任链的请求,需开发者自行重写
     /// @param arg
-    [[maybe_unused]] virtual void responseHandler(const std::any &arg) {(void )arg;}
+    [[maybe_unused]] virtual void responseHandler(const std::any &arg) {(void)arg;}
 
 private:
     virtual std::any run();
@@ -141,7 +138,10 @@ private:
     explicit XAbstractTask(const FuncVer&);
     void operator()() const;
     void set_exit_function_(std::function<bool()> &&) const;
-    void resetOccupy_() const;
+    void resetRecall_() const;
+    void allow_get_() const {
+        m_d_ptr_->m_result_.allow_get();
+    }
     XAtomicPointer<const void> &Owner_() const;
 
     template<typename...>

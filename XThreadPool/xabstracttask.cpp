@@ -3,6 +3,8 @@
 #include <future>
 #include <semaphore>
 
+#include "xthreadlocal.hpp"
+
 #ifdef UNUSE_STD_THREAD_LOCAL
 #include "xthreadlocal.hpp"
 #endif
@@ -14,20 +16,13 @@ class XAbstractTask::XAbstractTaskPrivate final : public XAbstractTaskData {
     enum class Private{};
 public:
     X_DECLARE_PUBLIC(XAbstractTask)
-
-#if _LIBCPP_STD_VER >= 20
-    mutable std::binary_semaphore m_allow_bin{0};
-#else
-    mutable XBinary_Semaphore m_allow_bin{0};
-#endif
-
 #ifdef UNUSE_STD_THREAD_LOCAL
     mutable XThreadLocalConstVoid m_isSelf{};
 #else
     static inline thread_local const void * sm_isSelf{};
 #endif
     mutable FuncVer m_is_OverrideConst{};
-    mutable XAtomicBool m_occupy{};
+    mutable XAtomicBool m_recall{};
     mutable std::promise<std::any> m_result{};
     mutable std::weak_ptr<XAbstractTask> m_next{};
     mutable std::function<bool()> m_is_running{};
@@ -40,24 +35,15 @@ public:
         return std::make_shared<XAbstractTaskPrivate>(Private{});
     }
 
-#if _LIBCPP_STD_VER >= 20
-    std::binary_semaphore&
-    #else
-    Xbinary_Semaphore& ()
-    #endif
-    operator()() const override {
-        return m_allow_bin;
-    }
-
     std::any getResult() const override {
-        return m_result.get_future().get();
+        return std::move(m_result.get_future().get());
     }
 
     std::any result_(const Model & m) const override {
 
         if (NonblockModel == m){
-            return m_allow_bin.try_acquire() ? m_occupy.storeRelease(true),
-            m_result.get_future().get() : std::any{};
+            return m_allow_bin.try_acquire() ? m_recall.storeRelease(true),
+            std::move(getResult()) : std::any{};
         }
 
 #ifdef UNUSE_STD_THREAD_LOCAL
@@ -74,15 +60,15 @@ public:
             return {};
         }
 
-        if (m_occupy.loadAcquire()){
+        if (m_recall.loadAcquire()){
             std::cerr << __PRETTY_FUNCTION__ << " tips: Repeated calls\n" << std::flush;
             return {};
         }
-        m_occupy.storeRelease(true);
+        m_recall.storeRelease(true);
 
         m_allow_bin.acquire();
 
-        return m_result.get_future().get();
+        return std::move(getResult());
     }
 
     std::any result_for_(const std::chrono::nanoseconds &rel_time) const override {
@@ -97,7 +83,7 @@ public:
             return {};
         }
 
-        return m_result.get_future().get();
+        return std::move(getResult());
     }
 
     void setResult(std::any &&v) const {
@@ -121,30 +107,33 @@ bool XAbstractTask::is_running() const {
 
 void XAbstractTask::operator()() const {
     X_D(const XAbstractTask);
-    std::any ret_val{};
+    //std::any ret_val{};
+    const XSetResult set(d->m_result_);
+
     try {
 #ifdef UNUSE_STD_THREAD_LOCAL
-        XThreadLocalRaii<void*> set(d->m_isSelf,this);
+        XThreadLocalRaiiConstVoid set(d->m_isSelf,this);
 #else
         d->sm_isSelf = this;
 #endif
         if (CONST_RUN == d->m_is_OverrideConst){
-            ret_val = std::move(run());
+            //ret_val = std::move(run());
+            set.set(std::move(run()));
         }else{
             auto &obj{const_cast<XAbstractTask &>(*this)};
-            ret_val = std::move(obj.run());
+            //ret_val = std::move(obj.run());
+            set.set(std::move(obj.run()));
         }
     } catch (const std::exception &e) {
-        ret_val.reset();
+        set.set({});
         std::cerr << __PRETTY_FUNCTION__ << " exception msg : " << e.what() << "\n";
     }
-    d->setResult(std::move(ret_val));
     d->m_owner.storeRelease({});
 }
 
-void XAbstractTask::resetOccupy_() const {
+void XAbstractTask::resetRecall_() const {
     X_D(const XAbstractTask);
-    d->m_occupy.storeRelease({});
+    d->m_result_.reset();
 }
 
 void XAbstractTask::set_exit_function_(std::function<bool()> &&f) const {
