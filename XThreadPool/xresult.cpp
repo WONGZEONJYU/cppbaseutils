@@ -2,6 +2,10 @@
 #include "xresult.hpp"
 #include <iostream>
 
+#ifdef UNUSE_STD_THREAD_LOCAL
+#include "xthreadlocal.hpp"
+#endif
+
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
@@ -47,8 +51,11 @@ void XResult::allow_get() const{
 
 std::any XResult::get_() const {
     X_D(const XResult);
-
+#ifndef UNUSE_STD_THREAD_LOCAL
     if (this == d->sm_isSelf){
+#else
+    if (this == d->m_isSelf().value_or(nullptr)){
+#endif
         std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
         return {};
     }
@@ -85,24 +92,24 @@ std::any XResult::get_for_(std::chrono::nanoseconds const &del_time) const {
     return std::move(d->get_value());
 }
 
-XSetResult::XSetResult(XResult & obj):
+XResultStorage::XResultStorage(XResult & obj):
 m_XResult_(std::addressof(obj)) {
     const auto d{m_XResult_->d_func()};
 #ifdef UNUSE_STD_THREAD_LOCAL
-    XThreadLocalRaiiConstVoid set(d->m_isSelf,m_XResult_,true);
+    const XThreadLocalStorageConstVoid set(d->m_isSelf,m_XResult_,true);
 #else
     d->sm_isSelf = m_XResult_;
 #endif
 }
 
-XSetResult::XSetResult(const XResult &obj):
-XSetResult(const_cast<XResult &>(obj)){}
+XResultStorage::XResultStorage(const XResult &obj):
+XResultStorage(const_cast<XResult &>(obj)){}
 
-void XSetResult::set(std::any&& v) const {
+void XResultStorage::set(std::any&& v) const {
     m_XResult_->set(std::move(v));
 }
 
-void XSetResult::release() const {
+void XResultStorage::release() const {
     const auto d{m_XResult_->d_func()};
     (void)d;
 #ifdef UNUSE_STD_THREAD_LOCAL
@@ -110,7 +117,7 @@ void XSetResult::release() const {
 #endif
 }
 
-XSetResult::~XSetResult(){
+XResultStorage::~XResultStorage(){
     release();
 }
 

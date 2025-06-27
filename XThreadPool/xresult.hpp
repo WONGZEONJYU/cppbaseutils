@@ -43,7 +43,6 @@ class XResult final {
     std::any try_get_() const;
     std::any get_for_(std::chrono::nanoseconds const &) const;
     void set(std::any&& ) const;
-
 public:
 #define RETURN_VALUE(...)\
     auto v{__VA_ARGS__};\
@@ -81,18 +80,18 @@ public:
 
     explicit XResult();
     ~XResult() = default;
-    friend class XSetResult;
+    friend class XResultStorage;
 };
 
-class XSetResult final {
-    X_DISABLE_COPY_MOVE(XSetResult)
+class XResultStorage final {
+    X_DISABLE_COPY_MOVE(XResultStorage)
     mutable XResult * m_XResult_{};
 public:
-    explicit XSetResult(XResult &);
-    explicit XSetResult(const XResult &);
-    void set(std::any && ) const;
+    explicit XResultStorage(XResult &);
+    explicit XResultStorage(const XResult &);
+    void set(std::any &&) const;
     void release() const;
-    ~XSetResult();
+    ~XResultStorage();
 };
 
 XTD_INLINE_NAMESPACE_END
