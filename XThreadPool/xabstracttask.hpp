@@ -9,18 +9,24 @@
 #include <XAtomic/xatomic.hpp>
 #include <XThreadPool/xresult.hpp>
 
-// #if _LIBCPP_STD_VER >= 20
-// #include <semaphore>
-// #else
-// #include <XThreadPool/xsemaphore.hpp>
-// #endif
-
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+class XAbstractTaskPrivate;
 class XThreadPool;
 class XAbstractTask;
 using XAbstractTask_Ptr = std::shared_ptr<XAbstractTask>;
+
+class XAbstractTaskData {
+    X_DISABLE_COPY_MOVE(XAbstractTaskData)
+    friend class XAbstractTask;
+    XResult m_result_{};
+protected:
+    XAbstractTask * m_x_ptr_{};
+    XAbstractTaskData() = default;
+public:
+    virtual ~XAbstractTaskData() = default;
+};
 
 class XAbstractTask : public std::enable_shared_from_this<XAbstractTask> {
 
@@ -30,37 +36,7 @@ class XAbstractTask : public std::enable_shared_from_this<XAbstractTask> {
 
     static constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
 
-    class XAbstractTaskPrivate;
     X_DECLARE_PRIVATE(XAbstractTask)
-
-    class XAbstractTaskData {
-        friend class XAbstractTask;
-        X_DISABLE_COPY_MOVE(XAbstractTaskData)
-        XAbstractTask * m_x_ptr_{};
-        XResult m_result_{};
-
-#if _LIBCPP_STD_VER >= 20
-        mutable std::binary_semaphore m_allow_bin{0};
-#else
-        mutable XBinary_Semaphore m_allow_bin{0};
-#endif
-        [[nodiscard]] virtual std::any getResult() const = 0;
-        [[nodiscard]] virtual std::any result_(const Model &) const = 0;
-        [[nodiscard]] virtual std::any result_for_(const std::chrono::nanoseconds &) const = 0;
-        template<typename Clock_,typename Duration_>
-        std::any result_until_(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const {
-            if (m_allow_bin.try_acquire_until(abs_time_)){
-                std::cerr << __PRETTY_FUNCTION__ << " tips: timeout\n" << std::flush;
-                return {};
-            }
-            return std::move(getResult());
-        }
-    protected:
-        XAbstractTaskData() = default;
-    public:
-        virtual ~XAbstractTaskData() = default;
-    };
-
     mutable std::shared_ptr<XAbstractTaskData> m_d_ptr_{};
 
 public:
@@ -77,11 +53,10 @@ public:
     /// @return T类型
     template<typename Ty>
     [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = BlockModel) const noexcept(false) {
-        if (BlockModel == model_){
-            return std::move(m_d_ptr_->m_result_.get<Ty>());
-        }else{
-            return std::move(m_d_ptr_->m_result_.try_get<Ty>());
-        }
+        const auto &r{m_d_ptr_->m_result_};
+        return BlockModel == model_ ?
+        std::move(r.get<Ty>()) :
+        std::move(r.try_get<Ty>());
     }
 
     /// 带超时等待返回值
@@ -136,7 +111,7 @@ private:
     virtual std::any run();
     virtual std::any run() const;
     explicit XAbstractTask(const FuncVer&);
-    void operator()() const;
+    void call() const;
     void set_exit_function_(std::function<bool()> &&) const;
     void resetRecall_() const;
     void allow_get_() const {
@@ -145,8 +120,9 @@ private:
     XAtomicPointer<const void> &Owner_() const;
 
     template<typename...>
-    friend class XTask2;
+    friend class XTask;
     friend class XThreadPool;
+    friend class XThreadPoolPrivate;
 };
 
 XTD_INLINE_NAMESPACE_END
