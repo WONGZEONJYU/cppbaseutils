@@ -19,6 +19,14 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+#if defined(__LP64__)
+static inline constexpr auto MAX_TASKS_SIZE{INT64_MAX},MAX_THREADS_SIZE{1024LL};
+#else
+static inline constexpr auto MAX_TASKS_SIZE{INT32_MAX},MAX_THREADS_SIZE{1024L};
+#endif
+
+static inline constexpr auto WAIT_MINUTES{60};
+
 using Tid_t = XSize_t;
 
 class XThread_ final {
@@ -45,28 +53,20 @@ public:
     }
 };
 
-class XThreadPool::XThreadPoolPrivate final : public XThreadPoolData {
+class XThreadPoolPrivate final : public XThreadPoolData {
     X_DISABLE_COPY_MOVE(XThreadPoolPrivate)
     enum class Private{};
-    static constexpr auto WAIT_MINUTES{60};
-#if defined(__LP64__)
-    static constexpr auto MAX_THREADS_SIZE{1024LL},
-    MAX_TASKS_SIZE{INT64_MAX};
-#else
-    static constexpr auto
-    MAX_THREADS_SIZE{1024L},MAX_TASKS_SIZE{INT32_MAX};
-#endif
-
 #ifndef UNUSE_STD_THREAD_LOCAL
     static inline thread_local void *sm_isCurrentTask_{};
 #else
-    mutable XThreadLocal<void *> m_isCurrentTask_{};
+    mutable XThreadLocalConstVoid m_isCurrentTask_{};
 #endif
     mutable std::deque<XAbstractTask_Ptr> m_tasksQueue_{};
     mutable std::unordered_map<Tid_t, XThread_::XThread_Ptr> m_threadsContainer_{};
     mutable std::recursive_mutex m_mtx_{};
     mutable std::condition_variable_any m_taskQue_Cond_{},m_exit_Cond_{};
 public:
+    using Mode = XThreadPool::Mode;
     mutable Mode m_mode{};
     mutable XAtomicBool m_is_poolRunning{};
     mutable XAtomicInteger<XSize_t> m_initThreadsSize{},m_idleThreadsSize{},m_busyThreadsSize{},
@@ -78,7 +78,7 @@ public:
 
     ~XThreadPoolPrivate() override = default;
 
-    static XThreadPoolData_Ptr create() {
+    static std::unique_ptr<XThreadPoolData> create() {
         try {
             return std::make_unique<XThreadPoolPrivate>(Private{});
         } catch (const std::exception &) {
@@ -137,7 +137,7 @@ public:
         }
 
 #ifdef UNUSE_STD_THREAD_LOCAL
-        if (m_isCurrentTask_.get().value_or(nullptr) == task.get()){
+        if (m_isCurrentTask_().value_or(nullptr) == task.get()){
 #else
         if (task.get() == sm_isCurrentTask_){
 #endif
@@ -169,7 +169,7 @@ public:
         m_tasksQueue_.push_back(task);
         m_taskQue_Cond_.notify_all();
 
-        if (CacheModel == m_mode &&
+        if (XThreadPool::CacheModel == m_mode &&
             m_is_poolRunning.loadAcquire() &&
             m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire() &&
             m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
@@ -215,7 +215,7 @@ public:
             thSize = m_threadsSizeThreshold.loadAcquire();
         }
 
-        if (CacheModel == m_mode){
+        if (XThreadPool::CacheModel == m_mode){
             std::unique_lock lock(m_mtx_);
             if (const auto tasksSize{static_cast<decltype(thSize)>(m_tasksQueue_.size())};
                 tasksSize > m_tasksSizeThreshold.loadAcquire()){
@@ -255,7 +255,7 @@ public:
 #ifndef UNUSE_STD_THREAD_LOCAL
         if (sm_isCurrentTask_){
 #else
-        if(m_isCurrentTask_.get()){
+        if(m_isCurrentTask_()){
 #endif
             std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
             return;
@@ -282,9 +282,9 @@ public:
 #ifndef UNUSE_STD_THREAD_LOCAL
                 sm_isCurrentTask_ = task.get();
 #else
-                XThreadLocalRaii<void*> set(m_isCurrentTask_,task.get());
+                const XThreadLocalStorageConstVoid set(m_isCurrentTask_,task.get());
 #endif
-                (*task)();
+                task->call();
             }else{
                 std::cerr << "threadId = " << std::this_thread::get_id() <<" end\n" << std::flush;
                 break;
@@ -452,34 +452,6 @@ XThreadPool_Ptr XThreadPool::create(const Mode& mode) {
 
 [[maybe_unused]] void sleep_for_hours(const XSize_t& h) {
     std::this_thread::sleep_for(std::chrono::hours(h));
-}
-
-static auto now_(){
-    return std::chrono::high_resolution_clock::now();
-}
-
-[[maybe_unused]] void sleep_until_ns(const XSize_t& ns) {
-    std::this_thread::sleep_until(now_() + std::chrono::nanoseconds(ns));
-}
-
-[[maybe_unused]] void sleep_until_us(const XSize_t& us) {
-    std::this_thread::sleep_until(now_() + std::chrono::microseconds(us));
-}
-
-[[maybe_unused]] void sleep_until_ms(const XSize_t& ms) {
-    std::this_thread::sleep_until(now_() + std::chrono::milliseconds(ms));
-}
-
-[[maybe_unused]] void sleep_until_s(const XSize_t& s) {
-    std::this_thread::sleep_until(now_() + std::chrono::seconds(s));
-}
-
-[[maybe_unused]] void sleep_until_mins(const XSize_t& mins) {
-    std::this_thread::sleep_until(now_() + std::chrono::minutes(mins));
-}
-
-[[maybe_unused]] void sleep_until_hours(const XSize_t& h) {
-    std::this_thread::sleep_until(now_() + std::chrono::hours(h));
 }
 
 XTD_INLINE_NAMESPACE_END

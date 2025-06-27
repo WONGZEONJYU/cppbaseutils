@@ -16,41 +16,54 @@ using XUSize_t = uint64_t;
 #endif
 
 class XThreadPool;
+class XThreadPoolPrivate;
 using XThreadPool_Ptr = std::shared_ptr<XThreadPool>;
+
+class XThreadPoolData {
+    X_DISABLE_COPY_MOVE(XThreadPoolData)
+protected:
+    XThreadPoolData() = default;
+public:
+    virtual ~XThreadPoolData() = default;
+};
 
 class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
 
-    class XThreadPoolPrivate;
     X_DECLARE_PRIVATE(XThreadPool)
 
-    class XThreadPoolData {
-        X_DISABLE_COPY_MOVE(XThreadPoolData)
-    protected:
-        XThreadPoolData() = default;
-    public:
-        virtual ~XThreadPoolData() = default;
-    };
     using XThreadPoolData_Ptr = std::unique_ptr<XThreadPoolData>;
     mutable XThreadPoolData_Ptr m_d_ptr_{};
 
+    template<typename ...Args>
+    class XTemporaryTasksImpl;
+    class XTemporaryTasksFactory;
 
-    class XTemporaryTasksBase {
-    protected:
+    class XTemporaryTasksBase final {
         enum class Private{};
-        XTemporaryTasksBase() = default;
-        virtual ~XTemporaryTasksBase() = default;
+        template<typename... >
+        friend class XTemporaryTasksImpl;
+        friend class XTemporaryTasksFactory;
+    public:
+        XTemporaryTasksBase() = delete;
     };
 
-    template<typename Fn,typename ...Args>
-    class XTemporaryTasksImpl final: public XTask2<Const> , XTemporaryTasksBase {
+    template<typename ...Args>
+    class XTemporaryTasksImpl final: public XTask<Const> {
 
-        using decayed_Tuple_ = std::tuple<std::decay_t<Fn>,std::decay_t<Args>...>;
-        mutable decayed_Tuple_ m_tuple_{};
-        using ReturnType = std::invoke_result_t<std::decay_t<Fn>,std::decay_t<Args>...>;
+        using decayed_tuple_ = std::tuple<std::decay_t<Args>...>;
+        mutable decayed_tuple_ m_tuple_{};
+
+        template<typename>
+        struct result;
+
+        template<typename Fn_,typename ...Args_>
+        struct result<std::tuple<Fn_,Args_...>> : std::invoke_result<Fn_,Args_...> {};
+
+        using result_t = typename result<decayed_tuple_>::type;
 
         std::any run() const override {
-            using indices = std::make_index_sequence<std::tuple_size_v<decayed_Tuple_>>;
-            if constexpr (std::is_same_v<ReturnType,void>){
+            using indices = std::make_index_sequence<std::tuple_size_v<decayed_tuple_>>;
+            if constexpr (std::is_same_v<result_t,void>){
                 call(indices{});
                 return {};
             }else{
@@ -59,29 +72,26 @@ class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
         }
 
         template<size_t ...I>
-        ReturnType call(std::index_sequence<I...>) const {
-            return std::invoke(std::get<I>(std::forward<decayed_Tuple_>(m_tuple_))...);
+        result_t call(std::index_sequence<I...>) const {
+            return std::invoke(std::get<I>(std::forward<decayed_tuple_>(m_tuple_))...);
         }
 
     public:
-        explicit XTemporaryTasksImpl(Private,Fn && fn,Args && ...args):
-        m_tuple_{std::forward<std::decay_t<Fn>>(fn),std::forward<std::decay_t<Args>>(args)...}{}
+        explicit XTemporaryTasksImpl(XTemporaryTasksBase::Private,Args && ...args):m_tuple_{std::forward<Args>(args)...}{}
         ~XTemporaryTasksImpl() override = default;
     };
 
-    class XTemporaryTasksFactory final : XTemporaryTasksBase {
+    class XTemporaryTasksFactory final {
+
     public:
         XTemporaryTasksFactory() = delete;
 
-        template<typename ...Args_>
-        using XTemporaryTasksImpl_Ptr = std::shared_ptr<XTemporaryTasksImpl<Args_...>>;
-
-        template<typename ...Args_>
-        static XTemporaryTasksImpl_Ptr<Args_...> create(Args_ && ...args) {
+        template<typename ...Args>
+        static auto create(Args && ...args) {
             try{
-                return std::make_shared<XTemporaryTasksImpl<Args_...>>(Private{},std::forward<Args_>(args)...);
+                return std::make_shared<XTemporaryTasksImpl<Args...>>(XTemporaryTasksBase::Private{},std::forward<Args>(args)...);
             }catch (const std::exception &){
-                return {};
+                return std::shared_ptr<XTemporaryTasksImpl<Args...>>{};
             }
         }
     };
@@ -193,18 +203,6 @@ public:
 [[maybe_unused]] void sleep_for_mins(const XSize_t& mins);
 
 [[maybe_unused]] void sleep_for_hours(const XSize_t& h);
-
-[[maybe_unused]] void sleep_until_ns(const XSize_t& ns);
-
-[[maybe_unused]] void sleep_until_us(const XSize_t& us);
-
-[[maybe_unused]] void sleep_until_ms(const XSize_t& ms);
-
-[[maybe_unused]] void sleep_until_s(const XSize_t& s);
-
-[[maybe_unused]] void sleep_until_mins(const XSize_t& mins);
-
-[[maybe_unused]] void sleep_until_hours(const XSize_t& h);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
