@@ -60,7 +60,7 @@ static double Double(const double f){
     return f + 100.0;
 }
 
-class A final : public xtd::XTask2<xtd::NonConst> {
+class A final : public xtd::XTask<xtd::NonConst> {
     std::any run() override {
         for (int i {}; i < 3 ;++i){
             {
@@ -116,7 +116,7 @@ public:
         pool2->stop();
         pool2->start();
         pool2->taskJoin(lambda);
-        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>() << "\n" << std::flush;
+        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>(p1->NonblockModel) << "\n" << std::flush;
         for (int i {}; i < 3;++i){
             {
                 std::unique_lock lock(mtx);
