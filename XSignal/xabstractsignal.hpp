@@ -83,21 +83,20 @@ protected:
         template<typename... Tp_>
         using decayed_tuple_ = std::tuple<std::decay_t<Tp_>...>;
 
-        template<typename Callable_, typename... Args_>
-        using Invoker_ = XInvoker<decayed_tuple_<Callable_, Args_...>>;
+        template<typename... Args_>
+        using Invoker_ = XInvoker<decayed_tuple_<Args_...>>;
 
     public:
         XFactoryInvoker() = delete;
-        template<typename Callable_, typename... Args_>
-        static inline auto create(Callable_&& callable_, Args_&&... args_) {
-            return Invoker_<Callable_,Args_...>{{std::forward<Callable_>(callable_),
-                std::forward<Args_>(args_)...} ,Private{}};
+        template<typename... Args_>
+        static inline auto create(Args_&&... args_) {
+            return Invoker_<Args_...>{{std::forward<Args_>(args_)...} ,Private{}};
         }
     };
 
-    template<typename Fn,typename... Args>
-    inline void Callable_join(Fn&& fn,Args&& ...args){
-        auto invoker_{XFactoryInvoker::create(std::forward<Fn>(fn),std::forward<Args>(args)...)};
+    template<typename... Args>
+    inline void Callable_join(Args&& ...args){
+        auto invoker_{XFactoryInvoker::create(std::forward<Args>(args)...)};
         set_call(XFactoryCallable::create(std::forward<decltype(invoker_)>(invoker_)));
     }
 
