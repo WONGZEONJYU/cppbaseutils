@@ -15,12 +15,11 @@ class XSignal : public XAbstractSignal {
 protected:
     XSignal() = default;
 public:
-    template<typename Fn,typename... Args>
-    inline static auto Register(const int &sig,const int &flags,
-                        Fn&& fn,Args&& ...args){
+    template<typename... Args>
+    inline static auto Register(const int &sig,const int &flags,Args&& ...args){
         const auto obj{create(sig,flags)};
         if (obj){
-            obj->Callable_join(std::forward<Fn>(fn),std::forward<Args>(args)...);
+            obj->Callable_join(std::forward<Args>(args)...);
         }
         return obj;
     }
@@ -32,10 +31,9 @@ public:
     ~XSignal() override = default;
 };
 
-template<typename Fn,typename... Args>
-[[maybe_unused]] static inline auto Signal_Register(const int &sig,const int &flags,
-    Fn&& fn,Args&& ...args){
-    return XSignal::Register(sig,flags,std::forward<Fn>(fn),std::forward<Args>(args)...);
+template<typename... Args>
+[[maybe_unused]] static inline auto Signal_Register(const int &sig,const int &flags,Args&& ...args){
+    return XSignal::Register(sig,flags,std::forward<Args>(args)...);
 }
 
 [[maybe_unused]] static inline void Signal_Unregister(const int &sig){
