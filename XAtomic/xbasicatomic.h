@@ -19,8 +19,8 @@ public:
 
     Type loadAcquire() const noexcept { return Ops::loadAcquire(m_x_value); }
     void storeRelease(const Type &newValue) noexcept { Ops::storeRelease(m_x_value, newValue); }
-    operator Type() const noexcept { return loadAcquire(); }
-    Type operator=(const Type &newValue) noexcept { storeRelease(newValue); return newValue; }
+    explicit operator Type() const noexcept { return loadAcquire(); }
+    [[maybe_unused]] Type operator=(const Type &newValue) noexcept { storeRelease(newValue); return newValue; }
 
     static constexpr bool isTestAndSetNative() noexcept { return Ops::isTestAndSetNative(); }
     static constexpr bool isTestAndSetWaitFree() noexcept { return Ops::isTestAndSetWaitFree(); }
@@ -159,8 +159,8 @@ public:
     Type loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
     void storeRelaxed(const Type &newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
 
-    operator Type() const noexcept { return loadAcquire(); }
-    Type operator=(const Type &newValue) noexcept { storeRelease(newValue); return newValue; }
+    explicit operator Type() const noexcept { return loadAcquire(); }
+    [[maybe_unused]] Type operator=(const Type &newValue) noexcept { storeRelease(newValue); return newValue; }
 
     // Atomic API, implemented in qatomic_XXX.h
     Type loadAcquire() const noexcept { return Ops::loadAcquire(m_x_value); }
