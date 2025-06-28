@@ -18,7 +18,6 @@ add_subdirectory(XGlobal)
 add_subdirectory(XHelper)
 add_subdirectory(XObject)
 add_subdirectory(XSignal)
-add_subdirectory(XThread)
 add_subdirectory(XThreadPool)
 add_subdirectory(XTools)
 
@@ -75,13 +74,6 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
 )
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
         DESTINATION include/XSignal
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThread/
-        DESTINATION include/XThread
         FILES_MATCHING
         PATTERN "*.h"
         PATTERN "*.hpp"
