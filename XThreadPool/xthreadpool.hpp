@@ -8,11 +8,11 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 #if defined(__LP64__)
-using XSize_t = int64_t;
-using XUSize_t = uint64_t;
+using XSize_t = xint64;
+using XUSize_t = xuint64;
 #else
-using XSize_t = int32_t;
-using XUSize_t = uint64_t;
+using XSize_t = xint32_t;
+using XUSize_t = xuint32_t;
 #endif
 
 class XThreadPool;
@@ -28,7 +28,7 @@ public:
 };
 
 class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
-
+    enum class Private{};
     X_DECLARE_PRIVATE(XThreadPool)
 
     using XThreadPoolData_Ptr = std::unique_ptr<XThreadPoolData>;
@@ -82,7 +82,6 @@ class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
     };
 
     class XTemporaryTasksFactory final {
-
     public:
         XTemporaryTasksFactory() = delete;
 
@@ -185,7 +184,7 @@ public:
     /// @return 线程池对象
     [[maybe_unused]] [[nodiscard]] static XThreadPool_Ptr create(const Mode &mode = FixedModel);
 
-    explicit XThreadPool(const Mode &,XThreadPoolData_Ptr &&);
+    explicit XThreadPool(Private,const Mode &,XThreadPoolData_Ptr &&);
 
     ~XThreadPool();
 

@@ -27,9 +27,9 @@ static inline constexpr auto MAX_TASKS_SIZE{INT32_MAX},MAX_THREADS_SIZE{1024L};
 
 static inline constexpr auto WAIT_MINUTES{60};
 
-using Tid_t = XSize_t;
+using Tid_t = xptrdiff;
 
-class XThread_ final {
+class XThread_ final : public std::enable_shared_from_this<XThread_> {
     enum class Private{};
     using task_t = std::function<void(const Tid_t &)>;
     mutable task_t m_taskFunc_{};
@@ -38,9 +38,11 @@ public:
     explicit XThread_(task_t &&t,Private):m_taskFunc_(std::move(t)){}
     ~XThread_() = default;
 
-    void start() const {std::thread(m_taskFunc_,get_id()).detach();}
+    void start() const {std::thread(m_taskFunc_, reinterpret_cast<Tid_t>(this)).detach();}
 
-    [[nodiscard]] Tid_t get_id() const {return reinterpret_cast<Tid_t>(std::addressof(m_taskFunc_));}
+    [[nodiscard]] auto get_id() const {
+        return reinterpret_cast<Tid_t>(this);
+    }
 
     using XThread_Ptr = std::shared_ptr<XThread_>;
     static XThread_Ptr create(auto &&t) {
@@ -57,7 +59,7 @@ class XThreadPoolPrivate final : public XThreadPoolData {
     X_DISABLE_COPY_MOVE(XThreadPoolPrivate)
     enum class Private{};
 #ifndef UNUSE_STD_THREAD_LOCAL
-    static inline thread_local void *sm_isCurrentTask_{};
+    static inline thread_local const void *sm_isCurrentTask_{};
 #else
     mutable XThreadLocalConstVoid m_isCurrentTask_{};
 #endif
@@ -334,7 +336,7 @@ XSize_t XThreadPool::currentTasksSize() const {
     return d->currentTasksSize();
 }
 
-XThreadPool::XThreadPool(const Mode &mode,XThreadPoolData_Ptr&& d_ptr):
+XThreadPool::XThreadPool(Private,const Mode &mode,XThreadPoolData_Ptr&& d_ptr):
 m_d_ptr_(std::move(d_ptr)) {
     X_D(XThreadPool);
     d->m_mode = mode;
@@ -416,7 +418,7 @@ XAbstractTask_Ptr XThreadPool::taskJoin_(const XAbstractTask_Ptr& task) {
     if (seconds > 0){
         d->m_threadTimeout.storeRelease(seconds);
     } else{
-        std::cerr << "setThreadTimeout Cannot be negative,set failed!\n";
+        std::cerr << "setThreadTimeout Cannot be negative,set failed!\n" << std::flush;
     }
 }
 
@@ -424,7 +426,7 @@ XThreadPool_Ptr XThreadPool::create(const Mode& mode) {
     try{
         auto d_ptr{XThreadPoolPrivate::create()};
         if (!d_ptr){return {};}
-        return std::make_shared<XThreadPool>(mode,std::move(d_ptr));
+        return std::make_shared<XThreadPool>(Private{},mode,std::move(d_ptr));
     }catch (const std::exception &){
         return {};
     }
