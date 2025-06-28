@@ -88,7 +88,7 @@ class XResultStorage final {
     mutable XResult * m_XResult_{};
 public:
     explicit XResultStorage(XResult &);
-    explicit XResultStorage(const XResult &);
+    [[maybe_unused]] explicit XResultStorage(const XResult &);
     void set(std::any &&) const;
     void release() const;
     ~XResultStorage();

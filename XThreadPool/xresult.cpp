@@ -28,7 +28,7 @@ public:
 };
 
 XResult::XResult():
-m_d_ptr_(std::move(std::make_unique<XResultPrivate>())){
+m_d_ptr_{std::make_unique<XResultPrivate>()}{
     m_d_ptr_->m_x_ptr_ = this;
 }
 
@@ -102,7 +102,7 @@ m_XResult_(std::addressof(obj)) {
 #endif
 }
 
-XResultStorage::XResultStorage(const XResult &obj):
+[[maybe_unused]] XResultStorage::XResultStorage(const XResult &obj):
 XResultStorage(const_cast<XResult &>(obj)){}
 
 void XResultStorage::set(std::any&& v) const {
