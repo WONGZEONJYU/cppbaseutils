@@ -26,7 +26,7 @@ protected:
     class XCallable final: public XAbstractCallable{
         mutable Callable_ m_callable_{};
     public:
-        constexpr explicit XCallable(Callable_ &&call,Private):
+        [[maybe_unused]] constexpr explicit XCallable(Callable_ &&call,Private):
         m_callable_{std::forward<Callable_>(call)}{}
         ~XCallable() override = default;
     private:
@@ -35,7 +35,7 @@ protected:
         }
     };
 
-    class XFactoryCallable final: public XAbstractCallable {
+    class XFactoryCallable final: XAbstractCallable {
 
     public:
         XFactoryCallable() = delete;
@@ -53,7 +53,7 @@ protected:
     };
 
     template<typename Tuple_>
-    class XInvoker final : public XAbstractInvoker {
+    class XInvoker final : XAbstractInvoker {
 
         mutable Tuple_ m_M_t{};
 
@@ -65,20 +65,20 @@ protected:
         using result_t = typename result_<Tuple_>::type;
 
         template<size_t... Ind_>
-        inline result_t M_invoke_(std::index_sequence<Ind_...>) {
+        inline result_t M_invoke_(std::index_sequence<Ind_...>) const {
             return std::__invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...);
         }
 
     public:
         [[maybe_unused]] constexpr explicit XInvoker(Tuple_ &&t,Private):m_M_t{std::forward<Tuple_>(t)}{}
 
-        inline result_t operator()() {
+        inline result_t operator()() const {
             using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple_>>;
             return M_invoke_(Indices_{});
         }
     };
 
-    class XFactoryInvoker final: public XAbstractInvoker {
+    class XFactoryInvoker final: XAbstractInvoker {
 
         template<typename... Tp_>
         using decayed_tuple_ = std::tuple<std::decay_t<Tp_>...>;
