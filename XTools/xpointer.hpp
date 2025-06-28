@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <cstddef>
 #include <XAtomic/xatomic.hpp>
+#include <XHelper/xhelper.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -26,7 +27,7 @@ public:
 };
 
 template<typename T>
-class XPointer final {
+class [[maybe_unused]] XPointer final {
     using Type = T;
     using Ptype = Type*;
     using RefType = Type&;
