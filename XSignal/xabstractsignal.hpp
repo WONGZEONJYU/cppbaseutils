@@ -9,6 +9,7 @@
 #include <XHelper/xhelper.hpp>
 
 XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XAbstractSignal {
     X_DISABLE_COPY_MOVE(XAbstractSignal)
@@ -112,6 +113,7 @@ public:
     virtual ~XAbstractSignal() = default;
 };
 
+XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
 #endif
