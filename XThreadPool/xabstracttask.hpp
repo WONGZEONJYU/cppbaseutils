@@ -119,8 +119,7 @@ private:
     }
     XAtomicPointer<const void> &Owner_() const;
 
-    template<typename...>
-    friend class XTask;
+    template<typename> friend class XTask;
     friend class XThreadPool;
     friend class XThreadPoolPrivate;
 };

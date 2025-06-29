@@ -6,7 +6,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename ...>class XTask;
+template<typename> class XTask;
 
 /**
  * 开发者继承此类去重写run函数
@@ -28,7 +28,7 @@ template<>
 class [[maybe_unused]] XTask<Const> : public XAbstractTask {
     std::any run() const override = 0;
 protected:
-    explicit XTask() : XAbstractTask(CONST_RUN){}
+    explicit XTask():XAbstractTask(CONST_RUN){}
 public:
     ~XTask() override = default;
 };
