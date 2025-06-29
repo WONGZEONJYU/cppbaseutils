@@ -63,7 +63,7 @@ class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
 
         std::any run() const override {
             using indices = std::make_index_sequence<std::tuple_size_v<decayed_tuple_>>;
-            if constexpr (std::is_same_v<result_t,void>){
+            if constexpr (std::is_void_v<result_t>){
                 call(indices{});
                 return {};
             }else{
