@@ -32,18 +32,18 @@ public:
 
 XAbstractTask::XAbstractTask(const FuncVer &is_OverrideConst):
 m_d_ptr_(XAbstractTaskPrivate::create()) {
-    X_D(XAbstractTask);
+    X_D(XAbstractTask)
     d->m_x_ptr_ = this;
     d->m_is_OverrideConst = is_OverrideConst;
 }
 
 bool XAbstractTask::is_running() const {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     return d->m_is_running && d->m_is_running();
 }
 
 void XAbstractTask::call() const {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     const XResultStorage ret(d->m_result_);
 #ifdef UNUSE_STD_THREAD_LOCAL
     const XThreadLocalStorageConstVoid set_this(d->m_isSelf,this);
@@ -66,27 +66,27 @@ void XAbstractTask::call() const {
 }
 
 void XAbstractTask::resetRecall_() const {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     d->m_result_.reset();
 }
 
 void XAbstractTask::set_exit_function_(std::function<bool()> &&f) const {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     d->m_is_running = std::move(f);
 }
 
 XAtomicPointer<const void>& XAbstractTask::Owner_() const {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     return d->m_owner;
 }
 
 [[maybe_unused]] void XAbstractTask::set_nextHandler(const std::weak_ptr<XAbstractTask>& next_) {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     d->m_next = next_;
 }
 
 [[maybe_unused]] void XAbstractTask::requestHandler(const std::any& arg) {
-    X_D(const XAbstractTask);
+    X_D(const XAbstractTask)
     if (const auto p{d->m_next.lock()}){
         p->responseHandler(arg);
     }

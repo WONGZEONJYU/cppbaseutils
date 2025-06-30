@@ -317,28 +317,28 @@ unsigned XThreadPool::cpuThreadsCount() {
 }
 
 XSize_t XThreadPool::currentThreadsSize() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->currentThreadsSize();
 }
 
 XSize_t XThreadPool::idleThreadsSize() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->m_idleThreadsSize.loadAcquire();
 }
 
 XSize_t XThreadPool::busyThreadsSize() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->m_busyThreadsSize.loadAcquire();
 }
 
 XSize_t XThreadPool::currentTasksSize() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->currentTasksSize();
 }
 
 XThreadPool::XThreadPool(Private,const Mode &mode,XThreadPoolData_Ptr&& d_ptr):
 m_d_ptr_(std::move(d_ptr)) {
-    X_D(XThreadPool);
+    X_D(XThreadPool)
     d->m_mode = mode;
 }
 
@@ -347,22 +347,22 @@ XThreadPool::~XThreadPool(){
 }
 
 void XThreadPool::start(const XSize_t &threadSize) {
-    X_D(XThreadPool);
+    X_D(XThreadPool)
     d->start(threadSize);
 }
 
 void XThreadPool::stop() const{
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     d->stop();
 }
 
 [[maybe_unused]] bool XThreadPool::isRunning() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->m_is_poolRunning.loadAcquire();
 }
 
 [[maybe_unused]] void XThreadPool::setMode(const Mode &mode) const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     if (d->m_is_poolRunning.loadAcquire()){
         return;
     }
@@ -370,12 +370,12 @@ void XThreadPool::stop() const{
 }
 
 [[maybe_unused]] XThreadPool::Mode XThreadPool::getMode() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->m_mode;
 }
 
 [[maybe_unused]] void XThreadPool::setThreadsSizeThreshold(const XSize_t &num) const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     if (d->m_is_poolRunning.loadAcquire()){
         std::cerr << "setThreadsSizeThreshold Must be in a stopped state\n" << std::flush;
         return;
@@ -384,12 +384,12 @@ void XThreadPool::stop() const{
 }
 
 [[maybe_unused]] XSize_t XThreadPool::getThreadsSizeThreshold() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->m_threadsSizeThreshold.loadAcquire();
 }
 
 [[maybe_unused]] void XThreadPool::setTasksSizeThreshold(const XSize_t &num) const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     if (d->m_is_poolRunning.loadAcquire()){
         std::cerr << "setTasksSizeThreshold Must be in a stopped state\n" << std::flush;
         return;
@@ -398,19 +398,19 @@ void XThreadPool::stop() const{
 }
 
 [[maybe_unused]] XSize_t XThreadPool::getTasksSizeThreshold() const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     return d->m_tasksSizeThreshold.loadAcquire();
 }
 
 XAbstractTask_Ptr XThreadPool::taskJoin_(const XAbstractTask_Ptr& task) {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     const auto retTask{d->taskJoin(task)};
     start();
     return retTask;
 }
 
 [[maybe_unused]] void XThreadPool::setThreadTimeout(const XSize_t & seconds) const {
-    X_D(const XThreadPool);
+    X_D(const XThreadPool)
     if (d->m_is_poolRunning.loadAcquire()){
         std::cerr << "setThreadTimeout Must be in a stopped state\n" << std::flush;
         return;
