@@ -5,10 +5,6 @@
 #include <string_view>
 #include <utility>
 
-#ifdef HAS_BOOST
-#include <boost/type_index.hpp>
-#endif
-
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
     __VA_ARGS__ &operator=(const __VA_ARGS__ &) = delete;
@@ -55,8 +51,8 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
     inline const __VA_ARGS__ * x_func() const noexcept { return static_cast<const __VA_ARGS__ *>(m_x_ptr_); } \
     friend class __VA_ARGS__;
 
-#define X_D(Class) Class##Private * const d{d_func()}
-#define X_X(__VA_ARGS__) __VA_ARGS__ * const x{x_func()}
+#define X_D(Class) Class##Private * const d{d_func()};
+#define X_X(__VA_ARGS__) __VA_ARGS__ * const x{x_func()};
 
 #define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : xtd::x_assert(#cond, __FILE__, __LINE__))
 #define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : xtd::x_assert_what(where, what, __FILE__, __LINE__))
@@ -122,15 +118,6 @@ void x_assert_what(const std::string &where, const std::string &what,
     const std::string &file,const int &line) noexcept;
 void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
-
-template<typename Ty>
-static auto typeName(Ty && ){
-#ifdef HAS_BOOST
-    return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
-#else
-    return typeid(Ty).name();
-#endif
-}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

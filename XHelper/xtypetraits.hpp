@@ -4,6 +4,9 @@
 #include <XHelper/xversion.hpp>
 #include <type_traits>
 #include <memory>
+#ifdef HAS_BOOST
+#include <boost/type_index.hpp>
+#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -87,39 +90,45 @@ struct smart_pointer_element_type<std::weak_ptr<T>> {
 template<typename T>
 using smart_pointer_element_type_t [[maybe_unused]] = typename smart_pointer_element_type<T>::type;
 
-
 // 检查成员函数是否是const的辅助模板
-template<typename T>
+template<typename>
 struct [[maybe_unused]] is_const_member_function;
 
-template<typename T, typename... Args>
-struct [[maybe_unused]] is_const_member_function<T(Args...) const> : std::true_type {};
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) const> : std::true_type {};
 
-template<typename T, typename... Args>
-struct [[maybe_unused]] is_const_member_function<T(Args...)> : std::false_type {};
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) const noexcept> : std::true_type {};
 
-template<typename Base, typename Derived>
-class [[maybe_unused]] virtual_override_checker final {
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) const volatile> : std::true_type {};
 
-    static_assert(std::is_base_of_v<Base,Derived>,"err!");
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) const volatile noexcept> : std::true_type {};
 
-    // 检查func函数的const属性
-    template<typename T>
-    [[maybe_unused]] static auto check_func_const(int)
-    -> decltype(std::declval<const T>().run(), std::true_type{}){
-        return {};
-    }
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) volatile> : std::false_type {};
 
-    template<typename>
-    static std::false_type check_func_const(...){return {};}
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) volatile noexcept> : std::false_type {};
 
-public:
-    static constexpr bool base_func_is_const {decltype(check_func_const<Base>(0))::value};
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) noexcept> : std::false_type {};
 
-    static constexpr bool derived_func_is_const {decltype(check_func_const<Derived>(0))::value};
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type {};
 
-    [[maybe_unused]] static constexpr bool is_correctly_overridden {base_func_is_const == derived_func_is_const};
-};
+template<typename... Args>
+using is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
+
+template<typename Ty>
+static inline auto typeName(Ty &&) {
+#ifdef HAS_BOOST
+    return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
+#else
+    return typeid(Ty).name();
+#endif
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
