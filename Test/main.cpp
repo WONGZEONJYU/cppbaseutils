@@ -252,10 +252,16 @@ public:
     std::cerr <<  "unordered_map:" << runtime << std::endl;
 }
 
+[[maybe_unused]] static void test4(){
+    int &&a {123};
+    std::cerr << xtd::typeName(std::move(a)) << std::endl;
+}
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
-    test1();
+    //test1();
     //test2();
     //test3();
+    test4();
     return 0;
 }

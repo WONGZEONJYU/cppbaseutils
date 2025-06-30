@@ -6,11 +6,34 @@ project(XLib VERSION 1.0 LANGUAGES CXX)
 # 设置 C++ 标准
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(BOOST_ROOT "/usr/local")
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_DEBUG_LIBS ON)
+set(Boost_USE)
+set(Boost_DEBUG ON)
+set(Boost_USE_STATIC_LIBS ON)
 #add_definitions(-DUNUSE_STD_THREAD_LOCAL)
+
 # 定义动态库
 add_library(${PROJECT_NAME} SHARED)
+
+find_package(Boost 1.88 REQUIRED COMPONENTS ALL)
+
+## 检查是否找到 Boost
+if(Boost_FOUND)
+    add_definitions(-DHAS_BOOST)
+    message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
+    message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARIES}")
+    target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${Boost_LIBRARIES})
+else()
+    #message(FATAL_ERROR "Boost not found. Please install Boost or set BOOST_ROOT.")
+    message(STATUS "Boost not found. Please install Boost or set BOOST_ROOT.")
+endif()
 
 # 包含子目录
 add_subdirectory(XAtomic)

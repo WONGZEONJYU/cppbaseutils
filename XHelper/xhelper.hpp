@@ -5,6 +5,10 @@
 #include <string_view>
 #include <utility>
 
+#ifdef HAS_BOOST
+#include <boost/type_index.hpp>
+#endif
+
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
     __VA_ARGS__ &operator=(const __VA_ARGS__ &) = delete;
@@ -118,6 +122,15 @@ void x_assert_what(const std::string &where, const std::string &what,
     const std::string &file,const int &line) noexcept;
 void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
+
+template<typename Ty>
+static auto typeName(Ty && ){
+#ifdef HAS_BOOST
+    return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
+#else
+    return typeid(Ty).name();
+#endif
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
