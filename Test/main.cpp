@@ -253,7 +253,7 @@ public:
 }
 
 [[maybe_unused]] static void test4(int && a){
-    std::cerr << xtd::typeName(std::forward<decltype(a)>(a)) << std::endl;
+    std::cerr << xtd::typeName<int&&>(std::move(a)) << std::endl;
 }
 
 int main(const int argc,const char **const argv){
