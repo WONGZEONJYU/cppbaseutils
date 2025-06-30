@@ -122,7 +122,16 @@ template<typename... Args>
 using is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
 
 template<typename Ty>
-static inline auto typeName(Ty &&) {
+[[maybe_unused]] static inline auto typeName(Ty &&) {
+#ifdef HAS_BOOST
+    return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
+#else
+    return typeid(Ty).name();
+#endif
+}
+
+template<typename Ty>
+[[maybe_unused]] static inline auto typeName(){
 #ifdef HAS_BOOST
     return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
 #else
