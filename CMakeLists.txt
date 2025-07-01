@@ -10,18 +10,15 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(BOOST_ROOT "/usr/local")
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_DEBUG_LIBS ON)
 set(Boost_DEBUG ON)
 #set(Boost_USE_STATIC_LIBS ON)
 #add_definitions(-DUNUSE_STD_THREAD_LOCAL)
 
-# 定义动态库
 add_library(${PROJECT_NAME} SHARED)
 
 find_package(Boost REQUIRED COMPONENTS ALL)
-
 if(Boost_FOUND)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DHAS_BOOST)
     message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
