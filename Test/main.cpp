@@ -1,3 +1,4 @@
+#include "main.hpp"
 #include <future>
 #include <iostream>
 #include <XThreadPool/xthreadpool.hpp>
@@ -259,14 +260,18 @@ HAS_MEM_TYPE(type)
 
 struct AS{
     void call(int) const {
-
+        std::cerr <<  "this:" << reinterpret_cast<xtd::xintptr>(this) << std::endl;
     }
     int m_a{};
     using type = AS;
 };
 
+void call(int a){
+    std::cerr << a << std::endl;
+}
+
 [[maybe_unused]] static void test4(int){
-    std::cerr << std::boolalpha << hasMemFunc_v<AS> << std::endl;
+    std::cerr << xtd::typeName<std::make_index_sequence<10>>() << std::endl;
 }
 
 int main(const int argc,const char **const argv){
