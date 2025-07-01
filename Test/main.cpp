@@ -4,6 +4,7 @@
 #include <XSignal/xsignal.hpp>
 #include <semaphore>
 #include <list>
+#include <XHelper/xutility.hpp>
 
 static std::mutex mtx{};
 
@@ -252,8 +253,20 @@ public:
     std::cerr <<  "unordered_map:" << runtime << std::endl;
 }
 
-[[maybe_unused]] static void test4(int && a){
-    std::cerr << xtd::typeName<int&&>(std::move(a)) << std::endl;
+HAS_MEM_FUNC(call,0)
+HAS_MEM_VALUE(m_a)
+HAS_MEM_TYPE(type)
+
+struct AS{
+    void call(int) const {
+
+    }
+    int m_a{};
+    using type = AS;
+};
+
+[[maybe_unused]] static void test4(int){
+    std::cerr << std::boolalpha << hasMemFunc_v<AS> << std::endl;
 }
 
 int main(const int argc,const char **const argv){
