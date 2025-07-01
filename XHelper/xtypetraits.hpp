@@ -119,7 +119,7 @@ template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type {};
 
 template<typename... Args>
-using is_const_member_function_v [[maybe_unused]] = typename is_const_member_function<Args...>::value;
+static inline constexpr auto is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
 
 template<typename Ty>
 [[maybe_unused]] static inline auto typeName(Ty &&) {
