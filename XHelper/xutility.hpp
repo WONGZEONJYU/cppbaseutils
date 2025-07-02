@@ -36,6 +36,60 @@ struct hasMemType<Class_,std::void_t<typename Class_::name>> \
 template<typename Class_> \
 static inline constexpr auto hasMemType_v = hasMemType<Class_>::value;
 
+template<std::size_t... Ints>
+struct index_Sequence {
+    using type = index_Sequence;
+    static inline constexpr auto size() noexcept {return Size;}
+    static inline constexpr auto Size {sizeof...(Ints)};
+};
+
+namespace forward {
+
+    template<std::size_t N,std::size_t... Ints>
+    struct make_index_sequence_impl : make_index_sequence_impl<N-1,N-1,Ints...> {};
+
+    template<std::size_t... Ints>
+    struct make_index_sequence_impl<0,Ints...> : index_Sequence<Ints...> {};
+
+    template<std::size_t N>
+    using make_index_sequence = typename make_index_sequence_impl<N>::type;
+
+    template<typename... T>
+    using index_sequence_for = make_index_sequence<sizeof...(T)>;
+
+#ifdef XDOC
+    make_index_sequence_impl<5> : make_index_sequence_impl<4,4>
+    make_index_sequence_impl<4,4> : make_index_sequence_impl<3,3,4>
+    make_index_sequence_impl<3,3,4> : make_index_sequence_impl<2,2,3,4>
+    make_index_sequence_impl<2,2,3,4> : make_index_sequence_impl<1,1,2,3,4>
+    make_index_sequence_impl<1,1,2,3,4> : make_index_sequence_impl<0,0,1,2,3,4>
+    make_index_sequence_impl<0,0,1,2,3,4> : index_sequence<0,1,2,3,4>
+#endif
+
+}
+
+namespace reverse {
+    template<std::size_t N, std::size_t... Ints>
+    struct make_reverse_index_sequence_impl : make_reverse_index_sequence_impl<N-1,Ints...,N-1> {};
+
+    template<std::size_t... Ints>
+    struct make_reverse_index_sequence_impl<0,Ints...> : index_Sequence<Ints...> {};
+
+    template<std::size_t N>
+    using make_reverse_index_sequence = typename make_reverse_index_sequence_impl<N>::type;
+
+    template<typename... T>
+    using reverse_index_sequence_for = make_reverse_index_sequence<sizeof...(T)>;
+#ifdef XDOC
+    make_reverse_index_sequence<5>:make_reverse_index_sequence<4,4>
+    make_reverse_index_sequence<4,4> : make_reverse_index_sequence<3,4,3>
+    make_reverse_index_sequence<3,4,3> : make_reverse_index_sequence<2,4,3,2>
+    make_reverse_index_sequence<2,4,3,2>: make_reverse_index_sequence<1,4,3,2,1>
+    make_reverse_index_sequence<1,4,3,2,1>:make_reverse_index_sequence<0,4,3,2,1,0>
+    make_reverse_index_sequence<0,4,3,2,1,0>:index_sequence<4,3,2,1,0>
+#endif
+}
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
