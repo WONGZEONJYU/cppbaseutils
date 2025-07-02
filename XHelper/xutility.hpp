@@ -90,6 +90,45 @@ namespace reverse {
 #endif
 }
 
+template <typename... Ts> struct List{
+    static constexpr auto size{sizeof...(Ts)};
+};
+
+template<typename> struct SizeOfList {
+    static constexpr size_t value {1};
+};
+
+template<> struct SizeOfList<List<>> {
+    static constexpr size_t value{};
+};
+
+template<typename ...Ts> struct SizeOfList<List<Ts...>> {
+    static constexpr auto value {List<Ts...>::size};
+};
+
+template <typename Head, typename... Tail>
+struct List<Head, Tail...> {
+    static constexpr size_t size {1 + sizeof...(Tail)};
+    using Car = Head ;
+    using Cdr = List<Tail...>;
+};
+
+template <typename, typename> struct List_Append;
+
+template <typename... L1, typename...L2> struct List_Append<List<L1...>, List<L2...>> {
+    using Value = List<L1..., L2...>;
+};
+
+template <typename L, int N> struct List_Left {
+    using Value = typename List_Append<List<typename L::Car>,
+        typename List_Left<typename L::Cdr, N - 1>::Value>::Value ;
+};
+
+template <typename L> struct List_Left<L, 0>{
+    using Value = List<>;
+};
+
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
