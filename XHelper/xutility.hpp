@@ -94,40 +94,56 @@ template <typename... Ts> struct List{
     static constexpr auto size{sizeof...(Ts)};
 };
 
-template<typename> struct SizeOfList {
+template<typename> struct [[maybe_unused]] SizeOfList {
     static constexpr size_t value {1};
 };
 
-template<> struct SizeOfList<List<>> {
+template<> struct [[maybe_unused]] SizeOfList<List<>> {
     static constexpr size_t value{};
 };
 
-template<typename ...Ts> struct SizeOfList<List<Ts...>> {
+template<typename ...Ts> struct [[maybe_unused]] SizeOfList<List<Ts...>> {
     static constexpr auto value {List<Ts...>::size};
 };
 
 template <typename Head, typename... Tail>
 struct List<Head, Tail...> {
     static constexpr size_t size {1 + sizeof...(Tail)};
-    using Car = Head ;
-    using Cdr = List<Tail...>;
+    using Car [[maybe_unused]] = Head;
+    using Cdr [[maybe_unused]] = List<Tail...>;
 };
 
 template <typename, typename> struct List_Append;
 
 template <typename... L1, typename...L2> struct List_Append<List<L1...>, List<L2...>> {
-    using Value = List<L1..., L2...>;
+    using Value [[maybe_unused]] = List<L1..., L2...>;
 };
 
-template <typename L, int N> struct List_Left {
-    using Value = typename List_Append<List<typename L::Car>,
-        typename List_Left<typename L::Cdr, N - 1>::Value>::Value ;
+template <typename L, int N> class [[maybe_unused]] List_Left {
+    using List_Car = List<typename L::Car>;
+    using List_Left_ = List_Left<typename L::Cdr, N - 1>;
+    using List_Left_V = typename List_Left_::Value;
+public:
+    using Value = typename List_Append<List_Car,List_Left_V>::Value;
 };
 
-template <typename L> struct List_Left<L, 0>{
+template <typename L> struct [[maybe_unused]] List_Left<L, 0>{
     using Value = List<>;
 };
 
+/*
+ * using List_t = List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t,int64_t,uint64_t,float,double> //size = 10
+ * List_Left<List_t,List_t::size>{
+ *     using List_Car = List<int8_t>;
+ *     using List_Left_ = List_Left<uint8_t,int16_t,uint16_t,int32_t,uint32_t,int64_t,uint64_t,float,double,9>;
+ *     using List_Left_V =
+ *     using Value = List_Append<>
+ *
+ * }
+ *
+ *
+ *
+ * */
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
