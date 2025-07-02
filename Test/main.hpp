@@ -55,17 +55,5 @@ public:
         delete m_obj_;
     }
 };
-template<int ...>
-struct Integer{};
-
-template<int N>
-struct Integer_Sequence {
-    using type = typename Integer_Sequence<N-1>::type;
-};
-
-template<>
-struct Integer_Sequence<1>{
-    using type = Integer<0>;
-};
 
 #endif
