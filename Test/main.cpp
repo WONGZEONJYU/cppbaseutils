@@ -271,7 +271,10 @@ void call(int a){
 }
 
 [[maybe_unused]] static void test4(int){
-    std::cerr << xtd::typeName<xtd::forward::make_index_sequence<10>>() << std::endl;
+    using namespace xtd;
+    using List_t = List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
+    using Value = List_Left<List_t,6>::Value;
+    std::cerr << xtd::typeName<Value>() << std::endl;
 }
 
 int main(const int argc,const char **const argv){
