@@ -127,25 +127,64 @@ public:
     using Value = typename List_Append<List_Car,List_Left_V>::Value;
 };
 
-template <typename L> struct [[maybe_unused]] List_Left<L, 0>{
+template <typename L>
+class [[maybe_unused]] List_Left<L, 0> {
+public:
     using Value = List<>;
 };
 
-/*
- * using List_t = List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t,int64_t,uint64_t,float,double> //size = 10
- * List_Left<List_t,List_t::size>{
- *     using List_Car = List<int8_t>;
- *     using List_Left_ = List_Left<uint8_t,int16_t,uint16_t,int32_t,uint32_t,int64_t,uint64_t,float,double,9>;
- *     using List_Left_V =
- *     using Value = List_Append<>
- *
- * }
- *
- *
- *
- * */
+#ifdef XDOC
+
+using List_t = List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>
+List_Left<List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>,List_t::size = 6> = {
+
+    using List_Car1 == List<int8_t>;
+    using List_Left_1 == List_Left<List<uint8_t,int16_t,uint16_t,int32_t,uint32_t>,5> == {
+
+         using List_Car2 == List<uint8_t>;
+         using List_Left_2 == List_Left<List<int16_t,uint16_t,int32_t,uint32_t>,4> == {
+
+             using List_Car3 == List<int16_t>;
+             using List_Left_3 == List_Left<List<uint16_t,int32_t,uint32_t>,3> == {
+
+                 using List_Car4 == List<uint16_t>;
+                 using List_Left_4 = List_Left<List<int32_t,uint32_t>,2> == {
+
+                       using List_Car5 == List<int32_t>;
+                       using List_Left_5 = List_Left<List<uint32_t>,1> == {
+
+                             using List_Car6 == List<uint32_t>;
+                             using List_Left_6 == List_Left<List<>,0> == { /*递归终止*/
+                                 using Value7 = List<>;
+                             };
+                             using List_Left_V6 == List_Left_6::Value == Value7 == List<>;
+                             using Value6 == List_Append<uint32_t,List_Left_V6>::Value == List_Append<uint32_t,List<>>::Value == List<uint32_t>
+                             /*using Value6 == List<uint32_t>;*/
+                       };
+                       using List_Left_V5 = List_Left_5::Value == Value6 == List<uint32_t>;
+                       using Value5 == List_Append<List<int32_t>,List_Left_V5>::Value == List<int32_t,uint32_t>;
+                       /*using Value5 == List<int32_t,uint32_t>;*/
+                 };
+                 using List_Left_V4 = List_Left_4::Value == Value5 == List<int32_t,uint32_t>;
+                 using Value4 == List_Append<List<uint16_t>,List_Left_V4>::Value == List<uint16_t,int32_t,uint32_t>;
+                 /*using Value4 == List<uint16_t,int32_t,uint32_t>;*/
+             };
+             using List_Left_V3 == List_Left_3::Value == Value4 == List<uint16_t,int32_t,uint32_t>;
+             using Value3 == List_Append<List<int16_t>,List_Left_V3>::Value == List<int16_t,uint16_t,int32_t,uint32_t>;
+             /*using Value3 == List<int16_t,uint16_t,int32_t,uint32_t>;*/
+         };
+         using List_Left_V2 == List_Left_2::Value == Value3 == List<int16_t,uint16_t,int32_t,uint32_t>;
+         using Value2 == List_Append<List<uint8_t>,List_Left_V2>::Value == List<uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
+         /*using Value2 == List<uint8_t,int16_t,uint16_t,int32_t,uint32_t>;*/
+    };
+    using List_Left_V1 == List_Left_1::Value == Value2 == List<uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
+    using Value1 == List_Append<List<int8_t>,List_Left_V1>::Value == List_Append<List<int8_t>,List<uint8_t,int16_t,uint16_t,int32_t,uint32_t>>::Value == List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
+    /*using Value1 == List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;*/
+};
+#endif
 
 XTD_INLINE_NAMESPACE_END
+
 XTD_NAMESPACE_END
 
 #endif
