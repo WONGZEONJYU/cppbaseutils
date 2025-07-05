@@ -39,8 +39,8 @@ static inline constexpr auto hasMemType_v = hasMemType<Class_>::value;
 template<std::size_t... Ints>
 struct index_Sequence {
     using type = index_Sequence;
-    static inline constexpr auto size() noexcept {return Size;}
     static inline constexpr auto Size {sizeof...(Ints)};
+    static inline constexpr auto size() noexcept {return Size;}
 };
 
 namespace forward {
@@ -52,10 +52,10 @@ namespace forward {
     struct make_index_sequence_impl<0,Ints...> final : index_Sequence<Ints...> {};
 
     template<std::size_t N>
-    using make_index_sequence = typename make_index_sequence_impl<N>::type;
+    using make_Index_Sequence = typename make_index_sequence_impl<N>::type;
 
     template<typename... T>
-    using index_sequence_for = make_index_sequence<sizeof...(T)>;
+    using index_Sequence_for = make_Index_Sequence<sizeof...(T)>;
 
 #ifdef XDOC
     make_index_sequence_impl<5> : make_index_sequence_impl<4,4>
@@ -65,7 +65,6 @@ namespace forward {
     make_index_sequence_impl<1,1,2,3,4> : make_index_sequence_impl<0,0,1,2,3,4>
     make_index_sequence_impl<0,0,1,2,3,4> : index_sequence<0,1,2,3,4>
 #endif
-
 }
 
 namespace reverse {
@@ -90,11 +89,13 @@ namespace reverse {
 #endif
 }
 
-template <typename... Ts> struct List final {
+template <typename... Ts>
+struct List final {
     static inline constexpr auto size{sizeof...(Ts)};
 };
 
-template<typename> struct [[maybe_unused]] SizeOfList final {
+template<typename>
+struct [[maybe_unused]] SizeOfList final {
     static inline constexpr size_t value {1};
 };
 
@@ -117,22 +118,22 @@ struct List<Head, Tail...> final {
 
 template <typename,typename> struct List_Append;
 
-template <typename... L1, typename...L2>
+template <typename... L1,typename...L2>
 struct List_Append<List<L1...>, List<L2...>> final {
     using Value [[maybe_unused]] = List<L1..., L2...>;
 };
 
-template <typename L, int N>
+template <typename L,std::size_t N>
 class [[maybe_unused]] List_Left final {
     using List_Car = List<typename L::Car>;
-    using List_Left_ = List_Left<typename L::Cdr, N - 1>;
+    using List_Left_ = List_Left<typename L::Cdr,N - 1>;
     using List_Left_V = typename List_Left_::Value;
 public:
     using Value = typename List_Append<List_Car,List_Left_V>::Value;
 };
 
 template <typename L>
-class [[maybe_unused]] List_Left<L, 0> final {
+class [[maybe_unused]] List_Left<L,0> final {
 public:
     using Value = List<>;
 };
