@@ -49,7 +49,7 @@ namespace forward {
     struct make_index_sequence_impl : make_index_sequence_impl<N-1,N-1,Ints...> {};
 
     template<std::size_t... Ints>
-    struct make_index_sequence_impl<0,Ints...> : index_Sequence<Ints...> {};
+    struct make_index_sequence_impl<0,Ints...> final : index_Sequence<Ints...> {};
 
     template<std::size_t N>
     using make_index_sequence = typename make_index_sequence_impl<N>::type;
@@ -73,7 +73,7 @@ namespace reverse {
     struct make_reverse_index_sequence_impl : make_reverse_index_sequence_impl<N-1,Ints...,N-1> {};
 
     template<std::size_t... Ints>
-    struct make_reverse_index_sequence_impl<0,Ints...> : index_Sequence<Ints...> {};
+    struct make_reverse_index_sequence_impl<0,Ints...> final : index_Sequence<Ints...> {};
 
     template<std::size_t N>
     using make_reverse_index_sequence = typename make_reverse_index_sequence_impl<N>::type;
@@ -90,36 +90,40 @@ namespace reverse {
 #endif
 }
 
-template <typename... Ts> struct List{
-    static constexpr auto size{sizeof...(Ts)};
+template <typename... Ts> struct List final {
+    static inline constexpr auto size{sizeof...(Ts)};
 };
 
-template<typename> struct [[maybe_unused]] SizeOfList {
-    static constexpr size_t value {1};
+template<typename> struct [[maybe_unused]] SizeOfList final {
+    static inline constexpr size_t value {1};
 };
 
-template<> struct [[maybe_unused]] SizeOfList<List<>> {
+template<>
+struct [[maybe_unused]] SizeOfList<List<>> final {
     static constexpr size_t value{};
 };
 
-template<typename ...Ts> struct [[maybe_unused]] SizeOfList<List<Ts...>> {
-    static constexpr auto value {List<Ts...>::size};
+template<typename ...Ts>
+struct [[maybe_unused]] SizeOfList<List<Ts...>> final {
+    static inline constexpr auto value {List<Ts...>::size};
 };
 
 template <typename Head, typename... Tail>
-struct List<Head, Tail...> {
-    static constexpr size_t size {1 + sizeof...(Tail)};
+struct List<Head, Tail...> final {
+    static inline constexpr size_t size {1 + sizeof...(Tail)};
     using Car [[maybe_unused]] = Head;
     using Cdr [[maybe_unused]] = List<Tail...>;
 };
 
-template <typename, typename> struct List_Append;
+template <typename,typename> struct List_Append;
 
-template <typename... L1, typename...L2> struct List_Append<List<L1...>, List<L2...>> {
+template <typename... L1, typename...L2>
+struct List_Append<List<L1...>, List<L2...>> final {
     using Value [[maybe_unused]] = List<L1..., L2...>;
 };
 
-template <typename L, int N> class [[maybe_unused]] List_Left {
+template <typename L, int N>
+class [[maybe_unused]] List_Left final {
     using List_Car = List<typename L::Car>;
     using List_Left_ = List_Left<typename L::Cdr, N - 1>;
     using List_Left_V = typename List_Left_::Value;
@@ -128,7 +132,7 @@ public:
 };
 
 template <typename L>
-class [[maybe_unused]] List_Left<L, 0> {
+class [[maybe_unused]] List_Left<L, 0> final {
 public:
     using Value = List<>;
 };
