@@ -14,8 +14,7 @@ template<typename> class XTask;
  * XTask2<Const> 带const
  */
 enum class NonConst{};
-template<>
-class [[maybe_unused]] XTask<NonConst> : public XAbstractTask {
+template<> class [[maybe_unused]] XTask<NonConst> : public XAbstractTask {
     std::any run() override = 0;
 protected:
     explicit XTask():XAbstractTask(NON_CONST_RUN){}
@@ -24,8 +23,7 @@ public:
 };
 
 enum class Const{};
-template<>
-class [[maybe_unused]] XTask<Const> : public XAbstractTask {
+template<> class [[maybe_unused]] XTask<Const> : public XAbstractTask {
     std::any run() const override = 0;
 protected:
     explicit XTask():XAbstractTask(CONST_RUN){}
