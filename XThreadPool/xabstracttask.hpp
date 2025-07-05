@@ -101,7 +101,7 @@ public:
     virtual ~XAbstractTask() = default;
 
 protected:
-    ///给用户制作私有构造函数
+    ///给开发者制作私有构造函数
     enum class PrivateConstruct{};
     ///响应责任链的请求,需开发者自行重写
     /// @param arg
