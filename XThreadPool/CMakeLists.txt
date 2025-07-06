@@ -16,7 +16,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 aux_source_directory(. SRC_FILS)
 file(GLOB HEAD_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 
-target_sources(XLib PRIVATE
+target_sources(XCppBaseUtils PRIVATE
     ${SRC_FILS}
     ${HEAD_FILES}
 )

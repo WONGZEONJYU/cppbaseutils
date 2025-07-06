@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.31.6)
 
 # 定义项目名称、版本和语言
-project(XLib VERSION 1.0 LANGUAGES CXX)
+project(XCppBaseUtils VERSION 1.0 LANGUAGES CXX)
 
 # 设置 C++ 标准
 set(CMAKE_C_STANDARD 17)
@@ -50,7 +50,7 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/XObject # 确保 xobject_p.hpp 在构建 XLib 时可用
 )
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/xlib")
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/XCppBaseUtils")
 
 # 安装规则
 install(TARGETS ${PROJECT_NAME}
