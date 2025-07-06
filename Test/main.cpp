@@ -272,8 +272,8 @@ void call(int a){
 
 [[maybe_unused]] static void test4(int){
     using namespace xtd;
-    using List_t = List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
-    using Value = List_Left<List_t,6>::Value;
+    using List_t = XPrivate::List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
+    using Value = XPrivate::List_Left<List_t,6>::Value;
     std::cerr << xtd::typeName<Value>() << std::endl;
 }
 
