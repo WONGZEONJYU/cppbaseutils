@@ -96,7 +96,7 @@ public:
 
     /// 检查线程池是否运行
     /// @return  ture or false
-    [[maybe_unused]] [[nodiscard]] bool is_running() const;
+    [[maybe_unused]] [[maybe_unused]] [[nodiscard]] bool is_running() const;
 
     virtual ~XAbstractTask() = default;
 

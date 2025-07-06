@@ -12,9 +12,9 @@ class XAbstractTaskPrivate final : public XAbstractTaskData {
 public:
     X_DECLARE_PUBLIC(XAbstractTask)
 #ifdef UNUSE_STD_THREAD_LOCAL
-    mutable XThreadLocalConstVoid m_isSelf{};
+    [[maybe_unused]] mutable XThreadLocalConstVoid m_isSelf{};
 #else
-    static inline thread_local const void * sm_isSelf{};
+    [[maybe_unused]] static inline thread_local const void * sm_isSelf{};
 #endif
     mutable XAbstractTask::FuncVer m_is_OverrideConst{};
     mutable XAtomicBool m_recall{};
@@ -37,7 +37,7 @@ m_d_ptr_(XAbstractTaskPrivate::create()) {
     d->m_is_OverrideConst = is_OverrideConst;
 }
 
-bool XAbstractTask::is_running() const {
+[[maybe_unused]] bool XAbstractTask::is_running() const {
     X_D(const XAbstractTask)
     return d->m_is_running && d->m_is_running();
 }
