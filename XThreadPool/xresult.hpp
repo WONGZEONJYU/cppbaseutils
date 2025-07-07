@@ -5,7 +5,7 @@
 #include <future>
 #include <any>
 #include <memory>
-#if _LIBCPP_STD_VER >= 20
+#if __cplusplus >= 202002L
 #include <semaphore>
 #else
 #include <XThreadPool/xsemaphore.hpp>
