@@ -93,9 +93,19 @@ class XObject;
 
 namespace XPrivate {
 
+    template <typename T> struct [[maybe_unused]] RemoveRef final { using Type = T; };
+    template <typename T> struct [[maybe_unused]] RemoveRef<T&> final { using Type = T; };
+    template <typename T> struct [[maybe_unused]] RemoveRef<T&&> final { using Type = T; };
+    template <typename T> using RemoveRef_T = typename RemoveRef<T>::Type;
+
+    template <typename T> struct RemoveConstRef final { using Type = T; };
+    template <typename T> struct RemoveConstRef<const T&> final { using Type = T; };
+    template <typename T> struct RemoveConstRef<const T&&> final { using Type = T; };
+    template <typename T> using RemoveConstRef_T = typename RemoveConstRef<T>::Type;
+
     template<typename... Ts>
     struct List final {
-        static inline constexpr auto size{sizeof...(Ts)};
+        static inline constexpr auto size {sizeof...(Ts)};
     };
 
     template<typename>
@@ -204,7 +214,8 @@ namespace XPrivate {
                 std::forward<Lambda>(fn)();
             } else {
                 if (args[0]){
-                    *reinterpret_cast<R *>(args[0]) = std::forward<Lambda>(fn)();
+                    *static_cast<R *>(args[0]) = std::forward<Lambda>(fn)();
+                    //*reinterpret_cast<R *>(args[0]) = std::forward<Lambda>(fn)();
                 }else {
                     (void)std::forward<Lambda>(fn)();
                 }
@@ -483,7 +494,7 @@ namespace XPrivate {
         using List_1 = List<Tail1...>;
         using List_2 [[maybe_unused]] = List<Tail2...>;
     public:
-        enum { value = AreArgumentsCompatible<std::remove_cvref_t<Arg1>, std::remove_cvref_t<Arg2> >::value
+        enum { value = AreArgumentsCompatible<RemoveConstRef_T<Arg1>,RemoveConstRef_T<Arg2>>::value
                        && CheckCompatibleArguments<List_1, List_2>::value };
     };
 
@@ -493,7 +504,7 @@ namespace XPrivate {
     */
     template <typename,typename> struct ComputeFunctorArgumentCount;
 
-    template <typename Functor, typename ArgList, bool Done>
+    template <typename , typename , bool >
     struct ComputeFunctorArgumentCountHelper final {
         enum { Value = -1 };
     };
@@ -513,7 +524,7 @@ namespace XPrivate {
          * @return int
          */
         template <typename F>
-        [[maybe_unused]] static inline auto test([[maybe_unused]]F f) -> decltype(((f.operator()((std::declval<ArgList>())...)), int())){
+        [[maybe_unused]] static auto test([[maybe_unused]]F f) -> decltype(f.operator()((std::declval<ArgList>())...),int()){
             return {};
         }
         /**
@@ -521,13 +532,14 @@ namespace XPrivate {
          * @param ...
          * @return
          */
-        static inline char test(...) {
+        static char test(...) {
             return {};
         }
     public:
         enum {
             Ok = sizeof(test(std::declval<Functor>())) == sizeof(int),
-            Value = Ok ? int(sizeof...(ArgList)) : int(ComputeFunctorArgumentCountHelper<Functor, List<ArgList...>, Ok>::Value)
+            Value = Ok ? static_cast<int>(sizeof...(ArgList)) :
+                static_cast<int>(ComputeFunctorArgumentCountHelper<Functor, List<ArgList...>, Ok>::Value)
         };
     };
 
@@ -539,7 +551,7 @@ namespace XPrivate {
             : std::invoke_result<Functor, ArgList...>{ };
 
     template <typename Functor, typename... ArgList>
-    using FunctorReturnType_T [[maybe_unused]] = FunctorReturnType<Functor,ArgList...>::type;
+    using FunctorReturnType_T [[maybe_unused]] = typename FunctorReturnType<Functor,ArgList...>::type;
 
     template<typename Func, typename... Args>
     struct [[maybe_unused]] FunctorCallable final {
@@ -600,14 +612,37 @@ namespace XPrivate {
         depending on whether \a Functor is a PMF or not. Returns -1 if \a Func is
         not compatible with the \a ExpectedArguments, otherwise returns >= 0.
     */
+#if __cplusplus >= 202002L
+#define LIKE_WHERE 1 //此处采用C++20以上写法,有三种写法,效果是一样
+#if (0 == LIKE_WHERE)
+    template<typename Prototype_>
+    concept Prototype_t = !std::is_convertible_v<Prototype_, const char *>;
 
+    template<typename Functor_>
+    concept Functor_t = !std::is_convertible_v<Functor_, const char *>;
+
+    template<Prototype_t Prototype ,Functor_t Functor>
+    [[maybe_unused]] static constexpr int countMatchingArguments() {
+#elif (1 == LIKE_WHERE)
+    template<typename Prototype ,typename Functor> requires (
+        !std::disjunction_v<std::is_convertible<Prototype, const char *>
+        ,std::is_convertible<Functor, const char *>>)
+    [[maybe_unused]] static constexpr int countMatchingArguments() {
+#else
+    template<typename Prototype ,typename Functor>
+    static constexpr int countMatchingArguments() requires (
+        !std::disjunction_v<std::is_convertible<Prototype, const char *>
+        ,std::is_convertible<Functor, const char *>>){
+#endif
+
+#else
     template<typename Prototype, typename Functor>
-    [[maybe_unused]] static inline constexpr std::enable_if_t<!std::disjunction_v<std::is_convertible<Prototype, const char *>
+    [[maybe_unused]] static constexpr std::enable_if_t<!std::disjunction_v<std::is_convertible<Prototype, const char *>
                     /*,std::is_same<std::decay_t<Prototype>, QMetaMethod>,*/
                     ,std::is_convertible<Functor, const char *>
                     /*,std::is_same<std::decay_t<Functor>, QMetaMethod>*/
-    >,int>
-    countMatchingArguments() {
+    >,int> countMatchingArguments() {
+#endif
         using ExpectedArguments = typename FunctionPointer<Prototype>::Arguments;
         using Actual = std::decay_t<Functor>;
 
@@ -615,10 +650,12 @@ namespace XPrivate {
                       || FunctionPointer<Actual>::ArgumentCount >= 0) {
             // PMF or free function
             using ActualArguments = typename FunctionPointer<Actual>::Arguments;
-            if constexpr (CheckCompatibleArguments<ExpectedArguments, ActualArguments>::value)
+            if constexpr (CheckCompatibleArguments<ExpectedArguments, ActualArguments>::value){
                 return FunctionPointer<Actual>::ArgumentCount;
-            else
+            }
+            else{
                 return -1;
+            }
         } else {
             // lambda or functor
             return ComputeFunctorArgumentCount<Actual, ExpectedArguments>::Value;
@@ -631,8 +668,15 @@ namespace XPrivate {
     // pointers. The default declaration doesn't have the ContextType typedef,
     // and so non-functor APIs (like old-style string-based slots) are removed
     // from the overload set.
-    template <typename, typename = void> struct [[maybe_unused]] ContextTypeForFunctor final {};
-
+    template <typename, typename = void> struct ContextTypeForFunctor;
+#if __cplusplus >= 202002L
+    template <typename Func> requires ( //这里括号可以去掉
+        !std::disjunction_v<std::is_convertible<Func,const char *>,
+        std::is_member_function_pointer<Func>> )
+    struct [[maybe_unused]] ContextTypeForFunctor<Func> final {
+        using ContextType [[maybe_unused]] = XObject;
+    };
+#else
     template <typename Func>
     struct [[maybe_unused]] ContextTypeForFunctor<Func,
             std::enable_if_t<!std::disjunction_v<std::is_convertible<Func, const char *>,
@@ -642,7 +686,18 @@ namespace XPrivate {
     > final {
         using ContextType [[maybe_unused]] = XObject;
     };
+#endif
 
+#if __cplusplus >= 202002L
+    template <typename Func> requires ( //这里括号可以去掉
+        std::disjunction_v<std::negation<std::is_convertible<Func, const char *>>
+        ,std::is_member_function_pointer<Func>
+        ,std::is_convertible<typename FunctionPointer<Func>::Object *, XObject *>
+        >)
+    struct [[maybe_unused]] ContextTypeForFunctor<Func> final {
+        using ContextType [[maybe_unused]] = typename FunctionPointer<Func>::Object;
+    };
+#else
     template <typename Func>
     struct [[maybe_unused]] ContextTypeForFunctor<Func,
             std::enable_if_t<std::conjunction_v<std::negation<std::is_convertible<Func, const char *>>,
@@ -653,6 +708,7 @@ namespace XPrivate {
     > final {
         using ContextType [[maybe_unused]] = typename FunctionPointer<Func>::Object;
     };
+#endif
 }
 
 XTD_INLINE_NAMESPACE_END
