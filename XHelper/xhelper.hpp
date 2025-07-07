@@ -128,6 +128,24 @@ void x_assert_what(const std::string &where, const std::string &what,
 void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
 
+template<typename T, typename ... Args>
+static auto make_Unique(Args && args) noexcept -> std::unique_ptr<T> {
+    try{
+        return std::make_unique<T>(std::forward<Args>(args)...);
+    }catch (const std::exception &){
+        return {};
+    }
+}
+
+template<typename T, typename ... Args>
+static auto make_Shared(Args && args) noexcept -> std::shared_ptr<T> {
+    try{
+        return std::make_shared<T>(std::forward<Args>(args)...);
+    }catch (const std::exception &){
+        return {};
+    }
+}
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
