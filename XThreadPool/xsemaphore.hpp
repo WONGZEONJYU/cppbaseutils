@@ -79,7 +79,8 @@ public:
         return acquired;
     }
 
-    [[maybe_unused]] [[nodiscard]] auto try_acquire_until(auto && pred) const {
+    template<typename Pred>
+    [[maybe_unused]] [[nodiscard]] auto try_acquire_until(Pred && pred) const {
         std::unique_lock lock(m_mutex_);
         const auto acquired {m_cv_.wait(lock,[this, &pred] {
             return count_ > 0 && pred();
