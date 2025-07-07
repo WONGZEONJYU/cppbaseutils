@@ -96,7 +96,7 @@ namespace XPrivate {
     template <typename T> struct [[maybe_unused]] RemoveRef final { using Type = T; };
     template <typename T> struct [[maybe_unused]] RemoveRef<T&> final { using Type = T; };
     template <typename T> struct [[maybe_unused]] RemoveRef<T&&> final { using Type = T; };
-    template <typename T> using RemoveRef_T = typename RemoveRef<T>::Type;
+    template <typename T> using RemoveRef_T [[maybe_unused]] = typename RemoveRef<T>::Type;
 
     template <typename T> struct RemoveConstRef final { using Type = T; };
     template <typename T> struct RemoveConstRef<const T&> final { using Type = T; };
@@ -247,10 +247,10 @@ namespace XPrivate {
     template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...)> final
             : FunctorCallBase {
-
-        using Fn = SlotRet (Obj::*)(SlotArgs...);
-
-        [[maybe_unused]] static void call([[maybe_unused]] Fn f, Obj * const o, void ** const arg) {
+    private:
+        using Function = SlotRet (Obj::*)(SlotArgs...);
+    public:
+        [[maybe_unused]] static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
             call_internal<R>(arg, [&] {
                 return (o->*f)(
                         (*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
@@ -261,10 +261,10 @@ namespace XPrivate {
     template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const> final
             : FunctorCallBase {
-
-        using Fn = SlotRet (Obj::*)(SlotArgs...) const;
-
-        [[maybe_unused]] static void call([[maybe_unused]] Fn f, Obj * const o, void ** const arg) {
+    private:
+        using Function = SlotRet (Obj::*)(SlotArgs...) const;
+    public:
+        [[maybe_unused]] static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
             call_internal<R>(arg, [&]{
                 return (o->*f)(
                         (*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
@@ -275,10 +275,10 @@ namespace XPrivate {
     template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
             SlotArgs...) noexcept> final : FunctorCallBase {
-
-        using Fn = SlotRet (Obj::*)(SlotArgs...) noexcept;
-
-        [[maybe_unused]] static void call([[maybe_unused]] Fn f, Obj * const o, void ** const arg) {
+    private:
+        using Function = SlotRet (Obj::*)(SlotArgs...) noexcept;
+    public:
+        [[maybe_unused]] static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
 
             call_internal<R>(arg, [&]() noexcept {
                 return (o->*f)(
@@ -290,10 +290,10 @@ namespace XPrivate {
     template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
             SlotArgs...) const noexcept> final : FunctorCallBase {
-
-        using Fn = SlotRet (Obj::*)(SlotArgs...) const noexcept;
-
-        [[maybe_unused]] static void call([[maybe_unused]]Fn f, [[maybe_unused]] Obj * const o, void ** const arg) {
+    private:
+        using Function = SlotRet (Obj::*)(SlotArgs...) const noexcept;
+    public:
+        [[maybe_unused]] static void call([[maybe_unused]]Function f, [[maybe_unused]] Obj * const o, void ** const arg) {
 
             call_internal<R>(arg, [&]() noexcept {
                 return (o->*f)(
@@ -441,11 +441,11 @@ namespace XPrivate {
     template<typename A1, typename A2>
     struct [[maybe_unused]] AreArgumentsCompatible final {
     private:
-        [[maybe_unused]] static int test(const std::remove_reference_t<A2> &){
+        [[maybe_unused]] static int test(const std::remove_reference_t<A2> &) {
             return {};
         }
 
-        static char test(...){
+        static char test(...) {
             return {};
         }
     public:
