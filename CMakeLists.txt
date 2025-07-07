@@ -108,7 +108,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
 # 导出库配置供其他项目使用
 install(EXPORT ${PROJECT_NAME}Targets
         FILE ${PROJECT_NAME}Targets.cmake
-        NAMESPACE XLib::
+        NAMESPACE XCppBaseUtils::
         DESTINATION lib/cmake/${PROJECT_NAME}
 )
 
