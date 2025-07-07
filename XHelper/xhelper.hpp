@@ -68,44 +68,53 @@ template<typename F>
 class [[maybe_unused]] Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
     mutable F m_fn_;
-    mutable uint32_t is_destroy:1{};
+    mutable uint32_t m_is_destroy:1;
 public:
-    constexpr inline explicit Destroyer(F &&f):
-    m_fn_(std::move(f)){}
-
-    constexpr inline void destroy() const{
-        if (!is_destroy) {
-            is_destroy = true;
+#if __cplusplus >= 202002L
+    constexpr
+#endif
+    inline explicit Destroyer(F &&f):
+    m_fn_(std::move(f)),m_is_destroy{}{}
+#if __cplusplus >= 202002L
+    constexpr
+#endif
+    inline void destroy() const {
+        if (!m_is_destroy) {
+            m_is_destroy = true;
             m_fn_();
         }
     }
-
-    constexpr inline ~Destroyer() {
-        destroy();
-    }
+#if __cplusplus >= 202002L
+    constexpr
+#endif
+    inline ~Destroyer() { destroy();}
 };
 
 template<typename F2>
-class [[maybe_unused]] XRAII final {
-    X_DISABLE_COPY_MOVE(XRAII)
+class [[maybe_unused]] X_RAII final {
+    X_DISABLE_COPY_MOVE(X_RAII)
     mutable F2 m_f2_{};
-    mutable uint32_t m_is_destroy_:1{};
+    mutable uint32_t m_is_destroy_:1;
 public:
-    [[maybe_unused]] constexpr inline explicit XRAII(auto &&f1,F2 &&f2):
-    m_f2_(std::move(f2)){
-        f1();
-    }
-
-    constexpr inline void destroy() const {
+    template<typename F>
+#if __cplusplus >= 202002L
+     constexpr
+#endif
+    [[maybe_unused]] inline explicit X_RAII(F &&f1,F2 &&f2):
+    m_f2_(std::move(f2)),m_is_destroy_(){f1();}
+#if __cplusplus >= 202002L
+    constexpr
+#endif
+    inline void destroy() const {
         if (!m_is_destroy_){
             m_is_destroy_ = true;
             m_f2_();
         }
     }
-
-    constexpr inline ~XRAII() {
-        destroy();
-    }
+#if __cplusplus >= 202002L
+    constexpr
+#endif
+    inline ~X_RAII() { destroy();}
 };
 
 void x_assert(const char *expr, const char *file,const int &line) noexcept;
