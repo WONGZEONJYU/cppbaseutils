@@ -259,22 +259,24 @@ HAS_MEM_VALUE(m_a)
 HAS_MEM_TYPE(type)
 
 struct AS{
-    void call(int) const {
-        std::cerr <<  "this:" << reinterpret_cast<xtd::xintptr>(this) << std::endl;
+    void call() {
+
     }
+    void operator()() const {}
     int m_a{};
     using type = AS;
 };
 
-void call(int a){
+void call(const int a){
     std::cerr << a << std::endl;
 }
 
-[[maybe_unused]] static void test4(int){
+[[maybe_unused]] static void test4(int)
+{
     using namespace xtd;
     using List_t = XPrivate::List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
     using Value = XPrivate::List_Left<List_t,6>::Value;
-    std::cerr << xtd::typeName<Value>() << std::endl;
+    std::cout << xtd::typeName<Value>() << std::endl;
 }
 
 int main(const int argc,const char **const argv){
