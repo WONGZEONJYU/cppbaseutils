@@ -7,8 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <XAtomic/xatomic.hpp>
-
-#if _LIBCPP_STD_VER >= 20
+#if __cplusplus >= 202002L
 #include <ranges>
 #endif
 
@@ -45,7 +44,12 @@ public:
     }
 
     using XThread_Ptr = std::shared_ptr<XThread_>;
+#if __cplusplus >= 202002L
     static XThread_Ptr create(auto &&t) {
+#else
+    template<typename F>
+    static XThread_Ptr create(F &&t) {
+#endif
         try{
             return std::make_shared<XThread_>(std::forward<decltype(t)>(t),Private{});
         }catch (const std::exception &){
@@ -244,10 +248,10 @@ public:
 
         m_is_poolRunning.storeRelease(true);
 
-#if _LIBCPP_STD_VER >= 20
+#if __cplusplus >= 202002L
         for (const auto& item : m_threadsContainer_ | std::views::values){
 #else
-        for (const auto& [key,item] : m_threadsContainer_)
+        for (const auto& [key,item] : m_threadsContainer_) {
 #endif
             item->start();
         }
@@ -274,7 +278,7 @@ public:
     void run(const XSize_t &threadId) const {
         while (true){
             if (const auto task{acquireTask()}){
-                const XRAII raii{[&]{
+                const X_RAII raii{[&]{
                     m_busyThreadsSize.fetchAndAddRelease(1);
                     m_idleThreadsSize.fetchAndSubRelease(1);
                 },[this]{
