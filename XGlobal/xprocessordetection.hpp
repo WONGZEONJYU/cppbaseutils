@@ -388,8 +388,7 @@
    Falls back to QT_POINTER_SIZE if not set explicitly for the platform.
 */
 #ifndef X_PROCESSOR_WORDSIZE
-#  define X_PROCESSOR_WORDSIZE        QT_POINTER_SIZE
+#  define X_PROCESSOR_WORDSIZE        X_POINTER_SIZE
 #endif
-
 
 #endif
