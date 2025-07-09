@@ -584,7 +584,7 @@ namespace XPrivate {
     using HasCallOperatorAcceptingArgs_T = typename HasCallOperatorAcceptingArgs<Functor,Args...>::Type;
 
     template <typename Functor, typename... Args>
-    [[maybe_unused]] static inline constexpr auto HasCallOperatorAcceptingArgs_v {
+    [[maybe_unused]] inline constexpr auto HasCallOperatorAcceptingArgs_v {
             HasCallOperatorAcceptingArgs < Functor, Args...>::value};
 
     template <typename Func, typename... Args>
