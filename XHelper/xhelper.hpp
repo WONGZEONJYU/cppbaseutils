@@ -1,6 +1,7 @@
 #ifndef X_HELPER_HPP_
 #define X_HELPER_HPP_
 
+#include <string>
 #include <XHelper/xversion.hpp>
 #include <string_view>
 #include <utility>
@@ -147,6 +148,30 @@ static auto make_Shared(Args && ...args) noexcept -> std::shared_ptr<T> {
         return {};
     }
 }
+
+std::string toLower(std::string &);
+
+std::string toLower(std::string &&);
+
+std::string toLower(const std::string &);
+
+std::string toLower(std::string_view &);
+
+std::string toLower(std::string_view &&);
+
+std::string toLower(const std::string_view &);
+
+std::string toupper(std::string &);
+
+std::string toupper(std::string &&);
+
+std::string toupper(const std::string &);
+
+std::string toupper(std::string_view &);
+
+std::string toupper(std::string_view &&);
+
+std::string toupper(const std::string_view &);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
