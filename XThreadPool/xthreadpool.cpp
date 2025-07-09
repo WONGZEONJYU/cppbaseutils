@@ -67,7 +67,7 @@ class XThreadPoolPrivate final : public XThreadPoolData {
 #else
     mutable XThreadLocalConstVoid m_isCurrentTask_{};
 #endif
-    mutable std::deque<XAbstractTask_Ptr> m_tasksQueue_{};
+    mutable std::deque<XAbstractRunnable_Ptr> m_tasksQueue_{};
     mutable std::unordered_map<Tid_t, XThread_::XThread_Ptr> m_threadsContainer_{};
     mutable std::recursive_mutex m_mtx_{};
     mutable std::condition_variable_any m_taskQue_Cond_{},m_exit_Cond_{};
@@ -93,7 +93,7 @@ public:
         }
     }
 
-    XAbstractTask_Ptr acquireTask() const {
+XAbstractRunnable_Ptr acquireTask() const {
 
         using namespace std::chrono;
 
@@ -135,7 +135,7 @@ public:
         return task;
     }
 
-    XAbstractTask_Ptr taskJoin(const XAbstractTask_Ptr& task) const {
+    XAbstractRunnable_Ptr runnableJoin(const XAbstractRunnable_Ptr& task) const {
 
         if (!task){
             std::cerr << __PRETTY_FUNCTION__ << " tips: task is empty!\n" << std::flush;
@@ -406,9 +406,9 @@ void XThreadPool::stop() const{
     return d->m_tasksSizeThreshold.loadAcquire();
 }
 
-XAbstractTask_Ptr XThreadPool::taskJoin_(const XAbstractTask_Ptr& task) {
+XAbstractRunnable_Ptr XThreadPool::runnableJoin_(const XAbstractRunnable_Ptr& task) {
     X_D(const XThreadPool)
-    const auto retTask{d->taskJoin(task)};
+    const auto retTask{d->runnableJoin(task)};
     start();
     return retTask;
 }

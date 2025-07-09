@@ -12,23 +12,23 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XAbstractTaskPrivate;
+class XAbstractRunnablePrivate;
 class XThreadPool;
-class XAbstractTask;
-using XAbstractTask_Ptr = std::shared_ptr<XAbstractTask>;
+class XAbstractRunnable;
+using XAbstractRunnable_Ptr = std::shared_ptr<XAbstractRunnable>;
 
-class XAbstractTaskData {
-    X_DISABLE_COPY_MOVE(XAbstractTaskData)
-    friend class XAbstractTask;
+class XAbstractRunnableData {
+    X_DISABLE_COPY_MOVE(XAbstractRunnableData)
+    friend class XAbstractRunnable;
     XResult m_result_{};
 protected:
-    XAbstractTask * m_x_ptr_{};
-    XAbstractTaskData() = default;
+    XAbstractRunnable * m_x_ptr_{};
+    XAbstractRunnableData() = default;
 public:
-    virtual ~XAbstractTaskData() = default;
+    virtual ~XAbstractRunnableData() = default;
 };
 
-class XAbstractTask : public std::enable_shared_from_this<XAbstractTask> {
+class XAbstractRunnable : public std::enable_shared_from_this<XAbstractRunnable> {
 
     enum class Model {BLOCK,NONBLOCK};
 
@@ -36,11 +36,11 @@ class XAbstractTask : public std::enable_shared_from_this<XAbstractTask> {
 
     static constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
 
-    X_DECLARE_PRIVATE(XAbstractTask)
-    mutable std::shared_ptr<XAbstractTaskData> m_d_ptr_{};
+    X_DECLARE_PRIVATE(XAbstractRunnable)
+    mutable std::shared_ptr<XAbstractRunnableData> m_d_ptr_{};
 
 public:
-    X_DEFAULT_COPY_MOVE(XAbstractTask)
+    X_DEFAULT_COPY_MOVE(XAbstractRunnable)
 
     static constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
 
@@ -82,7 +82,7 @@ public:
 
     /// 设置责任链,开发者可以重写
     /// @param next_
-    [[maybe_unused]] virtual void set_nextHandler(const std::weak_ptr<XAbstractTask> &next_);
+    [[maybe_unused]] virtual void set_nextHandler(const std::weak_ptr<XAbstractRunnable> &next_);
 
     /// 责任链请求处理
     /// @param arg 任意类型,开发者可重写
@@ -92,13 +92,13 @@ public:
     /// 如果需要调整数量(需在FIXED模式才有意义),请自行调用线程池start函数输入线程数量
     /// @param pool
     /// @return 任务对象
-    [[maybe_unused]] XAbstractTask_Ptr joinThreadPool(const std::shared_ptr<XThreadPool> &pool) ;
+    [[maybe_unused]] XAbstractRunnable_Ptr joinThreadPool(const std::shared_ptr<XThreadPool> &pool) ;
 
     /// 检查线程池是否运行
     /// @return  ture or false
     [[maybe_unused]] [[maybe_unused]] [[nodiscard]] bool is_Running() const;
 
-    virtual ~XAbstractTask() = default;
+    virtual ~XAbstractRunnable() = default;
 
 protected:
     ///给开发者制作私有构造函数
@@ -110,7 +110,7 @@ protected:
 private:
     virtual std::any run();
     virtual std::any run() const;
-    explicit XAbstractTask(const FuncVer&);
+    explicit XAbstractRunnable(const FuncVer&);
     void call() const;
     void set_exit_function_(std::function<bool()> &&) const;
     void resetRecall_() const;
@@ -119,7 +119,7 @@ private:
     }
     XAtomicPointer<const void> &Owner_() const;
 
-    template<typename> friend class XTask;
+    template<typename> friend class XRunnable;
     friend class XThreadPool;
     friend class XThreadPoolPrivate;
 };

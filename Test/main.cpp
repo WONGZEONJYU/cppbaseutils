@@ -62,7 +62,7 @@ static double Double(const double f){
     return f + 100.0;
 }
 
-class A final : public xtd::XTask<xtd::NonConst> {
+class A final : public xtd::XRunnable<xtd::NonConst> {
     std::any run() override {
         for (int i {}; i < 3 ;++i){
             {
@@ -110,14 +110,14 @@ public:
 
     Functor3 f3{.m_name = "test"};
 
-    const auto p1{pool2->taskJoin(&Functor3::func, std::addressof(f3), "34")} ,
-            p2{pool2->taskJoin(Double,35.0)};
+    const auto p1{pool2->runnableJoin(&Functor3::func, std::addressof(f3), "34")} ,
+            p2{pool2->runnableJoin(Double,35.0)};
 
-    xtd::XAbstractTask_Ptr lambda{};
-    lambda = pool2->taskJoin([&](const int& id){
+    xtd::XAbstractRunnable_Ptr lambda{};
+    lambda = pool2->runnableJoin([&](const int& id){
         pool2->stop();
         pool2->start();
-        pool2->taskJoin(lambda);
+        pool2->runnableJoin(lambda);
         std::cerr << "p1->result<std::string>(): " << p1->result<std::string>(p1->NonblockModel) << "\n" << std::flush;
         for (int i {}; i < 3;++i){
             {
@@ -129,9 +129,9 @@ public:
         return id + 10;
     },31);
 
-    pool3->taskJoin(lambda);
-    pool2->taskJoin(Functor(),32);
-    pool2->taskJoin(Functor2());
+    pool3->runnableJoin(lambda);
+    pool2->runnableJoin(Functor(),32);
+    pool2->runnableJoin(Functor2());
 
     const auto last_time{std::chrono::system_clock::now()};
     while (std::chrono::system_clock::now() - last_time < std::chrono::seconds(90)){
@@ -149,9 +149,9 @@ public:
 
     std::cout << "lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
      std::cout << "p1->result<std::string>(): " << p1->result<std::string>() << "\n"<< std::flush;
-     std::cout << "p2->result<double>(): " << p2->result<double>() << "\n" << std::flush;; //与上同理
+     std::cout << "p2->result<double>(): " << p2->result<double>() << "\n" << std::flush; //与上同理
 
-    pool3->taskJoin(lambda);
+    pool3->runnableJoin(lambda);
 
     std::cout << "pool3 lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
     std::cout << "pool3 lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
@@ -231,7 +231,7 @@ public:
 
     using namespace std::chrono;
 
-    std::deque<xtd::XAbstractTask_Ptr> tasks1,task2s{};
+    std::deque<xtd::XAbstractRunnable_Ptr> tasks1,task2s{};
     for (int i{};i < 1000000;++i){
         tasks1.push_back(std::make_shared<A>(10));
     }
@@ -243,7 +243,7 @@ public:
     auto runtime{duration_cast<milliseconds>(system_clock::now() - last_time).count()};
     std::cerr <<  "deque w:" << runtime << std::endl;
 
-    std::unordered_map<void*,xtd::XAbstractTask_Ptr> tasks2{};
+    std::unordered_map<void*,xtd::XAbstractRunnable_Ptr> tasks2{};
     last_time = system_clock::now();
 
     for (const auto &task : tasks1){
@@ -285,9 +285,9 @@ void call(const int a){
 
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
-    //test1();
+    test1();
     //test2();
     //test3();
-    test4(123);
+    //test4(123);
     return 0;
 }

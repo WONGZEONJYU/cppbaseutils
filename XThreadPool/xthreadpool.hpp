@@ -1,7 +1,7 @@
 #ifndef X_THREADPOOL2_HPP
 #define X_THREADPOOL2_HPP
 
-#include <XThreadPool/xtask.hpp>
+#include <XThreadPool/xrunnable.hpp>
 #include <XHelper/xtypetraits.hpp>
 
 XTD_NAMESPACE_BEGIN
@@ -48,7 +48,7 @@ class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
     };
 
     template<typename ...Args>
-    class XTemporaryTasksImpl final: public XTask<Const> {
+    class XTemporaryTasksImpl final: public XRunnable<Const> {
 
         using decayed_tuple_ = std::tuple<std::decay_t<Args>...>;
         mutable decayed_tuple_ m_tuple_{};
@@ -95,7 +95,7 @@ class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
         }
     };
 
-    XAbstractTask_Ptr taskJoin_(const XAbstractTask_Ptr &task);
+    XAbstractRunnable_Ptr runnableJoin_(const XAbstractRunnable_Ptr &task);
 
 public:
     enum class Mode {FIXED,/*固定线程数模式*/CACHE /*动态线程数*/};
@@ -124,7 +124,7 @@ public:
     /// @param args
     /// @return task对象
     template<typename... Args>
-    [[maybe_unused]] auto taskJoin(Args && ...args) {
+    [[maybe_unused]] auto runnableJoin(Args && ...args) {
 
         using First_t [[maybe_unused]] = std::tuple_element_t<0,std::tuple<Args...>>;
 
@@ -132,11 +132,11 @@ public:
 
             using Derived_t = std::decay_t<decltype(std::declval<First_t>().operator*())>;
 
-            static_assert(std::is_base_of_v<XAbstractTask,Derived_t>,"Derived_t no base of XAbstractTask2");
+            static_assert(std::is_base_of_v<XAbstractRunnable,Derived_t>,"Derived_t no base of XAbstractTask2");
 
-            return taskJoin_(std::forward<Args>(args)...);
+            return runnableJoin_(std::forward<Args>(args)...);
         }else{
-            return taskJoin_(XTemporaryTasksFactory::create(std::forward<Args>(args)...));
+            return runnableJoin_(XTemporaryTasksFactory::create(std::forward<Args>(args)...));
         }
     }
 
