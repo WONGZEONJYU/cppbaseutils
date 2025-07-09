@@ -37,7 +37,7 @@ m_d_ptr_(XAbstractTaskPrivate::create()) {
     d->m_is_OverrideConst = is_OverrideConst;
 }
 
-[[maybe_unused]] bool XAbstractTask::is_running() const {
+[[maybe_unused]] bool XAbstractTask::is_Running() const {
     X_D(const XAbstractTask)
     return d->m_is_running && d->m_is_running();
 }
