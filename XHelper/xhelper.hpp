@@ -100,8 +100,9 @@ public:
 #if __cplusplus >= 202002L
      constexpr
 #endif
-    [[maybe_unused]] inline explicit X_RAII(F &&f1,F2 &&f2):
+    inline explicit X_RAII(F &&f1,F2 &&f2):
     m_f2_(std::move(f2)),m_is_destroy_(){f1();}
+
 #if __cplusplus >= 202002L
     constexpr
 #endif
@@ -111,6 +112,7 @@ public:
             m_f2_();
         }
     }
+
 #if __cplusplus >= 202002L
     constexpr
 #endif
