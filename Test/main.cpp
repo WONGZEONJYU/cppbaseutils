@@ -278,9 +278,7 @@ void call(const int a){
     // using Value = XPrivate::List_Left<List_t,6>::Value;
     // std::cout << xtd::typeName<Value>() << std::endl;
     std::string filename{"IMAGE01.PNG"};
-    std::ranges::transform(filename,filename.begin(),[](const uint8_t &c){
-        return std::tolower(c);
-    });
+    filename = xtd::toLower(std::move(filename));
     std::cerr << filename << std::endl;
     std::cerr << filename.substr(filename.find('.')) << std::endl;
 }
