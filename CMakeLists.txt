@@ -16,6 +16,12 @@ set(Boost_DEBUG ON)
 #set(Boost_USE_STATIC_LIBS ON)
 #add_definitions(-DUNUSE_STD_THREAD_LOCAL)
 
+if (MSVC AND WIN32)
+    target_compile_options(${PROJECT_NAME} PUBLIC /std:c++latest)
+    target_compile_options(${PROJECT_NAME} PUBLIC /Zc:__cplusplus)
+    target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif ()
+
 add_library(${PROJECT_NAME} SHARED)
 
 find_package(Boost REQUIRED COMPONENTS ALL)
