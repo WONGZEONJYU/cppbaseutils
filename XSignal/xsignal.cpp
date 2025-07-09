@@ -133,5 +133,9 @@ Signal_Ptr XSignal::create(const int &sig,const int &flags){
     return XSignal_Impl::create(sig,flags);
 }
 
+[[maybe_unused]] void Signal_Unregister(const int &sig){
+    XSignal::Unregister(sig);
+}
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

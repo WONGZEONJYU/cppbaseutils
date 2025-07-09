@@ -32,13 +32,11 @@ public:
 };
 
 template<typename... Args>
-[[maybe_unused]] static inline auto Signal_Register(const int &sig,const int &flags,Args&& ...args){
+[[maybe_unused]] inline auto Signal_Register(const int &sig,const int &flags,Args&& ...args){
     return XSignal::Register(sig,flags,std::forward<Args>(args)...);
 }
 
-[[maybe_unused]] static inline void Signal_Unregister(const int &sig){
-    XSignal::Unregister(sig);
-}
+[[maybe_unused]] void Signal_Unregister(const int &sig);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
