@@ -18,10 +18,11 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+static inline constexpr auto MAX_THREADS_SIZE{1024};
 #if defined(__LP64__)
-static inline constexpr auto MAX_TASKS_SIZE{INT64_MAX},MAX_THREADS_SIZE{1024LL};
+static inline constexpr auto MAX_TASKS_SIZE{INT64_MAX};
 #else
-static inline constexpr auto MAX_TASKS_SIZE{INT32_MAX},MAX_THREADS_SIZE{1024L};
+static inline constexpr auto MAX_TASKS_SIZE{INT32_MAX};
 #endif
 
 static inline constexpr auto WAIT_MINUTES{60};
