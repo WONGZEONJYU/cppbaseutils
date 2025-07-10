@@ -1,5 +1,6 @@
 #include "xhelper.hpp"
 #include <iostream>
+#include <algorithm>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
