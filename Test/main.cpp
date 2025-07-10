@@ -273,10 +273,10 @@ void call(const int a){
 
 [[maybe_unused]] static void test4(int)
 {
-    // using namespace xtd;
-    // using List_t = XPrivate::List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
-    // using Value = XPrivate::List_Left<List_t,6>::Value;
-    // std::cout << xtd::typeName<Value>() << std::endl;
+    using namespace xtd;
+    using List_t = XPrivate::List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
+    using Value = XPrivate::List_Left<List_t,6>::Value;
+    std::cout << xtd::typeName<Value>() << std::endl;
     std::string filename{"IMAGE01.PNG"};
     filename = xtd::toLower(std::move(filename));
     std::cerr << filename << std::endl;
@@ -285,9 +285,9 @@ void call(const int a){
 
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
-    test1();
+    //test1();
     //test2();
     //test3();
-    //test4(123);
+    test4(123);
     return 0;
 }
