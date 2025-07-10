@@ -110,12 +110,12 @@ namespace XPrivate {
 
     template<typename>
     struct [[maybe_unused]] SizeOfList final {
-        static inline constexpr size_t value{1};
+        static inline constexpr std::size_t value{1};
     };
 
     template<>
     struct [[maybe_unused]] SizeOfList<List<>> final {
-        static constexpr size_t value{};
+        static constexpr std::size_t value{};
     };
 
     template<typename ...Ts>
@@ -125,7 +125,7 @@ namespace XPrivate {
 
     template<typename Head, typename... Tail>
     struct List<Head, Tail...> final {
-        static inline constexpr size_t size{1 + sizeof...(Tail)};
+        static inline constexpr std::size_t size{1 + sizeof...(Tail)};
         using Car [[maybe_unused]] = Head;
         using Cdr [[maybe_unused]] = List<Tail...>;
     };
@@ -234,7 +234,7 @@ namespace XPrivate {
     template<typename,typename,typename,typename>
     struct FunctorCall;
 
-    template<size_t... II, typename... SignalArgs, typename R, typename Function>
+    template<std::size_t... II, typename... SignalArgs, typename R, typename Function>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, Function> final : FunctorCallBase {
 
         [[maybe_unused]] static void call([[maybe_unused]] Function &f, void ** const arg) {
@@ -244,7 +244,7 @@ namespace XPrivate {
         }
     };
 
-    template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
+    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...)> final
             : FunctorCallBase {
     private:
@@ -258,7 +258,7 @@ namespace XPrivate {
         }
     };
 
-    template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
+    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const> final
             : FunctorCallBase {
     private:
@@ -272,7 +272,7 @@ namespace XPrivate {
         }
     };
 
-    template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
+    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
             SlotArgs...) noexcept> final : FunctorCallBase {
     private:
@@ -287,7 +287,7 @@ namespace XPrivate {
         }
     };
 
-    template<size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
+    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
             SlotArgs...) const noexcept> final : FunctorCallBase {
     private:
