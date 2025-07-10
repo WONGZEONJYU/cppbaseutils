@@ -24,9 +24,16 @@ if (MSVC AND WIN32)
     target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endif ()
 
+if (Linux)
+
+endif ()
+
 add_library(${PROJECT_NAME} SHARED)
 
-find_package(Boost REQUIRED COMPONENTS ALL)
+#find_package(Boost REQUIRED COMPONENTS ALL)
+
+find_package(Boost QUIET COMPONENTS ALL)
+
 if(Boost_FOUND)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DHAS_BOOST)
     message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
