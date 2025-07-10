@@ -22,7 +22,7 @@ class XResultData {
 public:
     XResult * m_x_ptr_{};
     mutable
-#if _LIBCPP_STD_VER >= 20
+#if __cplusplus >= 202002L
     std::binary_semaphore
 #else
     XBinary_Semaphore
