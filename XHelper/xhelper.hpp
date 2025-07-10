@@ -5,6 +5,7 @@
 #include <XHelper/xversion.hpp>
 #include <string_view>
 #include <utility>
+#include <memory>
 
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
@@ -53,7 +54,7 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
     friend class __VA_ARGS__;
 
 #define X_D(Class) Class##Private * const d{d_func()};
-#define X_X(__VA_ARGS__) __VA_ARGS__ * const x{x_func()};
+#define X_X(...) __VA_ARGS__ * const x{x_func()};
 
 #define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : xtd::x_assert(#cond, __FILE__, __LINE__))
 #define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : xtd::x_assert_what(where, what, __FILE__, __LINE__))
