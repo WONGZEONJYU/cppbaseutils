@@ -1,6 +1,7 @@
 #include "xtypes.hpp"
 #include <limits>
 #include <climits>
+#include <utility>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -42,10 +43,10 @@ static_assert(std::numeric_limits<float>::radix == 2,
                   "X assumes binary IEEE 754 floating point");
 
 // not required by the definition of size_t, but we depend on this
-static_assert(sizeof(size_t) == sizeof(void *), "size_t and a pointer don't have the same size");
-static_assert(sizeof(size_t) == sizeof(xsizetype)); // implied by the definition
+static_assert(sizeof(std::size_t) == sizeof(void *), "size_t and a pointer don't have the same size");
+static_assert(sizeof(std::size_t) == sizeof(xsizetype)); // implied by the definition
 static_assert(std::is_same_v<xsizetype, xptrdiff>);
-static_assert(std::is_same_v<std::size_t, size_t>);
+static_assert(std::is_same_v<std::size_t, std::size_t>);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
