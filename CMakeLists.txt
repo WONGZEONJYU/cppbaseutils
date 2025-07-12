@@ -15,34 +15,40 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_DEBUG_LIBS ON)
 set(Boost_DEBUG ON)
-#set(Boost_USE_STATIC_LIBS ON)
-#add_definitions(-DUNUSE_STD_THREAD_LOCAL)
 
-if (MSVC AND WIN32)
-    target_compile_options(${PROJECT_NAME} PUBLIC /std:c++latest)
-    target_compile_options(${PROJECT_NAME} PUBLIC /Zc:__cplusplus)
-    target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-endif ()
+# 添加选项来控制构建哪种类型的库
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+option(BUILD_STATIC_LIBS "Build static libraries" OFF)  # 默认关闭静态库
 
-if (Linux)
+# 确保至少构建一种类型的库
+if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
+    message(FATAL_ERROR "At least one of BUILD_SHARED_LIBS or BUILD_STATIC_LIBS must be ON")
+endif()
 
-endif ()
-
-add_library(${PROJECT_NAME} SHARED)
-
-#find_package(Boost REQUIRED COMPONENTS ALL)
-
+# 查找 Boost
 find_package(Boost QUIET COMPONENTS ALL)
 
-if(Boost_FOUND)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC -DHAS_BOOST)
-    message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
-    message(STATUS "Boost_LIBRARY_DIRS = ${Boost_LIBRARIES}")
-    target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
-else()
-    #message(FATAL_ERROR "Boost not found. Please install Boost or set BOOST_ROOT.")
-    message(STATUS "Boost not found. Please install Boost or set BOOST_ROOT.")
+# 创建库目标列表
+set(LIBRARY_TARGETS)
+
+# 创建共享库
+if(BUILD_SHARED_LIBS)
+    add_library(${PROJECT_NAME}_shared SHARED)
+    set_target_properties(${PROJECT_NAME}_shared PROPERTIES
+            OUTPUT_NAME ${PROJECT_NAME}
+            CLEAN_DIRECT_OUTPUT 1
+    )
+    list(APPEND LIBRARY_TARGETS ${PROJECT_NAME}_shared)
+endif()
+
+# 创建静态库
+if(BUILD_STATIC_LIBS)
+    add_library(${PROJECT_NAME}_static STATIC)
+    set_target_properties(${PROJECT_NAME}_static PROPERTIES
+            OUTPUT_NAME ${PROJECT_NAME}
+            CLEAN_DIRECT_OUTPUT 1
+    )
+    list(APPEND LIBRARY_TARGETS ${PROJECT_NAME}_static)
 endif()
 
 # 包含子目录
@@ -54,19 +60,39 @@ add_subdirectory(XSignal)
 add_subdirectory(XThreadPool)
 add_subdirectory(XTools)
 
-# 指定库的包含目录
-# PUBLIC 包含目录用于暴露给测试和外部调用者
-# PRIVATE 包含目录仅用于构建 XLib，确保 xobject_p.hpp 可用
-target_include_directories(${PROJECT_NAME}
-        PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/XObject # 确保 xobject_p.hpp 在构建 XLib 时可用
-)
+# 定义库的公共属性设置函数
+function(configure_library_target target_name)
+    # 设置编译器特定选项
+    if (MSVC AND WIN32)
+        target_compile_options(${target_name} PUBLIC /std:c++latest)
+        target_compile_options(${target_name} PUBLIC /Zc:__cplusplus)
+        target_compile_options(${target_name} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+    endif()
 
-# 安装规则
-install(TARGETS ${PROJECT_NAME}
+    # 配置 Boost
+    if(Boost_FOUND)
+        target_compile_definitions(${target_name} PUBLIC -DHAS_BOOST)
+        target_include_directories(${target_name} PUBLIC ${Boost_INCLUDE_DIRS})
+        target_link_libraries(${target_name} PUBLIC ${Boost_LIBRARIES})
+    endif()
+
+    # 指定库的包含目录
+    target_include_directories(${target_name}
+            PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<INSTALL_INTERFACE:include>
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/XObject
+    )
+endfunction()
+
+# 配置所有库目标
+foreach(target IN LISTS LIBRARY_TARGETS)
+    configure_library_target(${target})
+endforeach()
+
+# 安装库
+install(TARGETS ${LIBRARY_TARGETS}
         EXPORT ${PROJECT_NAME}Targets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
@@ -101,7 +127,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
         FILES_MATCHING
         PATTERN "*.h"
         PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE # 排除 xobject_p.hpp
+        PATTERN "*_p.hpp" EXCLUDE
 )
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
         DESTINATION include/XSignal
@@ -127,13 +153,24 @@ install(EXPORT ${PROJECT_NAME}Targets
 
 # 生成 CMake 配置文件
 include(CMakePackageConfigHelpers)
+
+# 创建包配置文件
+configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+        INSTALL_DESTINATION lib/cmake/${PROJECT_NAME}
+        PATH_VARS CMAKE_INSTALL_PREFIX
+)
+
 write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
         COMPATIBILITY SameMajorVersion
 )
 
+# 安装配置文件
 install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
         DESTINATION lib/cmake/${PROJECT_NAME}
 )
