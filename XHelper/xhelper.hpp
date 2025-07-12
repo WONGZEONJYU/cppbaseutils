@@ -150,6 +150,13 @@ template<typename T, typename ... Args>
     }
 }
 
+template<typename Tuple, typename Pred>
+[[maybe_unused]] inline void for_each_tuple(Tuple && tuple_, Pred && pred_) {
+    (void)std::apply([&pred_]<typename... Args>(Args &&... args) {
+        (std::forward<Pred>(pred_)(std::forward<Args>(args)), ...);
+    },std::forward<Tuple>(tuple_));
+}
+
 std::string toLower(std::string &);
 
 std::string toLower(std::string &&);
