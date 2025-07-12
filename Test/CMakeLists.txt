@@ -13,4 +13,4 @@ file(GLOB H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 aux_source_directory(. SRC_FILES)
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${H_FILES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE XCppBaseUtils)
+target_link_libraries(${PROJECT_NAME} PRIVATE XCppBaseUtils_shared)
