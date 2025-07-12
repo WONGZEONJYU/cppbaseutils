@@ -169,17 +169,17 @@ std::string toLower(std::string_view &&);
 
 std::string toLower(const std::string_view &);
 
-std::string toupper(std::string &);
+std::string toUpper(std::string &);
 
-std::string toupper(std::string &&);
+std::string toUpper(std::string &&);
 
-std::string toupper(const std::string &);
+std::string toUpper(const std::string &);
 
-std::string toupper(std::string_view &);
+std::string toUpper(std::string_view &);
 
-std::string toupper(std::string_view &&);
+std::string toUpper(std::string_view &&);
 
-std::string toupper(const std::string_view &);
+std::string toUpper(const std::string_view &);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

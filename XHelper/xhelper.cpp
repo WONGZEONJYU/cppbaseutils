@@ -79,11 +79,11 @@ std::string toLower(std::string_view &&str) {
     return toLower(std::string(str));
 }
 
-std::string toupper(std::string &str) {
-    return toupper(std::move(str));
+std::string toUpper(std::string &str) {
+    return toUpper(std::move(str));
 }
 
-std::string toupper(std::string &&str) {
+std::string toUpper(std::string &&str) {
 #if __cplusplus >= 202002L
     std::ranges::transform(str,str.begin(),::toupper);
 #else
@@ -92,20 +92,20 @@ std::string toupper(std::string &&str) {
     return str;
 }
 
-std::string toupper(const std::string &str) {
-    return toupper(std::string(str));
+std::string toUpper(const std::string &str) {
+    return toUpper(std::string(str));
 }
 
-std::string toupper(std::string_view &str) {
-    return toupper(std::string(str));
+std::string toUpper(std::string_view &str) {
+    return toUpper(std::string(str));
 }
 
-std::string toupper(std::string_view &&str) {
-    return toupper(std::string(str));
+std::string toUpper(std::string_view &&str) {
+    return toUpper(std::string(str));
 }
 
-std::string toupper(const std::string_view &str) {
-    return toupper(std::string(str));
+std::string toUpper(const std::string_view &str) {
+    return toUpper(std::string(str));
 }
 
 XTD_INLINE_NAMESPACE_END
