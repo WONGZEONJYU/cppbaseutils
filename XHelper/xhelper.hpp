@@ -157,29 +157,29 @@ template<typename Tuple, typename Pred>
     },std::forward<Tuple>(tuple_));
 }
 
-std::string toLower(std::string &);
+[[maybe_unused]] std::string toLower(std::string &);
 
-std::string toLower(std::string &&);
+[[maybe_unused]] std::string toLower(std::string &&);
 
-std::string toLower(const std::string &);
+[[maybe_unused]] std::string toLower(const std::string &);
 
-std::string toLower(std::string_view &);
+[[maybe_unused]] std::string toLower(std::string_view &);
 
-std::string toLower(std::string_view &&);
+[[maybe_unused]] std::string toLower(std::string_view &&);
 
-std::string toLower(const std::string_view &);
+[[maybe_unused]] std::string toLower(const std::string_view &);
 
-std::string toUpper(std::string &);
+[[maybe_unused]] std::string toUpper(std::string &);
 
-std::string toUpper(std::string &&);
+[[maybe_unused]] std::string toUpper(std::string &&);
 
-std::string toUpper(const std::string &);
+[[maybe_unused]] std::string toUpper(const std::string &);
 
-std::string toUpper(std::string_view &);
+[[maybe_unused]] std::string toUpper(std::string_view &);
 
-std::string toUpper(std::string_view &&);
+[[maybe_unused]] std::string toUpper(std::string_view &&);
 
-std::string toUpper(const std::string_view &);
+[[maybe_unused]] std::string toUpper(const std::string_view &);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

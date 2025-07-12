@@ -50,7 +50,7 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
                 ", line " << line << "\n" << std::flush;
 }
 
-std::string toLower(std::string &str) {
+[[maybe_unused]] std::string toLower(std::string &str) {
 #if __cplusplus >= 202002L
     std::ranges::transform(str,str.begin(),::tolower);
 #else
@@ -59,31 +59,31 @@ std::string toLower(std::string &str) {
     return str;
 }
 
-std::string toLower(std::string &&str) {
+[[maybe_unused]]std::string toLower(std::string &&str) {
     return toLower(str);
 }
 
-std::string toLower(const std::string &str) {
+[[maybe_unused]]std::string toLower(const std::string &str) {
     return toLower(std::string(str));
 }
 
-std::string toLower(const std::string_view &str) {
+[[maybe_unused]]std::string toLower(const std::string_view &str) {
     return toLower(std::string(str));
 }
 
-std::string toLower(std::string_view &str) {
+[[maybe_unused]]std::string toLower(std::string_view &str) {
     return toLower(std::string(str));
 }
 
-std::string toLower(std::string_view &&str) {
+[[maybe_unused]]std::string toLower(std::string_view &&str) {
     return toLower(std::string(str));
 }
 
-std::string toUpper(std::string &str) {
+[[maybe_unused]] std::string toUpper(std::string &str) {
     return toUpper(std::move(str));
 }
 
-std::string toUpper(std::string &&str) {
+[[maybe_unused]] std::string toUpper(std::string &&str) {
 #if __cplusplus >= 202002L
     std::ranges::transform(str,str.begin(),::toupper);
 #else
@@ -92,19 +92,19 @@ std::string toUpper(std::string &&str) {
     return str;
 }
 
-std::string toUpper(const std::string &str) {
+[[maybe_unused]] std::string toUpper(const std::string &str) {
     return toUpper(std::string(str));
 }
 
-std::string toUpper(std::string_view &str) {
+[[maybe_unused]] std::string toUpper(std::string_view &str) {
     return toUpper(std::string(str));
 }
 
-std::string toUpper(std::string_view &&str) {
+[[maybe_unused]] std::string toUpper(std::string_view &&str) {
     return toUpper(std::string(str));
 }
 
-std::string toUpper(const std::string_view &str) {
+[[maybe_unused]] std::string toUpper(const std::string_view &str) {
     return toUpper(std::string(str));
 }
 
