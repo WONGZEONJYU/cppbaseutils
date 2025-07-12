@@ -283,11 +283,20 @@ void call(const int a){
     std::cerr << filename.substr(filename.find('.')) << std::endl;
 }
 
+[[maybe_unused]]
+static void test5(){
+    std::tuple t{0,1l,2ll,3ul,4ull,0.1f,0.2,"const char *",std::string{"std::string"}};
+    xtd::for_each_tuple(t,[](const auto &i) {
+        std::cerr << i << std::endl;
+    });
+}
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     //test1();
     //test2();
     //test3();
-    test4(123);
+    //test4(123);
+    test5();
     return 0;
 }
