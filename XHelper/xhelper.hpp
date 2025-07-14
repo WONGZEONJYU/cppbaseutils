@@ -121,19 +121,39 @@ public:
     inline ~X_RAII() { destroy();}
 };
 
+/**
+ * 错误输出
+ * @param expr
+ * @param file
+ * @param line
+ */
 void x_assert(const char *expr, const char *file,const int &line) noexcept;
 void x_assert(const std::string &expr, const std::string &file,const int &line) noexcept;
 void x_assert(const std::string_view &expr, const std::string_view &file,const int &line) noexcept;
 
+/**
+ * 错误输出
+ * @param where
+ * @param what
+ * @param file
+ * @param line
+ */
 void x_assert_what(const char *where, const char *what,
-    const char *file,const int &line) noexcept;
+                   const char *file,const int &line) noexcept;
 void x_assert_what(const std::string &where, const std::string &what,
     const std::string &file,const int &line) noexcept;
 void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
 
+/**
+ * 创建std::unique_ptr<T>,不抛异常
+ * @tparam T
+ * @tparam Args
+ * @param args
+ * @return
+ */
 template<typename T, typename ... Args>
-[[maybe_unused]] [[nodiscard]] inline auto make_Unique(Args && ...args) noexcept -> std::unique_ptr<T> {
+[[maybe_unused]] [[nodiscard]] inline std::unique_ptr<T> make_Unique(Args && ...args) noexcept {
     try{
         return std::make_unique<T>(std::forward<Args>(args)...);
     }catch (const std::exception &){
@@ -141,8 +161,15 @@ template<typename T, typename ... Args>
     }
 }
 
+/**
+ * 创建std::shared_ptr<T>
+ * @tparam T
+ * @tparam Args
+ * @param args
+ * @return
+ */
 template<typename T, typename ... Args>
-[[maybe_unused]] [[nodiscard]] inline auto make_Shared(Args && ...args) noexcept -> std::shared_ptr<T> {
+[[maybe_unused]] [[nodiscard]] inline std::shared_ptr<T> make_Shared(Args && ...args) noexcept {
     try{
         return std::make_shared<T>(std::forward<Args>(args)...);
     }catch (const std::exception &){
@@ -150,6 +177,13 @@ template<typename T, typename ... Args>
     }
 }
 
+/**
+ *
+ * @tparam Tuple
+ * @tparam Pred
+ * @param tuple_
+ * @param pred_
+ */
 template<typename Tuple, typename Pred>
 [[maybe_unused]] inline void for_each_tuple(Tuple && tuple_, Pred && pred_) {
     (void)std::apply([&pred_]<typename... Args>(Args &&... args) {
@@ -157,24 +191,79 @@ template<typename Tuple, typename Pred>
     },std::forward<Tuple>(tuple_));
 }
 
-template<const std::size_t N,typename... Args>
-inline auto Left_Tuple_n_(const std::tuple<Args...> & tuple_) {
+namespace TuplePrivate {
+    template<const std::size_t N,typename... Args>
+    inline auto Left_Tuple_n_(const std::tuple<Args...> & tuple_) {
+        static_assert(N <= sizeof...(Args), "N must be <= tuple size");
+        static_assert(N <= std::tuple_size_v<std::decay_t<decltype(tuple_)>>, "N must be <= tuple size");
+        return [&]<const std::size_t... I>(std::index_sequence<I...>)
+            ->decltype(std::make_tuple(std::get<I>(tuple_)...)) {
+            return std::make_tuple(std::get<I>(tuple_)...);
+        }(std::make_index_sequence<N>{});
+    }
 
-    static_assert(N <= sizeof...(Args), "N must be <= tuple size");
-    static_assert(N <= std::tuple_size_v<std::decay_t<decltype(tuple_)>>, "N must be <= tuple size");
+    // 方法1: 获取后N个元素的通用模板
+    template<const std::size_t N, typename... Args>
+    inline auto Last_Tuple_n_(const std::tuple<Args...> & tuple_) {
+        static_assert(N <= sizeof...(Args), "N must be <= tuple size");
+        static_assert(N <= std::tuple_size_v<std::decay_t<decltype(tuple_)>>,"N must be <= tuple size");
+        constexpr auto S{sizeof...(Args)  - N};
+        return [&]<const std::size_t... I>(std::index_sequence<I...>)
+            ->decltype(std::make_tuple(std::get<S + I>(tuple_)...)) {
+            return std::make_tuple(std::get<S + I>(tuple_)...);
+        }(std::make_index_sequence<N>{});
+    }
 
-    const auto Left_Tuple_n_impl{[&]<const std::size_t... I>(std::index_sequence<I...>)
-        ->decltype(std::make_tuple(std::get<I>(tuple_)...)) {
-        return std::make_tuple(std::get<I>(tuple_)...);
-    }};
-
-    return Left_Tuple_n_impl(std::make_index_sequence<N>{});
+    // 方法3: 跳过前面元素,取剩余的
+    template<std::size_t Skip, typename... Args>
+    inline auto skip_front_n_(const std::tuple<Args...>& tuple_) {
+        static_assert(Skip <= sizeof...(Args), "Skip count exceeds tuple size");
+        constexpr auto Offset{Skip},ReCount{sizeof...(Args) - Skip};
+        static_assert(Offset + ReCount <= sizeof...(Args), "Range out of bounds");
+        return [&]<const std::size_t ...I>(std::index_sequence<I...>)
+        -> decltype(std::make_tuple(std::get<Offset + I>(tuple_)...)){
+            return std::make_tuple(std::get<Offset + I>(tuple_)...);
+        }(std::make_index_sequence<ReCount>{});
+    }
 }
 
+/**
+ * 获取tuple前N个元素
+ * @tparam N
+ * @tparam Tuple
+ * @param tuple_
+ * @return
+ */
 template<const std::size_t N,typename Tuple>
 inline auto Left_Tuple(const Tuple & tuple_)
-->decltype(Left_Tuple_n_<N>(tuple_)) {
-    return Left_Tuple_n_<N>(tuple_);
+->decltype(TuplePrivate::Left_Tuple_n_<N>(tuple_)) {
+    return TuplePrivate::Left_Tuple_n_<N>(tuple_);
+}
+
+/**
+ * 获取tuple后N个元素
+ * @tparam N
+ * @tparam Tuple
+ * @param tuple_
+ * @return decltype(TuplePrivate::Last_Tuple_n_<N,Tuple>(tuple_))
+ */
+template<const std::size_t N,typename Tuple>
+inline auto Last_Tuple(const Tuple & tuple_)
+    ->decltype(TuplePrivate::Last_Tuple_n_<N>(tuple_)) {
+    return TuplePrivate::Last_Tuple_n_<N>(tuple_);
+}
+
+/**
+ * 获取tuple跳过N个元素后面的所有元素
+ * @tparam N
+ * @tparam Tuple
+ * @param tuple_
+ * @return decltype(TuplePrivate::skip_front_n_<Skip>(tuple_))
+ */
+template<const std::size_t N,typename Tuple>
+inline auto SkipFront_Tuple(const Tuple &tuple_)
+    ->decltype(TuplePrivate::skip_front_n_<N>(tuple_)) {
+    return TuplePrivate::skip_front_n_<N>(tuple_);
 }
 
 [[maybe_unused]] std::string toLower(std::string &);
