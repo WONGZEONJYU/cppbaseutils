@@ -62,7 +62,7 @@ template<typename T>
 struct is_smart_pointer<const volatile T&&> : is_smart_pointer<T> {};
 
 template<typename T>
-inline constexpr bool is_smart_pointer_v = is_smart_pointer<T>::value;
+inline constexpr auto is_smart_pointer_v = is_smart_pointer<T>::value;
 
 // 获取智能指针的元素类型
 template<typename>
@@ -120,8 +120,7 @@ template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type {};
 
 template<typename... Args>
-static inline constexpr auto is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
-
+inline constexpr auto is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
 
 template<typename>
 struct [[maybe_unused]] is_tuple : std::false_type {};
@@ -145,19 +144,19 @@ template<typename Tuple_>
 struct [[maybe_unused]] is_tuple<const Tuple_ &&> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
-struct [[maybe_unused]] is_tuple<const volatile Tuple_ &> : is_tuple<Tuple_>{};
+struct [[maybe_unused]] is_tuple<const volatile Tuple_ &> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
-struct [[maybe_unused]] is_tuple<const volatile Tuple_ &&> : is_tuple<Tuple_>{};
+struct [[maybe_unused]] is_tuple<const volatile Tuple_ &&> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
-struct [[maybe_unused]] is_tuple<volatile Tuple_ > : is_tuple<Tuple_>{};
+struct [[maybe_unused]] is_tuple<volatile Tuple_ > : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
-struct [[maybe_unused]] is_tuple<volatile Tuple_ &> : is_tuple<Tuple_>{};
+struct [[maybe_unused]] is_tuple<volatile Tuple_ &> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
-struct [[maybe_unused]] is_tuple<volatile Tuple_ &&> : is_tuple<Tuple_>{};
+struct [[maybe_unused]] is_tuple<volatile Tuple_ &&> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
 [[maybe_unused]] inline constexpr auto is_tuple_v{is_tuple<Tuple_>::value};
