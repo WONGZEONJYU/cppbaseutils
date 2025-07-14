@@ -285,6 +285,9 @@ void call(const int a){
 
 [[maybe_unused]]
 static void test5(){
+
+    std::cerr << sizeof(std::size_t) << std::endl;
+
     std::tuple t{0,1l,2ll,3ul,4ull,0.1f,0.2,"const char *",std::string{"std::string"}};
 
     xtd::for_each_tuple(xtd::Left_Tuple<2>(t),[](std::size_t & index,const auto &i) {
