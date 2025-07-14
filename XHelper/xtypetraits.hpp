@@ -122,6 +122,7 @@ struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type 
 template<typename... Args>
 static inline constexpr auto is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
 
+
 template<typename>
 struct [[maybe_unused]] is_tuple : std::false_type {};
 
