@@ -287,19 +287,20 @@ void call(const int a){
 static void test5(){
     std::tuple t{0,1l,2ll,3ul,4ull,0.1f,0.2,"const char *",std::string{"std::string"}};
 
-    xtd::for_each_tuple(xtd::Left_Tuple<2>(t),[](const auto &i) {
+    xtd::for_each_tuple(xtd::Left_Tuple<2>(t),[](std::size_t & index,const auto &i) {
+        std::cerr << "index:" <<  index++ << std::endl;
         std::cerr << i << std::endl;
     });
 
     std::cerr << std::endl;
 
-    xtd::for_each_tuple(xtd::SkipFront_Tuple<2>(t),[](const auto &i){
+    xtd::for_each_tuple(xtd::SkipFront_Tuple<2>(t),[](std::size_t & ,const auto &i) {
         std::cerr << i << std::endl;
     });
 
     std::cerr << std::endl;
 
-    xtd::for_each_tuple(xtd::Last_Tuple<2>(t),[](const auto &i){
+    xtd::for_each_tuple(xtd::Last_Tuple<2>(t),[](std::size_t & ,const auto &i) {
         std::cerr << i << std::endl;
     });
 }
