@@ -150,7 +150,7 @@ void x_assert_what(const std::string_view &, const std::string_view &what,
  * @tparam T
  * @tparam Args
  * @param args
- * @return
+ * @return std::unique_ptr<T>
  */
 template<typename T, typename ... Args>
 [[maybe_unused]] [[nodiscard]] inline std::unique_ptr<T> make_Unique(Args && ...args) noexcept {
@@ -162,11 +162,11 @@ template<typename T, typename ... Args>
 }
 
 /**
- * 创建std::shared_ptr<T>
+ * 创建std::shared_ptr<T>,不抛异常
  * @tparam T
  * @tparam Args
  * @param args
- * @return
+ * @return std::shared_ptr<T>
  */
 template<typename T, typename ... Args>
 [[maybe_unused]] [[nodiscard]] inline std::shared_ptr<T> make_Shared(Args && ...args) noexcept {
@@ -178,7 +178,10 @@ template<typename T, typename ... Args>
 }
 
 /**
- *
+ * 遍历tuple所有元素
+ * Pred参数为一个函数,
+ * Pred参数有(parm1:std::size & index,
+ *  parm2:遍历的元素类型,一般用auto)
  * @tparam Tuple
  * @tparam Pred
  * @param tuple_
@@ -187,7 +190,8 @@ template<typename T, typename ... Args>
 template<typename Tuple, typename Pred>
 [[maybe_unused]] inline void for_each_tuple(Tuple && tuple_, Pred && pred_) {
     (void)std::apply([&pred_]<typename... Args>(Args &&... args) {
-        (std::forward<Pred>(pred_)(std::forward<Args>(args)), ...);
+        std::size_t index{};
+        (std::forward<Pred>(pred_)(std::ref(index),std::forward<Args>(args)), ...);
     },std::forward<Tuple>(tuple_));
 }
 
