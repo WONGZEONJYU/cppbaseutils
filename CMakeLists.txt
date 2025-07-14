@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 # 定义项目名称、版本和语言
 project(XCppBaseUtils VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/XCppBaseUtils")
+#set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/XCppBaseUtils")
 
 # 设置 C++ 标准
 set(CMAKE_C_STANDARD 17)
