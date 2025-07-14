@@ -6,6 +6,7 @@
 #include <string_view>
 #include <utility>
 #include <memory>
+#include <functional>
 
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
@@ -191,7 +192,7 @@ template<typename Tuple, typename Pred>
 [[maybe_unused]] inline void for_each_tuple(Tuple && tuple_, Pred && pred_) {
     (void)std::apply([&pred_]<typename... Args>(Args &&... args) {
         std::size_t index{};
-        (std::forward<Pred>(pred_)(std::addressof(index),std::forward<Args>(args)), ...);
+        (std::forward<Pred>(pred_)(std::ref(index),std::forward<Args>(args)), ...);
     },std::forward<Tuple>(tuple_));
 }
 
