@@ -157,6 +157,26 @@ template<typename Tuple, typename Pred>
     },std::forward<Tuple>(tuple_));
 }
 
+template<const std::size_t N,typename... Args>
+inline auto Left_Tuple_n_(const std::tuple<Args...> & tuple_) {
+
+    static_assert(N <= sizeof...(Args), "N must be <= tuple size");
+    static_assert(N <= std::tuple_size_v<std::decay_t<decltype(tuple_)>>, "N must be <= tuple size");
+
+    const auto Left_Tuple_n_impl{[&]<const std::size_t... I>(std::index_sequence<I...>)
+        ->decltype(std::make_tuple(std::get<I>(tuple_)...)) {
+        return std::make_tuple(std::get<I>(tuple_)...);
+    }};
+
+    return Left_Tuple_n_impl(std::make_index_sequence<N>{});
+}
+
+template<const std::size_t N,typename Tuple>
+inline auto Left_Tuple(const Tuple & tuple_)
+->decltype(Left_Tuple_n_<N>(tuple_)) {
+    return Left_Tuple_n_<N>(tuple_);
+}
+
 [[maybe_unused]] std::string toLower(std::string &);
 
 [[maybe_unused]] std::string toLower(std::string &&);
