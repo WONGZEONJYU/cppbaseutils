@@ -4,6 +4,7 @@
 #include <XHelper/xversion.hpp>
 #include <type_traits>
 #include <memory>
+#include <tuple>
 #ifdef HAS_BOOST
 #include <boost/type_index.hpp>
 #endif
@@ -120,6 +121,45 @@ struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type 
 
 template<typename... Args>
 static inline constexpr auto is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
+
+template<typename>
+struct [[maybe_unused]] is_tuple : std::false_type {};
+
+template<typename ...Args>
+struct [[maybe_unused]] is_tuple<std::tuple<Args...>> : std::true_type {};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<const Tuple_> : is_tuple<Tuple_> {};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<Tuple_ &> : is_tuple<Tuple_> {};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<Tuple_ &&> : is_tuple<Tuple_> {};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<const Tuple_ &> : is_tuple<Tuple_> {};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<const Tuple_ &&> : is_tuple<Tuple_> {};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<const volatile Tuple_ &> : is_tuple<Tuple_>{};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<const volatile Tuple_ &&> : is_tuple<Tuple_>{};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<volatile Tuple_ > : is_tuple<Tuple_>{};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<volatile Tuple_ &> : is_tuple<Tuple_>{};
+
+template<typename Tuple_>
+struct [[maybe_unused]] is_tuple<volatile Tuple_ &&> : is_tuple<Tuple_>{};
+
+template<typename Tuple_>
+[[maybe_unused]] inline constexpr auto is_tuple_v{is_tuple<Tuple_>::value};
 
 template<typename Ty>
 [[maybe_unused]] inline auto typeName(Ty){
