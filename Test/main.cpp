@@ -286,7 +286,13 @@ void call(const int a){
 [[maybe_unused]]
 static void test5(){
     std::tuple t{0,1l,2ll,3ul,4ull,0.1f,0.2,"const char *",std::string{"std::string"}};
-    xtd::for_each_tuple(t,[](const auto &i) {
+    auto t1{xtd::Left_Tuple<2>(t)};
+
+    xtd::for_each_tuple(t1,[](const auto &i) {
+        std::cerr << i << std::endl;
+    });
+
+    xtd::for_each_tuple(t,[](const auto &i){
         std::cerr << i << std::endl;
     });
 }
