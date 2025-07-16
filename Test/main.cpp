@@ -3,9 +3,10 @@
 #include <iostream>
 #include <XThreadPool/xthreadpool.hpp>
 #include <XSignal/xsignal.hpp>
-#include <semaphore>
 #include <list>
+#include <deque>
 #include <XHelper/xutility.hpp>
+#include <XHelper/xtypetraits.hpp>
 
 static std::mutex mtx{};
 
@@ -289,6 +290,9 @@ static void test5(){
     std::cerr << sizeof(std::size_t) << std::endl;
 
     std::tuple t{0,1l,2ll,3ul,4ull,0.1f,0.2,"const char *",std::string{"std::string"}};
+
+    std::cerr << std::boolalpha << xtd::is_tuple_v<decltype(t)> << std::endl;
+    std::cerr << std::boolalpha << xtd::is_tuple_v<std::tuple<>> << std::endl;
 
     xtd::for_each_tuple(xtd::Left_Tuple<2>(t),[](std::size_t & index,const auto &i) {
         std::cerr << "index:" <<  index++ << std::endl;

@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 
 project(XCppBaseUtilsTest)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ cppbaseutils.out)
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../Src cppbaseutils.out)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/XCppBaseUtils")
+#set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/XCppBaseUtils")
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
