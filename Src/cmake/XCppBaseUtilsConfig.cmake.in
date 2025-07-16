@@ -1,0 +1,14 @@
+@PACKAGE_INIT@
+
+# 包含导出的目标
+if(NOT TARGET XCppBaseUtils::XCppBaseUtils)
+    include("${CMAKE_CURRENT_LIST_DIR}/XCppBaseUtilsTargets.cmake")
+endif()
+
+# 设置变量以便其他项目使用
+set(XCppBaseUtils_FOUND TRUE)
+set(XCppBaseUtils_VERSION @PROJECT_VERSION@)
+set(XCppBaseUtils_LIBRARIES XCppBaseUtils::XCppBaseUtils)
+
+# 检查所有必要的组件是否都已找到
+check_required_components(XCppBaseUtils)
