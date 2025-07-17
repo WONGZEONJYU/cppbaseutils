@@ -13,6 +13,7 @@ class XObject;
 class XObjectPrivate final {
 
 public:
+
     explicit XObjectPrivate() = default;
     ~XObjectPrivate() = default;
     static XObjectPrivate *get(XObject *o){return o->d_func();}

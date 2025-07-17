@@ -9,7 +9,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XObjectPrivate;
 
-class XObject {
+class XObject : public  std::enable_shared_from_this<XObject> {
     X_DISABLE_COPY_MOVE(XObject)
     X_DECLARE_PRIVATE(XObject)
 protected:

@@ -113,7 +113,6 @@ public:
             delete m_d_;
         }
     }
-
 private:
     Type* m_ptr_{};
     Data *m_d_{};
