@@ -1,7 +1,7 @@
 #ifndef QATOMIC_H
 #define QATOMIC_H
 
-#include "xbasicatomic.h"
+#include <XAtomic/xbasicatomic.h>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
