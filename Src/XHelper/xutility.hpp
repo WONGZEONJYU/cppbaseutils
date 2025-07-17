@@ -123,7 +123,7 @@ namespace XPrivate {
     } //namespace detail
 
     template <typename Object, typename Tag = void>
-    using CompactStorage [[maybe_unused]] = /*typename*/ std::conditional_t<
+    using CompactStorage [[maybe_unused]] = std::conditional_t<
             std::conjunction_v<std::is_empty<Object>, //逻辑& and
             std::negation<std::is_final<Object>> //逻辑! not
             >,
