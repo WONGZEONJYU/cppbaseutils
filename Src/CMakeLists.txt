@@ -26,7 +26,9 @@ if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
 endif()
 
 # 查找 Boost
-find_package(Boost QUIET COMPONENTS ALL)
+find_package(Boost COMPONENTS ALL QUIET)
+find_package(Qt6 COMPONENTS Core QUIET)
+find_package(Qt5 COMPONENTS Core QUIET)
 
 # 创建库目标列表
 set(LIBRARY_TARGETS)
@@ -75,6 +77,14 @@ function(configure_library_target target_name)
         target_include_directories(${target_name} PUBLIC ${Boost_INCLUDE_DIRS})
         target_link_libraries(${target_name} PUBLIC ${Boost_LIBRARIES})
     endif()
+
+    #配置 Qt
+    if (Qt6_FOUND AND Qt6Core_FOUND OR Qt5_FOUND AND Qt5Core_FOUND)
+        set(CMAKE_AUTOMOC ON)
+        set(CMAKE_AUTORCC ON)
+        set(CMAKE_AUTOUIC ON)
+        target_link_libraries(${target_name} PUBLIC Qt::Core)
+    endif ()
 
     # 指定库的包含目录
     target_include_directories(${target_name}
