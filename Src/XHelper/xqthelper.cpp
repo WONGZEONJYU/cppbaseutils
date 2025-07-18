@@ -1,0 +1,13 @@
+#include "xqthelper.hpp"
+#ifdef QT_VERSION
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+namespace qhelper {
+
+}
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+#endif
