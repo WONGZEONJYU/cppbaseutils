@@ -681,6 +681,7 @@ namespace XPrivate {
                     /*,std::is_same<std::decay_t<Functor>, QMetaMethod>*/
     >,int> countMatchingArguments() {
 #endif
+#undef LIKE_WHERE
         using ExpectedArguments = typename FunctionPointer<Prototype>::Arguments;
         using Actual = std::decay_t<Functor>;
 
