@@ -79,10 +79,11 @@ function(configure_library_target target_name)
     endif()
 
     #配置 Qt
-    if (Qt6_FOUND AND Qt6Core_FOUND OR Qt5_FOUND AND Qt5Core_FOUND)
+    if (Qt6_FOUND OR Qt5_FOUND)
         set(CMAKE_AUTOMOC ON)
         set(CMAKE_AUTORCC ON)
         set(CMAKE_AUTOUIC ON)
+        target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
         target_link_libraries(${target_name} PUBLIC Qt::Core)
     endif ()
 

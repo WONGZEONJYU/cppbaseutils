@@ -1,10 +1,10 @@
 #ifndef X_QT_HELPER_HPP
 #define X_QT_HELPER_HPP
-#ifdef QT_VERSION
+#ifdef HAS_QT
 
 #include <XHelper/xversion.hpp>
 #include <type_traits>
-#include <QMetaObject>
+#include <QMetaEnum>
 #include <QString>
 
 XTD_NAMESPACE_BEGIN
@@ -34,11 +34,11 @@ namespace qhelper {
     getEnumTypeAndValueName(ENUM_ && enumValue) {
 #endif
 #undef LIKE_WHICH
-        const auto metaObj{ qt_getEnumMetaObject(enumValue) };
-        const auto EnumTypename{ qt_getEnumName(enumValue) };
-        const auto enumIndex{ metaObj->indexOfEnumerator(EnumTypename) };
-        const auto metaEnum{ metaObj->enumerator(enumIndex) };
-        const auto enumValueName{ metaEnum.valueToKey(enumValue) };
+        const auto metaObj {qt_getEnumMetaObject(enumValue)};
+        const auto EnumTypename {qt_getEnumName(enumValue)};
+        const auto enumIndex {metaObj->indexOfEnumerator(EnumTypename)};
+        const auto metaEnum {metaObj->enumerator(enumIndex)};
+        const auto enumValueName{metaEnum.valueToKey(enumValue)};
         return QString("%1::%2").arg(EnumTypename).arg(enumValueName);
     }
 
