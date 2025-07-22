@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <QMetaEnum>
 #include <QString>
+#include <QObject>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -73,6 +74,16 @@ namespace qhelper {
         }
         return nullptr;
     }
+
+    template<typename ...Args>
+    inline QMetaObject::Connection ConnectHelper(Args && ...args) {
+        return QObject::connect(std::forward<Args>(args)...);
+    }
+
+#define FRIEND_CON \
+    template<typename ...Args>\
+    friend QMetaObject::Connection xtd::qhelper::ConnectHelper(Args && ...args);
+
 }
 
 XTD_INLINE_NAMESPACE_END
