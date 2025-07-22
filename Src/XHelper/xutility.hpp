@@ -490,8 +490,8 @@ namespace XPrivate {
         enum { value = sizeof(test(std::declval<std::remove_reference_t<A1>>())) == sizeof(int) };
 
         using AreArgumentsConvertibleWithoutNarrowing = AreArgumentsConvertibleWithoutNarrowingBase<std::decay_t<A1>, std::decay_t<A2>>;
-
-        static_assert(AreArgumentsConvertibleWithoutNarrowing::value, "Signal and slot arguments are not compatible (narrowing)");
+        static inline constexpr auto AreArgumentsConvertibleWithoutNarrowing_v {AreArgumentsConvertibleWithoutNarrowing::value};
+        static_assert(AreArgumentsConvertibleWithoutNarrowing_v, "Signal and slot arguments are not compatible (narrowing)");
     };
 
     template<typename A1, typename A2> struct AreArgumentsCompatible<A1, A2&> final {
@@ -514,6 +514,9 @@ namespace XPrivate {
         enum { value = true };
     };
 
+    template<typename ...Args>
+    [[maybe_unused]] inline constexpr auto AreArgumentsCompatible_v {AreArgumentsCompatible<Args...>::value};
+
     template <typename,typename> struct CheckCompatibleArguments final {
         enum { value = false };
     };
@@ -529,7 +532,7 @@ namespace XPrivate {
     template <typename Arg1, typename Arg2, typename... Tail1, typename... Tail2>
     struct [[maybe_unused]] CheckCompatibleArguments<List<Arg1, Tail1...>, List<Arg2, Tail2...>> final {
     private:
-        using List_1 = List<Tail1...>;
+        using List_1 [[maybe_unused]] = List<Tail1...>;
         using List_2 [[maybe_unused]] = List<Tail2...>;
     public:
         enum { value = AreArgumentsCompatible<RemoveConstRef_T<Arg1>,RemoveConstRef_T<Arg2>>::value
@@ -581,6 +584,9 @@ namespace XPrivate {
         };
     };
 
+    template<typename ...Args>
+    [[maybe_unused]] inline constexpr auto ComputeFunctorArgumentCount_V {ComputeFunctorArgumentCount<Args...>::Value};
+
     /* get the return type of a functor, given the signal argument list  */
     template <typename,typename> struct FunctorReturnType;
 
@@ -588,8 +594,8 @@ namespace XPrivate {
     struct [[maybe_unused]] FunctorReturnType<Functor, List<ArgList...>> final
             : std::invoke_result<Functor, ArgList...>{ };
 
-    template <typename Functor, typename... ArgList>
-    using FunctorReturnType_T [[maybe_unused]] = typename FunctorReturnType<Functor,ArgList...>::type;
+    template <typename ...Args>
+    using FunctorReturnType_T [[maybe_unused]] = typename FunctorReturnType<Args...>::type;
 
     template<typename Func, typename... Args>
     struct [[maybe_unused]] FunctorCallable final {
