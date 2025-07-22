@@ -15,10 +15,11 @@ class XConnect final : public std::enable_shared_from_this<XConnect> {
 public:
     explicit XConnect() = default;
     ~XConnect();
-    void call(XObject * r,void **args) const;
-    XObject* &sender() const;
-    XObject* &receiver() const;
 private:
+    void call(XObject * r,void **args) const;
+    [[maybe_unused]] XObject* &sender() const;
+    XObject* &receiver() const;
+    friend class XObject;
     X_DISABLE_COPY_MOVE(XConnect)
 };
 

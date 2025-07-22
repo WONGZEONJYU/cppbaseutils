@@ -13,7 +13,7 @@ void XConnect::call(XObject* r, void** args) const {
     m_slot_->call(r,args);
 }
 
-XObject*& XConnect::sender() const{
+[[maybe_unused]] XObject*& XConnect::sender() const {
     return m_sender_;
 }
 
