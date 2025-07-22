@@ -43,7 +43,7 @@ namespace XPrivate {
                 }
             }
 
-            static void cleanup(XSignalSlotBase * const p) noexcept {
+            [[maybe_unused]] static void cleanup(XSignalSlotBase * const p) noexcept {
                 Deleter{}(p);
             }
         };
