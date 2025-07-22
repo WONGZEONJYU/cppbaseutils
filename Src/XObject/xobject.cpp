@@ -1,5 +1,6 @@
 #include "xobject_p.hpp"
 #include <iostream>
+#include <XTools/xconnect.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -19,6 +20,17 @@ XObject::~XObject() {
             delete x;
         }
     }
+}
+
+bool XObject::connectImpl(const XObject *sender, void **signal,
+                     const XObject *receiver, void **slot,
+                     XPrivate::XSignalSlotBase *slotObjRaw) {
+
+    auto connect{make_Shared<XConnect>()};
+
+
+
+    return true;
 }
 
 XTD_INLINE_NAMESPACE_END
