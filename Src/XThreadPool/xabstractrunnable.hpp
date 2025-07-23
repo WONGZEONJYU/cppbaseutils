@@ -5,7 +5,6 @@
 #include <any>
 #include <memory>
 #include <functional>
-#include <iostream>
 #include <XAtomic/xatomic.hpp>
 #include <XThreadPool/xresult.hpp>
 

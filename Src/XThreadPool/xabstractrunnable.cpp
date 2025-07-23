@@ -1,5 +1,6 @@
 #include "xabstractrunnable.hpp"
 #include "xthreadpool.hpp"
+#include <iostream>
 #ifdef UNUSE_STD_THREAD_LOCAL
 #include "xthreadlocal.hpp"
 #endif
