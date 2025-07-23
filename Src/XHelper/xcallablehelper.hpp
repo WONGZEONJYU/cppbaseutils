@@ -2,6 +2,8 @@
 #define X_CALLABLE_HELPER_HPP 1
 
 #include <XHelper/xversion.hpp>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <functional>
 #include <memory>
