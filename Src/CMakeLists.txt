@@ -20,6 +20,11 @@ set(Boost_DEBUG ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(BUILD_STATIC_LIBS "Build static libraries" OFF)  # 默认关闭静态库
 
+# 添加选项来控制符号导出
+option(EXPORT_ALL_SYMBOLS "Export all symbols from shared libraries" ON)   # 默认开启全符号导出
+option(USE_SYMBOL_VISIBILITY "Use symbol visibility attributes" ON)  # 默认启用符号可见性控制
+option(AUTO_EXPORT_IMPORT "Automatically handle export/import based on build context" ON)  # 自动处理导出导入
+
 # 确保至少构建一种类型的库
 if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
     message(FATAL_ERROR "At least one of BUILD_SHARED_LIBS or BUILD_STATIC_LIBS must be ON")
@@ -40,6 +45,17 @@ if(BUILD_SHARED_LIBS)
             OUTPUT_NAME ${PROJECT_NAME}
             CLEAN_DIRECT_OUTPUT 1
     )
+    target_compile_definitions(${PROJECT_NAME}_shared PUBLIC -DX_SHARED)
+
+    # 配置符号导出
+    if(WIN32)
+        if(EXPORT_ALL_SYMBOLS)
+            set_target_properties(${PROJECT_NAME}_shared PROPERTIES
+                    WINDOWS_EXPORT_ALL_SYMBOLS ON
+            )
+        endif()
+    endif()
+
     list(APPEND LIBRARY_TARGETS ${PROJECT_NAME}_shared)
 endif()
 
@@ -50,6 +66,7 @@ if(BUILD_STATIC_LIBS)
             OUTPUT_NAME ${PROJECT_NAME}
             CLEAN_DIRECT_OUTPUT 1
     )
+    target_compile_definitions(${PROJECT_NAME}_static PUBLIC -DX_STATIC)
     list(APPEND LIBRARY_TARGETS ${PROJECT_NAME}_static)
 endif()
 
@@ -58,19 +75,60 @@ add_subdirectory(XAtomic)
 add_subdirectory(XGlobal)
 add_subdirectory(XHelper)
 add_subdirectory(XObject)
-if (NOT WIN32)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "Mac OS X" OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_subdirectory(XSignal)
-endif ()
+endif()
+
 add_subdirectory(XThreadPool)
 add_subdirectory(XTools)
 
 # 定义库的公共属性设置函数
 function(configure_library_target target_name)
     # 设置编译器特定选项
-    if (MSVC AND WIN32)
+    if(MSVC AND WIN32)
+        #target_compile_options(${target_name} PUBLIC /std:c++20)
         target_compile_options(${target_name} PUBLIC /std:c++latest)
         target_compile_options(${target_name} PUBLIC /Zc:__cplusplus)
         target_compile_options(${target_name} PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+    endif()
+
+    # 配置符号可见性
+    if(USE_SYMBOL_VISIBILITY)
+        target_compile_definitions(${target_name} PUBLIC -DUSE_SYMBOL_VISIBILITY)
+
+        # 设置默认符号可见性为隐藏 (GCC/Clang)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            target_compile_options(${target_name} PRIVATE -fvisibility=hidden)
+            target_compile_options(${target_name} PRIVATE -fvisibility-inlines-hidden)
+        endif()
+    endif()
+
+    # 设置平台特定的宏定义
+    if(WIN32)
+        target_compile_definitions(${target_name} PUBLIC -DPLATFORM_WINDOWS)
+        if(EXPORT_ALL_SYMBOLS)
+            target_compile_definitions(${target_name} PUBLIC -DEXPORT_ALL_SYMBOLS)
+        endif()
+        if(AUTO_EXPORT_IMPORT)
+            target_compile_definitions(${target_name} PUBLIC -DAUTO_EXPORT_IMPORT)
+        endif()
+    elseif(APPLE)
+        target_compile_definitions(${target_name} PUBLIC -DPLATFORM_MACOS)
+        if(AUTO_EXPORT_IMPORT)
+            target_compile_definitions(${target_name} PUBLIC -DAUTO_EXPORT_IMPORT)
+        endif()
+    elseif(UNIX)
+        target_compile_definitions(${target_name} PUBLIC -DPLATFORM_LINUX)
+        if(AUTO_EXPORT_IMPORT)
+            target_compile_definitions(${target_name} PUBLIC -DAUTO_EXPORT_IMPORT)
+        endif()
+    endif()
+
+    # 为动态库构建时添加构建宏
+    get_target_property(target_type ${target_name} TYPE)
+    if(target_type STREQUAL "SHARED_LIBRARY")
+        target_compile_definitions(${target_name} PRIVATE -DX_BUILDING_LIBRARY)
     endif()
 
     # 配置 Boost
@@ -80,14 +138,14 @@ function(configure_library_target target_name)
         target_link_libraries(${target_name} PUBLIC ${Boost_LIBRARIES})
     endif()
 
-    #配置 Qt
-    if (Qt6_FOUND OR Qt5_FOUND)
+    # 配置 Qt
+    if(Qt6_FOUND OR Qt5_FOUND)
         set(CMAKE_AUTOMOC ON)
         set(CMAKE_AUTORCC ON)
         set(CMAKE_AUTOUIC ON)
         target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
         target_link_libraries(${target_name} PUBLIC Qt::Core)
-    endif ()
+    endif()
 
     # 指定库的包含目录
     target_include_directories(${target_name}
@@ -143,16 +201,15 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
         PATTERN "*_p.hpp" EXCLUDE
 )
 
-if (NOT WIN32)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
-        DESTINATION include/XSignal
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-)
-endif ()
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "Mac OS X" OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
+            DESTINATION include/XSignal
+            FILES_MATCHING
+            PATTERN "*.h"
+            PATTERN "*.hpp"
+            PATTERN "*_p.hpp" EXCLUDE
+    )
+endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
         DESTINATION include/XThreadPool
