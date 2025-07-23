@@ -2,7 +2,9 @@
 #include <future>
 #include <iostream>
 #include <XThreadPool/xthreadpool.hpp>
+#if 0
 #include <XSignal/xsignal.hpp>
+#endif
 #include <list>
 #include <deque>
 #include <XHelper/xutility.hpp>
@@ -17,7 +19,7 @@ struct Functor {
         for (int i {}; i < 3 ;++i){
             {
                 std::unique_lock lock(mtx);
-                std::cout << __PRETTY_FUNCTION__ << " id = " << id << "\n";
+                std::cout << FUNC_SIGNATURE << " id = " << id << "\n";
             }
             xtd::sleep_for_s(wait_time);
         }
@@ -30,7 +32,7 @@ struct Functor2 {
         for (int i {}; i < 3 ;++i){
             {
                 std::unique_lock lock(mtx);
-                std::cout << __PRETTY_FUNCTION__ << " id = " << 33 << "\n";
+                std::cout << FUNC_SIGNATURE << " id = " << 33 << "\n";
             }
             xtd::sleep_for_s(wait_time);
         }
@@ -44,7 +46,7 @@ struct Functor3 {
         for (int i {}; i < 3 ;++i){
             {
                 std::unique_lock lock(mtx);
-                std::cout << __PRETTY_FUNCTION__ << " name = " << name << "\n";
+                std::cout << FUNC_SIGNATURE << " name = " << name << "\n";
             }
             xtd::sleep_for_s(wait_time);
         }
@@ -56,7 +58,7 @@ static double Double(const double f){
     for (int i {}; i < 3 ;++i){
         {
             std::unique_lock lock(mtx);
-            std::cout << __PRETTY_FUNCTION__ << " f = " << f << "\n";
+            std::cout << FUNC_SIGNATURE << " f = " << f << "\n";
         }
         xtd::sleep_for_s(wait_time);
     }
@@ -68,12 +70,12 @@ class A final : public xtd::XRunnable<xtd::NonConst> {
         for (int i {}; i < 3 ;++i){
             {
                 std::unique_lock lock(mtx);
-                std::cout << __PRETTY_FUNCTION__ << " id = " << m_id_ << "\n";
+                std::cout << FUNC_SIGNATURE << " id = " << m_id_ << "\n";
                 m_id_++;
             }
             xtd::sleep_for_s(wait_time);
         }
-        return std::string(__PRETTY_FUNCTION__) + "end";
+        return std::string(FUNC_SIGNATURE) + "end";
     }
     int m_id_{};
 public:
@@ -83,7 +85,7 @@ public:
 
 [[maybe_unused]] static void test1() {
     bool exit_{};
-
+#if 0
     const auto sigterm{xtd::Signal_Register(SIGTERM,{},[&]{
         exit_ = true;
     })};
@@ -91,11 +93,12 @@ public:
     const auto sigint{xtd::Signal_Register(SIGINT,{},[&]{
         exit_ = true;
     })};
-
+#endif
+#if defined(MACOS) || defined(LINUX)
     const auto sigkill {xtd::Signal_Register(SIGKILL,{},[&]{
         exit_ = true;
     })};
-
+#endif
     const auto pool2{xtd::XThreadPool::create(xtd::XThreadPool::Mode::CACHE)},
                 pool3{xtd::XThreadPool::create(xtd::XThreadPool::Mode::CACHE)};
 #if 1
@@ -123,7 +126,7 @@ public:
         for (int i {}; i < 3;++i){
             {
                 std::unique_lock lock(mtx);
-                std::cout << __PRETTY_FUNCTION__ << "lambda id = " << id << "\n";
+                std::cout << FUNC_SIGNATURE << "lambda id = " << id << "\n";
             }
             std::this_thread::sleep_for(std::chrono::seconds(wait_time));
         }
@@ -211,7 +214,7 @@ public:
         while (!exit_){
             xtd::sleep_for_s(10);
             b.wait({},std::memory_order_acquire);
-            std::cerr << __PRETTY_FUNCTION__ << "\n";
+            std::cerr << FUNC_SIGNATURE << "\n";
             b.store({},std::memory_order_release);
         }
     }}.detach();
