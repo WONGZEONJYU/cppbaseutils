@@ -85,7 +85,7 @@ public:
 
 [[maybe_unused]] static void test1() {
     bool exit_{};
-#if defined(MACOS) || defined(LINUX)
+#if !defined(_WIN64) && !defined(_WIN64)
     const auto sigterm{xtd::Signal_Register(SIGTERM,{},[&]{
         exit_ = true;
     })};
