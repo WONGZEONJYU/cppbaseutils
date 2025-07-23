@@ -10,7 +10,7 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 template<std::ptrdiff_t LeastMaxValue = 1>
-class [[maybe_unused]] XCounting_Semaphore final {
+class X_TEMPLATE_EXPORT [[maybe_unused]] XCounting_Semaphore final {
     mutable std::mutex m_mutex_{};
     mutable std::condition_variable_any m_cv_{};
     mutable std::ptrdiff_t count_{};

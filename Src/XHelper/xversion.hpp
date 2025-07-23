@@ -21,9 +21,9 @@
 
 //平台检测宏
 #if defined(_WIN32) || defined(_WIN64)
-#define X_PLATFORM_WINDOWS
+    #define X_PLATFORM_WINDOWS
 #elif defined(__APPLE__)
-#define X_PLATFORM_MACOS
+    #define X_PLATFORM_MACOS
 #elif defined(__linux__)
     #define X_PLATFORM_LINUX
 #else
@@ -92,27 +92,28 @@
         #define X_LOCAL
     #endif
 
-#else  // 手动控制模式（保持向后兼容）
+#else  // 手动控制模式(保持向后兼容)
 
 #ifdef X_PLATFORM_WINDOWS
-// Windows 平台
-#ifdef EXPORT_ALL_SYMBOLS
-#define X_EXPORT
-            #define X_IMPORT
-            #define X_LOCAL
-#else
-#ifdef X_SHARED
-#ifdef X_BUILDING_LIBRARY
-#define X_EXPORT __declspec(dllexport)
-#else
-#define X_EXPORT __declspec(dllimport)
+//Windows 平台
+    #ifdef EXPORT_ALL_SYMBOLS
+        #define X_EXPORT
+        #define X_IMPORT
+        #define X_LOCAL
+    #else
+    #ifdef X_SHARED
+        #ifdef X_BUILDING_LIBRARY
+            #define X_EXPORT __declspec(dllexport)
+        #else
+            #define X_EXPORT __declspec(dllimport)
+        #endif
+    #else
+        #define X_EXPORT
+    #endif
+    #define X_IMPORT __declspec(dllimport)
+    #define X_LOCAL
 #endif
-#else
-#define X_EXPORT
-#endif
-#define X_IMPORT __declspec(dllimport)
-#define X_LOCAL
-#endif
+
 #elif defined(X_PLATFORM_MACOS) || defined(X_PLATFORM_LINUX)
 // macOS 和 Linux 平台
         #ifdef USE_SYMBOL_VISIBILITY
@@ -135,13 +136,14 @@
         #define X_EXPORT
         #define X_IMPORT
         #define X_LOCAL
+
 #endif
 
 // 手动模式下的 API 宏
 #ifdef X_STATIC
-#define X_API
+    #define X_API
 #else
-#define X_API X_EXPORT
+    #define X_API X_EXPORT
 #endif
 
 #endif // AUTO_EXPORT_IMPORT
@@ -153,9 +155,9 @@
 
 // 模板导出宏（主要用于 Windows）
 #ifdef X_PLATFORM_WINDOWS
-#define X_TEMPLATE_EXPORT X_API
+    #define X_TEMPLATE_EXPORT X_API
 #else
-#define X_TEMPLATE_EXPORT
+    #define X_TEMPLATE_EXPORT
 #endif
 
 // 静态库处理
@@ -171,10 +173,10 @@
 
 // 废弃符号宏
 #ifdef X_COMPILER_MSVC
-#define X_DEPRECATED __declspec(deprecated)
-#define X_DEPRECATED_MSG(msg) __declspec(deprecated(msg))
+    #define X_DEPRECATED __declspec(deprecated)
+    #define X_DEPRECATED_MSG(msg) __declspec(deprecated(msg))
 #elif defined(X_COMPILER_GCC) || defined(X_COMPILER_CLANG)
-#define X_DEPRECATED __attribute__((deprecated))
+    #define X_DEPRECATED __attribute__((deprecated))
     #define X_DEPRECATED_MSG(msg) __attribute__((deprecated(msg)))
 #else
     #define X_DEPRECATED
@@ -183,10 +185,10 @@
 
 // 内联宏
 #ifdef X_COMPILER_MSVC
-#define X_FORCE_INLINE __forceinline
-#define X_NO_INLINE __declspec(noinline)
+    #define X_FORCE_INLINE __forceinline
+    #define X_NO_INLINE __declspec(noinline)
 #elif defined(X_COMPILER_GCC) || defined(X_COMPILER_CLANG)
-#define X_FORCE_INLINE __attribute__((always_inline)) inline
+    #define X_FORCE_INLINE __attribute__((always_inline)) inline
     #define X_NO_INLINE __attribute__((noinline))
 #else
     #define X_FORCE_INLINE inline

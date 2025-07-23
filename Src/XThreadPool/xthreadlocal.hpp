@@ -11,7 +11,7 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 template<typename Ty>
-class XThreadLocal final {
+class X_TEMPLATE_EXPORT XThreadLocal final {
     X_DISABLE_COPY_MOVE(XThreadLocal)
     mutable std::mutex m_mtx_{};
     mutable std::unordered_map<size_t,Ty> m_storage_{};
@@ -52,11 +52,11 @@ private:
     friend class XThreadLocalStorage;
 };
 
-using XThreadLocalVoid = XThreadLocal<void*>;
+using XThreadLocalVoid [[maybe_unused]] = XThreadLocal<void*>;
 using XThreadLocalConstVoid = XThreadLocal<const void*>;
 
 template<typename Ty>
-class XThreadLocalStorage final {
+class X_TEMPLATE_EXPORT XThreadLocalStorage final {
     X_DISABLE_COPY_MOVE(XThreadLocalStorage)
     mutable XThreadLocal<Ty> * m_tls_{};
     uint32_t m_unfree_:1{};
@@ -79,7 +79,7 @@ public:
     }
 };
 
-using XThreadLocalStorageVoid = XThreadLocalStorage<void*>;
+using XThreadLocalStorageVoid [[maybe_unused]] = XThreadLocalStorage<void*>;
 using XThreadLocalStorageConstVoid = XThreadLocalStorage<const void*>;
 
 XTD_INLINE_NAMESPACE_END

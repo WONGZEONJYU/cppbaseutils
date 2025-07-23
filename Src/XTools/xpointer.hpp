@@ -11,7 +11,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XObject;
 
-class ExternalRefCountData {
+class X_CLASS_EXPORT ExternalRefCountData {
 protected:
     enum class Private{};
 public:
@@ -27,7 +27,7 @@ public:
 };
 
 template<typename T>
-class [[maybe_unused]] XPointer final {
+class X_TEMPLATE_EXPORT [[maybe_unused]] XPointer final {
     using Type = T;
     using Ptype = Type*;
     using RefType = Type&;

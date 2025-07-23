@@ -9,7 +9,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XObject;
 
-class XConnect final : public std::enable_shared_from_this<XConnect> {
+class X_CLASS_EXPORT XConnect final : public std::enable_shared_from_this<XConnect> {
     mutable XPrivate::XSignalSlotBase * m_slot_{};
     mutable XObject * m_sender_{},* m_receiver_{};
 public:

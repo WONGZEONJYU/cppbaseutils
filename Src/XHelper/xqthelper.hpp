@@ -17,21 +17,21 @@ namespace qhelper {
 #define LIKE_WHICH 1
 #if LIKE_WHICH == 1
     template<typename ENUM_> requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value))
-    inline QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+    X_API inline QString getEnumTypeAndValueName(ENUM_ && enumValue) {
 #elif LIKE_WHICH == 2
     template<typename ENUM_>
-    inline QString getEnumTypeAndValueName(ENUM_ && enumValue)
+    X_API inline QString getEnumTypeAndValueName(ENUM_ && enumValue)
     requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value)) {
 #else
     template<typename T>
     concept ENUM_T = static_cast<bool>(QtPrivate::IsQEnumHelper<T>::Value);
     template<ENUM_T ENUM_>
-    inline QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+    X_API inline QString getEnumTypeAndValueName(ENUM_ && enumValue) {
 #endif
 
 #else
     template<typename ENUM_>
-    inline std::enable_if_t<QtPrivate::IsQEnumHelper<ENUM_>::Value, QString>
+    X_API inline std::enable_if_t<QtPrivate::IsQEnumHelper<ENUM_>::Value, QString>
     getEnumTypeAndValueName(ENUM_ && enumValue) {
 #endif
 #undef LIKE_WHICH
@@ -50,21 +50,21 @@ namespace qhelper {
     */
 #if (LIKE_WHICH == 1)
     template<typename T> requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>)
-    inline T *findChildByName(QObject* parent, const QString& objectname) {
+    X_API inline T *findChildByName(QObject* parent, const QString& objectname) {
 #elif (LIKE_WHICH == 2 )
     template<typename T>
-    inline T *findChildByName(QObject* parent, const QString& objectname)
+    X_API inline T *findChildByName(QObject* parent, const QString& objectname)
     requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>) {
 #else
     template<typename T>
     concept QObject_t = std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>;
     template<QObject_t T>
-    inline T *findChildByName(QObject* parent, const QString& objectname) {
+    X_API inline T *findChildByName(QObject* parent, const QString& objectname) {
 #endif
 
 #else
     template <typename T>
-    inline std::enable_if_t<std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T>>,T*>
+    X_API inline std::enable_if_t<std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T>>,T*>
     findChildByName(QObject* parent, const QString& objectname) {
 #endif
         foreach (QObject* child, parent->children()) {
@@ -76,7 +76,7 @@ namespace qhelper {
     }
 
     template<typename ...Args>
-    inline QMetaObject::Connection ConnectHelper(Args && ...args) {
+    X_API inline QMetaObject::Connection ConnectHelper(Args && ...args) {
         return QObject::connect(std::forward<Args>(args)...);
     }
 

@@ -121,7 +121,7 @@ public:
         pool2->stop();
         pool2->start();
         pool2->runnableJoin(lambda);
-        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>(p1->NonblockModel) << "\n" << std::flush;
+        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>(xtd::XAbstractRunnable::Model::NONBLOCK) << "\n" << std::flush;
         for (int i {}; i < 3;++i){
             {
                 std::unique_lock lock(mtx);

@@ -172,7 +172,7 @@ template <> inline bool XAtomicTraits<8>::isLockFree()
 #  endif
 #endif
 
-template <typename X> class XAtomicOpsBase {
+template <typename X> class X_TEMPLATE_EXPORT XAtomicOpsBase {
 public:
     using Type = std::atomic<X>;
 
@@ -279,7 +279,7 @@ public:
     static inline constexpr bool isFetchAndStoreWaitFree() noexcept { return false; }
 };
 
-template <typename X> class XAtomicOps final : public XAtomicOpsBase<X> {
+template <typename X> class X_TEMPLATE_EXPORT XAtomicOps final : public XAtomicOpsBase<X> {
     using Base_ = XAtomicOpsBase<X>;
 public:
     template <typename T>

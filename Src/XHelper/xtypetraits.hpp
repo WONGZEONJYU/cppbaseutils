@@ -120,7 +120,7 @@ template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type {};
 
 template<typename... Args>
-inline constexpr auto is_const_member_function_v [[maybe_unused]] = is_const_member_function<Args...>::value;
+inline constexpr auto is_const_member_function_v [[maybe_unused]] {is_const_member_function<Args...>::value};
 
 template<typename>
 struct [[maybe_unused]] is_tuple : std::false_type {};
@@ -159,10 +159,10 @@ template<typename Tuple_>
 struct [[maybe_unused]] is_tuple<volatile Tuple_ &&> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
-[[maybe_unused]] inline constexpr auto is_tuple_v{is_tuple<Tuple_>::value};
+[[maybe_unused]] inline constexpr auto is_tuple_v {is_tuple<Tuple_>::value};
 
 template<typename Ty>
-[[maybe_unused]] inline auto typeName(Ty){
+[[maybe_unused]] X_API inline auto typeName(Ty){
 #ifdef HAS_BOOST
     return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
 #else
@@ -171,7 +171,7 @@ template<typename Ty>
 }
 
 template<typename Ty>
-[[maybe_unused]] inline auto typeName(){
+[[maybe_unused]] X_API inline auto typeName(){
 #ifdef HAS_BOOST
     return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
 #else

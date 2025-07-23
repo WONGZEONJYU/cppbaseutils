@@ -6,10 +6,10 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XAtomicBool : public XBasicAtomic<bool>{
+class X_TEMPLATE_EXPORT XAtomicBool : public XBasicAtomic<bool>{
     using Base_ = XBasicAtomic;
 public:
-    constexpr explicit XAtomicBool(const bool & value = {}) : XBasicAtomic(value){}
+    constexpr explicit XAtomicBool(const bool & value = {}) : Base_(value){}
 
     inline XAtomicBool(const XAtomicBool &other) noexcept{
         this->storeRelease(other.loadAcquire());
@@ -23,11 +23,11 @@ public:
 
 // High-level atomic integer operations
 template <typename T>
-class XAtomicInteger : public XBasicAtomicInteger<T>{
+class X_TEMPLATE_EXPORT XAtomicInteger : public XBasicAtomicInteger<T>{
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    constexpr explicit XAtomicInteger(const T &value = {}) noexcept : XBasicAtomicInteger<T>(value) {}
+    constexpr explicit XAtomicInteger(const T &value = {}) noexcept : Base_(value) {}
 
     inline XAtomicInteger(const XAtomicInteger &other) noexcept{
         this->storeRelease(other.loadAcquire());
@@ -113,7 +113,7 @@ public:
 #endif
 };
 
-class [[maybe_unused]] XAtomicInt : public XAtomicInteger<int>{
+class [[maybe_unused]] X_TEMPLATE_EXPORT XAtomicInt : public XAtomicInteger<int>{
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
@@ -123,7 +123,7 @@ public:
 
 // High-level atomic pointer operations
 template <typename T>
-class XAtomicPointer : public XBasicAtomicPointer<T>
+class X_TEMPLATE_EXPORT XAtomicPointer : public XBasicAtomicPointer<T>
 {
 public:
 
@@ -178,7 +178,7 @@ public:
 
 */
 template <typename T>
-inline void qAtomicAssign(T *&d,T *x){
+X_API inline void qAtomicAssign(T *&d,T *x){
     if (d == x){
         return;
     }
@@ -197,7 +197,7 @@ inline void qAtomicAssign(T *&d,T *x){
 */
 
 template <typename T>
-inline void qAtomicDetach(T *&d){
+X_API inline void qAtomicDetach(T *&d){
     if (d->ref.loadRelaxed() == 1){
         return;
     }

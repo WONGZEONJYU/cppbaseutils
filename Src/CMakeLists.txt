@@ -14,16 +14,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_DEBUG_LIBS ON)
-set(Boost_DEBUG ON)
+set(Boost_DEBUG OFF)
 
 # 添加选项来控制构建哪种类型的库
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(BUILD_STATIC_LIBS "Build static libraries" OFF)  # 默认关闭静态库
 
 # 添加选项来控制符号导出
-option(EXPORT_ALL_SYMBOLS "Export all symbols from shared libraries" ON)   # 默认开启全符号导出
+option(EXPORT_ALL_SYMBOLS "Export all symbols from shared libraries" OFF)   # 默认开启全符号导出
 option(USE_SYMBOL_VISIBILITY "Use symbol visibility attributes" ON)  # 默认启用符号可见性控制
-option(AUTO_EXPORT_IMPORT "Automatically handle export/import based on build context" ON)  # 自动处理导出导入
+option(AUTO_EXPORT_IMPORT "Automatically handle export/import based on build context" OFF)  # 自动处理导出导入
 
 # 确保至少构建一种类型的库
 if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
@@ -98,7 +98,7 @@ function(configure_library_target target_name)
         target_compile_definitions(${target_name} PUBLIC -DUSE_SYMBOL_VISIBILITY)
         # 设置默认符号可见性为默认 (GCC/Clang)
         if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-            target_compile_options(${target_name} PRIVATE -fvisibility=default)
+            target_compile_options(${target_name} PUBLIC -fvisibility=default)
         endif()
     endif()
 
@@ -126,7 +126,7 @@ function(configure_library_target target_name)
     # 为动态库构建时添加构建宏
     get_target_property(target_type ${target_name} TYPE)
     if(target_type STREQUAL "SHARED_LIBRARY")
-        target_compile_definitions(${target_name} PRIVATE -DX_BUILDING_LIBRARY)
+        target_compile_definitions(${target_name} PUBLIC -DX_BUILDING_LIBRARY)
     endif()
 
     # 配置 Boost

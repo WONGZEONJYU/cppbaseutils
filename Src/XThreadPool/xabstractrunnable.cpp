@@ -52,7 +52,7 @@ void XAbstractRunnable::call() const {
     d->sm_isSelf = this;
 #endif
     try {
-        if (CONST_RUN == d->m_is_OverrideConst){
+        if (FuncVer::CONST == d->m_is_OverrideConst){
             ret.set(std::move(run()));
         }else{
             auto &obj{const_cast<XAbstractRunnable &>(*this)};

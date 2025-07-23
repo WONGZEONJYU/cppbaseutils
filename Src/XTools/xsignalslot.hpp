@@ -12,7 +12,7 @@ class XObject;
 
 namespace XPrivate {
 
-    class XSignalSlotBase {
+    class X_CLASS_EXPORT XSignalSlotBase {
         X_DISABLE_COPY_MOVE(XSignalSlotBase)
     #if XTD_VERSION < XTD_VERSION_CHECK(0,0,2)
         XAtomicInt m_ref_ {1};
@@ -59,7 +59,8 @@ namespace XPrivate {
         bool compare(void ** a);
         void call(XObject * r, void ** a);
     #endif
-        bool isImpl(ImplFn const f) const { return f == m_impl_; }
+
+        [[maybe_unused]] bool isImpl(ImplFn const f) const { return f == m_impl_; }
     protected:
         ~XSignalSlotBase() = default;
     };
@@ -72,12 +73,14 @@ namespace XPrivate {
         return SlotObjUniquePtr{other.get()};
     }
 
-    class SlotObjSharedPtr final {
+    class X_CLASS_EXPORT [[maybe_unused]] SlotObjSharedPtr final {
         SlotObjUniquePtr m_obj_{};
     public:
         SlotObjSharedPtr() noexcept = default;
-        explicit SlotObjSharedPtr(std::nullptr_t) noexcept;
-        explicit SlotObjSharedPtr(SlotObjUniquePtr);
+
+        [[maybe_unused]] explicit SlotObjSharedPtr(std::nullptr_t) noexcept;
+
+        [[maybe_unused]] explicit SlotObjSharedPtr(SlotObjUniquePtr);
 
         SlotObjSharedPtr(const SlotObjSharedPtr &other) noexcept;
 

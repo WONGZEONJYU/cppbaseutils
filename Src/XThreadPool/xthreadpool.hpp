@@ -191,17 +191,17 @@ public:
     X_DISABLE_COPY_MOVE(XThreadPool)
 };
 
-[[maybe_unused]] void sleep_for_ns(const XSize_t& ns);
+[[maybe_unused]] X_API void sleep_for_ns(const XSize_t& ns);
 
-[[maybe_unused]] void sleep_for_us(const XSize_t& us);
+[[maybe_unused]] X_API void sleep_for_us(const XSize_t& us);
 
-[[maybe_unused]] void sleep_for_ms(const XSize_t& ms);
+[[maybe_unused]] X_API void sleep_for_ms(const XSize_t& ms);
 
-[[maybe_unused]] void sleep_for_s(const XSize_t& s);
+[[maybe_unused]] X_API void sleep_for_s(const XSize_t& s);
 
-[[maybe_unused]] void sleep_for_mins(const XSize_t& mins);
+[[maybe_unused]] X_API void sleep_for_mins(const XSize_t& mins);
 
-[[maybe_unused]] void sleep_for_hours(const XSize_t& h);
+[[maybe_unused]] X_API void sleep_for_hours(const XSize_t& h);
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

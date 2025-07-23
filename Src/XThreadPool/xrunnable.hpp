@@ -14,19 +14,19 @@ template<typename> class XRunnable;
  * XRunnable<Const> 带const
  */
 enum class NonConst{};
-template<> class [[maybe_unused]] XRunnable<NonConst> : public XAbstractRunnable {
+template<> class X_TEMPLATE_EXPORT [[maybe_unused]] XRunnable<NonConst> : public XAbstractRunnable {
     std::any run() override = 0;
 protected:
-    explicit XRunnable():XAbstractRunnable(NON_CONST_RUN){}
+    explicit XRunnable():XAbstractRunnable(FuncVer::NON_CONST){}
 public:
     ~XRunnable() override = default;
 };
 
 enum class Const{};
-template<> class [[maybe_unused]] XRunnable<Const> : public XAbstractRunnable {
+template<> class X_TEMPLATE_EXPORT [[maybe_unused]] XRunnable<Const> : public XAbstractRunnable {
     std::any run() const override = 0;
 protected:
-    explicit XRunnable():XAbstractRunnable(CONST_RUN){}
+    explicit XRunnable():XAbstractRunnable(FuncVer::CONST){}
 public:
     ~XRunnable() override = default;
 };

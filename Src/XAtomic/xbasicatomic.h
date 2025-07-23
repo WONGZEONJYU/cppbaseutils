@@ -1,13 +1,14 @@
 #ifndef X_BASIC_ATOMIC_HPP
 #define X_BASIC_ATOMIC_HPP 1
 
-#include "xatomic_cxx11.hpp"
+#include <XAtomic/xatomic_cxx11.hpp>
+#include <XHelper/xversion.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 template <typename T>
-class XBasicAtomic {
+class X_TEMPLATE_EXPORT XBasicAtomic {
 public:
     using Type = T;
     using Ops = std::conditional_t<std::is_same_v<Type,bool>,XAtomicOpsBase<T>,XAtomicOps<T>>;
@@ -62,7 +63,7 @@ public:
 };
 
 template <typename T>
-class XBasicAtomicInteger : public XBasicAtomic<T> {
+class X_TEMPLATE_EXPORT XBasicAtomicInteger : public XBasicAtomic<T> {
     // static check that this is a valid integer
     static_assert(std::is_integral_v<T>, "template parameter is not an integral type");
     static_assert(XAtomicOpsSupport<sizeof(T)>::IsSupported, "template parameter is an integral of a size not supported on this platform");
@@ -149,7 +150,7 @@ public:
 using XBasicAtomicInt [[maybe_unused]] = XBasicAtomicInteger<int>;
 
 template <typename X>
-class XBasicAtomicPointer{
+class X_TEMPLATE_EXPORT XBasicAtomicPointer{
 public:
     using Type = X*;
     using Ops = XAtomicOps<Type>;

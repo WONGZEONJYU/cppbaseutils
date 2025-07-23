@@ -17,7 +17,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XResultPrivate;
 class XResult;
 
-class XResultData {
+class X_CLASS_EXPORT XResultData {
     X_DISABLE_COPY_MOVE(XResultData)
 public:
     XResult * m_x_ptr_{};
@@ -35,7 +35,7 @@ public:
     virtual ~XResultData() = default;
 };
 
-class XResult final {
+class X_CLASS_EXPORT XResult final {
     X_DISABLE_COPY_MOVE(XResult)
     X_DECLARE_PRIVATE(XResult);
     mutable std::unique_ptr<XResultData> m_d_ptr_{};

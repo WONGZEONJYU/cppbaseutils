@@ -16,7 +16,7 @@ class XThreadPool;
 class XAbstractRunnable;
 using XAbstractRunnable_Ptr = std::shared_ptr<XAbstractRunnable>;
 
-class XAbstractRunnableData {
+class X_CLASS_EXPORT XAbstractRunnableData {
     X_DISABLE_COPY_MOVE(XAbstractRunnableData)
     friend class XAbstractRunnable;
     XResult m_result_{};
@@ -27,13 +27,11 @@ public:
     virtual ~XAbstractRunnableData() = default;
 };
 
-class XAbstractRunnable : public std::enable_shared_from_this<XAbstractRunnable> {
-
-    enum class Model {BLOCK,NONBLOCK};
+class X_CLASS_EXPORT XAbstractRunnable : public std::enable_shared_from_this<XAbstractRunnable> {
 
     enum class FuncVer {CONST,NON_CONST};
 
-    static constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
+    //static inline constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
 
     X_DECLARE_PRIVATE(XAbstractRunnable)
     mutable std::shared_ptr<XAbstractRunnableData> m_d_ptr_{};
@@ -41,7 +39,8 @@ class XAbstractRunnable : public std::enable_shared_from_this<XAbstractRunnable>
 public:
     X_DEFAULT_COPY_MOVE(XAbstractRunnable)
 
-    static constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
+    //static inline constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
+    enum class Model {BLOCK,NONBLOCK};
 
     /// 用于获取线程执行完毕的返回值,如果没有可忽略
     /// 没有加入线程池或多次调用无效,不会阻塞但有警告提示
@@ -51,9 +50,9 @@ public:
     /// @tparam Ty
     /// @return T类型
     template<typename Ty>
-    [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = BlockModel) const noexcept(false) {
+    [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = Model::BLOCK) const noexcept(false) {
         const auto &r{m_d_ptr_->m_result_};
-        return BlockModel == model_ ?
+        return Model::BLOCK == model_ ?
         std::move(r.get<Ty>()) :
         std::move(r.try_get<Ty>());
     }
