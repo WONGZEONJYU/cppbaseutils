@@ -67,7 +67,8 @@ protected:
 
         template<size_t... Ind_>
         inline result_t M_invoke_(std::index_sequence<Ind_...>) const {
-            return std::__invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...);
+            //return std::__invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...);
+            return std::invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...);
         }
 
     public:
