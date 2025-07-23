@@ -64,7 +64,7 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 #define X_OUT
 #define X_IN_OUT
 
-#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
+#if defined(_MSC_VER) && defined(_WIN32) && defined(_WIN64)
     #define FUNC_SIGNATURE __FUNCSIG__
 #else
     #define FUNC_SIGNATURE __PRETTY_FUNCTION__
