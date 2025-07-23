@@ -5,7 +5,7 @@ project(XSignal)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 
-aux_source_directory(. SRC_FILS)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SRC_FILS)
 file(GLOB HEAD_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 
 if (TARGET XCppBaseUtils_shared)
