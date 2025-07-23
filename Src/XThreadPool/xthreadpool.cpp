@@ -19,7 +19,7 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 static inline constexpr auto MAX_THREADS_SIZE{1024};
-#if defined(__LP64__)
+#if defined(__LP64__) || defined(_WIN64)
 static inline constexpr auto MAX_TASKS_SIZE{INT64_MAX};
 #else
 static inline constexpr auto MAX_TASKS_SIZE{INT32_MAX};
@@ -139,7 +139,7 @@ XAbstractRunnable_Ptr acquireTask() const {
     XAbstractRunnable_Ptr runnableJoin(const XAbstractRunnable_Ptr& task) const {
 
         if (!task){
-            std::cerr << __PRETTY_FUNCTION__ << " tips: task is empty!\n" << std::flush;
+            std::cerr << FUNC_SIGNATURE << " tips: task is empty!\n" << std::flush;
             return task;
         }
 
@@ -148,14 +148,14 @@ XAbstractRunnable_Ptr acquireTask() const {
 #else
         if (task.get() == sm_isCurrentTask_){
 #endif
-            std::cerr << __PRETTY_FUNCTION__ << " tips:Do not add your own behavior to the execution of your own thread functions\n" << std::flush;
+            std::cerr << FUNC_SIGNATURE << " tips:Do not add your own behavior to the execution of your own thread functions\n" << std::flush;
             return task;
         }
 
         if (const void * old_value{};
             !task->Owner_().testAndSetOrdered({},this,old_value)){
             if (this != old_value){
-                std::cerr << __PRETTY_FUNCTION__ << " tips: This task has been added to the pool and cannot be added to other pools until it is completed\n";
+                std::cerr << FUNC_SIGNATURE << " tips: This task has been added to the pool and cannot be added to other pools until it is completed\n";
                 return task;
             }
         }
@@ -264,7 +264,7 @@ XAbstractRunnable_Ptr acquireTask() const {
 #else
         if(m_isCurrentTask_()){
 #endif
-            std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+            std::cerr << FUNC_SIGNATURE << " tips: Working Thread Call invalid\n" << std::flush;
             return;
         }
         m_is_poolRunning.storeRelease({});

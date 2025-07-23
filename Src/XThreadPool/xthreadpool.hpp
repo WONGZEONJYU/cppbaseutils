@@ -7,12 +7,12 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-#if defined(__LP64__)
+#if defined(__LP64__) || defined(_WIN64)
 using XSize_t = xint64;
 using XUSize_t = xuint64;
 #else
-using XSize_t = xint32_t;
-using XUSize_t = xuint32_t;
+using XSize_t = xint32;
+using XUSize_t = xuint32;
 #endif
 
 class XThreadPool;
