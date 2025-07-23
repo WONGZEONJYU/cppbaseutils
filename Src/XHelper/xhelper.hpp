@@ -64,7 +64,11 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 #define X_OUT
 #define X_IN_OUT
 
-#define FUNCTION_NAME __PRETTY_FUNCTION__
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
+    #define FUNC_SIGNATURE __FUNCSIG__
+#else
+    #define FUNC_SIGNATURE __PRETTY_FUNCTION__
+#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
