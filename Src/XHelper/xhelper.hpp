@@ -74,7 +74,7 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 template<typename F>
-class [[maybe_unused]] X_CLASS_EXPORT Destroyer final {
+class X_TEMPLATE_EXPORT [[maybe_unused]]  Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
     mutable F m_fn_;
     mutable uint32_t m_is_destroy:1;
@@ -100,7 +100,7 @@ public:
 };
 
 template<typename F2>
-class [[maybe_unused]] X_CLASS_EXPORT X_RAII final {
+class X_TEMPLATE_EXPORT [[maybe_unused]] X_RAII final {
     X_DISABLE_COPY_MOVE(X_RAII)
     mutable F2 m_f2_{};
     mutable uint32_t m_is_destroy_:1;

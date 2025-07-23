@@ -150,7 +150,7 @@ public:
 using XBasicAtomicInt [[maybe_unused]] = XBasicAtomicInteger<int>;
 
 template <typename X>
-class X_TEMPLATE_EXPORT XBasicAtomicPointer{
+class X_TEMPLATE_EXPORT XBasicAtomicPointer {
 public:
     using Type = X*;
     using Ops = XAtomicOps<Type>;

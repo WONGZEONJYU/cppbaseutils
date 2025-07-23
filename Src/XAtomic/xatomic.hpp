@@ -29,11 +29,11 @@ public:
     // Non-atomic API
     constexpr explicit XAtomicInteger(const T &value = {}) noexcept : Base_(value) {}
 
-    inline XAtomicInteger(const XAtomicInteger &other) noexcept{
+    inline XAtomicInteger(const XAtomicInteger &other) noexcept {
         this->storeRelease(other.loadAcquire());
     }
 
-    inline XAtomicInteger &operator=(const XAtomicInteger &other) noexcept{
+    inline XAtomicInteger &operator=(const XAtomicInteger &other) noexcept {
         this->storeRelease(other.loadAcquire());
         return *this;
     }
@@ -113,7 +113,7 @@ public:
 #endif
 };
 
-class [[maybe_unused]] X_TEMPLATE_EXPORT XAtomicInt : public XAtomicInteger<int>{
+class X_TEMPLATE_EXPORT [[maybe_unused]] XAtomicInt : public XAtomicInteger<int> {
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
@@ -123,10 +123,8 @@ public:
 
 // High-level atomic pointer operations
 template <typename T>
-class X_TEMPLATE_EXPORT XAtomicPointer : public XBasicAtomicPointer<T>
-{
+class X_TEMPLATE_EXPORT XAtomicPointer : public XBasicAtomicPointer<T> {
 public:
-
     constexpr explicit XAtomicPointer(T *value = nullptr) noexcept : XBasicAtomicPointer<T>(value) {}
 
     inline XAtomicPointer(const XAtomicPointer &other) noexcept
@@ -178,7 +176,7 @@ public:
 
 */
 template <typename T>
-X_API inline void qAtomicAssign(T *&d,T *x){
+[[maybe_unused]] X_API inline void qAtomicAssign(T *&d,T *x) {
     if (d == x){
         return;
     }
@@ -197,7 +195,7 @@ X_API inline void qAtomicAssign(T *&d,T *x){
 */
 
 template <typename T>
-X_API inline void qAtomicDetach(T *&d){
+[[maybe_unused]] X_API inline void qAtomicDetach(T *&d) {
     if (d->ref.loadRelaxed() == 1){
         return;
     }

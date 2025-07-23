@@ -31,15 +31,12 @@ class X_CLASS_EXPORT XAbstractRunnable : public std::enable_shared_from_this<XAb
 
     enum class FuncVer {CONST,NON_CONST};
 
-    //static inline constexpr auto NON_CONST_RUN{FuncVer::NON_CONST},CONST_RUN{FuncVer::CONST};
-
     X_DECLARE_PRIVATE(XAbstractRunnable)
     mutable std::shared_ptr<XAbstractRunnableData> m_d_ptr_{};
 
 public:
     X_DEFAULT_COPY_MOVE(XAbstractRunnable)
 
-    //static inline constexpr auto BlockModel{Model::BLOCK},NonblockModel{Model::NONBLOCK};
     enum class Model {BLOCK,NONBLOCK};
 
     /// 用于获取线程执行完毕的返回值,如果没有可忽略
@@ -108,7 +105,7 @@ protected:
 private:
     virtual std::any run();
     virtual std::any run() const;
-    explicit XAbstractRunnable(const FuncVer&);
+    explicit XAbstractRunnable(const FuncVer &);
     void call() const;
     void set_exit_function_(std::function<bool()> &&) const;
     void resetRecall_() const;

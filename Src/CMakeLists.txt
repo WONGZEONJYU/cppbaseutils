@@ -31,10 +31,10 @@ if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
 endif()
 
 # 查找 Boost
-find_package(Boost COMPONENTS ALL QUIET)
+#find_package(Boost COMPONENTS ALL QUIET)
+find_package(Boost QUIET)
 find_package(Qt6 COMPONENTS Core QUIET)
 find_package(Qt5 COMPONENTS Core QUIET)
-
 # 创建库目标列表
 set(LIBRARY_TARGETS)
 
@@ -131,6 +131,7 @@ function(configure_library_target target_name)
 
     # 配置 Boost
     if(Boost_FOUND)
+        message(STATUS "Boost_FOUND=${Boost_FOUND}")
         target_compile_definitions(${target_name} PUBLIC -DHAS_BOOST)
         target_include_directories(${target_name} PUBLIC ${Boost_INCLUDE_DIRS})
         target_link_libraries(${target_name} PUBLIC ${Boost_LIBRARIES})

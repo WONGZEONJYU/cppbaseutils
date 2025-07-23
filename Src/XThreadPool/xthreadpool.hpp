@@ -19,7 +19,7 @@ class XThreadPool;
 class XThreadPoolPrivate;
 using XThreadPool_Ptr = std::shared_ptr<XThreadPool>;
 
-class XThreadPoolData {
+class X_CLASS_EXPORT XThreadPoolData {
     X_DISABLE_COPY_MOVE(XThreadPoolData)
 protected:
     XThreadPoolData() = default;
@@ -27,7 +27,7 @@ public:
     virtual ~XThreadPoolData() = default;
 };
 
-class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
+class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
     enum class Private{};
     X_DECLARE_PRIVATE(XThreadPool)
 
@@ -99,8 +99,6 @@ class XThreadPool final : public std::enable_shared_from_this<XThreadPool> {
 
 public:
     enum class Mode {FIXED,/*固定线程数模式*/CACHE /*动态线程数*/};
-
-    static constexpr auto FixedModel{Mode::FIXED},CacheModel{Mode::CACHE};
 
     /// @return 返回CPU线程数量
     static unsigned cpuThreadsCount();
@@ -182,7 +180,7 @@ public:
     /// 创建线程池对象,默认模式为FIXED
     /// @param mode
     /// @return 线程池对象
-    [[maybe_unused]] [[nodiscard]] static XThreadPool_Ptr create(const Mode &mode = FixedModel);
+    [[maybe_unused]] [[nodiscard]] static XThreadPool_Ptr create(const Mode &mode = Mode::FIXED);
 
     explicit XThreadPool(Private,const Mode &,XThreadPoolData_Ptr &&);
 
