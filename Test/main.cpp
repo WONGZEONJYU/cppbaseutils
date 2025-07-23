@@ -2,7 +2,7 @@
 #include <future>
 #include <iostream>
 #include <XThreadPool/xthreadpool.hpp>
-#if 0
+#if !defined(_WIN64) && !defined(_WIN32)
 #include <XSignal/xsignal.hpp>
 #endif
 #include <list>
@@ -85,7 +85,7 @@ public:
 
 [[maybe_unused]] static void test1() {
     bool exit_{};
-#if 0
+#if defined(MACOS) || defined(LINUX)
     const auto sigterm{xtd::Signal_Register(SIGTERM,{},[&]{
         exit_ = true;
     })};
@@ -93,8 +93,7 @@ public:
     const auto sigint{xtd::Signal_Register(SIGINT,{},[&]{
         exit_ = true;
     })};
-#endif
-#if defined(MACOS) || defined(LINUX)
+
     const auto sigkill {xtd::Signal_Register(SIGKILL,{},[&]{
         exit_ = true;
     })};
