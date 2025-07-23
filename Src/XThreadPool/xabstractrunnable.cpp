@@ -59,7 +59,7 @@ void XAbstractRunnable::call() const {
         }
     } catch (const std::exception &e) {
         ret.set({});
-        std::cerr << __PRETTY_FUNCTION__ << " exception msg : " << e.what() << "\n";
+        std::cerr << FUNC_SIGNATURE << " exception msg : " << e.what() << "\n";
     }
     d->m_is_running = {};
     d->m_owner.storeRelease({});
@@ -102,14 +102,14 @@ XAbstractRunnable_Ptr XAbstractRunnable::joinThreadPool(const XThreadPool_Ptr& p
 
 std::any XAbstractRunnable::run() {
     std::cerr <<
-        __PRETTY_FUNCTION__ << " tips: You did not rewrite this function, "
+        FUNC_SIGNATURE << " tips: You did not rewrite this function, "
         "please pay attention to whether your constructor parameters are filled in incorrectly\n";
     return {};
 }
 
 std::any XAbstractRunnable::run() const {
     std::cerr <<
-        __PRETTY_FUNCTION__ << " tips: You did not rewrite this function, "
+      FUNC_SIGNATURE << " tips: You did not rewrite this function, "
         "please pay attention to whether your constructor parameters are filled in incorrectly\n";
     return {};
 }
