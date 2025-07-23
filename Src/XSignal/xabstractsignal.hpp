@@ -1,10 +1,6 @@
 #ifndef X_ABSTRACT_SIGNAL_HPP
 #define X_ABSTRACT_SIGNAL_HPP 1
 
-#include <tuple>
-#include <memory>
-#include <type_traits>
-#include <utility>
 #include <csignal>
 #include <XHelper/xhelper.hpp>
 #include <XHelper/xcallablehelper.hpp>
