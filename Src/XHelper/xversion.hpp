@@ -9,7 +9,7 @@
 
 #define XTD_VERSION_PATCH 1
 
-#define XTD_VERSION_CHECK(major, minor, patch) ((major<<16)|(minor<<8)|(patch))
+#define XTD_VERSION_CHECK(major, minor, patch) ((major<<16) | (minor<<8) | (patch))
 
 #define XTD_VERSION XTD_VERSION_CHECK(XTD_VERSION_MAJOR,XTD_VERSION_MINOR,XTD_VERSION_PATCH)
 
@@ -19,7 +19,7 @@
 #define XTD_INLINE_NAMESPACE_BEGIN(name) inline namespace name {
 #define XTD_INLINE_NAMESPACE_END XTD_NAMESPACE_END
 
-// 平台检测宏
+//平台检测宏
 #if defined(_WIN32) || defined(_WIN64)
 #define X_PLATFORM_WINDOWS
 #elif defined(__APPLE__)
