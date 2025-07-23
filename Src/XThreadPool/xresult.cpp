@@ -56,18 +56,18 @@ std::any XResult::get_() const {
 #else
     if (this == d->m_isSelf().value_or(nullptr)){
 #endif
-        std::cerr << __PRETTY_FUNCTION__ << " tips: Working Thread Call invalid\n" << std::flush;
+        std::cerr << FUNC_SIGNATURE << " tips: Working Thread Call invalid\n" << std::flush;
         return {};
     }
 
     if (d->m_recall_.loadAcquire()){
-        std::cerr << __PRETTY_FUNCTION__ << " tips: Repeated calls\n" << std::flush;
+        std::cerr << FUNC_SIGNATURE << " tips: Repeated calls\n" << std::flush;
         return {};
     }
     d->m_recall_.storeRelease(true);
 
     if (!d->m_allow_get_){
-        std::cerr << __PRETTY_FUNCTION__ << " tips: not allow get\n" << std::flush;
+        std::cerr << FUNC_SIGNATURE << " tips: not allow get\n" << std::flush;
         return {};
     }
     d->m_allow_get_.storeRelease({});
