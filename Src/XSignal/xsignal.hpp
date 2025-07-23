@@ -1,7 +1,7 @@
 #ifndef X_SIGNAL_HPP
 #define X_SIGNAL_HPP 1
 
-#include "xabstractsignal.hpp"
+#include <XSignal/xabstractsignal.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
