@@ -48,12 +48,12 @@ if(BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME}_shared PUBLIC -DX_SHARED)
 
     # 配置符号导出
-    if(WIN32)
+    if (WIN32)
         if(EXPORT_ALL_SYMBOLS)
             set_target_properties(${PROJECT_NAME}_shared PROPERTIES
                     WINDOWS_EXPORT_ALL_SYMBOLS ON
             )
-        endif()
+        endif ()
     endif()
 
     list(APPEND LIBRARY_TARGETS ${PROJECT_NAME}_shared)
@@ -96,11 +96,9 @@ function(configure_library_target target_name)
     # 配置符号可见性
     if(USE_SYMBOL_VISIBILITY)
         target_compile_definitions(${target_name} PUBLIC -DUSE_SYMBOL_VISIBILITY)
-
-        # 设置默认符号可见性为隐藏 (GCC/Clang)
+        # 设置默认符号可见性为默认 (GCC/Clang)
         if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-            target_compile_options(${target_name} PRIVATE -fvisibility=hidden)
-            target_compile_options(${target_name} PRIVATE -fvisibility-inlines-hidden)
+            target_compile_options(${target_name} PRIVATE -fvisibility=default)
         endif()
     endif()
 
