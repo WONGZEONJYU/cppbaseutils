@@ -58,7 +58,9 @@ add_subdirectory(XAtomic)
 add_subdirectory(XGlobal)
 add_subdirectory(XHelper)
 add_subdirectory(XObject)
-add_subdirectory(XSignal)
+if (NOT WIN32)
+    add_subdirectory(XSignal)
+endif ()
 add_subdirectory(XThreadPool)
 add_subdirectory(XTools)
 
@@ -140,6 +142,9 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
         PATTERN "*.hpp"
         PATTERN "*_p.hpp" EXCLUDE
 )
+
+if (NOT WIN32)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
         DESTINATION include/XSignal
         FILES_MATCHING
@@ -147,6 +152,8 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
         PATTERN "*.hpp"
         PATTERN "*_p.hpp" EXCLUDE
 )
+endif ()
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
         DESTINATION include/XThreadPool
         FILES_MATCHING
