@@ -59,7 +59,7 @@ public:
         if constexpr (std::is_member_function_pointer_v<std::decay_t<Func2>>) {
             pSlot = const_cast<void **>(reinterpret_cast<void *const *>(&slot));
         }else{
-            X_ASSERT_W(type == ConnectionType::UniqueConnection,"",
+            X_ASSERT_W(type != ConnectionType::UniqueConnection,"",
                 "XObject::connect: Unique connection requires the slot to be a pointer to a member function of a XObject subclass.");
         }
 
