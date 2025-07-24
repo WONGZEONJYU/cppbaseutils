@@ -73,7 +73,7 @@ namespace XPrivate {
         return SlotObjUniquePtr{other.get()};
     }
 
-    class X_CLASS_EXPORT SlotObjSharedPtr final {
+    class X_CLASS_EXPORT [[maybe_unused]] SlotObjSharedPtr final {
         SlotObjUniquePtr m_obj_{};
     public:
         SlotObjSharedPtr() noexcept = default;
@@ -117,10 +117,11 @@ namespace XPrivate {
                     delete that;
                     break;
                 case Call:
-                    if constexpr (std::is_member_function_pointer_v<FunctorValue>)
+                    if constexpr (std::is_member_function_pointer_v<FunctorValue>) {
                         FuncType::template call<Args, R>(that->object(), static_cast<typename FuncType::Object *>(r), a);
-                    else
+                    }else{
                         FuncType::template call<Args, R>(that->object(), r, a);
+                    }
                     break;
                 case Compare:
                     if constexpr (std::is_member_function_pointer_v<FunctorValue>) {
@@ -191,7 +192,7 @@ namespace XPrivate {
     inline constexpr auto AreFunctionsCompatible_v = AreFunctionsCompatible<Prototype, Functor>::value;
 
     template<typename Prototype, typename Functor>
-    inline constexpr bool AssertCompatibleFunctions() {
+    [[maybe_unused]] inline constexpr auto AssertCompatibleFunctions() {
         static_assert(AreFunctionsCompatible_v<Prototype, Functor>,
                       "Functor is not compatible with expected prototype!");
         return true;
