@@ -9,6 +9,13 @@ XObject::XObject():m_d_ptr_(std::make_unique<XObjectPrivate>()) {}
 
 XObject::~XObject() {
     X_D(XObject)
+
+    auto cd{d->m_connections.loadRelaxed()};
+    if (cd && !cd->m_ref.deref()){
+        delete cd;
+        d->m_connections.storeRelease({});
+    }
+
     if (const auto x{d->m_sharedRefcount_.loadRelaxed()}){
         if (x->m_strong_ref.loadRelaxed() > 0){
             std::cerr << "XObject: shared XObject was deleted directly. The program is malformed and may crash.";
@@ -43,11 +50,12 @@ void XObjectPrivate::ensureConnectionData() {
 }
 
 void XObjectPrivate::addConnection(XConnection *c){
-
+    ensureConnectionData();
+    const auto cd{m_connections.loadRelaxed()};
+    cd->m_connectionStorage.insert({c->m_signal,XConnection_ptr{c}});
 }
 
-void XObjectPrivate::removeConnection(XConnection * c)
-{
+void XObjectPrivate::removeConnection(XConnection * c) {
 
 }
 
@@ -71,16 +79,17 @@ bool XObjectPrivate::connectImpl(const XObject* sender, void** const signal,
         if (const auto connections{get(s)->m_connections.loadRelaxed()}) {
             if (const auto it {connections->m_connectionStorage.find(signal)};
                 it != connections->m_connectionStorage.end()) {
-                if (signal == it->first && it->second->slotRaw()->compare(signal)) {
+                if (signal == it->first && it->second->slotRaw()->compare(slot)) {
                     return {};
                 }
             }
         }
     }
 
-    auto c {std::make_unique<XConnection>(slotObjRaw)};
+    auto c{std::make_unique<XConnection>(slotObjRaw)};
     c->m_sender_ = s;
-    c->m_receiver_ = r;
+    c->m_receiver_.storeRelease(r);
+    c->m_signal = signal;
     get(s)->addConnection(c.release());
     return true;
 }
