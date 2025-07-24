@@ -9,15 +9,17 @@ set(CMAKE_CXX_STANDARD 20)
 if (TARGET XCppBaseUtils_shared)
     target_sources(XCppBaseUtils_shared PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p_p.hpp
     )
 endif ()
 
 if (TARGET XCppBaseUtils_static)
     target_sources(XCppBaseUtils_static PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p_p.hpp
     )
 endif ()
