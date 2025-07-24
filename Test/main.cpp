@@ -9,6 +9,7 @@
 #include <deque>
 #include <XHelper/xutility.hpp>
 #include <XHelper/xtypetraits.hpp>
+#include <XObject/xobject.hpp>
 
 static std::mutex mtx{};
 
@@ -314,12 +315,29 @@ static void test5(){
     });
 }
 
+class ATest:public xtd::XObject{
+public:
+    void send(int d) {
+
+    }
+    void slot(int){
+
+    }
+};
+
+[[maybe_unused]] static void test6(){
+    ATest obj;
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,[](const int &){}) << "\n";
+}
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     //test1();
     //test2();
     //test3();
     //test4(123);
-    test5();
+    //test5();
+    test6();
     return 0;
 }
