@@ -262,7 +262,7 @@ namespace XPrivate {
     };
 
     template<typename>
-    struct [[maybe_unused]] FunctionPointer final {
+    struct [[maybe_unused]] FunctionPointer {
         enum {
             ArgumentCount [[maybe_unused]] = -1,
             IsPointerToMemberFunction [[maybe_unused]] = false
@@ -341,7 +341,7 @@ namespace XPrivate {
     };
 
     template<typename Obj, typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...)> final {
+    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...)> {
         using Object [[maybe_unused]] = Obj;
         using Arguments [[maybe_unused]]  [[maybe_unused]] = List<Args...> ;
         using ReturnType [[maybe_unused]]  [[maybe_unused]] = Ret ;
@@ -598,10 +598,10 @@ namespace XPrivate {
     using FunctorReturnType_T [[maybe_unused]] = typename FunctorReturnType<Args...>::type;
 
     template<typename Func, typename... Args>
-    struct [[maybe_unused]] FunctorCallable final {
+    struct [[maybe_unused]] FunctorCallable {
         using ReturnType = std::invoke_result_t<Func, Args...>;
         using Function [[maybe_unused]] = ReturnType(*)(Args...);
-        enum {ArgumentCount [[maybe_unused]] = sizeof...(Args)};
+        enum { ArgumentCount [[maybe_unused]] = sizeof...(Args) };
         using Arguments [[maybe_unused]] = List<Args...>;
 
         template <typename SignalArgs, typename R>
@@ -614,42 +614,42 @@ namespace XPrivate {
     struct HasCallOperatorAcceptingArgs final {
     private:
         template <typename,typename = void>
-        struct Test : std::false_type {};
+        struct Test final : std::false_type {};
         // We explicitly use .operator() to not return true for pointers to free/static function
         template <typename F>
         struct Test<F,std::void_t<decltype(std::declval<F>().operator()(std::declval<Args>()...))>>
-                : std::true_type {};
+                final : std::true_type {};
     public:
         using Type = Test<Functor>;
-        static inline constexpr auto value {Type::value};
+        inline static constexpr auto value {Type::value};
     };
 
-    template <typename Functor, typename... Args>
-    using HasCallOperatorAcceptingArgs_T = typename HasCallOperatorAcceptingArgs<Functor,Args...>::Type;
+    template <typename... Args>
+    using HasCallOperatorAcceptingArgs_T = typename HasCallOperatorAcceptingArgs<Args...>::Type;
 
-    template <typename Functor, typename... Args>
+    template <typename... Args>
     [[maybe_unused]] inline constexpr auto HasCallOperatorAcceptingArgs_v {
-            HasCallOperatorAcceptingArgs < Functor, Args...>::value};
+            HasCallOperatorAcceptingArgs <Args...>::value };
 
     template <typename Func, typename... Args>
-    struct CallableHelper {
+    struct CallableHelper final {
     private:
         // Could've been std::conditional_t, but that requires all branches to
         // be valid
-        [[maybe_unused]] static auto Resolve(std::true_type) -> FunctorCallable<Func, Args...>{return {};}
-        static auto Resolve(std::false_type) -> FunctionPointer<std::decay_t<Func>>{return {};}
+        [[maybe_unused]] inline static FunctorCallable<Func, Args...> Resolve(std::true_type) { return {};}
+        inline static FunctionPointer<std::decay_t<Func>> Resolve(std::false_type) { return {}; }
     public:
         using Type = decltype(Resolve(HasCallOperatorAcceptingArgs_T<std::decay_t<Func>,Args...>{}));
     };
 
-    template <typename Func, typename... Args>
-    using CallableHelper_T = typename CallableHelper<Func,Args...>::Type;
+    template <typename... Args>
+    using CallableHelper_T = typename CallableHelper<Args...>::Type;
+
+    template<typename... Args>
+    struct [[maybe_unused]] Callable final : CallableHelper_T<Args...> {};
 
     template<typename Func, typename... Args>
-    struct [[maybe_unused]] Callable final : CallableHelper_T<Func, Args...> {};
-
-    template<typename Func, typename... Args>
-    struct [[maybe_unused]] Callable<Func, List<Args...>> final : CallableHelper_T<Func, Args...> {};
+    struct Callable<Func, List<Args...>> final : CallableHelper_T<Func, Args...> {};
 
 /*
         Wrapper around ComputeFunctorArgumentCount and CheckCompatibleArgument,
