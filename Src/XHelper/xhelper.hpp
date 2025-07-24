@@ -76,7 +76,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 template<typename F>
 class X_TEMPLATE_EXPORT [[maybe_unused]]  Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
-    mutable F m_fn_;
+    mutable F m_fn_{};
     mutable uint32_t m_is_destroy:1;
 public:
 #if __cplusplus >= 202002L
@@ -297,6 +297,11 @@ template<const std::size_t N,typename Tuple>
 [[maybe_unused]] X_API std::string toUpper(std::string_view &&);
 
 [[maybe_unused]] X_API std::string toUpper(const std::string_view &);
+
+enum class ConnectionType {
+    AutoConnection,
+    UniqueConnection
+};
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

@@ -45,10 +45,10 @@ void XSignalSlotBase::call(XObject * const r, void ** const a) {
 }
 #endif
 
-        [[maybe_unused]] SlotObjSharedPtr:: SlotObjSharedPtr(std::nullptr_t) noexcept
+[[maybe_unused]] SlotObjSharedPtr:: SlotObjSharedPtr(std::nullptr_t) noexcept
 :SlotObjSharedPtr(){}
 
-        [[maybe_unused]] SlotObjSharedPtr::SlotObjSharedPtr(SlotObjUniquePtr o)
+[[maybe_unused]] SlotObjSharedPtr::SlotObjSharedPtr(SlotObjUniquePtr o)
 :m_obj_(std::move(o)){}
 
 SlotObjSharedPtr::SlotObjSharedPtr(const SlotObjSharedPtr &other) noexcept
