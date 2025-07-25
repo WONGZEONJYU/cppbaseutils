@@ -86,7 +86,7 @@ bool XObjectPrivate::connectImpl(const XObject* sender, void** const signal,
         }
     }
 
-    auto c{std::make_unique<XConnection>(slotObjRaw)};
+    auto c{std::make_unique<XConnection>(slotObj.release())};
     c->m_sender_ = s;
     c->m_receiver_.storeRelease(r);
     c->m_signal = signal;
