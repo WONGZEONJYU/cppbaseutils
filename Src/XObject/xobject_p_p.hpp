@@ -35,10 +35,6 @@ public:
         XPrivate::SlotObjUniquePtr slotObj{m_slot_raw_};
     }
 
-    void call(XObject * r,void **args) const{
-        m_slot_raw_->call(r,args);
-    }
-
     [[nodiscard]] XPrivate::XSignalSlotBase * &slotRaw() const noexcept {
         return m_slot_raw_;
     }
