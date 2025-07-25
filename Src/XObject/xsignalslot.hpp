@@ -73,7 +73,7 @@ namespace XPrivate {
         return SlotObjUniquePtr{other.get()};
     }
 
-    class X_CLASS_EXPORT [[maybe_unused]] SlotObjSharedPtr final {
+    class X_CLASS_EXPORT SlotObjSharedPtr final {
         SlotObjUniquePtr m_obj_{};
     public:
         SlotObjSharedPtr() noexcept = default;

@@ -539,6 +539,8 @@ namespace XPrivate {
                        && CheckCompatibleArguments<List_1, List_2>::value };
     };
 
+    template<typename ...Args>
+    inline constexpr auto  CheckCompatibleArguments_v {CheckCompatibleArguments<Args...>::value};
     /*
     找到一个functor对象可以接受并且仍然兼容的最大参数数量。
     Value是参数的数量，如果没有匹配项，则为-1。

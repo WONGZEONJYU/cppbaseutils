@@ -325,10 +325,49 @@ public:
     }
 };
 
+template<typename F>
+auto showaddr(F f,void **args){
+    auto ff{static_cast<F*>(args[0])};
+    return std::hash<F>{}(f) == std::hash<F>{}(*ff);
+}
+
+struct MemberFunctionInfo {
+    size_t hash;
+    std::string type_name;
+
+    template<typename F>
+    explicit MemberFunctionInfo(F f) : hash(std::hash<F>{}(f)),
+                                type_name(typeid(F).name()) {}
+};
+template<typename F>
+size_t getFullHash(F f) {
+    std::hash<F> h;
+    return h(f);
+}
+
 [[maybe_unused]] static void test6(){
-    ATest obj;
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,[](const int &){}) << "\n";
+     ATest obj;
+     std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot,xtd::ConnectionType::UniqueConnection) << "\n";
+    // std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot,xtd::ConnectionType::UniqueConnection) << "\n";
+    // std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,[](const int &){}) << "\n";
+
+    auto ff{&ATest::send};
+    const auto signal_{reinterpret_cast<void**>(&ff)};
+    void *args[]{signal_};
+    //std::cerr << std::boolalpha << showaddr(&ATest::send,args) << std::endl;
+    //MemberFunctionInfo a (&ATest::send);
+    std::cerr << std::hash<void*>{}(*signal_) << std::endl;
+#if 0
+    std::unordered_map<int,std::string> map;
+    map[0] = "123";
+    map[1] = "456";
+    map[2] = "789";
+    map.reserve(1);
+    std::cerr << map.size() << std::endl;
+    for (auto it{map.cbegin()};it != map.end();++it){
+        std::cerr << it->second << std::endl;
+    }
+#endif
 }
 
 int main(const int argc,const char **const argv){

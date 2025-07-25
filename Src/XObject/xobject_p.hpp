@@ -20,22 +20,22 @@ public:
     ~XObjectPrivate() override = default;
 
     void ensureConnectionData();
-    void addConnection(XConnection * );
-    void removeConnection(XConnection * );
+    void addConnection(std::size_t ,const std::shared_ptr<XConnection> &);
 
     static XObjectPrivate *get(XObject *o){return o->d_func();}
     static const XObjectPrivate *get (const XObject *o){return o->d_func();}
 
-    static bool connectImpl(const XObject *sender, void **signal,
+    static bool connectImpl(const XObject *sender, std::size_t signal_index,
                      const XObject *receiver, void **slot,
                      XPrivate::XSignalSlotBase * slotObjRaw,
                      ConnectionType type);
 
+    static bool disconnectImpl(const XObject *sender, std::size_t signal_index,
+        const XObject *receiver, void **slot);
 
     XAtomicPointer<ExternalRefCountData> m_sharedRefcount_{};
 
     XAtomicPointer<XConnectionData> m_connections{};
-
 };
 
 XTD_INLINE_NAMESPACE_END

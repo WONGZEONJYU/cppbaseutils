@@ -4,7 +4,7 @@
 #include <XHelper/xhelper.hpp>
 #include <memory>
 #include <XHelper/xutility.hpp>
-#include <XTools/xsignalslot.hpp>
+#include <XObject/xsignalslot.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -72,6 +72,30 @@ public:
         return connect(sender, signal, sender, std::forward<Func2>(slot));
     }
 
+    template <typename Func1, typename Func2>
+    inline static bool disconnect(const typename XPrivate::FunctionPointer<Func1>::Object * const sender, Func1 signal,
+                                  const typename XPrivate::FunctionPointer<Func2>::Object * const receiver, Func2 slot) {
+        using SignalType = XPrivate::FunctionPointer<Func1>;
+        using SlotType = XPrivate::FunctionPointer<Func2>;
+
+        //compilation error if the arguments does not match.
+        static_assert(XPrivate::CheckCompatibleArguments_v<typename SignalType::Arguments, typename SlotType::Arguments>,
+                          "Signal and slot arguments are not compatible.");
+
+        return disconnectImpl(sender, reinterpret_cast<void **>(&signal), receiver, reinterpret_cast<void **>(&slot));
+    }
+
+    template <typename Func1>
+    inline static bool disconnect(const typename XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
+                                  const XObject *receiver, void **zero) {
+        // This is the overload for when one wish to disconnect a signal from any slot. (slot=nullptr)
+        // Since the function template parameter cannot be deduced from '0', we use a
+        // dummy void ** parameter that must be equal to 0
+        X_ASSERT(!zero);
+        //using SignalType = XPrivate::FunctionPointer<Func1>;
+        return disconnectImpl(sender, reinterpret_cast<void **>(&signal), receiver, zero);
+    }
+
     explicit XObject();
     virtual ~XObject();
 private:
@@ -79,6 +103,7 @@ private:
     static bool connectImpl(const XObject *sender, void **signal,
                             const XObject *receiver, void **slot,
                             XPrivate::XSignalSlotBase *slotObjRaw,ConnectionType type);
+    static bool disconnectImpl(const XObject *sender,void **signal, const XObject *receiver, void **slot);
 };
 
 XTD_INLINE_NAMESPACE_END
