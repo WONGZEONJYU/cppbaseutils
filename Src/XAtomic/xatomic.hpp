@@ -1,21 +1,21 @@
-#ifndef QATOMIC_H
-#define QATOMIC_H
+#ifndef X_ATOMIC_HPP
+#define X_ATOMIC_HPP 1
 
 #include <XAtomic/xbasicatomic.h>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class X_TEMPLATE_EXPORT XAtomicBool : public XBasicAtomic<bool>{
-    using Base_ = XBasicAtomic;
+class XAtomicBool : public XBasicAtomic<bool>{
+    using Base_ = XBasicAtomic<bool>;
 public:
-    constexpr explicit XAtomicBool(const bool & value = {}) : Base_(value){}
+    constexpr explicit XAtomicBool(const bool & value = {}) noexcept : Base_(value){}
 
-    inline XAtomicBool(const XAtomicBool &other) noexcept{
+    inline XAtomicBool(const XAtomicBool &other) noexcept {
         this->storeRelease(other.loadAcquire());
     }
 
-    inline XAtomicBool &operator=(const XAtomicBool &other) noexcept{
+    inline XAtomicBool &operator=(const XAtomicBool &other) noexcept {
         this->storeRelease(other.loadAcquire());
         return *this;
     }
@@ -23,7 +23,7 @@ public:
 
 // High-level atomic integer operations
 template <typename T>
-class X_TEMPLATE_EXPORT XAtomicInteger : public XBasicAtomicInteger<T>{
+class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
@@ -113,7 +113,7 @@ public:
 #endif
 };
 
-class X_TEMPLATE_EXPORT [[maybe_unused]] XAtomicInt : public XAtomicInteger<int> {
+class [[maybe_unused]] XAtomicInt : public XAtomicInteger<int> {
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
@@ -123,7 +123,7 @@ public:
 
 // High-level atomic pointer operations
 template <typename T>
-class X_TEMPLATE_EXPORT XAtomicPointer : public XBasicAtomicPointer<T> {
+class XAtomicPointer : public XBasicAtomicPointer<T> {
 public:
     constexpr explicit XAtomicPointer(T *value = nullptr) noexcept : XBasicAtomicPointer<T>(value) {}
 
@@ -176,7 +176,7 @@ public:
 
 */
 template <typename T>
-[[maybe_unused]] X_API inline void qAtomicAssign(T *&d,T *x) {
+[[maybe_unused]] inline void qAtomicAssign(T *&d,T *x) {
     if (d == x){
         return;
     }
@@ -195,7 +195,7 @@ template <typename T>
 */
 
 template <typename T>
-[[maybe_unused]] X_API inline void qAtomicDetach(T *&d) {
+[[maybe_unused]] inline void qAtomicDetach(T *&d) {
     if (d->ref.loadRelaxed() == 1){
         return;
     }
