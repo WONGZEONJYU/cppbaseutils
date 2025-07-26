@@ -18,8 +18,8 @@ namespace XPrivate {
         public:
             Object o;
             #define MAKE_GETTER(cvRef) \
-            constexpr Object cvRef object() cvRef noexcept \
-            { return static_cast<Object cvRef>(o); }
+                constexpr Object cvRef object() cvRef noexcept \
+                { return static_cast<Object cvRef>(o); }
 
             FOR_EACH_CVREF(MAKE_GETTER)
             #undef MAKE_GETTER
@@ -35,15 +35,13 @@ namespace XPrivate {
             explicit StorageEmptyBaseClassOptimization(const Object &o) : Object(o) {}
 
             #define MAKE_GETTER(cvRef) \
-            constexpr Object cvRef object() cvRef noexcept \
-            { return static_cast<Object cvRef>(*this); }
+                constexpr Object cvRef object() cvRef noexcept \
+                { return static_cast<Object cvRef>(*this); }
 
             FOR_EACH_CVREF(MAKE_GETTER)
-
             #undef MAKE_GETTER
-            #undef FOR_EACH_CVREF
+#undef FOR_EACH_CVREF
         };
-
     } //namespace detail
 
     template <typename Object, typename Tag = void>
