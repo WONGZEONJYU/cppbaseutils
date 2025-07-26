@@ -1,6 +1,7 @@
 #ifndef X_OBJECT_DEFS_IMPL_HPP
 #define X_OBJECT_DEFS_IMPL_HPP 1
 
+#include <XHelper/xdecorator.hpp>
 #include <type_traits>
 #include <utility>
 
@@ -141,6 +142,34 @@ namespace XPrivate {
         }
     };
 
+
+    template<typename,typename,typename,typename>
+    struct FunctorCall;
+
+    template<std::size_t... II, typename... SignalArgs, typename R, typename Function>
+    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, Function>: FunctorCallBase {
+        [[maybe_unused]] inline static void call([[maybe_unused]] Function &f, void ** const arg) {
+            call_internal<R>(arg, [&] {
+                return f((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);});
+        }
+    };
+
+    #define MAKE_FUNCTORCALL(cvref) \
+        template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj> \
+        struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) cvref> \
+                : FunctorCallBase { \
+        private: \
+            using Function = SlotRet (Obj::*)(SlotArgs...) cvref; \
+        public: \
+            [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) { \
+                call_internal<R>(arg, [&] { \
+                    return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);}); \
+            } \
+        };
+
+    FOR_EACH_CVREF_DECORATOR(MAKE_FUNCTORCALL)
+    #undef MAKE_FUNCTORCALL
+
     template<typename>
     struct [[maybe_unused]] FunctionPointer {
         enum {
@@ -149,176 +178,44 @@ namespace XPrivate {
         };
     };
 
-    template<typename,typename,typename,typename>
-    struct FunctorCall;
+#define MAKE_FUNCTIONPOINTER(cvref) \
+    template<typename Ret, typename... Args> \
+    struct [[maybe_unused]] FunctionPointer<Ret (*)(Args...) cvref> { \
+        using Arguments [[maybe_unused]] = List<Args...> ; \
+        using ReturnType [[maybe_unused]] = Ret; \
+        using Function = Ret (*)(Args...) cvref; \
+        enum { \
+            ArgumentCount [[maybe_unused]] = sizeof...(Args), \
+            IsPointerToMemberFunction [[maybe_unused]] = false \
+        }; \
+        template<typename SignalArgs, typename R> \
+        [[maybe_unused]] inline static void call(Function f, void *, void ** const arg) { \
+            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, arg); \
+        } \
+    };
+    FOR_EACH_DECORATOR(MAKE_FUNCTIONPOINTER)
+    #undef MAKE_FUNCTIONPOINTER
 
-    template<std::size_t... II, typename... SignalArgs, typename R, typename Function>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, Function>
-        : FunctorCallBase {
-
-        [[maybe_unused]] inline static void call([[maybe_unused]] Function &f, void ** const arg) {
-            call_internal<R>(arg, [&] {
-                return f((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
-            });
-        }
+#define MAKE_FUNCTIONPOINTER(cvref) \
+    template<typename Obj, typename Ret, typename... Args> \
+    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) cvref> { \
+        using Object [[maybe_unused]] = Obj; \
+        using Arguments [[maybe_unused]] = List<Args...>; \
+        using ReturnType [[maybe_unused]] = Ret; \
+        using Function = Ret(Obj::*)(Args...) cvref; \
+        enum { \
+            ArgumentCount [[maybe_unused]] = sizeof...(Args), \
+            IsPointerToMemberFunction [[maybe_unused]] = true \
+        }; \
+        template<typename SignalArgs, typename R> \
+        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) { \
+            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg); \
+        } \
     };
 
-    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...)>
-            : FunctorCallBase {
-    private:
-        using Function = SlotRet (Obj::*)(SlotArgs...);
-    public:
-        [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
-            call_internal<R>(arg, [&] {
-                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
-            });
-        }
-    };
+    FOR_EACH_CVREF_DECORATOR(MAKE_FUNCTIONPOINTER)
+    #undef MAKE_FUNCTIONPOINTER
 
-    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const>
-            : FunctorCallBase {
-    private:
-        using Function = SlotRet (Obj::*)(SlotArgs...) const;
-    public:
-        [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
-            call_internal<R>(arg, [&]{
-                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
-            });
-        }
-    };
-
-    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
-            SlotArgs...) noexcept> : FunctorCallBase {
-    private:
-        using Function = SlotRet (Obj::*)(SlotArgs...) noexcept;
-    public:
-        [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
-            call_internal<R>(arg, [&]() noexcept {
-                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
-            });
-        }
-    };
-
-    template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
-            SlotArgs...) const noexcept> : FunctorCallBase {
-    private:
-        using Function = SlotRet (Obj::*)(SlotArgs...) const noexcept;
-    public:
-        [[maybe_unused]] inline static void call([[maybe_unused]]Function f, [[maybe_unused]] Obj * const o, void ** const arg) {
-            call_internal<R>(arg, [&]() noexcept {
-                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
-            });
-        }
-    };
-
-    template<typename Obj, typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...)> {
-        using Object [[maybe_unused]] = Obj;
-        using Arguments [[maybe_unused]] = List<Args...> ;
-        using ReturnType [[maybe_unused]] = Ret ;
-        using Function = Ret(Obj::*)(Args...);
-
-        enum {
-            ArgumentCount [[maybe_unused]] = sizeof...(Args),
-            IsPointerToMemberFunction [[maybe_unused]] = true
-        };
-
-        template<typename SignalArgs, typename R>
-        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
-            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
-        }
-    };
-
-    template<typename Obj, typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) const> {
-        using Object [[maybe_unused]] = Obj ;
-        using Arguments [[maybe_unused]] = List<Args...>;
-        using ReturnType [[maybe_unused]] = Ret;
-        using Function = Ret (Obj::*)(Args...) const;
-
-        enum {
-            ArgumentCount [[maybe_unused]] = sizeof...(Args),
-            IsPointerToMemberFunction [[maybe_unused]] = true
-        };
-
-        template<typename SignalArgs, typename R>
-        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
-            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
-        }
-    };
-
-    template<typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (*)(Args...)> {
-        using Arguments [[maybe_unused]]  [[maybe_unused]] = List<Args...> ;
-        using ReturnType [[maybe_unused]]  [[maybe_unused]] = Ret;
-        using Function = Ret (*)(Args...);
-
-        enum {
-            ArgumentCount [[maybe_unused]] = sizeof...(Args),
-            IsPointerToMemberFunction [[maybe_unused]] = false
-        };
-
-        template<typename SignalArgs, typename R>
-        [[maybe_unused]] inline static void call(Function f, void *, void ** const arg) {
-            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, arg);
-        }
-    };
-
-    template<typename Obj, typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) noexcept> {
-        using Object [[maybe_unused]] = Obj ;
-        using Arguments [[maybe_unused]]  [[maybe_unused]] = List<Args...>;
-        using ReturnType [[maybe_unused]]  [[maybe_unused]] = Ret;
-        using Function = Ret (Obj::*)(Args...) noexcept;
-
-        enum {
-            ArgumentCount [[maybe_unused]] = sizeof...(Args),
-            IsPointerToMemberFunction [[maybe_unused]] = true
-        };
-
-        template<typename SignalArgs, typename R>
-        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
-            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
-        }
-    };
-
-    template<typename Obj, typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) const noexcept> {
-        using Object [[maybe_unused]] = Obj ;
-        using Arguments [[maybe_unused]]  [[maybe_unused]] = List<Args...> ;
-        using ReturnType [[maybe_unused]]  [[maybe_unused]] = Ret ;
-        using Function = Ret (Obj::*)(Args...) const noexcept;
-
-        enum {
-            ArgumentCount [[maybe_unused]] = sizeof...(Args),
-            IsPointerToMemberFunction [[maybe_unused]] = true
-        };
-
-        template<typename SignalArgs, typename R>
-        [[maybe_unused]] [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
-            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
-        }
-    };
-
-    template<typename Ret, typename... Args>
-    struct [[maybe_unused]] FunctionPointer<Ret (*)(Args...) noexcept> {
-        using Arguments [[maybe_unused]] = List<Args...> ;
-        using ReturnType [[maybe_unused]] = Ret ;
-        using Function = Ret (*)(Args...) noexcept;
-        enum {
-            ArgumentCount [[maybe_unused]] = sizeof...(Args),
-            IsPointerToMemberFunction [[maybe_unused]] = false
-        };
-
-        template<typename SignalArgs, typename R>
-        [[maybe_unused]] inline static void call(Function f, void *, void ** const arg) {
-            FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, arg);
-        }
-    };
     //用于检测两种类型之间是否存在转换的特征，
     //并且该转换不包括窄化转换。
     template <typename T>
