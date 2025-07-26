@@ -42,7 +42,7 @@
 // 自动符号导出/导入系统
 #ifdef AUTO_EXPORT_IMPORT
 
-#ifdef X_PLATFORM_WINDOWS
+    #ifdef X_PLATFORM_WINDOWS
         // Windows 平台自动导出/导入
         #ifdef EXPORT_ALL_SYMBOLS
             // 使用 WINDOWS_EXPORT_ALL_SYMBOLS,所有符号自动导出
@@ -94,28 +94,28 @@
 
 #else  // 手动控制模式(保持向后兼容)
 
-#ifdef X_PLATFORM_WINDOWS
-//Windows 平台
-    #ifdef EXPORT_ALL_SYMBOLS
-        #define X_EXPORT
-        #define X_IMPORT
-        #define X_LOCAL
-    #else
-    #ifdef X_SHARED
-        #ifdef X_BUILDING_LIBRARY
-            #define X_EXPORT __declspec(dllexport)
+    #ifdef X_PLATFORM_WINDOWS
+    //Windows 平台
+        #ifdef EXPORT_ALL_SYMBOLS
+            #define X_EXPORT
+            #define X_IMPORT
+            #define X_LOCAL
         #else
-            #define X_EXPORT __declspec(dllimport)
+        #ifdef X_SHARED
+            #ifdef X_BUILDING_LIBRARY
+                #define X_EXPORT __declspec(dllexport)
+            #else
+                #define X_EXPORT __declspec(dllimport)
+            #endif
+        #else
+            #define X_EXPORT
         #endif
-    #else
-        #define X_EXPORT
+        #define X_IMPORT __declspec(dllimport)
+        #define X_LOCAL
     #endif
-    #define X_IMPORT __declspec(dllimport)
-    #define X_LOCAL
-#endif
 
-#elif defined(X_PLATFORM_MACOS) || defined(X_PLATFORM_LINUX)
-// macOS 和 Linux 平台
+    #elif defined(X_PLATFORM_MACOS) || defined(X_PLATFORM_LINUX)
+    // macOS 和 Linux 平台
         #ifdef USE_SYMBOL_VISIBILITY
             #if defined(X_COMPILER_GCC) || defined(X_COMPILER_CLANG)
                 #define X_EXPORT __attribute__((visibility("default")))
@@ -136,7 +136,6 @@
         #define X_EXPORT
         #define X_IMPORT
         #define X_LOCAL
-
 #endif
 
 // 手动模式下的 API 宏
@@ -197,18 +196,18 @@
 
 // 调用约定宏 (主要用于 Windows)
 #ifdef X_PLATFORM_WINDOWS
-#define X_STDCALL __stdcall
-#define X_CDECL   __cdecl
-#define X_FASTCALL __fastcall
+    #define X_STDCALL __stdcall
+    #define X_CDECL   __cdecl
+    #define X_FASTCALL __fastcall
 #else
-#define X_STDCALL
+    #define X_STDCALL
     #define X_CDECL
     #define X_FASTCALL
 #endif
 
 // 便利宏：用于变量的导出/导入声明
 #ifdef AUTO_EXPORT_IMPORT
-#ifdef X_PLATFORM_WINDOWS
+    #ifdef X_PLATFORM_WINDOWS
         #ifndef EXPORT_ALL_SYMBOLS
             #ifdef X_BUILDING_LIBRARY
                 #define X_DECLARE_VARIABLE(type, name) X_API extern type name
@@ -227,10 +226,8 @@
     #endif
 #else
 // 手动模式下的变量宏
-#define X_DECLARE_VARIABLE(type, name) X_EXPORT extern type name
-#define X_DEFINE_VARIABLE(type, name, value) type name = value
-
+    #define X_DECLARE_VARIABLE(type, name) X_EXPORT extern type name
+    #define X_DEFINE_VARIABLE(type, name, value) type name = value
 #endif
 
 #endif // X_EXPORT_H
-
