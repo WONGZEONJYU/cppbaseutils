@@ -1,9 +1,7 @@
-#ifndef CLION_TEST_X_OBJECT_HPP
-#define CLION_TEST_X_OBJECT_HPP 1
+#ifndef X_OBJECT_HPP
+#define X_OBJECT_HPP 1
 
-#include <XHelper/xhelper.hpp>
 #include <memory>
-#include <XHelper/xutility.hpp>
 #include <XObject/xsignalslot.hpp>
 
 XTD_NAMESPACE_BEGIN

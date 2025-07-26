@@ -1,95 +1,12 @@
-#ifndef X_UTILITY_HPP
-#define X_UTILITY_HPP 1
+#ifndef X_OBJECT_DEFS_IMPL_HPP
+#define X_OBJECT_DEFS_IMPL_HPP 1
 
-#include <XHelper/xversion.hpp>
 #include <type_traits>
 #include <utility>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-#define HAS_MEM_FUNC(name,...) \
-template<typename ,typename = std::void_t<>> \
-struct hasMemFunc : std::false_type {}; \
-template<typename Class_> \
-struct hasMemFunc<Class_, \
-std::void_t<decltype(std::declval<Class_>().name(__VA_ARGS__))>> \
-: std::true_type {}; \
-template<typename Class_> \
-static inline constexpr auto hasMemFunc_v = hasMemFunc<Class_>::value;
-
-#define HAS_MEM_VALUE(name) \
-template<typename ,typename = std::void_t<>> \
-struct hasMemValue : std::false_type {}; \
-template<typename Class_> \
-struct hasMemValue<Class_,std::void_t<decltype(Class_::name)>> \
-: std::true_type {}; \
-template<typename Class_> \
-static inline constexpr auto hasMemValue_v = hasMemValue<Class_>::value;
-
-#define HAS_MEM_TYPE(name) \
-template<typename ,typename = std::void_t<>> \
-struct hasMemType : std::false_type {}; \
-template<typename Class_> \
-struct hasMemType<Class_,std::void_t<typename Class_::name>> \
-: std::true_type {}; \
-template<typename Class_> \
-static inline constexpr auto hasMemType_v = hasMemType<Class_>::value;
-
-template<std::size_t... Ints>
-struct index_Sequence {
-    using type = index_Sequence;
-    static inline constexpr auto Size {sizeof...(Ints)};
-    static inline constexpr auto size() noexcept {return Size;}
-};
-
-namespace forward {
-
-    template<std::size_t N,std::size_t... Ints>
-    struct make_index_sequence_impl : make_index_sequence_impl<N-1,N-1,Ints...> {};
-
-    template<std::size_t... Ints>
-    struct make_index_sequence_impl<0,Ints...> final : index_Sequence<Ints...> {};
-
-    template<std::size_t N>
-    using make_Index_Sequence = typename make_index_sequence_impl<N>::type;
-
-    template<typename... T>
-    using index_Sequence_for [[maybe_unused]] = make_Index_Sequence<sizeof...(T)>;
-
-#ifdef XDOC
-    make_index_sequence_impl<5> : make_index_sequence_impl<4,4>
-    make_index_sequence_impl<4,4> : make_index_sequence_impl<3,3,4>
-    make_index_sequence_impl<3,3,4> : make_index_sequence_impl<2,2,3,4>
-    make_index_sequence_impl<2,2,3,4> : make_index_sequence_impl<1,1,2,3,4>
-    make_index_sequence_impl<1,1,2,3,4> : make_index_sequence_impl<0,0,1,2,3,4>
-    make_index_sequence_impl<0,0,1,2,3,4> : index_sequence<0,1,2,3,4>
-#endif
-}
-
-namespace reverse {
-    template<std::size_t N, std::size_t... Ints>
-    struct make_reverse_index_sequence_impl : make_reverse_index_sequence_impl<N-1,Ints...,N-1> {};
-
-    template<std::size_t... Ints>
-    struct make_reverse_index_sequence_impl<0,Ints...> final : index_Sequence<Ints...> {};
-
-    template<std::size_t N>
-    using make_reverse_index_sequence = typename make_reverse_index_sequence_impl<N>::type;
-
-    template<typename... T>
-    using reverse_index_sequence_for [[maybe_unused]] = make_reverse_index_sequence<sizeof...(T)>;
-#ifdef XDOC
-    make_reverse_index_sequence<5>:make_reverse_index_sequence<4,4>
-    make_reverse_index_sequence<4,4> : make_reverse_index_sequence<3,4,3>
-    make_reverse_index_sequence<3,4,3> : make_reverse_index_sequence<2,4,3,2>
-    make_reverse_index_sequence<2,4,3,2>: make_reverse_index_sequence<1,4,3,2,1>
-    make_reverse_index_sequence<1,4,3,2,1>:make_reverse_index_sequence<0,4,3,2,1,0>
-    make_reverse_index_sequence<0,4,3,2,1,0>:index_sequence<4,3,2,1,0>
-#endif
-}
-
-#if 0
 class XObject;
 
 namespace XPrivate {
@@ -130,41 +47,41 @@ namespace XPrivate {
             >,
             detail::StorageEmptyBaseClassOptimization<Object, Tag>,
             detail::StorageByValue<Object, Tag>
-        >;
+    >;
 
-    template <typename T> struct [[maybe_unused]] RemoveRef final { using Type = T; };
-    template <typename T> struct [[maybe_unused]] RemoveRef<T&> final { using Type = T; };
-    template <typename T> struct [[maybe_unused]] RemoveRef<T&&> final { using Type = T; };
+    template <typename T> struct [[maybe_unused]] RemoveRef { using Type = T; };
+    template <typename T> struct [[maybe_unused]] RemoveRef<T&> { using Type = T; };
+    template <typename T> struct [[maybe_unused]] RemoveRef<T&&> { using Type = T; };
     template <typename T> using RemoveRef_T [[maybe_unused]] = typename RemoveRef<T>::Type;
 
-    template <typename T> struct RemoveConstRef final { using Type = T; };
-    template <typename T> struct RemoveConstRef<const T&> final { using Type = T; };
-    template <typename T> struct RemoveConstRef<const T&&> final { using Type = T; };
+    template <typename T> struct RemoveConstRef { using Type = T; };
+    template <typename T> struct RemoveConstRef<const T&> { using Type = T; };
+    template <typename T> struct RemoveConstRef<const T&&> { using Type = T; };
     template <typename T> using RemoveConstRef_T = typename RemoveConstRef<T>::Type;
 
     template<typename... Ts>
-    struct List final {
-        static inline constexpr auto size {sizeof...(Ts)};
+    struct List {
+        inline static constexpr auto size {sizeof...(Ts)};
     };
 
     template<typename>
-    struct [[maybe_unused]] SizeOfList final {
-        static inline constexpr std::size_t value{1};
+    struct [[maybe_unused]] SizeOfList {
+        inline static constexpr std::size_t value{1};
     };
 
     template<>
-    struct [[maybe_unused]] SizeOfList<List<>> final {
-        static constexpr std::size_t value{};
+    struct [[maybe_unused]] SizeOfList<List<>> {
+        inline static constexpr std::size_t value{};
     };
 
     template<typename ...Ts>
-    struct [[maybe_unused]] SizeOfList<List<Ts...>> final {
-        static inline constexpr auto value{List<Ts...>::size};
+    struct [[maybe_unused]] SizeOfList<List<Ts...>> {
+        inline static constexpr auto value {List<Ts...>::size};
     };
 
     template<typename Head, typename... Tail>
-    struct List<Head, Tail...> final {
-        static inline constexpr std::size_t size{1 + sizeof...(Tail)};
+    struct List<Head, Tail...> {
+        inline static constexpr auto size{1 + sizeof...(Tail)};
         using Car [[maybe_unused]] = Head;
         using Cdr [[maybe_unused]] = List<Tail...>;
     };
@@ -173,12 +90,12 @@ namespace XPrivate {
     struct List_Append;
 
     template<typename... L1, typename...L2>
-    struct List_Append<List<L1...>, List<L2...>> final {
+    struct List_Append<List<L1...>, List<L2...>> {
         using Value [[maybe_unused]] = List<L1..., L2...>;
     };
 
-    template<typename L, std::size_t N>
-    struct [[maybe_unused]] List_Left final {
+    template<typename L,std::size_t N>
+    struct [[maybe_unused]] List_Left {
     private:
         using List_Car = List<typename L::Car>;
         using List_Left_R = List_Left<typename L::Cdr, N - 1>;
@@ -188,7 +105,7 @@ namespace XPrivate {
     };
 
     template<typename L>
-    struct [[maybe_unused]] List_Left<L, 0> final {
+    struct [[maybe_unused]] List_Left<L, 0> {
         using Value = List<>;
     };
 
@@ -247,7 +164,7 @@ namespace XPrivate {
     struct FunctorCallBase {
 
         template<typename R, typename Lambda>
-        [[maybe_unused]] static inline void call_internal([[maybe_unused]] void ** const args, Lambda &&fn)
+        [[maybe_unused]] inline static void call_internal([[maybe_unused]] void ** const args, Lambda &&fn)
         noexcept(std::is_nothrow_invocable_v<Lambda>) {
             if constexpr (std::is_void_v<R> || std::is_void_v<std::invoke_result_t<Lambda>>) {
                 std::forward<Lambda>(fn)();
@@ -274,9 +191,10 @@ namespace XPrivate {
     struct FunctorCall;
 
     template<std::size_t... II, typename... SignalArgs, typename R, typename Function>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, Function> final : FunctorCallBase {
+    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, Function>
+        : FunctorCallBase {
 
-        [[maybe_unused]] static void call([[maybe_unused]] Function &f, void ** const arg) {
+        [[maybe_unused]] inline static void call([[maybe_unused]] Function &f, void ** const arg) {
             call_internal<R>(arg, [&] {
                 return f((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
             });
@@ -284,59 +202,53 @@ namespace XPrivate {
     };
 
     template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...)> final
+    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...)>
             : FunctorCallBase {
     private:
         using Function = SlotRet (Obj::*)(SlotArgs...);
     public:
-        [[maybe_unused]] static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
+        [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
             call_internal<R>(arg, [&] {
-                return (o->*f)(
-                        (*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
+                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
             });
         }
     };
 
     template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
-    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const> final
+    struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) const>
             : FunctorCallBase {
     private:
         using Function = SlotRet (Obj::*)(SlotArgs...) const;
     public:
-        [[maybe_unused]] static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
+        [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
             call_internal<R>(arg, [&]{
-                return (o->*f)(
-                        (*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
+                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
             });
         }
     };
 
     template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
-            SlotArgs...) noexcept> final : FunctorCallBase {
+            SlotArgs...) noexcept> : FunctorCallBase {
     private:
         using Function = SlotRet (Obj::*)(SlotArgs...) noexcept;
     public:
-        [[maybe_unused]] static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
-
+        [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) {
             call_internal<R>(arg, [&]() noexcept {
-                return (o->*f)(
-                        (*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
+                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
             });
         }
     };
 
     template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj>
     struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(
-            SlotArgs...) const noexcept> final : FunctorCallBase {
+            SlotArgs...) const noexcept> : FunctorCallBase {
     private:
         using Function = SlotRet (Obj::*)(SlotArgs...) const noexcept;
     public:
-        [[maybe_unused]] static void call([[maybe_unused]]Function f, [[maybe_unused]] Obj * const o, void ** const arg) {
-
+        [[maybe_unused]] inline static void call([[maybe_unused]]Function f, [[maybe_unused]] Obj * const o, void ** const arg) {
             call_internal<R>(arg, [&]() noexcept {
-                return (o->*f)(
-                        (*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
+                return (o->*f)((*reinterpret_cast<std::remove_reference_t<SignalArgs> *>(arg[II + 1]))...);
             });
         }
     };
@@ -344,8 +256,8 @@ namespace XPrivate {
     template<typename Obj, typename Ret, typename... Args>
     struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...)> {
         using Object [[maybe_unused]] = Obj;
-        using Arguments [[maybe_unused]]  [[maybe_unused]] = List<Args...> ;
-        using ReturnType [[maybe_unused]]  [[maybe_unused]] = Ret ;
+        using Arguments [[maybe_unused]] = List<Args...> ;
+        using ReturnType [[maybe_unused]] = Ret ;
         using Function = Ret(Obj::*)(Args...);
 
         enum {
@@ -354,7 +266,7 @@ namespace XPrivate {
         };
 
         template<typename SignalArgs, typename R>
-        [[maybe_unused]] static void call(Function f, Obj * const o, void ** const arg) {
+        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
             FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
         }
     };
@@ -362,8 +274,8 @@ namespace XPrivate {
     template<typename Obj, typename Ret, typename... Args>
     struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) const> {
         using Object [[maybe_unused]] = Obj ;
-        using Arguments [[maybe_unused]]  [[maybe_unused]] = List<Args...>;
-        using ReturnType [[maybe_unused]]  [[maybe_unused]] = Ret;
+        using Arguments [[maybe_unused]] = List<Args...>;
+        using ReturnType [[maybe_unused]] = Ret;
         using Function = Ret (Obj::*)(Args...) const;
 
         enum {
@@ -372,7 +284,7 @@ namespace XPrivate {
         };
 
         template<typename SignalArgs, typename R>
-        [[maybe_unused]] static void call(Function f, Obj * const o, void ** const arg) {
+        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
             FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
         }
     };
@@ -389,7 +301,7 @@ namespace XPrivate {
         };
 
         template<typename SignalArgs, typename R>
-        [[maybe_unused]] static void call(Function f, void *, void ** const arg) {
+        [[maybe_unused]] inline static void call(Function f, void *, void ** const arg) {
             FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, arg);
         }
     };
@@ -407,7 +319,7 @@ namespace XPrivate {
         };
 
         template<typename SignalArgs, typename R>
-        [[maybe_unused]] static void call(Function f, Obj * const o, void ** const arg) {
+        [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
             FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
         }
     };
@@ -425,7 +337,7 @@ namespace XPrivate {
         };
 
         template<typename SignalArgs, typename R>
-        [[maybe_unused]] [[maybe_unused]] static void call(Function f, Obj * const o, void ** const arg) {
+        [[maybe_unused]] [[maybe_unused]] inline static void call(Function f, Obj * const o, void ** const arg) {
             FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, o, arg);
         }
     };
@@ -441,36 +353,44 @@ namespace XPrivate {
         };
 
         template<typename SignalArgs, typename R>
-        [[maybe_unused]] static void call(Function f, void *, void ** const arg) {
+        [[maybe_unused]] inline static void call(Function f, void *, void ** const arg) {
             FunctorCall<std::index_sequence_for<Args...>, SignalArgs, R, Function>::call(f, arg);
         }
     };
     //用于检测两种类型之间是否存在转换的特征，
     //并且该转换不包括窄化转换。
     template <typename T>
-    struct NarrowingDetector final { T t[1]{}; }; // from P0608
+    struct NarrowingDetector { T t[1]{}; }; // from P0608
 
-    template <typename From, typename To, typename Enable = void>
-    struct IsConvertibleWithoutNarrowing final : std::false_type {};
+    //template <typename From, typename To, typename Enable = void>
+    template <typename , typename , typename  = void>
+    struct IsConvertibleWithoutNarrowing : std::false_type {};
 
     template <typename From, typename To>
     struct IsConvertibleWithoutNarrowing<From, To,
             std::void_t< decltype( NarrowingDetector<To>{ {std::declval<From>()} } ) >
-    > final : std::true_type {};
+    > : std::true_type {};
 
     //检查实际参数。如果它们完全相同，
     //那就不用费心检查是否变窄了；作为副产品，
     //这解决了不完整类型的问题（必须支持，
     //否则他们会在上述特征上出错）。
-    template <typename From, typename To, typename Enable = void>
-    struct [[maybe_unused]] AreArgumentsConvertibleWithoutNarrowingBase final : std::false_type {};
+    //template <typename From, typename To, typename Enable = void>
+    template <typename , typename , typename = void>
+    struct [[maybe_unused]] AreArgumentsConvertibleWithoutNarrowingBase : std::false_type {};
 
+#if __cplusplus >= 202002L
     template <typename From, typename To>
-    struct [[maybe_unused]] AreArgumentsConvertibleWithoutNarrowingBase<From, To,
-            std::enable_if_t<
-                    std::disjunction_v<std::is_same<From, To>, IsConvertibleWithoutNarrowing<From, To>>
-            >
-    > final : std::true_type {};
+    requires (std::disjunction_v<std::is_same<From, To>,IsConvertibleWithoutNarrowing<From, To>>)
+    struct [[maybe_unused]] AreArgumentsConvertibleWithoutNarrowingBase<From,To,void> : std::true_type {};
+#else
+    template <typename From, typename To>
+    struct [[maybe_unused]] AreArgumentsConvertibleWithoutNarrowingBase<From,To,
+        std::enable_if_t<
+                std::disjunction_v<std::is_same<From, To>, IsConvertibleWithoutNarrowing<From, To>>
+        >
+    > : std::true_type {};
+#endif
 
     /*
     检查插槽参数是否与信号参数匹配的逻辑。
@@ -478,7 +398,7 @@ namespace XPrivate {
     static_assert（检查兼容参数<函数指针<信号>：参数，函数指针<插槽>：参数>：：值）
     */
     template<typename A1, typename A2>
-    struct [[maybe_unused]] AreArgumentsCompatible final {
+    struct [[maybe_unused]] AreArgumentsCompatible {
     private:
         [[maybe_unused]] static int test(const std::remove_reference_t<A2> &) {
             return {};
@@ -495,43 +415,43 @@ namespace XPrivate {
         static_assert(AreArgumentsConvertibleWithoutNarrowing_v, "Signal and slot arguments are not compatible (narrowing)");
     };
 
-    template<typename A1, typename A2> struct AreArgumentsCompatible<A1, A2&> final {
+    template<typename A1, typename A2> struct AreArgumentsCompatible<A1, A2&> {
         enum { value = false };
     };
 
-    template<typename A> struct AreArgumentsCompatible<A&, A&> final {
+    template<typename A> struct AreArgumentsCompatible<A&, A&> {
         enum { value = true };
     };
     // void as a return value
-    template<typename A> struct AreArgumentsCompatible<void, A> final {
+    template<typename A> struct AreArgumentsCompatible<void, A> {
         enum { value = true };
     };
 
-    template<typename A> struct AreArgumentsCompatible<A, void> final {
+    template<typename A> struct AreArgumentsCompatible<A, void> {
         enum { value = true };
     };
 
-    template<> struct AreArgumentsCompatible<void, void> final{
+    template<> struct AreArgumentsCompatible<void, void> {
         enum { value = true };
     };
 
     template<typename ...Args>
     [[maybe_unused]] inline constexpr auto AreArgumentsCompatible_v {AreArgumentsCompatible<Args...>::value};
 
-    template <typename,typename> struct CheckCompatibleArguments final {
+    template <typename,typename> struct CheckCompatibleArguments {
         enum { value = false };
     };
 
-    template <> struct CheckCompatibleArguments<List<>, List<>> final {
+    template <> struct CheckCompatibleArguments<List<>, List<>> {
         enum { value = true };
     };
 
-    template <typename List1> struct CheckCompatibleArguments<List1,List<>> final {
+    template <typename List1> struct CheckCompatibleArguments<List1,List<>> {
         enum { value = true };
     };
 
     template <typename Arg1, typename Arg2, typename... Tail1, typename... Tail2>
-    struct [[maybe_unused]] CheckCompatibleArguments<List<Arg1, Tail1...>, List<Arg2, Tail2...>> final {
+    struct [[maybe_unused]] CheckCompatibleArguments<List<Arg1, Tail1...>, List<Arg2, Tail2...>> {
     private:
         using List_1 [[maybe_unused]] = List<Tail1...>;
         using List_2 [[maybe_unused]] = List<Tail2...>;
@@ -549,12 +469,12 @@ namespace XPrivate {
     template <typename,typename> struct ComputeFunctorArgumentCount;
 
     template <typename , typename , bool >
-    struct ComputeFunctorArgumentCountHelper final {
+    struct ComputeFunctorArgumentCountHelper {
         enum { Value = -1 };
     };
 
     template <typename Functor, typename First, typename... ArgList>
-    struct ComputeFunctorArgumentCountHelper<Functor, List<First, ArgList...>, false> final
+    struct ComputeFunctorArgumentCountHelper<Functor, List<First, ArgList...>, false>
             : ComputeFunctorArgumentCount<Functor,List_Left_V<List<First, ArgList...>, sizeof...(ArgList)>> {};
 
     template <typename Functor, typename... ArgList>
@@ -594,7 +514,7 @@ namespace XPrivate {
     template <typename,typename> struct FunctorReturnType;
 
     template <typename Functor, typename... ArgList>
-    struct [[maybe_unused]] FunctorReturnType<Functor, List<ArgList...>> final
+    struct [[maybe_unused]] FunctorReturnType<Functor, List<ArgList...>>
             : std::invoke_result<Functor, ArgList...>{ };
 
     template <typename ...Args>
@@ -614,14 +534,14 @@ namespace XPrivate {
     };
 
     template <typename Functor, typename... Args>
-    struct HasCallOperatorAcceptingArgs final {
+    struct HasCallOperatorAcceptingArgs {
     private:
         template <typename,typename = void>
-        struct Test final : std::false_type {};
+        struct Test : std::false_type {};
         // We explicitly use .operator() to not return true for pointers to free/static function
         template <typename F>
         struct Test<F,std::void_t<decltype(std::declval<F>().operator()(std::declval<Args>()...))>>
-                final : std::true_type {};
+                : std::true_type {};
     public:
         using Type = Test<Functor>;
         inline static constexpr auto value {Type::value};
@@ -635,7 +555,7 @@ namespace XPrivate {
             HasCallOperatorAcceptingArgs <Args...>::value };
 
     template <typename Func, typename... Args>
-    struct CallableHelper final {
+    struct CallableHelper {
     private:
         // Could've been std::conditional_t, but that requires all branches to
         // be valid
@@ -649,10 +569,10 @@ namespace XPrivate {
     using CallableHelper_T = typename CallableHelper<Args...>::Type;
 
     template<typename... Args>
-    struct [[maybe_unused]] Callable final : CallableHelper_T<Args...> {};
+    struct [[maybe_unused]] Callable : CallableHelper_T<Args...> {};
 
     template<typename Func, typename... Args>
-    struct Callable<Func, List<Args...>> final : CallableHelper_T<Func, Args...> {};
+    struct Callable<Func, List<Args...>> : CallableHelper_T<Func, Args...> {};
 
 /*
         Wrapper around ComputeFunctorArgumentCount and CheckCompatibleArgument,
@@ -672,7 +592,7 @@ namespace XPrivate {
     [[maybe_unused]] static constexpr int countMatchingArguments() {
 #elif (1 == LIKE_WHERE)
     template<typename Prototype ,typename Functor> requires (
-        !std::disjunction_v<std::is_convertible<Prototype, const char *>
+        !std::disjunction_v<std::is_convertible<Prototype,const char *>
         ,std::is_convertible<Functor, const char *>>)
     [[maybe_unused]] static constexpr int countMatchingArguments() {
 #else
@@ -721,7 +641,7 @@ namespace XPrivate {
     template <typename Func> requires ( //这里括号可以去掉
         !std::disjunction_v<std::is_convertible<Func,const char *>,
         std::is_member_function_pointer<Func>> )
-    struct [[maybe_unused]] ContextTypeForFunctor<Func> final {
+    struct [[maybe_unused]] ContextTypeForFunctor<Func> {
         using ContextType [[maybe_unused]] = XObject;
     };
 #else
@@ -731,7 +651,7 @@ namespace XPrivate {
                     std::is_member_function_pointer<Func>
             >
             >
-    > final {
+    > {
         using ContextType [[maybe_unused]] = XObject;
     };
 #endif
@@ -742,7 +662,7 @@ namespace XPrivate {
         ,std::is_member_function_pointer<Func>
         ,std::is_convertible<typename FunctionPointer<Func>::Object *, XObject *>
         >)
-    struct [[maybe_unused]] ContextTypeForFunctor<Func> final {
+    struct [[maybe_unused]] ContextTypeForFunctor<Func> {
         using ContextType [[maybe_unused]] = typename FunctionPointer<Func>::Object;
     };
 #else
@@ -753,12 +673,11 @@ namespace XPrivate {
                     std::is_convertible<typename FunctionPointer<Func>::Object *, XObject *>
             >
             >
-    > final {
+    > {
         using ContextType [[maybe_unused]] = typename FunctionPointer<Func>::Object;
     };
 #endif
 }
-#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

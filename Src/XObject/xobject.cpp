@@ -67,6 +67,7 @@ bool XObject::disconnectImpl(const XObject* const sender, void** const signal,
         X_ASSERT_W(false,"","XObject::disconnect: invalid nullptr parameter");
         return {};
     }
+
     std::size_t signal_index{};
     if (signal){
         signal_index = std::hash<void*>{}(*signal);
@@ -150,23 +151,74 @@ bool XObjectPrivate::connectImpl(const XObject* sender, std::size_t const signal
 
 bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t const signal_index,
     const XObject* const receiver, void** const slot) {
-    if (!sender){
+
+    if (!sender) {
         return {};
     }
+
     const auto s{const_cast<XObject*>(sender)};
-    std::unique_lock locker(*signalSlotLock(sender));
+
+    auto const cd{get(s)->m_connections.loadAcquire()};
+    if (!cd){
+        return {};
+    }
+
+    XOrderedMutexLocker locker(signalSlotLock(sender),signalSlotLock(receiver));
+
+    auto &SignalVector{cd->m_signalVector};
 
     if (signal_index && receiver && slot) {
 
-        auto &cd{ get(s)->m_connections};
+        auto const connectLists_it {SignalVector.find(signal_index)};
+        if (SignalVector.end() == connectLists_it) {
+            return {};
+        }
 
+        auto &connectLists{connectLists_it->second};
 
+        for (auto c {connectLists.begin()}; c != connectLists.end();) {
+            if (receiver == c->get()->m_receiver.loadRelaxed()
+                && c->get()->m_slot_raw->compare(slot)
+                && c->get()->m_isSlotObject) {
+                c = connectLists.erase(c);
+            }else {
+                ++c;
+            }
+        }
 
+        if (connectLists.empty()){
+            SignalVector.erase(signal_index);
+        }
 
-        return true;
+    }else if (!signal_index && receiver && !slot) {
+
+        for (auto vecIt {SignalVector.begin()}; vecIt != SignalVector.end();){
+
+            auto &connectLists{vecIt->second};
+
+            for (auto c {connectLists.begin()}; c != connectLists.end();){
+
+                if (receiver == c->get()->m_receiver.loadRelaxed()
+                    && c->get()->m_isSlotObject){
+                    c = connectLists.erase(c);
+                }else{
+                    ++c;
+                }
+            }
+
+            if (connectLists.empty()){
+                vecIt = SignalVector.erase(vecIt);
+            }else{
+                ++vecIt;
+            }
+        }
+    }else if (signal_index && !receiver && !slot) {
+        if (SignalVector.contains(signal_index)){
+            SignalVector.erase(signal_index);
+        }
+    }else {
+        SignalVector.erase(signal_index);
     }
-
-
 
     return true;
 }

@@ -2,8 +2,8 @@
 #define X_SIGNAL_SLOT_HPP 1
 
 #include <XHelper/xhelper.hpp>
-#include <XHelper/xutility.hpp>
 #include <XAtomic/xatomic.hpp>
+#include <XObject/xobjectdefs_impl.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

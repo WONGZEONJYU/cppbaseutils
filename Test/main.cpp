@@ -346,11 +346,13 @@ size_t getFullHash(F f) {
 }
 
 [[maybe_unused]] static void test6(){
-     ATest obj;
-     std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot,xtd::ConnectionType::UniqueConnection) << "\n";
-    // std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot,xtd::ConnectionType::UniqueConnection) << "\n";
-    // std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,[](const int &){}) << "\n";
+    ATest obj;
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,[](const int &){}) << "\n";
+    xtd::XObject::disconnect(&obj,&ATest::send,&obj,&ATest::slot);
 
+    xtd::sleep_for_s(3);
     auto ff{&ATest::send};
     const auto signal_{reinterpret_cast<void**>(&ff)};
     void *args[]{signal_};

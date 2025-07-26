@@ -10,8 +10,11 @@ if (TARGET XCppBaseUtils_shared)
     target_sources(XCppBaseUtils_shared PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobjectdefs_impl.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p_p.hpp
     )
@@ -21,8 +24,11 @@ if (TARGET XCppBaseUtils_static)
     target_sources(XCppBaseUtils_static PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobjectdefs_impl.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p_p.hpp
     )
