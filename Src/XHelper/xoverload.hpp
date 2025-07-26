@@ -7,35 +7,103 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 template <typename... Args>
-class XNonConstOverload {
+class XOverload {
 public:
-    template <typename R, typename T>
-    inline constexpr auto operator()(R (T::*ptr)(Args...)) const noexcept -> decltype(ptr)
+    template <typename R, typename C>
+    inline constexpr auto operator()(R(C::*ptr)(Args...) ) const noexcept ->decltype(ptr)
     { return ptr; }
 
-    template <typename R, typename T>
-    inline static constexpr auto of(R (T::*ptr)(Args...)) noexcept -> decltype(ptr)
-    { return ptr; }
-};
-
-template <typename... Args>
-class XConstOverload {
-public:
-    template <typename R, typename T>
-    constexpr auto operator()(R (T::*ptr)(Args...) const) const noexcept -> decltype(ptr)
+    template <typename R, typename C>
+    inline constexpr auto operator()(R(C::*ptr)(Args...) &) const noexcept ->decltype(ptr)
     { return ptr; }
 
-    template <typename R, typename T>
-    static constexpr auto of(R (T::*ptr)(Args...) const) noexcept -> decltype(ptr)
+    template <typename R, typename C>
+    inline constexpr auto operator()(R(C::*ptr)(Args...) &&) const noexcept ->decltype(ptr)
     { return ptr; }
-};
 
-template <typename... Args>
-class XOverload : public XConstOverload<Args...>, public XNonConstOverload<Args...> {
-    using XConstOverload<Args...>::of;
-    using XConstOverload<Args...>::operator();
-    using XNonConstOverload<Args...>::of;
-    using XNonConstOverload<Args...>::operator();
+    template <typename R, typename C>
+    inline constexpr auto operator()(R(C::*ptr)(Args...) volatile) const noexcept ->decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R(C::*ptr)(Args...) volatile &) const noexcept ->decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R(C::*ptr)(Args...) volatile &&) const noexcept ->decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R(C::*ptr)(Args...) ) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R(C::*ptr)(Args...) & ) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R(C::*ptr)(Args...) && ) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R(C::*ptr)(Args...) volatile) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R(C::*ptr)(Args...) volatile & ) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R(C::*ptr)(Args...) volatile && ) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R (C::*ptr)(Args...) const) const noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R (C::*ptr)(Args...) const &) const noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R (C::*ptr)(Args...) const &&) const noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R (C::*ptr)(Args...) const volatile) const noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R (C::*ptr)(Args...) const volatile & ) const noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline constexpr auto operator()(R (C::*ptr)(Args...) const volatile &&) const noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R (C::*ptr)(Args...) const) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R (C::*ptr)(Args...) const &) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R (C::*ptr)(Args...) const &&) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R (C::*ptr)(Args...) const volatile) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R (C::*ptr)(Args...) const volatile &) noexcept -> decltype(ptr)
+    { return ptr; }
+
+    template <typename R, typename C>
+    inline static constexpr auto of(R (C::*ptr)(Args...) const volatile &&) noexcept -> decltype(ptr)
+    { return ptr; }
 
     template <typename R>
     inline constexpr auto operator()(R (*ptr)(Args...)) const noexcept -> decltype(ptr)
@@ -46,9 +114,7 @@ class XOverload : public XConstOverload<Args...>, public XNonConstOverload<Args.
     { return ptr; }
 };
 
-template <typename... Args> [[maybe_unused]] constexpr inline XOverload<Args...> xOverload {};
-template <typename... Args> [[maybe_unused]] constexpr inline XConstOverload<Args...> xConstOverload {};
-template <typename... Args> [[maybe_unused]] constexpr inline XNonConstOverload<Args...> xNonConstOverload {};
+template <typename... Args> [[maybe_unused]] inline constexpr XOverload<Args...> xOverload {};
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
