@@ -9,7 +9,6 @@ set(CMAKE_CXX_STANDARD 20)
 if (TARGET XCppBaseUtils_shared)
     target_sources(XCppBaseUtils_shared PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.hpp
@@ -23,7 +22,6 @@ endif ()
 if (TARGET XCppBaseUtils_static)
     target_sources(XCppBaseUtils_static PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.hpp
