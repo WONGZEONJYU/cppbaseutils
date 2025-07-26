@@ -10,6 +10,7 @@
 #include <XHelper/xutility.hpp>
 #include <XHelper/xtypetraits.hpp>
 #include <XObject/xobject.hpp>
+#include <XHelper/xoverload.hpp>
 
 static std::mutex mtx{};
 
@@ -315,12 +316,13 @@ static void test5(){
     });
 }
 
-class ATest:public xtd::XObject{
+class ATest:public xtd::XObject {
 public:
-    void send(int d) {
+    void send(int d)  noexcept {
 
     }
-    void slot(int){
+    void send(){}
+    void slot(int)  noexcept {
 
     }
 };
@@ -347,13 +349,13 @@ size_t getFullHash(F f) {
 
 [[maybe_unused]] static void test6(){
     ATest obj;
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,&obj,&ATest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,&ATest::send,[](const int &){}) << "\n";
-    xtd::XObject::disconnect(&obj,&ATest::send,&obj,&ATest::slot);
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),[](const int &){}) << "\n";
+    xtd::XObject::disconnect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot);
 
     xtd::sleep_for_s(3);
-    auto ff{&ATest::send};
+    auto ff{xtd::xOverload<int>(&ATest::send)};
     const auto signal_{reinterpret_cast<void**>(&ff)};
     void *args[]{signal_};
     //std::cerr << std::boolalpha << showaddr(&ATest::send,args) << std::endl;
