@@ -318,11 +318,11 @@ static void test5(){
 
 class ATest:public xtd::XObject {
 public:
-    void send(int d)  noexcept {
+    void send(int d) && noexcept {
 
     }
     void send(){}
-    void slot(int)  noexcept {
+    void slot(int) const volatile & noexcept {
 
     }
 };
@@ -349,7 +349,7 @@ size_t getFullHash(F f) {
 
 [[maybe_unused]] static void test6(){
     ATest obj;
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,xtd::xOverload<int>(&ATest::slot)) << "\n";
     std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot) << "\n";
     std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),[](const int &){}) << "\n";
     xtd::XObject::disconnect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot);
