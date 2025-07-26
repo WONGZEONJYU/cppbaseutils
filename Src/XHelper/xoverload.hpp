@@ -1,6 +1,11 @@
 #ifndef X_OVERLOAD_HPP
 #define X_OVERLOAD_HPP 1
 
+#include <XHelper/xversion.hpp>
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
 template <typename... Args>
 class XNonConstOverload {
 public:
@@ -44,5 +49,8 @@ class XOverload : public XConstOverload<Args...>, public XNonConstOverload<Args.
 template <typename... Args> [[maybe_unused]] constexpr inline XOverload<Args...> xOverload {};
 template <typename... Args> [[maybe_unused]] constexpr inline XConstOverload<Args...> xConstOverload {};
 template <typename... Args> [[maybe_unused]] constexpr inline XNonConstOverload<Args...> xNonConstOverload {};
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
 
 #endif
