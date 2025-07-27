@@ -10,7 +10,8 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XObjectPrivate::XConnection final : public std::enable_shared_from_this<XConnection> {
+class XObjectPrivate::XConnection final
+        : public std::enable_shared_from_this<XConnection> {
     friend class XObject;
     X_DISABLE_COPY_MOVE(XConnection)
 public:
@@ -20,8 +21,9 @@ public:
     XPrivate::XSignalSlotBase * m_slot_raw{};
     uint m_isSlotObject:1;
 
-    explicit XConnection(XPrivate::XSignalSlotBase * const slot_base = {}):
-    m_slot_raw(slot_base),m_isSlotObject{}{}
+    explicit XConnection(XPrivate::XSignalSlotBase * const slot_base = {})
+    :m_slot_raw(slot_base),m_isSlotObject{}
+    {}
 
     ~XConnection() {
         std::cerr << FUNC_SIGNATURE << "\n";
@@ -31,26 +33,43 @@ public:
 
 using XConnection_SPtr = std::shared_ptr<XObjectPrivate::XConnection>;
 using XConnection_WPtr = std::weak_ptr<XObjectPrivate::XConnection>;
+using XConnectionList = std::list<XConnection_SPtr>;
+using XSendersList = std::list<XConnection_WPtr>;
+
+class XObjectPrivate::XSignalVector final
+        : public std::unordered_map<std::size_t ,XConnectionList> {
+public:
+    explicit XSignalVector() = default;
+    ~XSignalVector() = default;
+};
 
 class XObjectPrivate::XConnectionData final {
-    using XConnectionList = std::list<XConnection_SPtr>;
 public:
     explicit XConnectionData() = default;
-    ~XConnectionData() = default;
-
-    XAtomicInt m_ref{};
-    std::unordered_map<std::size_t,XConnectionList> m_signalVector;
-    std::list<XConnection_WPtr> m_senders{};
-    XSender * m_currentSender{};
-
-    inline void resizeSignalVector(std::size_t const signal_index){
-        if (!m_signalVector.contains(signal_index)){
-            m_signalVector.reserve(1);
+    ~XConnectionData() {
+        if(auto v{m_signalVector.loadRelaxed()}) {
+            delete v;
+            m_signalVector.storeRelaxed({});
         }
     }
 
+    XAtomicInt m_ref{};
+    XAtomicPointer<XSignalVector> m_signalVector{};
+    XSendersList m_senders{};
+    XSender * m_currentSender{};
+
+    inline void resizeSignalVector(std::size_t const signal_index) {
+
+        auto v{m_signalVector.loadRelaxed()};
+        if(!v){
+            v = make_Unique<XSignalVector>().release();
+            m_signalVector.storeRelaxed(v);
+        }
+        v->try_emplace(signal_index);
+    }
+
     inline XConnectionList& connectionsForSignal(size_t const signal_index) {
-        return m_signalVector[signal_index];
+        return m_signalVector.loadRelaxed()->at(signal_index);
     }
 };
 
@@ -65,13 +84,13 @@ public:
         }
     }
 
-    ~XSender(){
+    ~XSender() {
         if (m_receiver){
             m_receiver->d_func()->m_connections.loadAcquire()->m_currentSender = m_previous;
         }
     }
 
-    [[maybe_unused]] void receiverDeleted(){
+    [[maybe_unused]] void receiverDeleted() {
         XSender *s = this;
         while (s) {
             s->m_previous = {};

@@ -22,6 +22,27 @@ inline static std::mutex x_Object_MutexPool[131]{};
     return std::addressof(x_Object_MutexPool[index]);
 }
 
+class SlotObjectGuard final {
+    XPrivate::SlotObjUniquePtr m_slotObject_;
+public:
+    SlotObjectGuard() = default;
+    // move would be fine, but we do not need it currently
+    X_DISABLE_COPY_MOVE(SlotObjectGuard)
+    [[maybe_unused]] explicit SlotObjectGuard(XPrivate::XSignalSlotBase *slotObject)
+            : m_slotObject_(slotObject){
+        if (m_slotObject_)
+            m_slotObject_->ref();
+    }
+
+    XPrivate::XSignalSlotBase const *operator->() const
+    { return m_slotObject_.get(); }
+
+    XPrivate::XSignalSlotBase *operator->()
+    { return m_slotObject_.get(); }
+
+    ~SlotObjectGuard() = default;
+};
+
 XObject::XObject():m_d_ptr_(std::make_unique<XObjectPrivate>()) {}
 
 XObject::~XObject() {
@@ -90,6 +111,16 @@ std::size_t XObject::senderSignalIndex() const {
     }
 
     return {};
+}
+
+void XObject::doActivate(XObject * const sender,std::size_t const signal_index,void ** args) {
+
+    void *empty_args[]{nullptr};
+    if (!args){
+        args = empty_args;
+    }
+
+
 }
 
 bool XObject::connectImpl(const XObject * const sender, void ** const signal,
@@ -172,9 +203,9 @@ bool XObjectPrivate::connectImpl(const XObject* sender, std::size_t const signal
 
     if (slot && ConnectionType::UniqueConnection == type) {
         if (const auto connections{get(s)->m_connections.loadRelaxed()}) {
-            if (const auto &sigVector{connections->m_signalVector};
-                !sigVector.empty()) {
-                if (auto const clist{sigVector.find(signal_index)}; clist != sigVector.end()){
+            if (const auto sigVector{connections->m_signalVector.loadRelaxed()};
+                    sigVector && !sigVector->empty()) {
+                if (auto const clist{sigVector->find(signal_index)}; clist != sigVector->end()){
                     for (auto const & item:clist->second){
                         if (receiver == item->m_receiver.loadRelaxed()
                             && item->m_isSlotObject
@@ -187,7 +218,7 @@ bool XObjectPrivate::connectImpl(const XObject* sender, std::size_t const signal
         }
     }
 
-    const auto c {std::make_shared<XConnection>(slotObj.release())};
+    const auto c{std::make_shared<XConnection>(slotObj.release())};
     c->m_sender = s;
     c->m_receiver.storeRelease(r);
     c->m_signal_index = signal_index;
@@ -204,26 +235,28 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
     }
 
     const auto s{const_cast<XObject*>(sender)};
-
     auto cd{get(s)->m_connections.loadAcquire()};
     if (!cd){
         return {};
     }
 
-    XOrderedMutexLocker locker(signalSlotLock(sender),signalSlotLock(receiver));
+    auto const SignalVector{cd->m_signalVector.loadAcquire()};
+    if (!SignalVector){
+        return {};
+    }
 
-    auto &SignalVector{cd->m_signalVector};
+    XOrderedMutexLocker locker(signalSlotLock(sender),signalSlotLock(receiver));
 
     if (signal_index && receiver && slot) {
 
-        auto const connectLists_it {SignalVector.find(signal_index)};
-        if (SignalVector.end() == connectLists_it) {
+        auto const connectLists_it{SignalVector->find(signal_index)};
+        if (SignalVector->end() == connectLists_it) {
             return {};
         }
 
         auto &connectLists{connectLists_it->second};
 
-        for (auto c {connectLists.begin()}; c != connectLists.end();) {
+        for (auto c{connectLists.begin()}; c != connectLists.end();) {
             if (receiver == c->get()->m_receiver.loadRelaxed()
                 && c->get()->m_slot_raw->compare(slot)
                 && c->get()->m_isSlotObject) {
@@ -234,12 +267,12 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
         }
 
         if (connectLists.empty()){
-            SignalVector.erase(signal_index);
+            SignalVector->erase(signal_index);
         }
 
     }else if (!signal_index && receiver && !slot) {
 
-        for (auto vecIt {SignalVector.begin()}; vecIt != SignalVector.end();){
+        for (auto vecIt{SignalVector->begin()}; vecIt != SignalVector->end();){
 
             auto &connectLists{vecIt->second};
 
@@ -254,17 +287,17 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
             }
 
             if (connectLists.empty()){
-                vecIt = SignalVector.erase(vecIt);
+                vecIt = SignalVector->erase(vecIt);
             }else{
                 ++vecIt;
             }
         }
     }else if (signal_index && !receiver && !slot) {
-        if (SignalVector.contains(signal_index)){
-            SignalVector.erase(signal_index);
+        if (SignalVector->contains(signal_index)){
+            SignalVector->erase(signal_index);
         }
     }else {
-        SignalVector.clear();
+        SignalVector->clear();
     }
 
     return true;
