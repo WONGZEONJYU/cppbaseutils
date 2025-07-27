@@ -107,12 +107,35 @@ public:
 protected:
     XObject *sender() const;
     std::size_t senderSignalIndex() const;
+
+    template<typename Func,typename ...Args>
+    inline static void emitSignal(typename XPrivate::FunctionPointer<Func>::Object * const sender,
+                                  Func signal,
+                                  typename XPrivate::FunctionPointer<Func>::ReturnType * const ret,
+                                  const Args & ...args) {
+        auto const signal_f{reinterpret_cast<void**>(&signal)};
+        auto const signal_index{std::hash<void *>{}(*signal_f)};
+        activate(sender,signal_index,ret,args...);
+    }
+
 private:
     X_DISABLE_COPY_MOVE(XObject)
     static bool connectImpl(const XObject *sender, void **signal,
                             const XObject *receiver, void **slot,
                             XPrivate::XSignalSlotBase *slotObjRaw,ConnectionType type);
     static bool disconnectImpl(const XObject *sender,void **signal, const XObject *receiver, void **slot);
+
+    template <typename Ret, typename... Args>
+    inline static void activate(XObject *const sender, std::size_t const signal_index, Ret * const ret, const Args &... args) {
+        void* a_[] {
+                const_cast<void *>(reinterpret_cast<const volatile void *>(ret)),
+                const_cast<void *>(reinterpret_cast<const volatile void *>(std::addressof(args)))...
+        };
+
+        doActivate(sender,signal_index,a_);
+    }
+
+    static void doActivate(XObject * ,std::size_t ,void **);
 };
 
 XTD_INLINE_NAMESPACE_END
