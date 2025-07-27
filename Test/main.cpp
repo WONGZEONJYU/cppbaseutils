@@ -321,7 +321,18 @@ public:
     void send(int d) && noexcept {
 
     }
-    void send(){}
+
+    void slot(int) const volatile & noexcept {
+
+    }
+};
+
+class BTest:public xtd::XObject {
+public:
+    void send(int d) && noexcept {
+
+    }
+
     void slot(int) const volatile & noexcept {
 
     }
@@ -348,11 +359,13 @@ size_t getFullHash(F f) {
 }
 
 [[maybe_unused]] static void test6(){
-    ATest obj;
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,xtd::xOverload<int>(&ATest::slot)) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obj,xtd::xOverload<int>(&ATest::send),[](const int &){}) << "\n";
-    xtd::XObject::disconnect(&obj,xtd::xOverload<int>(&ATest::send),&obj,&ATest::slot);
+    ATest obja;
+    BTest objb;
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&obja,xtd::xOverload<int>(&ATest::slot)) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),[](const int &){}) << "\n";
+    xtd::XObject::disconnect(&obja, nullptr,&objb, nullptr);
 
     xtd::sleep_for_s(3);
     auto ff{xtd::xOverload<int>(&ATest::send)};
