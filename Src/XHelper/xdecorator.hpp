@@ -2,7 +2,7 @@
 #define X_DECORATOR_HPP 1
 
 #define FOR_EACH_DECORATOR(op) op() op(noexcept)
-#define FOR_EACH_CVREF_DECORATOR(op)  FOR_EACH_DECORATOR(op) \
+#define FOR_EACH_CVREF_DECORATOR(op) FOR_EACH_DECORATOR(op) \
     op(&) op(&&) \
     op(volatile) op(volatile &) op(volatile &&)  \
     op(const) op(const &) op(const &&) \
