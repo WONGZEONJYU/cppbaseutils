@@ -14,6 +14,7 @@ public:
     class XConnection;
     class XConnectionData;
     class XSender;
+    class XSignalVector;
 
     explicit XObjectPrivate() = default;
 
