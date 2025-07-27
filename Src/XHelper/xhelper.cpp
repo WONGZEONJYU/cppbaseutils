@@ -9,18 +9,21 @@ void x_assert(const char *expr, const char *file,const int &line) noexcept {
     std::cerr << "ASSERT:" << expr
         << " in file " << file
         << ", line " << line << "\n" << std::flush;
+    std::abort();
 }
 
 void x_assert(const std::string &expr, const std::string & file,const int &line) noexcept {
     std::cerr << "ASSERT: " << expr
         << " in file " << file
         << ", line " << line << "\n" << std::flush;
+    std::abort();
 }
 
 void x_assert(const std::string_view& expr, const std::string_view& file, const int& line) noexcept {
     std::cerr << "ASSERT: " << expr
         << " in file " << file
         << ", line " << line << "\n" << std::flush;
+    std::abort();
 }
 
 void x_assert_what(const char* where, const char* what,
@@ -30,6 +33,7 @@ void x_assert_what(const char* where, const char* what,
         << " in file " << file
         << ", line " << line
         << "\n" << std::flush;
+    std::abort();
 }
 
 void x_assert_what(const std::string& where, const std::string& what,
@@ -40,6 +44,7 @@ void x_assert_what(const std::string& where, const std::string& what,
         << " in file " << file
         << ", line " << line
         << "\n" << std::flush;
+    std::abort();
 }
 
 void x_assert_what(const std::string_view &where, const std::string_view &what,
@@ -50,6 +55,7 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
         << " in file " << file
         << ", line " << line
         << "\n" << std::flush;
+    std::abort();
 }
 
 [[maybe_unused]] std::string toLower(std::string &str) {

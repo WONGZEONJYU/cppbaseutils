@@ -129,7 +129,7 @@ public:
 };
 
 /**
- * 错误输出
+ * 错误输出,并终止程序
  * @param expr
  * @param file
  * @param line
@@ -139,7 +139,7 @@ X_API void x_assert(const std::string &expr, const std::string &file,const int &
 X_API void x_assert(const std::string_view &expr, const std::string_view &file,const int &line) noexcept;
 
 /**
- * 错误输出
+ * 错误输出,并终止程序
  * @param where
  * @param what
  * @param file
