@@ -115,6 +115,17 @@ std::size_t XObject::senderSignalIndex() const {
 
 void XObject::doActivate(XObject * const sender,std::size_t const signal_index,void ** args) {
 
+    if (!sender){
+        X_ASSERT_W(sender,FUNC_SIGNATURE,"sender is empty!");
+        return;
+    }
+
+    auto sp{XObjectPrivate::get(sender)};
+    if (!sp){
+        X_ASSERT_W(sp,FUNC_SIGNATURE,"sp is empty!");
+        return;
+    }
+
     void *empty_args[]{nullptr};
     if (!args){
         args = empty_args;
