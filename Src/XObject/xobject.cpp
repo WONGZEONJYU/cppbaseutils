@@ -45,6 +45,53 @@ XObject::~XObject() {
     }
 }
 
+bool XObject::blockSignals(bool b) noexcept {
+    X_D(XObject)
+    const auto previous{static_cast<bool>(d->m_blockSig)};
+    d->m_blockSig = b;
+    return previous;
+}
+
+XObject *XObject::sender() const {
+    X_D(const XObject)
+
+    std::unique_lock locker(*signalSlotLock(this));
+
+    auto const cd{d->m_connections.loadRelaxed()};
+    if (!cd || !cd->m_currentSender){
+        return {};
+    }
+
+    auto const currentSender{cd->m_currentSender};
+    auto const &senders{cd->m_senders};
+    for (auto const & c:senders){
+        if (c.expired() && c.lock()->m_sender == currentSender->m_sender){
+            return currentSender->m_sender;
+        }
+    }
+
+    return {};
+}
+
+std::size_t XObject::senderSignalIndex() const {
+    X_D(const XObject)
+    std::unique_lock locker(*signalSlotLock(this));
+    auto const cd{d->m_connections.loadRelaxed()};
+    if (!cd || !cd->m_currentSender){
+        return {};
+    }
+
+    auto const currentSender{cd->m_currentSender};
+    auto const &senders{cd->m_senders};
+    for (auto const & c:senders) {
+        if (c.expired() && c.lock()->m_sender == currentSender->m_sender){
+            return c.lock()->m_signal_index;
+        }
+    }
+
+    return {};
+}
+
 bool XObject::connectImpl(const XObject * const sender, void ** const signal,
                      const XObject * const receiver, void ** const slot,
                      XPrivate::XSignalSlotBase * const slotObjRaw,
@@ -158,7 +205,7 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
 
     const auto s{const_cast<XObject*>(sender)};
 
-    auto const cd{get(s)->m_connections.loadAcquire()};
+    auto cd{get(s)->m_connections.loadAcquire()};
     if (!cd){
         return {};
     }
@@ -217,7 +264,7 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
             SignalVector.erase(signal_index);
         }
     }else {
-        SignalVector.erase(signal_index);
+        SignalVector.clear();
     }
 
     return true;

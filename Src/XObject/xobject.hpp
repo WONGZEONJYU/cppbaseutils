@@ -94,8 +94,19 @@ public:
         return disconnectImpl(sender, reinterpret_cast<void **>(&signal), receiver, zero);
     }
 
+    inline static bool disconnect(const XObject * sender,void **zero_signal,const XObject * receiver,void **zero_slot) {
+        X_ASSERT_W(!zero_signal,FUNC_SIGNATURE,"zero_signal must be nullptr");
+        X_ASSERT_W(!zero_slot,FUNC_SIGNATURE,"zero_slot must be nullptr");
+        return disconnectImpl(sender, zero_signal, receiver, zero_slot);
+    }
+
     explicit XObject();
     virtual ~XObject();
+    inline bool signalsBlocked() const noexcept { return m_d_ptr_->m_blockSig; }
+    bool blockSignals(bool ) noexcept;
+protected:
+    XObject *sender() const;
+    std::size_t senderSignalIndex() const;
 private:
     X_DISABLE_COPY_MOVE(XObject)
     static bool connectImpl(const XObject *sender, void **signal,
