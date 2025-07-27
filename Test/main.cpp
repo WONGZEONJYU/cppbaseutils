@@ -329,8 +329,8 @@ public:
 
 class BTest:public xtd::XObject {
 public:
-    void send(int d) && noexcept {
-
+    void send(int d)  noexcept {
+        emitSignal(this,&BTest::send, nullptr,d);
     }
 
     void slot(int) const volatile & noexcept {
@@ -364,16 +364,17 @@ size_t getFullHash(F f) {
     std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&obja,xtd::xOverload<int>(&ATest::slot)) << "\n";
     std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
     std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),[](const int &){}) << "\n";
+    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,[](const int &){}) << "\n";
     xtd::XObject::disconnect(&obja, nullptr,&objb, nullptr);
 
-    xtd::sleep_for_s(3);
+
     auto ff{xtd::xOverload<int>(&ATest::send)};
     const auto signal_{reinterpret_cast<void**>(&ff)};
     void *args[]{signal_};
     //std::cerr << std::boolalpha << showaddr(&ATest::send,args) << std::endl;
     //MemberFunctionInfo a (&ATest::send);
     std::cerr << std::hash<void*>{}(*signal_) << std::endl;
+    xtd::sleep_for_s(3);
 #if 0
     std::unordered_map<int,std::string> map;
     map[0] = "123";
