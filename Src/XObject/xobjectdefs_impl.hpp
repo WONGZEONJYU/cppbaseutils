@@ -1,6 +1,7 @@
 #ifndef X_OBJECT_DEFS_IMPL_HPP
 #define X_OBJECT_DEFS_IMPL_HPP 1
 
+#include <XHelper/xversion.hpp>
 #include <XHelper/xdecorator.hpp>
 #include <type_traits>
 #include <utility>
@@ -154,12 +155,12 @@ namespace XPrivate {
         }
     };
 
-    #define MAKE_FUNCTORCALL(cvref) \
+    #define MAKE_FUNCTORCALL(...) \
         template<std::size_t... II, typename... SignalArgs, typename R, typename... SlotArgs, typename SlotRet, typename Obj> \
-        struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) cvref> \
+        struct FunctorCall<std::index_sequence<II...>, List<SignalArgs...>, R, SlotRet (Obj::*)(SlotArgs...) __VA_ARGS__> \
                 : FunctorCallBase { \
         private: \
-            using Function = SlotRet (Obj::*)(SlotArgs...) cvref; \
+            using Function = SlotRet (Obj::*)(SlotArgs...) __VA_ARGS__; \
         public: \
             [[maybe_unused]] inline static void call([[maybe_unused]] Function f, Obj * const o, void ** const arg) { \
                 call_internal<R>(arg, [&] { \
@@ -178,12 +179,12 @@ namespace XPrivate {
         };
     };
 
-#define MAKE_FUNCTIONPOINTER(cvref) \
+#define MAKE_FUNCTIONPOINTER(...) \
     template<typename Ret, typename... Args> \
-    struct [[maybe_unused]] FunctionPointer<Ret (*)(Args...) cvref> { \
+    struct [[maybe_unused]] FunctionPointer<Ret (*)(Args...) __VA_ARGS__> { \
         using Arguments [[maybe_unused]] = List<Args...> ; \
         using ReturnType [[maybe_unused]] = Ret; \
-        using Function = Ret (*)(Args...) cvref; \
+        using Function = Ret (*)(Args...) __VA_ARGS__; \
         enum { \
             ArgumentCount [[maybe_unused]] = sizeof...(Args), \
             IsPointerToMemberFunction [[maybe_unused]] = false \
@@ -196,13 +197,13 @@ namespace XPrivate {
     FOR_EACH_DECORATOR(MAKE_FUNCTIONPOINTER)
     #undef MAKE_FUNCTIONPOINTER
 
-#define MAKE_FUNCTIONPOINTER(cvref) \
+#define MAKE_FUNCTIONPOINTER(...) \
     template<typename Obj, typename Ret, typename... Args> \
-    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) cvref> { \
+    struct [[maybe_unused]] FunctionPointer<Ret (Obj::*)(Args...) __VA_ARGS__> { \
         using Object [[maybe_unused]] = Obj; \
         using Arguments [[maybe_unused]] = List<Args...>; \
         using ReturnType [[maybe_unused]] = Ret; \
-        using Function = Ret(Obj::*)(Args...) cvref; \
+        using Function = Ret(Obj::*)(Args...) __VA_ARGS__; \
         enum { \
             ArgumentCount [[maybe_unused]] = sizeof...(Args), \
             IsPointerToMemberFunction [[maybe_unused]] = true \

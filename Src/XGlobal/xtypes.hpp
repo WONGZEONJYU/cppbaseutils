@@ -8,6 +8,11 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+using uchar [[maybe_unused]] = unsigned char;
+using ushort [[maybe_unused]] = unsigned short;
+using uint [[maybe_unused]] = unsigned int ;
+using ulong [[maybe_unused]] = unsigned long ;
+
 using xint8 = signed char;         /* 8 bit signed */
 using xuint8 = unsigned char;      /* 8 bit unsigned */
 using xint16 = short;              /* 16 bit signed */
