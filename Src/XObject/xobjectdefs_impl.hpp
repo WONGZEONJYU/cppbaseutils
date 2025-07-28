@@ -168,7 +168,7 @@ namespace XPrivate {
             } \
         };
 
-    FOR_EACH_CVREF_DECORATOR(MAKE_FUNCTORCALL)
+    FOR_EACH_CVREF_DECORATOR_NOEXCEPT(MAKE_FUNCTORCALL)
     #undef MAKE_FUNCTORCALL
 
     template<typename>
@@ -214,7 +214,7 @@ namespace XPrivate {
         } \
     };
 
-    FOR_EACH_CVREF_DECORATOR(MAKE_FUNCTIONPOINTER)
+    FOR_EACH_CVREF_DECORATOR_NOEXCEPT(MAKE_FUNCTIONPOINTER)
     #undef MAKE_FUNCTIONPOINTER
 
     //用于检测两种类型之间是否存在转换的特征，
