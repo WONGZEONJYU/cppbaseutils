@@ -8,7 +8,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XObjectPrivate final : public XObjectData {
+class X_CLASS_EXPORT XObjectPrivate final : public XObjectData {
     friend class XObject;
 public:
     class XConnection;
