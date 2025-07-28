@@ -126,7 +126,7 @@ function(configure_library_target target_name)
     # 为动态库构建时添加构建宏
     get_target_property(target_type ${target_name} TYPE)
     if(target_type STREQUAL "SHARED_LIBRARY")
-        target_compile_definitions(${target_name} PUBLIC -DX_BUILDING_LIBRARY)
+        target_compile_definitions(${target_name} PRIVATE -DX_BUILDING_LIBRARY)
     endif()
 
     # 配置 Boost
