@@ -1,6 +1,7 @@
 #ifndef X_TYPETRAITS_HPP
 #define X_TYPETRAITS_HPP
 
+#include <XHelper/xdecorator.hpp>
 #include <XHelper/xversion.hpp>
 #include <type_traits>
 #include <memory>
@@ -28,38 +29,11 @@ struct is_smart_pointer<std::shared_ptr<T>> : std::true_type {};
 template<typename T>
 struct is_smart_pointer<std::weak_ptr<T>> : std::true_type {};
 
-template<typename T>
-struct is_smart_pointer<T &> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<T &&> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<const T> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<const T &> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<const T &&> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<volatile T> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<volatile T &> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<volatile T &&> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<const volatile T> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<const volatile T&> : is_smart_pointer<T> {};
-
-template<typename T>
-struct is_smart_pointer<const volatile T&&> : is_smart_pointer<T> {};
+#define MAKE_IS_SMART_POINTER(...) \
+    template<typename T> \
+    struct is_smart_pointer<T __VA_ARGS__> : is_smart_pointer<T> {};
+FOR_EACH_CVREF_DECORATOR(MAKE_IS_SMART_POINTER)
+#undef MAKE_IS_SMART_POINTER
 
 template<typename T>
 inline constexpr auto is_smart_pointer_v = is_smart_pointer<T>::value;
@@ -95,8 +69,21 @@ using smart_pointer_element_type_t [[maybe_unused]] = typename smart_pointer_ele
 template<typename>
 struct [[maybe_unused]] is_const_member_function;
 
+
+#define MAKE_IS_CONST_MEM_FUNC(...) \
+    template<typename R,typename C,typename... Args> \
+    struct [[maybe_unused]] is_const_member_function<R(C::*)(Args...) __VA_ARGS__> : std::true_type {};
+
+FOR_EACH_CONST_DECORATOR(MAKE_IS_CONST_MEM_FUNC)
+
+#undef MAKE_IS_CONST_MEM_FUNC
+
+#if 0
 template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...) const> : std::true_type {};
+
+template<typename Fn, typename... Args>
+struct [[maybe_unused]] is_const_member_function<Fn(Args...) const &> : std::true_type {};
 
 template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...) const noexcept> : std::true_type {};
@@ -108,16 +95,8 @@ template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...) const volatile noexcept> : std::true_type {};
 
 template<typename Fn, typename... Args>
-struct [[maybe_unused]] is_const_member_function<Fn(Args...) volatile> : std::false_type {};
-
-template<typename Fn, typename... Args>
-struct [[maybe_unused]] is_const_member_function<Fn(Args...) volatile noexcept> : std::false_type {};
-
-template<typename Fn, typename... Args>
-struct [[maybe_unused]] is_const_member_function<Fn(Args...) noexcept> : std::false_type {};
-
-template<typename Fn, typename... Args>
 struct [[maybe_unused]] is_const_member_function<Fn(Args...)> : std::false_type {};
+#endif
 
 template<typename... Args>
 inline constexpr auto is_const_member_function_v [[maybe_unused]] {is_const_member_function<Args...>::value};
@@ -128,6 +107,13 @@ struct [[maybe_unused]] is_tuple : std::false_type {};
 template<typename ...Args>
 struct [[maybe_unused]] is_tuple<std::tuple<Args...>> : std::true_type {};
 
+#define MAKE_IS_TUPLE(...) \
+    template<typename Tuple_> \
+    struct [[maybe_unused]] is_tuple<Tuple_ __VA_ARGS__> : std::true_type {};
+FOR_EACH_CVREF_DECORATOR(MAKE_IS_TUPLE)
+#undef MAKE_IS_TUPLE
+
+#if 0
 template<typename Tuple_>
 struct [[maybe_unused]] is_tuple<const Tuple_> : is_tuple<Tuple_> {};
 
@@ -157,6 +143,7 @@ struct [[maybe_unused]] is_tuple<volatile Tuple_ &> : is_tuple<Tuple_> {};
 
 template<typename Tuple_>
 struct [[maybe_unused]] is_tuple<volatile Tuple_ &&> : is_tuple<Tuple_> {};
+#endif
 
 template<typename Tuple_>
 [[maybe_unused]] inline constexpr auto is_tuple_v {is_tuple<Tuple_>::value};
