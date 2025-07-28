@@ -17,4 +17,16 @@
     op(const noexcept) op(const & noexcept) op(const && noexcept) \
     op(const volatile noexcept) op(const volatile & noexcept) op(const volatile && noexcept)
 
+#define FOR_EACH_CONST_DECORATOR(op) \
+    op(const) op(const &) op(const &&) \
+    op(const noexcept) op(const & noexcept) op(const && noexcept) \
+    op(const volatile) op(const volatile &) op(const volatile &&) \
+    op(const volatile noexcept) op(const volatile & noexcept) op(const volatile && noexcept)
+
+#define FOR_EACH_NONCONST_DECORATOR(op) \
+    op() op(&) op(&&) \
+    op(noexcept) op(& noexcept) op(&& noexcept) \
+    op(volatile) op(volatile &) op(volatile &&) \
+    op(volatile noexcept) op(volatile & noexcept) op(volatile && noexcept)
+
 #endif
