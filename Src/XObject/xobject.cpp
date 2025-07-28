@@ -314,5 +314,126 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
     return true;
 }
 
+inline static int DIRECT_CONNECTION_ONLY {};
+inline XObjectPrivate::Connection::~Connection() {
+    if (ownArgumentTypes) {
+        const int *v = argumentTypes.loadRelaxed();
+        if (v != &DIRECT_CONNECTION_ONLY)
+            delete[] v;
+    }
+    if (isSlotObject){
+        slotObj->destroyIfLastRef();
+    }
+}
+
+void XObjectPrivate::ConnectionData::removeConnection(Connection * const c) {
+    X_ASSERT(c->receiver.loadRelaxed());
+    auto &connectionList{signalVector.loadRelaxed()->at(c->signal_index)};
+    c->receiver.storeRelaxed({});
+
+    auto found{false};
+    for (auto cc{connectionList.first.loadRelaxed()};
+        cc; cc = cc->nextConnectionList.loadRelaxed()) {
+        if (c == cc) {
+            found = true;
+            break;
+        }
+    }
+    X_ASSERT(found);
+
+    // remove from the senders linked list
+    *c->prev = c->next;
+    if (c->next){
+        c->next->prev = c->prev;
+    }
+    c->prev = {};
+
+    if (connectionList.first.loadRelaxed() == c) {
+        connectionList.first.storeRelaxed(c->nextConnectionList.loadRelaxed());
+    }
+    if (connectionList.last.loadRelaxed() == c) {
+        connectionList.last.storeRelaxed(c->prevConnectionList);
+    }
+    X_ASSERT(signalVector.loadRelaxed()->at(c->signal_index).first.loadRelaxed() != c);
+    X_ASSERT(signalVector.loadRelaxed()->at(c->signal_index).last.loadRelaxed() != c);
+
+    // keep c->nextConnectionList intact, as it might still get accessed by activate
+    auto n{c->nextConnectionList.loadRelaxed()};
+    if (n) {
+        n->prevConnectionList = c->prevConnectionList;
+    }
+    if (c->prevConnectionList) {
+        c->prevConnectionList->nextConnectionList.storeRelaxed(n);
+    }
+    c->prevConnectionList = {};
+
+    X_ASSERT(c != static_cast<Connection *>(orphaned.load(std::memory_order_relaxed)));
+    // add c to orphanedConnections
+
+    /* No ABA issue here: When adding a node, we only care about the list head, it doesn't
+     * matter if the tail changes.
+     */
+    auto o{orphaned.load(std::memory_order_acquire)};
+    do {
+        c->nextInOrphanList = o;
+    } while (!orphaned.compare_exchange_strong(o, TaggedSignalVector(c), std::memory_order_release));
+
+    found = {};
+    for (auto cc{connectionList.first.loadRelaxed()};
+        cc; cc = cc->nextConnectionList.loadRelaxed()) {
+        if (c == cc) {
+            found = true;
+            break;
+        }
+    }
+    X_ASSERT(!found);
+}
+
+void XObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(XObject *sender, LockPolicy lockPolicy){
+    auto const senderMutex{signalSlotLock(sender)};
+    TaggedSignalVector c {nullptr};
+    {
+        std::unique_lock lock(*senderMutex, std::defer_lock_t{});
+        if (lockPolicy == NeedToLock)
+            lock.lock();
+        if (ref.loadAcquire() > 1)
+            return;
+
+        // Since ref == 1, no activate() is in process since we locked the mutex. That implies,
+        // that nothing can reference the orphaned connection objects anymore and they can
+        // be safely deleted
+        c = orphaned.exchange(nullptr, std::memory_order_relaxed);
+    }
+    if (c) {
+        // Deleting c might run arbitrary user code, so we must not hold the lock
+        if (lockPolicy == AlreadyLockedAndTemporarilyReleasingLock) {
+            senderMutex->unlock();
+            deleteOrphaned(c);
+            senderMutex->lock();
+        } else {
+            deleteOrphaned(c);
+        }
+    }
+}
+
+inline void XObjectPrivate::ConnectionData::deleteOrphaned(TaggedSignalVector o) {
+    while (o) {
+        TaggedSignalVector next{nullptr};
+        if (auto v{static_cast<SignalVector *>(o)}) {
+            next = v->nextInOrphanList;
+            free(v);
+        } else {
+            auto c{static_cast<Connection *>(o)};
+            next = c->nextInOrphanList;
+            X_ASSERT(!c->receiver.loadRelaxed());
+            X_ASSERT(!c->prev);
+            c->freeSlotObject();
+            c->deref();
+        }
+        o = next;
+    }
+}
+
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
