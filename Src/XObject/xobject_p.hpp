@@ -13,8 +13,16 @@ class X_CLASS_EXPORT XObjectPrivate final : public XObjectData {
 public:
     class XConnection;
     class XConnectionData;
-    class XSender;
     class XSignalVector;
+    class XSender;
+
+    struct Connection;
+    struct ConnectionData;
+    struct ConnectionList;
+    struct ConnectionOrSignalVector;
+    struct SignalVector;
+    struct Sender;
+    struct TaggedSignalVector;
 
     explicit XObjectPrivate() = default;
 
@@ -37,6 +45,7 @@ public:
     XAtomicPointer<ExternalRefCountData> m_sharedRefcount_{};
 
     XAtomicPointer<XConnectionData> m_connections{};
+    XAtomicPointer<ConnectionData> connections{};
 };
 
 XTD_INLINE_NAMESPACE_END
