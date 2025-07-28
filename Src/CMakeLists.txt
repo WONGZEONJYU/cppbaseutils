@@ -23,7 +23,7 @@ option(BUILD_STATIC_LIBS "Build static libraries" OFF)  # 默认关闭静态库
 # 添加选项来控制符号导出
 option(EXPORT_ALL_SYMBOLS "Export all symbols from shared libraries" OFF)   # 默认开启全符号导出
 option(USE_SYMBOL_VISIBILITY "Use symbol visibility attributes" ON)  # 默认启用符号可见性控制
-option(AUTO_EXPORT_IMPORT "Automatically handle export/import based on build context" OFF)  # 自动处理导出导入
+option(AUTO_EXPORT_IMPORT "Automatically handle export/import based on build context" ON)  # 自动处理导出导入
 
 # 确保至少构建一种类型的库
 if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
