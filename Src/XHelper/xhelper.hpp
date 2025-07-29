@@ -303,6 +303,108 @@ enum class ConnectionType {
     UniqueConnection
 };
 
+template<typename Class>
+struct Has_FRIEND_SECOND_Macro {
+    static_assert(std::is_object_v<Class>,"typename Class don't Object type");
+    template<typename T>
+    inline static char test(void(T::*)()){throw ;};
+    inline static int test(void(Class::*)()){throw;};
+    inline static constexpr bool value {
+            sizeof(test(&Class::checkfriendsecond)) == sizeof(int)
+    };
+};
+
+template<typename Class>
+inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Class>::value};
+
+template<typename Class>
+class XSecondConstruct {
+
+    template<typename ...Args>
+    inline static bool SecondConstruct_(Class &obj,Args && ...args){
+        return obj.Construct(std::forward<Args>(args)...);
+    }
+
+public:
+    using ClassType = Class;
+    template<typename ...Args1,typename ...Args2>
+    inline static ClassType * Create(std::tuple<Args1...> const args1 ,
+                                     std::tuple<Args2...> const args2) {
+
+        static_assert(std::conjunction_v<std::is_object<ClassType>
+                ,std::is_base_of<XSecondConstruct<Class>,Class>>,
+                      "Class must inherit Class XSecondConstruct");
+
+        static_assert(Has_FRIEND_SECOND_Macro_v<Class>,
+                      "No FRIEND_SECOND in the class!");
+
+        if constexpr (std::conjunction_v<
+                std::is_same<std::decay_t<decltype(args1)>, std::tuple<>>
+                ,std::negation<std::is_same<decltype(args2),std::tuple<>>>
+                >)
+        {
+
+            return [&]<std::size_t ...I>(std::index_sequence<I...>) -> ClassType *{
+                auto obj{make_Unique<Class>()};
+                if (obj && SecondConstruct_(*obj,std::get<I>(std::forward<decltype(args2)>(args2))...)) {
+                    return obj.release();
+                }
+                return nullptr;
+            }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
+
+        }else if constexpr (std::conjunction_v<
+                std::is_same<std::decay_t<decltype(args2)>,std::tuple<>>
+                ,std::negation<std::is_same<std::decay_t<decltype(args1)>,std::tuple<>>>
+                >)
+        {
+
+            return [&]<std::size_t ...I>(std::index_sequence<I...>) -> ClassType *{
+                auto obj{make_Unique<Class>(std::get<I>(std::forward<decltype(args1)>(args1))...)};
+                if (obj && SecondConstruct_(*obj)) {
+                    return obj.release();
+                }
+                return nullptr;
+            }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{});
+
+        }else if constexpr (std::conjunction_v<
+                std::negation<std::is_same<std::decay_t<decltype(args1)>,std::tuple<>>>
+                ,std::negation<std::is_same<std::decay_t<decltype(args2)>,std::tuple<>>>
+        >){
+
+            return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> ClassType * {
+                auto obj{make_Unique<Class>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
+                if (obj && SecondConstruct_(*obj,std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
+                    return obj.release();
+                }
+                return nullptr;
+            }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
+              std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
+
+        }else {
+
+            return [&]()-> ClassType *{
+                auto obj{make_Unique<Class>()};
+                if (obj && SecondConstruct_(*obj)) {
+                    return obj.release();
+                }
+                return nullptr;
+            }();
+
+        }
+    }
+protected:
+    XSecondConstruct() = default;
+public:
+    virtual ~XSecondConstruct() = default;
+};
+
+#define FRIEND_SECOND \
+public: \
+inline void checkfriendsecond(){} \
+private: \
+    template<typename > \
+    friend class XSecondConstruct;
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
