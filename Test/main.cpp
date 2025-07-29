@@ -328,6 +328,7 @@ public:
 };
 
 class BTest:public xtd::XObject {
+
 public:
     void send(int d)  noexcept {
         emitSignal(this,&BTest::send, nullptr,d);
@@ -336,29 +337,43 @@ public:
     void slot(int) const volatile & noexcept {
 
     }
+
 };
 
-template<typename F>
-auto showaddr(F f,void **args){
-    auto ff{static_cast<F*>(args[0])};
-    return std::hash<F>{}(f) == std::hash<F>{}(*ff);
-}
+class CTest : public xtd::XSecondConstruct<CTest> {
+    FRIEND_SECOND
 
-struct MemberFunctionInfo {
-    size_t hash;
-    std::string type_name;
+    bool Construct(int const a){
+        std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
+        return true;
+    }
 
-    template<typename F>
-    explicit MemberFunctionInfo(F f) : hash(std::hash<F>{}(f)),
-                                type_name(typeid(F).name()) {}
+public:
+    CTest() = default;
+    explicit CTest(const int a) {
+        std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
+    }
+    ~CTest(){
+        std::cerr << FUNC_SIGNATURE << std::endl;
+    }
 };
-template<typename F>
-size_t getFullHash(F f) {
-    std::hash<F> h;
-    return h(f);
+
+template<typename ...Args1,typename ...Args2>
+void fff(std::tuple<Args1...> args1,std::tuple<Args2...> args2){
+
+    []<std::size_t ...I1,std::size_t ...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>){
+//        if constexpr (std::is_same_v<std::decay_t<decltype(args1)>, std::tuple<>>) {
+//
+//        }else{
+//
+//        }
+    }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
+      std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
+
 }
 
 [[maybe_unused]] static void test6(){
+#if 0
     ATest obja;
     BTest objb;
     std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&obja,xtd::xOverload<int>(&ATest::slot)) << "\n";
@@ -375,6 +390,9 @@ size_t getFullHash(F f) {
     //MemberFunctionInfo a (&ATest::send);
     std::cerr << std::hash<void*>{}(*signal_) << std::endl;
     xtd::sleep_for_s(3);
+#endif
+    delete xtd::XSecondConstruct<CTest>::Create({},std::tuple{1});
+    //fff(std::tuple{1},std::tuple{2});
 #if 0
     std::unordered_map<int,std::string> map;
     map[0] = "123";
