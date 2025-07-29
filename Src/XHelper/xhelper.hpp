@@ -162,7 +162,7 @@ X_API void x_assert_what(const std::string_view &, const std::string_view &what,
 template<typename T, typename ... Args>
 [[maybe_unused]] [[nodiscard]] inline std::unique_ptr<T> make_Unique(Args && ...args) noexcept {
     try{
-        return std::make_unique<T>(std::forward<Args>(args)...);
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
     }catch (const std::exception &){
         return {};
     }
@@ -320,11 +320,6 @@ inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Class>::
 template<typename Class>
 class XSecondConstruct {
 
-    template<typename ...Args>
-    inline static bool SecondConstruct_(Class &obj,Args && ...args){
-        return obj.Construct(std::forward<Args>(args)...);
-    }
-
 public:
     using ClassType = Class;
     template<typename ...Args1,typename ...Args2>
@@ -338,6 +333,19 @@ public:
         static_assert(Has_FRIEND_SECOND_Macro_v<Class>,
                       "No FRIEND_SECOND in the class!");
 
+        static_assert(std::is_convertible_v<Class,XSecondConstruct>,
+                "Class must inherit Class XSecondConstruct");
+
+        return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> ClassType * {
+            auto obj{make_Unique<Class>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
+            if (obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
+                return obj.release();
+            }
+            return nullptr;
+        }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
+          std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
+
+#if 0
         if constexpr (std::conjunction_v<
                 std::is_same<std::decay_t<decltype(args1)>, std::tuple<>>
                 ,std::negation<std::is_same<decltype(args2),std::tuple<>>>
@@ -346,7 +354,7 @@ public:
 
             return [&]<std::size_t ...I>(std::index_sequence<I...>) -> ClassType *{
                 auto obj{make_Unique<Class>()};
-                if (obj && SecondConstruct_(*obj,std::get<I>(std::forward<decltype(args2)>(args2))...)) {
+                if (obj && obj->Construct(std::get<I>(std::forward<decltype(args2)>(args2))...)) {
                     return obj.release();
                 }
                 return nullptr;
@@ -360,7 +368,7 @@ public:
 
             return [&]<std::size_t ...I>(std::index_sequence<I...>) -> ClassType *{
                 auto obj{make_Unique<Class>(std::get<I>(std::forward<decltype(args1)>(args1))...)};
-                if (obj && SecondConstruct_(*obj)) {
+                if (obj && obj->Construct()) {
                     return obj.release();
                 }
                 return nullptr;
@@ -373,7 +381,7 @@ public:
 
             return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> ClassType * {
                 auto obj{make_Unique<Class>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
-                if (obj && SecondConstruct_(*obj,std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
+                if (obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
                     return obj.release();
                 }
                 return nullptr;
@@ -384,13 +392,14 @@ public:
 
             return [&]()-> ClassType *{
                 auto obj{make_Unique<Class>()};
-                if (obj && SecondConstruct_(*obj)) {
+                if (obj && obj->Construct()) {
                     return obj.release();
                 }
                 return nullptr;
             }();
 
         }
+#endif
     }
 protected:
     XSecondConstruct() = default;
@@ -400,10 +409,12 @@ public:
 
 #define FRIEND_SECOND \
 public: \
-inline void checkfriendsecond(){} \
+inline void checkfriendsecond(); \
 private: \
-    template<typename > \
-    friend class XSecondConstruct;
+    template<typename> \
+    friend class xtd::XSecondConstruct; \
+    template<typename T, typename ... Args> \
+    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...args) noexcept;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

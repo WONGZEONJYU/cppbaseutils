@@ -11,6 +11,7 @@
 #include <XHelper/xtypetraits.hpp>
 #include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
+#include <utility>
 
 static std::mutex mtx{};
 
@@ -343,36 +344,46 @@ public:
 class CTest : public xtd::XSecondConstruct<CTest> {
     FRIEND_SECOND
 
-    bool Construct(int const a){
-        std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
+    bool Construct(int){
+        std::cerr << FUNC_SIGNATURE << " a = " << 1 << std::endl;
         return true;
     }
 
-public:
     CTest() = default;
     explicit CTest(const int a) {
         std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
     }
+public:
+
     ~CTest(){
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 };
 
-template<typename ...Args1,typename ...Args2>
-void fff(std::tuple<Args1...> args1,std::tuple<Args2...> args2){
 
-    []<std::size_t ...I1,std::size_t ...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>){
-//        if constexpr (std::is_same_v<std::decay_t<decltype(args1)>, std::tuple<>>) {
-//
-//        }else{
-//
-//        }
-    }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
-      std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
+template<typename ...>
+struct is_private_mem_func {
+    enum {value = true};
+};
 
-}
+template<typename Class,typename ...Args>
+struct is_private_mem_func< std::tuple<Class,Args...>> {
+
+    enum {value = std::is_same_v<bool, decltype(std::declval<Class>().Construct())>
+            };
+};
+
+template<>
+struct is_private_mem_func<void>:std::true_type {};
+
+struct AA{
+
+    //using  V [[maybe_unused]] = decltype(std::declval<CTest>().Construct());
+};
 
 [[maybe_unused]] static void test6(){
+    //delete xtd::XSecondConstruct<CTest>::Create({},{});
+    std::cerr << is_private_mem_func<CTest>::value;
 #if 0
     ATest obja;
     BTest objb;
@@ -391,7 +402,7 @@ void fff(std::tuple<Args1...> args1,std::tuple<Args2...> args2){
     std::cerr << std::hash<void*>{}(*signal_) << std::endl;
     xtd::sleep_for_s(3);
 #endif
-    delete xtd::XSecondConstruct<CTest>::Create({},std::tuple{1});
+
     //fff(std::tuple{1},std::tuple{2});
 #if 0
     std::unordered_map<int,std::string> map;
