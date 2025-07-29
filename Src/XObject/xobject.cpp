@@ -120,8 +120,7 @@ void XObject::doActivate(XObject * const sender,std::size_t const signal_index,v
         return;
     }
 
-    auto sp{XObjectPrivate::get(sender)};
-    if (!sp){
+    if (auto sp{XObjectPrivate::get(sender)}; !sp){
         X_ASSERT_W(sp,FUNC_SIGNATURE,"sp is empty!");
         return;
     }
@@ -358,7 +357,7 @@ void XObjectPrivate::ConnectionData::removeConnection(Connection * const c) {
     X_ASSERT(signalVector.loadRelaxed()->at(c->signal_index).last.loadRelaxed() != c);
 
     // keep c->nextConnectionList intact, as it might still get accessed by activate
-    auto n{c->nextConnectionList.loadRelaxed()};
+    const auto n{c->nextConnectionList.loadRelaxed()};
     if (n) {
         n->prevConnectionList = c->prevConnectionList;
     }
@@ -389,9 +388,9 @@ void XObjectPrivate::ConnectionData::removeConnection(Connection * const c) {
     X_ASSERT(!found);
 }
 
-void XObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(XObject *sender, LockPolicy lockPolicy){
+void XObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(const XObject * const sender,const LockPolicy lockPolicy){
     auto const senderMutex{signalSlotLock(sender)};
-    TaggedSignalVector c {nullptr};
+    TaggedSignalVector c {};
     {
         std::unique_lock lock(*senderMutex, std::defer_lock_t{});
         if (lockPolicy == NeedToLock)
@@ -402,7 +401,7 @@ void XObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(XObject *sende
         // Since ref == 1, no activate() is in process since we locked the mutex. That implies,
         // that nothing can reference the orphaned connection objects anymore and they can
         // be safely deleted
-        c = orphaned.exchange(nullptr, std::memory_order_relaxed);
+        c = orphaned.exchange(TaggedSignalVector{nullptr}, std::memory_order_relaxed);
     }
     if (c) {
         // Deleting c might run arbitrary user code, so we must not hold the lock
@@ -418,12 +417,12 @@ void XObjectPrivate::ConnectionData::cleanOrphanedConnectionsImpl(XObject *sende
 
 inline void XObjectPrivate::ConnectionData::deleteOrphaned(TaggedSignalVector o) {
     while (o) {
-        TaggedSignalVector next{nullptr};
-        if (auto v{static_cast<SignalVector *>(o)}) {
+        TaggedSignalVector next{};
+        if (auto const v{static_cast<SignalVector *>(o)}) {
             next = v->nextInOrphanList;
             free(v);
         } else {
-            auto c{static_cast<Connection *>(o)};
+            auto const c{static_cast<Connection *>(o)};
             next = c->nextInOrphanList;
             X_ASSERT(!c->receiver.loadRelaxed());
             X_ASSERT(!c->prev);
@@ -433,7 +432,6 @@ inline void XObjectPrivate::ConnectionData::deleteOrphaned(TaggedSignalVector o)
         o = next;
     }
 }
-
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

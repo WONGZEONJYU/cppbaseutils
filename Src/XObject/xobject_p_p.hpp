@@ -23,17 +23,19 @@ struct XObjectPrivate::TaggedSignalVector {
 
     TaggedSignalVector() = default;
 
-    TaggedSignalVector(std::nullptr_t) noexcept
+    explicit TaggedSignalVector(std::nullptr_t) noexcept
     : c(0) {}
-    TaggedSignalVector(Connection *v) noexcept
-    : c(reinterpret_cast<xuintptr>(v)) { X_ASSERT(v && (reinterpret_cast<xuintptr>(v) & 0x1) == 0);   }
+    explicit TaggedSignalVector(Connection * const v) noexcept
+    : c(reinterpret_cast<xuintptr>(v))
+    { X_ASSERT(v && (reinterpret_cast<xuintptr>(v) & 0x1) == 0);   }
 
-    TaggedSignalVector(SignalVector *v) noexcept
-    : c(reinterpret_cast<xuintptr>(v) | xuintptr(1u)) { X_ASSERT(v); }
+    explicit TaggedSignalVector(SignalVector * const v) noexcept
+    : c(reinterpret_cast<xuintptr>(v) | static_cast<xuintptr>(1u))
+    { X_ASSERT(v); }
 
     explicit operator SignalVector *() const noexcept {
         if (c & 0x1) {
-            return reinterpret_cast<SignalVector *>(c & ~xuintptr(1u));
+            return reinterpret_cast<SignalVector *>(c & ~static_cast<xuintptr>(1u));
         }
         return nullptr;
     }
@@ -53,7 +55,7 @@ struct XObjectPrivate::ConnectionOrSignalVector {
 };
 static_assert(std::is_trivial_v<XObjectPrivate::ConnectionOrSignalVector>);
 
-struct XObjectPrivate::Connection : public ConnectionOrSignalVector {
+struct XObjectPrivate::Connection : ConnectionOrSignalVector {
     // linked list of connections connected to slots in this object, next is in base class
     Connection **prev{};
     // linked list of connections connected to signals in this object
@@ -118,19 +120,19 @@ static_assert(std::is_trivial_v<XObjectPrivate::SignalVector>); // it doesn't ne
 struct XObjectPrivate::ConnectionData {
     // the id below is used to avoid activating new connections. When the object gets
     // deleted it's set to 0, so that signal emission stops
-    XAtomicInteger<uint> currentConnectionId;
-    XAtomicInt ref;
-    XAtomicPointer<SignalVector> signalVector;
+    XAtomicInteger<uint> currentConnectionId{};
+    XAtomicInt ref{};
+    XAtomicPointer<SignalVector> signalVector{};
     Connection *senders {};
     Sender *currentSender {}; // object currently activating the object
     std::atomic<TaggedSignalVector> orphaned {};
 
     ~ConnectionData() {
         X_ASSERT(ref.loadRelaxed() == 0);
-        if (auto c{orphaned.exchange(nullptr, std::memory_order_relaxed)}){
+        if (const auto c{orphaned.exchange(TaggedSignalVector(nullptr), std::memory_order_relaxed)}){
             deleteOrphaned(c);
         }
-        if (auto v{signalVector.loadRelaxed()}) {
+        if (const auto v{signalVector.loadRelaxed()}) {
             v->~SignalVector();
             free(v);
         }
@@ -139,7 +141,7 @@ struct XObjectPrivate::ConnectionData {
     // must be called on th320
     // e senders connection data
     // assumes the senders and receivers lock are held
-    void removeConnection(Connection *c);
+    void removeConnection(Connection *);
     enum LockPolicy {
         NeedToLock,
         // Beware that we need to temporarily release the lock
@@ -147,14 +149,14 @@ struct XObjectPrivate::ConnectionData {
         // invariants still hold.
         AlreadyLockedAndTemporarilyReleasingLock
     };
-    void cleanOrphanedConnections(XObject *sender, LockPolicy lockPolicy = NeedToLock) {
+    void cleanOrphanedConnections(const XObject * const sender,
+        const LockPolicy lockPolicy = NeedToLock) {
         if (orphaned.load(std::memory_order_relaxed) && ref.loadAcquire() == 1)
             cleanOrphanedConnectionsImpl(sender, lockPolicy);
     }
-    void cleanOrphanedConnectionsImpl(XObject *sender, LockPolicy lockPolicy);
+    void cleanOrphanedConnectionsImpl(const XObject *sender, LockPolicy lockPolicy);
 
-    ConnectionList &connectionsForSignal(int signal)
-    {
+    ConnectionList &connectionsForSignal(int const signal) const{
         return signalVector.loadRelaxed()->at(signal);
     }
 
@@ -163,9 +165,9 @@ struct XObjectPrivate::ConnectionData {
         SignalVector *vector = this->signalVector.loadRelaxed();
         if (vector && vector->allocated > size)
             return;
-        size = (size + 7) & ~7;
+        size = size + 7 & ~7;
         void *ptr = malloc(sizeof(SignalVector) + (size + 1) * sizeof(ConnectionList));
-        auto newVector = new (ptr) SignalVector;
+        const auto newVector = new (ptr) SignalVector;
 
         int start = -1;
         if (vector) {
@@ -176,7 +178,7 @@ struct XObjectPrivate::ConnectionData {
                    sizeof(SignalVector) + (vector->allocated + 1) * sizeof(ConnectionList));
             start = vector->count();
         }
-        for (int i = start; i < int(size); ++i){
+        for (int i = start; i < static_cast<int>(size); ++i){
             new (&newVector->at(i)) ConnectionList();
         }
         newVector->next = nullptr;
@@ -218,16 +220,16 @@ struct XObjectPrivate::Sender {
         }
     }
     void receiverDeleted() {
-        Sender *s = this;
+        auto s {this};
         while (s) {
             s->receiver = nullptr;
             s = s->previous;
         }
     }
-    Sender *previous = nullptr;
-    XObject *receiver;
-    XObject *sender;
-    int signal;
+    Sender *previous {};
+    XObject *receiver{},
+    *sender{};
+    int signal{};
 };
 X_DECLARE_TYPEINFO(XObjectPrivate::Sender, X_RELOCATABLE_TYPE);
 
@@ -268,7 +270,7 @@ class XObjectPrivate::XConnectionData final {
 public:
     explicit XConnectionData() = default;
     ~XConnectionData() {
-        if(auto v{m_signalVector.loadRelaxed()}) {
+        if(const auto v{m_signalVector.loadRelaxed()}) {
             delete v;
             m_signalVector.storeRelaxed({});
         }
@@ -289,7 +291,7 @@ public:
         v->try_emplace(signal_index);
     }
 
-    inline XConnectionList& connectionsForSignal(size_t const signal_index) {
+    inline XConnectionList& connectionsForSignal(size_t const signal_index) const {
         return m_signalVector.loadRelaxed()->at(signal_index);
     }
 };
