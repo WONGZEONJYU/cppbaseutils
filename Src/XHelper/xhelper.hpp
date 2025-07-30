@@ -417,9 +417,9 @@ class XSecondConstruct {
 public:
     using Object = Obj;
     template<typename ...Args1,typename ...Args2>
-    inline static Object * Create(Parameter<Args1...> const & args1 ,
-                                  Parameter<Args2...> const & args2) {
-
+    [[nodiscard]] inline static Object * Create(Parameter<Args1...> const & args1 ,
+                                  Parameter<Args2...> const & args2) noexcept
+    {
         static_assert(std::conjunction_v<std::is_object<Object>
                 ,std::is_base_of<XSecondConstruct,Object>>,
                       "Class must inherit Class XSecondConstruct");
@@ -495,18 +495,33 @@ public:
 #else
         return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> Object * {
             auto obj{make_Unique<Object>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
-            if (obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
-                return obj.release();
-            }
-            return nullptr;
+            return obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...) ? obj.release() : nullptr;
         }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
           std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
 #endif
     }
+
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1
+        ,Parameter<Args2...> const & args2 ) noexcept
+    {
+        auto p{Create(args1,args2)};
+        return p ? std::shared_ptr<Object>(p) : std::shared_ptr<Object>{};
+    }
+
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1
+        ,Parameter<Args2...> const & args2 ) noexcept
+    {
+        if (auto p{Create(args1,args2)}){
+            return std::unique_ptr<Object>{p};
+        }
+        return {};
+    }
 protected:
     XSecondConstruct() = default;
 public:
-    virtual ~XSecondConstruct() = default;
+    ~XSecondConstruct() = default;
 };
 
 #define FRIEND_SECOND \
