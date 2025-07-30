@@ -505,24 +505,42 @@ public:
     [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1
         ,Parameter<Args2...> const & args2 ) noexcept
     {
-        auto p{Create(args1,args2)};
-        return p ? std::shared_ptr<Object>(p) : std::shared_ptr<Object>{};
+        try{
+            return std::shared_ptr<Object>{Create(args1,args2)};
+        }catch (const std::exception &){
+            return {};
+        }
     }
 
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1
         ,Parameter<Args2...> const & args2 ) noexcept
     {
-        if (auto p{Create(args1,args2)}){
-            return std::unique_ptr<Object>{p};
-        }
-        return {};
+        return std::unique_ptr<Object>{Create(args1,args2)};
     }
 protected:
     XSecondConstruct() = default;
 public:
     ~XSecondConstruct() = default;
 };
+
+template<typename Obj,typename ...Args1,typename ...Args2>
+inline Obj * XSecondCreate( Parameter<Args1...> const & args1,
+    Parameter<Args2...> const & args2 ) noexcept {
+    return XSecondConstruct<Obj>::Create(args1,args2);
+}
+
+template<typename Obj,typename ...Args1,typename ...Args2>
+inline std::unique_ptr<Obj> XSecondCreateUniquePtr( Parameter<Args1...> const &args1,
+    Parameter<Args2...> const & args2 ) noexcept {
+    return XSecondConstruct<Obj>::CreateUniquePtr(args1,args2 );
+}
+
+template<typename Obj,typename ...Args1,typename ...Args2>
+inline std::shared_ptr<Obj> XSecondCreateSharedPtr( Parameter<Args1...> const &args1,
+    Parameter<Args2...> const & args2 ) noexcept {
+    return XSecondConstruct<Obj>::CreateSharedPtr(args1,args2 );
+}
 
 #define FRIEND_SECOND \
 public: \
