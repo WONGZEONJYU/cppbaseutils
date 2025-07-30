@@ -360,29 +360,24 @@ public:
     }
 };
 
+//template<typename>
+//struct is_private_mem_func{
+//    inline static constexpr bool value{true};
+//};
 
-template<typename ...>
+template<typename Obj,typename ...Args>
 struct is_private_mem_func {
-    enum {value = true};
-};
+    //using T = std::tuple<Obj,Args...>;
 
-template<typename Class,typename ...Args>
-struct is_private_mem_func< std::tuple<Class,Args...>> {
-
-    enum {value = std::is_same_v<bool, decltype(std::declval<Class>().Construct())>
-            };
-};
-
-template<>
-struct is_private_mem_func<void>:std::true_type {};
-
-struct AA{
-
-    //using  V [[maybe_unused]] = decltype(std::declval<CTest>().Construct());
+    static auto test(int)-> decltype(std::declval<Obj>().Construct((std::declval<Args>())...),int{});
+    static char test(...);
+    inline static constexpr bool value{
+        sizeof(test(0)) == sizeof(int)
+    };
 };
 
 [[maybe_unused]] static void test6(){
-    //delete xtd::XSecondConstruct<CTest>::Create({},{});
+    delete xtd::XSecondConstruct<CTest>::Create({},xtd::Parameter{1});
     std::cerr << is_private_mem_func<CTest>::value;
 #if 0
     ATest obja;
