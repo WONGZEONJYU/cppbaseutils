@@ -503,7 +503,7 @@ public:
 
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1 = {}
-        ,Parameter<Args2...> const & args2  = {} ) noexcept
+        ,Parameter<Args2...> const & args2 = {} ) noexcept
     {
         try{
             return std::shared_ptr<Object>{Create(args1,args2)};
