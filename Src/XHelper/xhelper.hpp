@@ -303,19 +303,110 @@ enum class ConnectionType {
     UniqueConnection
 };
 
-template<typename Obj>
-struct Has_FRIEND_SECOND_Macro {
-    static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
-    template<typename T>
-    inline static char test(void(T::*)()){throw ;};
-    inline static int test(void(Obj::*)()){throw;};
-    inline static constexpr bool value {
-            sizeof(test(&Obj::checkfriendsecond)) == sizeof(int)
+namespace XPrivate {
+    template<typename Obj>
+    struct Has_FRIEND_SECOND_Macro {
+        static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
+        template<typename T>
+        inline static char test(void(T::*)()){throw ;};
+        inline static int test(void(Obj::*)()){throw;};
+        inline static constexpr bool value {
+                sizeof(test(&Obj::checkfriendsecond)) == sizeof(int)
+        };
     };
-};
 
-template<typename Obj>
-inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Obj>::value};
+    template<typename Obj>
+    inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Obj>::value};
+
+    template<typename Obj,typename ...Args>
+    struct is_private_mem_func {
+    private:
+    #if __cplusplus >= 202002L
+        template<typename Object>
+        static std::false_type test(void *) requires (
+                std::is_same_v<decltype(std::declval<Object>().Construct( (std::declval<Args>())...) ),void>
+                || (sizeof(std::declval<Object>().Construct( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
+            )
+        {return {};}
+    #else
+        template<typename Object>
+        static std::enable_if_t<
+            std::is_same_v<decltype(std::declval<Object>().Construct( (std::declval<Args>())...) ),void>
+        ,std::false_type> test(void *)
+        {return {};}
+
+        template<typename Object>
+        static std::enable_if_t<
+            (sizeof(std::declval<Object>().Construct( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
+        ,std::false_type> test(std::nullptr_t)
+        {return {};}
+    #endif
+        template<typename >
+        static std::true_type test(...) {return {};}
+    public:
+        static constexpr bool value {decltype(test<Obj>(nullptr))::value};
+    };
+
+    template<typename ...Args>
+    inline constexpr auto is_private_mem_func_v{ is_private_mem_func<Args...>::value };
+
+    template<typename T, typename... Args>
+    struct is_default_constructor_accessible {
+    private:
+        enum {
+            result = std::disjunction_v<std::is_constructible<T, Args...>
+            ,std::is_nothrow_constructible<T, Args...>
+            ,std::is_trivially_constructible<T,Args...>
+            >
+        };
+
+        template<typename > struct is_copy_move_constructor {
+            enum { value = false };
+        };
+
+    #if __cplusplus >= 202002L
+        template<typename ...AS> requires(sizeof...(AS) == 1)
+        struct is_copy_move_constructor<std::tuple<AS...>> {
+            using Tuple_ = std::tuple<AS...>;
+            using First_ = std::tuple_element_t<0, Tuple_>;
+            enum {
+                value = std::disjunction_v<
+                    std::is_same<First_, T &>,
+                    std::is_same<First_, const T &>,
+                    std::is_same<First_, T &&>,
+                    std::is_same<First_, const T &&>
+                >
+            };
+        };
+    #else
+        template<> struct is_copy_move_constructor<std::tuple<>> {
+            enum { value = false };
+        };
+        template<typename ...AS>
+        struct is_copy_move_constructor<std::tuple<AS...>> {
+        private:
+            using Tuple_ = std::tuple<AS...>;
+            using First_ = std::tuple_element_t<0, Tuple_>;
+        public:
+            enum {
+                value = std::disjunction_v<
+                    std::is_same<First_, T &>,
+                std::is_same<First_, const T &>,
+                std::is_same<First_, T &&>,
+                std::is_same<First_, const T &&>>
+            };
+        };
+    #endif
+
+    public:
+        enum {
+            value = result && !is_copy_move_constructor<std::tuple<Args...>>::value
+        };
+    };
+
+    template<typename ...Args>
+    inline constexpr bool is_default_constructor_accessible_v {is_default_constructor_accessible<Args...>::value};
+}
 
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
@@ -330,15 +421,23 @@ public:
                                   Parameter<Args2...> const & args2) {
 
         static_assert(std::conjunction_v<std::is_object<Object>
-                ,std::is_base_of<XSecondConstruct<Object>,Object>>,
+                ,std::is_base_of<XSecondConstruct,Object>>,
                       "Class must inherit Class XSecondConstruct");
 
-        static_assert(Has_FRIEND_SECOND_Macro_v<Object>,
+        static_assert(XPrivate::Has_FRIEND_SECOND_Macro_v<Object>,
                       "No FRIEND_SECOND in the class!");
 
         static_assert(std::is_convertible_v<Object,XSecondConstruct>,
                 "Class must inherit Class XSecondConstruct");
 
+        static_assert(XPrivate::is_private_mem_func_v<Object,Args2...>,
+            "Construct must be private member function!");
+
+        static_assert(XPrivate::is_private_mem_func_v<Object>,
+            "Construct must be private member function!");
+
+        static_assert(!XPrivate::is_default_constructor_accessible_v<Object,Args1...>,
+            "Construct must be private member function!");
 #if 0
         if constexpr (std::conjunction_v<
                 std::is_same<std::decay_t<decltype(args1)>, std::tuple<>>
