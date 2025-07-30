@@ -303,47 +303,41 @@ enum class ConnectionType {
     UniqueConnection
 };
 
-template<typename Class>
+template<typename Obj>
 struct Has_FRIEND_SECOND_Macro {
-    static_assert(std::is_object_v<Class>,"typename Class don't Object type");
+    static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
     template<typename T>
     inline static char test(void(T::*)()){throw ;};
-    inline static int test(void(Class::*)()){throw;};
+    inline static int test(void(Obj::*)()){throw;};
     inline static constexpr bool value {
-            sizeof(test(&Class::checkfriendsecond)) == sizeof(int)
+            sizeof(test(&Obj::checkfriendsecond)) == sizeof(int)
     };
 };
 
-template<typename Class>
-inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Class>::value};
+template<typename Obj>
+inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Obj>::value};
 
-template<typename Class>
+template<typename ...Args>
+using Parameter = std::tuple<Args...>;
+
+template<typename Obj>
 class XSecondConstruct {
 
 public:
-    using ClassType = Class;
+    using Object = Obj;
     template<typename ...Args1,typename ...Args2>
-    inline static ClassType * Create(std::tuple<Args1...> const args1 ,
-                                     std::tuple<Args2...> const args2) {
+    inline static Object * Create(Parameter<Args1...> const & args1 ,
+                                  Parameter<Args2...> const & args2) {
 
-        static_assert(std::conjunction_v<std::is_object<ClassType>
-                ,std::is_base_of<XSecondConstruct<Class>,Class>>,
+        static_assert(std::conjunction_v<std::is_object<Object>
+                ,std::is_base_of<XSecondConstruct<Object>,Object>>,
                       "Class must inherit Class XSecondConstruct");
 
-        static_assert(Has_FRIEND_SECOND_Macro_v<Class>,
+        static_assert(Has_FRIEND_SECOND_Macro_v<Object>,
                       "No FRIEND_SECOND in the class!");
 
-        static_assert(std::is_convertible_v<Class,XSecondConstruct>,
+        static_assert(std::is_convertible_v<Object,XSecondConstruct>,
                 "Class must inherit Class XSecondConstruct");
-
-        return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> ClassType * {
-            auto obj{make_Unique<Class>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
-            if (obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
-                return obj.release();
-            }
-            return nullptr;
-        }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
-          std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
 
 #if 0
         if constexpr (std::conjunction_v<
@@ -399,6 +393,15 @@ public:
             }();
 
         }
+#else
+        return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> Object * {
+            auto obj{make_Unique<Object>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
+            if (obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
+                return obj.release();
+            }
+            return nullptr;
+        }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
+          std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
 #endif
     }
 protected:
