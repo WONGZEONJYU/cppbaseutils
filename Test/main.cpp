@@ -341,6 +341,60 @@ public:
 
 };
 
+template<typename T, typename... Args>
+class is_default_constructor_accessible {
+
+    enum {
+        result = std::disjunction_v<std::is_constructible<T, Args...>
+        ,std::is_nothrow_constructible<T, Args...>
+        ,std::is_trivially_constructible<T,Args...>
+        >
+    };
+
+    template<typename > struct is_copy_move_constructor {
+        enum { value = false };
+    };
+
+#if __cplusplus >= 202002L
+    template<typename ...AS> requires(sizeof...(AS) == 1)
+    struct is_copy_move_constructor<std::tuple<AS...>> {
+        using Tuple_ = std::tuple<AS...>;
+        using First_ = std::tuple_element_t<0, Tuple_>;
+        enum {
+            value = std::disjunction_v<
+                std::is_same<First_, T &>,
+                std::is_same<First_, const T &>,
+                std::is_same<First_, T &&>,
+                std::is_same<First_, const T &&>
+            >
+        };
+    };
+#else
+    template<> struct is_copy_move_constructor<std::tuple<>> {
+        enum { value = false };
+    };
+    template<typename ...AS>
+    struct is_copy_move_constructor<std::tuple<AS...>> {
+    private:
+        using Tuple_ = std::tuple<AS...>;
+        using First_ = std::tuple_element_t<0, Tuple_>;
+    public:
+        enum {
+            value = std::disjunction_v<
+                std::is_same<First_, T &>,
+            std::is_same<First_, const T &>,
+            std::is_same<First_, T &&>,
+            std::is_same<First_, const T &&>>
+        };
+    };
+#endif
+
+public:
+    enum {
+        value = result && !is_copy_move_constructor<std::tuple<Args...>>::value
+    };
+};
+
 class CTest : public xtd::XSecondConstruct<CTest> {
     FRIEND_SECOND
 
@@ -348,37 +402,40 @@ class CTest : public xtd::XSecondConstruct<CTest> {
         std::cerr << FUNC_SIGNATURE << " a = " << 1 << std::endl;
         return true;
     }
+    CTest(const CTest &) {}
+    CTest() noexcept
+    {
+        std::cerr << FUNC_SIGNATURE << std::endl;
+    }
 
-    CTest() = default;
-    explicit CTest(const int a) {
-        std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
+
+    bool Construct(int,int){
+        std::cerr << FUNC_SIGNATURE << " a = " << 2 << std::endl;
+        return true;
+    }
+    CTest(int) noexcept{
+        std::cerr << FUNC_SIGNATURE << std::endl;
     }
 public:
+
+    //
+    // explicit CTest(const int a) {
+    //     std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
+    // }
 
     ~CTest(){
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 };
 
-//template<typename>
-//struct is_private_mem_func{
-//    inline static constexpr bool value{true};
-//};
-
-template<typename Obj,typename ...Args>
-struct is_private_mem_func {
-    //using T = std::tuple<Obj,Args...>;
-
-    static auto test(int)-> decltype(std::declval<Obj>().Construct((std::declval<Args>())...),int{});
-    static char test(...);
-    inline static constexpr bool value{
-        sizeof(test(0)) == sizeof(int)
-    };
-};
-
 [[maybe_unused]] static void test6(){
-    delete xtd::XSecondConstruct<CTest>::Create({},xtd::Parameter{1});
-    std::cerr << is_private_mem_func<CTest>::value;
+
+    delete xtd::XSecondConstruct<CTest>::Create(xtd::Parameter{1},xtd::Parameter{1,1});
+    // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
+    // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
+    //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
+    //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
+
 #if 0
     ATest obja;
     BTest objb;
@@ -398,7 +455,6 @@ struct is_private_mem_func {
     xtd::sleep_for_s(3);
 #endif
 
-    //fff(std::tuple{1},std::tuple{2});
 #if 0
     std::unordered_map<int,std::string> map;
     map[0] = "123";
