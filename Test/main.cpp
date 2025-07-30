@@ -399,7 +399,7 @@ class CTest : public xtd::XSecondConstruct<CTest> {
     FRIEND_SECOND
 
 
-    bool Construct(int){
+    bool Construct_(int){
         std::cerr << FUNC_SIGNATURE << " a = " << 1 << std::endl;
         return true;
     }
@@ -410,7 +410,7 @@ class CTest : public xtd::XSecondConstruct<CTest> {
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 
-    bool Construct(int const a1,int const a2){
+    bool Construct_(int const a1,int const a2){
         std::cerr << FUNC_SIGNATURE << " a1 = " << a1 << " ,a2 = " << a2 << std::endl;
         return true;
     }
@@ -419,7 +419,7 @@ class CTest : public xtd::XSecondConstruct<CTest> {
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 
-    bool Construct(){
+    bool Construct_(){
         std::cerr << FUNC_SIGNATURE << " a = " << 0 << std::endl;
         return true;
     }
