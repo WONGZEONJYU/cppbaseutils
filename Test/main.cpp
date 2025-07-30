@@ -430,7 +430,7 @@ public:
 
 [[maybe_unused]] static void test6(){
 
-    delete xtd::XSecondConstruct<CTest>::Create(xtd::Parameter{1},xtd::Parameter{1,1});
+    auto p1 = xtd::XSecondConstruct<CTest>::CreateSharedPtr(xtd::Parameter{1},xtd::Parameter{1,1});
     // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
     // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
