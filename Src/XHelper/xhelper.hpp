@@ -417,8 +417,8 @@ class XSecondConstruct {
 public:
     using Object = Obj;
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static Object * Create(Parameter<Args1...> const & args1 ,
-                                  Parameter<Args2...> const & args2) noexcept
+    [[nodiscard]] inline static Object * Create( Parameter<Args1...> const & args1 = {},
+                                  Parameter<Args2...> const & args2 = {} ) noexcept
     {
         static_assert(std::conjunction_v<std::is_object<Object>
                 ,std::is_base_of<XSecondConstruct,Object>>,
@@ -495,15 +495,15 @@ public:
 #else
         return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> Object * {
             auto obj{make_Unique<Object>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
-            return obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...) ? obj.release() : nullptr;
+            return obj && obj->Construct_(std::get<I2>(std::forward<decltype(args2)>(args2))...) ? obj.release() : nullptr;
         }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
           std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
 #endif
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1
-        ,Parameter<Args2...> const & args2 ) noexcept
+    [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1 = {}
+        ,Parameter<Args2...> const & args2  = {} ) noexcept
     {
         try{
             return std::shared_ptr<Object>{Create(args1,args2)};
@@ -513,8 +513,8 @@ public:
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1
-        ,Parameter<Args2...> const & args2 ) noexcept
+    [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1 = {}
+        ,Parameter<Args2...> const & args2 = {} ) noexcept
     {
         return std::unique_ptr<Object>{Create(args1,args2)};
     }
@@ -525,20 +525,20 @@ public:
 };
 
 template<typename Obj,typename ...Args1,typename ...Args2>
-inline Obj * XSecondCreate( Parameter<Args1...> const & args1,
-    Parameter<Args2...> const & args2 ) noexcept {
+inline Obj * XSecondCreate( Parameter<Args1...> const & args1 = {}
+    , Parameter<Args2...> const & args2 = {} ) noexcept {
     return XSecondConstruct<Obj>::Create(args1,args2);
 }
 
 template<typename Obj,typename ...Args1,typename ...Args2>
-inline std::unique_ptr<Obj> XSecondCreateUniquePtr( Parameter<Args1...> const &args1,
-    Parameter<Args2...> const & args2 ) noexcept {
+inline std::unique_ptr<Obj> XSecondCreateUniquePtr( Parameter<Args1...> const &args1 = {}
+    ,Parameter<Args2...> const & args2 = {} ) noexcept {
     return XSecondConstruct<Obj>::CreateUniquePtr(args1,args2 );
 }
 
 template<typename Obj,typename ...Args1,typename ...Args2>
-inline std::shared_ptr<Obj> XSecondCreateSharedPtr( Parameter<Args1...> const &args1,
-    Parameter<Args2...> const & args2 ) noexcept {
+inline std::shared_ptr<Obj> XSecondCreateSharedPtr( Parameter<Args1...> const &args1 = {}
+    ,Parameter<Args2...> const & args2  = {} ) noexcept {
     return XSecondConstruct<Obj>::CreateSharedPtr(args1,args2 );
 }
 
