@@ -398,7 +398,6 @@ public:
 class CTest : public xtd::XSecondConstruct<CTest> {
     FRIEND_SECOND
 
-
     bool Construct_(int){
         std::cerr << FUNC_SIGNATURE << " a = " << 1 << std::endl;
         return true;
