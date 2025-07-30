@@ -308,10 +308,10 @@ namespace XPrivate {
     struct Has_FRIEND_SECOND_Macro {
         static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
         template<typename T>
-        inline static char test(void(T::*)()){throw ;};
-        inline static int test(void(Obj::*)()){throw;};
+        inline static char test( void (T::*)() ){throw ;};
+        inline static int test( void (Obj::*)() ){throw;};
         inline static constexpr bool value {
-                sizeof(test(&Obj::checkfriendsecond)) == sizeof(int)
+                sizeof(test(&Obj::xfriendsecond)) == sizeof(int)
         };
     };
 
@@ -544,7 +544,8 @@ inline std::shared_ptr<Obj> XSecondCreateSharedPtr( Parameter<Args1...> const &a
 
 #define FRIEND_SECOND \
 public: \
-inline void checkfriendsecond(); \
+inline void xfriendsecond(){X_ASSERT_W(false,FUNC_SIGNATURE \
+    ,"This function is used for checking, please do not call it!"); } \
 private: \
     template<typename> \
     friend class xtd::XSecondConstruct; \
