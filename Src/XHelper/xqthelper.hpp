@@ -2,7 +2,7 @@
 #define X_QT_HELPER_HPP
 #ifdef HAS_QT
 
-#include <XHelper/xversion.hpp>
+#include <XHelper/xhelper.hpp>
 #include <type_traits>
 #include <QMetaEnum>
 #include <QString>
@@ -75,15 +75,45 @@ namespace qhelper {
         return nullptr;
     }
 
-    template<typename ...Args>
-    inline QMetaObject::Connection ConnectHelper(Args && ...args) {
-        return QObject::connect(std::forward<Args>(args)...);
+    template<typename Obj>
+    struct has_Friend_ConnectHelper {
+    private:
+        template<typename Object>
+        inline static char test( void (Object::*)() ){ throw ""; }
+        inline static int test( void (Obj::*)() ){ throw ""; }
+    public:
+        enum { value = sizeof(test(&Obj::checkFriendConnect)) == sizeof(int) };
+    };
+
+    template<typename Obj>
+    inline constexpr bool has_Friend_ConnectHelper_v {has_Friend_ConnectHelper<Obj>::value};
+#if 1
+    template<typename Func1,typename ...Args>
+    inline QMetaObject::Connection ConnectHelper(const typename QtPrivate::FunctionPointer<Func1>::Object *sender,
+                                                 Func1 signal,
+                                                 Args && ...args) {
+        using SignalType = QtPrivate::FunctionPointer<Func1> ;
+        static_assert( has_Friend_ConnectHelper_v<typename SignalType::Object>
+                ,"No FRIEND_CON in the class!" );
+        return QObject::connect(sender,signal,std::forward<Args>(args)...);
     }
+#else
+    template<typename Object,typename ...Args>
+    inline QMetaObject::Connection ConnectHelper(Object * const sender,Args && ...args) {
+        static_assert( has_Friend_ConnectHelper_v<Object>
+                ,"No FRIEND_CON in the class!" );
+        return QObject::connect(sender,std::forward<Args>(args)...);
+    }
+#endif
 
 #define FRIEND_CON \
+privete: \
+    inline void checkFriendConnect(){ X_ASSERT_W( false,FUNC_SIGNATURE \
+        ,"This function is used for checking, please do not call it!" ); }\
     template<typename ...Args>\
-    friend QMetaObject::Connection xtd::qhelper::ConnectHelper(Args && ...args);
-
+    friend QMetaObject::Connection xtd::qhelper::ConnectHelper(Args && ...); \
+    template<typename> \
+    friend struct xtd::qhelper::has_Friend_ConnectHelper;
 }
 
 XTD_INLINE_NAMESPACE_END
