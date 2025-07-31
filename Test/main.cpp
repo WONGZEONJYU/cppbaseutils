@@ -404,26 +404,26 @@ class CTest : public xtd::XSecondConstruct<CTest> {
     }
     CTest(const CTest &) = delete;
 
-    CTest() noexcept
-    {
-        std::cerr << FUNC_SIGNATURE << std::endl;
-    }
+
 
     bool construct_(int const a1,int const a2){
         std::cerr << FUNC_SIGNATURE << " a1 = " << a1 << " ,a2 = " << a2 << std::endl;
         return true;
     }
 
-    explicit CTest(int) noexcept{
-        std::cerr << FUNC_SIGNATURE << std::endl;
+    explicit CTest(int const a) noexcept{
+        std::cerr << FUNC_SIGNATURE << "a = " << a << std::endl;
     }
 
     bool construct_() {
         std::cerr << FUNC_SIGNATURE << std::endl;
         return true;
     }
+    CTest() noexcept
+    {
+        std::cerr << FUNC_SIGNATURE << std::endl;
+    }
 public:
-
 
 
     ~CTest(){
@@ -437,7 +437,9 @@ public:
 
     auto p1 = CTest::CreateUniquePtr(xtd::Parameter{1},xtd::Parameter{100});
     auto p2 = CTest::CreateSharedPtr(xtd::Parameter{2},xtd::Parameter{2,2});
-    delete CTest::Create(xtd::Parameter{},xtd::Parameter{});
+    delete CTest::Create({},xtd::Parameter{});
+    delete CTest::Create({},xtd::Parameter{200});
+    delete CTest::Create(xtd::Parameter{300},{});
     // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
     // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
