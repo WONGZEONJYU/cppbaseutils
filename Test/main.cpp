@@ -398,8 +398,8 @@ public:
 class CTest : public xtd::XSecondConstruct<CTest> {
     FRIEND_SECOND
 
-    bool Construct_(int){
-        std::cerr << FUNC_SIGNATURE << " a = " << 1 << std::endl;
+    bool construct_(int const a){
+        std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
         return true;
     }
     CTest(const CTest &) = delete;
@@ -409,7 +409,7 @@ class CTest : public xtd::XSecondConstruct<CTest> {
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 
-    bool Construct_(int const a1,int const a2){
+    bool construct_(int const a1,int const a2){
         std::cerr << FUNC_SIGNATURE << " a1 = " << a1 << " ,a2 = " << a2 << std::endl;
         return true;
     }
@@ -418,27 +418,26 @@ class CTest : public xtd::XSecondConstruct<CTest> {
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 
-    bool Construct_(){
-        std::cerr << FUNC_SIGNATURE << " a = " << 0 << std::endl;
+    bool construct_() {
+        std::cerr << FUNC_SIGNATURE << std::endl;
         return true;
     }
 public:
 
 
-//     explicit CTest(const int a) {
-//         std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
-//     }
 
     ~CTest(){
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 };
 
+
+
 [[maybe_unused]] static void test6(){
 
-    auto p1 = xtd::XSecondCreateUniquePtr<CTest>(xtd::Parameter{1},xtd::Parameter{1,1});
-    auto p2 = xtd::XSecondCreateSharedPtr<CTest>(xtd::Parameter{2},xtd::Parameter{2,2});
-    delete xtd::XSecondCreate<CTest>(xtd::Parameter{},xtd::Parameter{});
+    auto p1 = CTest::CreateUniquePtr(xtd::Parameter{1},xtd::Parameter{100});
+    auto p2 = CTest::CreateSharedPtr(xtd::Parameter{2},xtd::Parameter{2,2});
+    delete CTest::Create(xtd::Parameter{},xtd::Parameter{});
     // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
     // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
