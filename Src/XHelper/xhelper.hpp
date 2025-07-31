@@ -7,6 +7,8 @@
 #include <utility>
 #include <memory>
 #include <functional>
+#include <type_traits>
+#include <XHelper/xoverload.hpp>
 
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
@@ -306,17 +308,31 @@ enum class ConnectionType {
 namespace XPrivate {
     template<typename Obj>
     struct Has_FRIEND_SECOND_Macro {
+    private:
         static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
         template<typename T>
-        inline static char test( void (T::*)() ){throw ;};
-        inline static int test( void (Obj::*)() ){throw;};
-        inline static constexpr bool value {
-                sizeof(test(&Obj::xfriendsecond)) == sizeof(int)
-        };
+        inline static char test( void (T::*)() ){throw;}
+        inline static int test( void (Obj::*)() ){throw;}
+    public:
+        enum {value = sizeof(test(&Obj::xfriendsecond)) == sizeof(int)};
     };
 
     template<typename Obj>
-    inline constexpr auto Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Obj>::value};
+    inline constexpr bool Has_FRIEND_SECOND_Macro_v{Has_FRIEND_SECOND_Macro<Obj>::value};
+
+    template<typename Obj,typename ...Args>
+    struct Has_construct_Func {
+    private:
+        static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
+        template<typename Object,typename ...AS>
+        inline static char test( bool (Object::*)(AS...) ){throw;}
+        inline static int test( bool (Obj::*)(Args...) ){throw;}
+    public:
+        enum { value = sizeof( test( xOverload<Args...>( &Obj::construct_ ) ) ) == sizeof(int) };
+    };
+
+    template<typename ...Args>
+    inline constexpr bool Has_construct_Func_v {Has_construct_Func<Args...>::value};
 
     template<typename Obj,typename ...Args>
     struct is_private_mem_func {
@@ -324,20 +340,20 @@ namespace XPrivate {
     #if __cplusplus >= 202002L
         template<typename Object>
         static std::false_type test(void *) requires (
-                std::is_same_v<decltype(std::declval<Object>().Construct( (std::declval<Args>())...) ),void>
-                || (sizeof(std::declval<Object>().Construct( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
+                std::is_same_v<decltype(std::declval<Object>().construct_( (std::declval<Args>())...) ),void>
+                || (sizeof(std::declval<Object>().construct_( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
             )
         {return {};}
     #else
         template<typename Object>
         static std::enable_if_t<
-            std::is_same_v<decltype(std::declval<Object>().Construct( (std::declval<Args>())...) ),void>
+            std::is_same_v<decltype(std::declval<Object>().construct_( (std::declval<Args>())...) ),void>
         ,std::false_type> test(void *)
         {return {};}
 
         template<typename Object>
         static std::enable_if_t<
-            (sizeof(std::declval<Object>().Construct( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
+            (sizeof(std::declval<Object>().construct_( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
         ,std::false_type> test(std::nullptr_t)
         {return {};}
     #endif
@@ -354,9 +370,9 @@ namespace XPrivate {
     struct is_default_constructor_accessible {
     private:
         enum {
-            result = std::disjunction_v<std::is_constructible<T, Args...>
-            ,std::is_nothrow_constructible<T, Args...>
-            ,std::is_trivially_constructible<T,Args...>
+            result = std::disjunction_v< std::is_constructible<T, Args...>
+                    ,std::is_nothrow_constructible<T, Args...>
+                    ,std::is_trivially_constructible<T,Args...>
             >
         };
 
@@ -391,17 +407,15 @@ namespace XPrivate {
             enum {
                 value = std::disjunction_v<
                     std::is_same<First_, T &>,
-                std::is_same<First_, const T &>,
-                std::is_same<First_, T &&>,
-                std::is_same<First_, const T &&>>
+                    std::is_same<First_, const T &>,
+                    std::is_same<First_, T &&>,
+                    std::is_same<First_, const T &&>>
             };
         };
     #endif
 
     public:
-        enum {
-            value = result && !is_copy_move_constructor<std::tuple<Args...>>::value
-        };
+        enum {value = result && !is_copy_move_constructor<std::tuple<Args...>>::value};
     };
 
     template<typename ...Args>
@@ -411,93 +425,83 @@ namespace XPrivate {
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
 
+/**
+ * example:
+ * class Test : public xtd::XSecondConstruct<Test> {
+ *      FRIEND_SECOND
+ *      bool construct_(...) { initCode...; return true;} //此为二阶构造,也必须是私有
+ *      Test(...) {xxxCode...;} //有参数非拷贝非移动构造函数必须是私有的
+ *      Test() = default; //如果不需无参构造函数做任何事,需显式提供私有默认构造函数
+ *      Test() {xxxCode...;} //需无参构造函数做事
+ *  public:
+ *      void xxx(...) {xxxCode...;}
+ *  private:
+ *      void xxxx(...) {xxxCode...;}
+ * };
+ *
+ * int main(...) {
+ *   auto p = Test::Create();
+ *   delete p;
+ *   auto sptr = Test::CreateSharedPtr();
+ *   auto uptr = Test::CreateUniquePtr();
+ *   //如果构造函数有参数和二阶构造有参数:
+ *   auto p1 = Test::Create(xtd::Parameter{1,...},xtd::Parameter{10,...});
+ *   delete p1;
+ *   智能指针版本同理
+ *
+ *   delete Test::Create({},xtd::Parameter{10,...});
+ *   delete Test::Create(xtd::Parameter{10,...},{});
+ * }
+ *
+ * @tparam Obj 派生类类型
+ */
+
 template<typename Obj>
 class XSecondConstruct {
+    template<typename Tuple_>
+    inline static constexpr auto indices(Tuple_ &&) noexcept
+        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+    {
+        return std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >{};
+    }
 
+    template<typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2>
+    inline static constexpr Obj * CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
+        std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept
+    {
+        auto obj { make_Unique<Object>( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... ) };
+        return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2) )... ) ? obj.release() : nullptr;
+    }
 public:
     using Object = Obj;
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static Object * Create( Parameter<Args1...> const & args1 = {},
+    [[nodiscard]] inline constexpr static Object * Create( Parameter<Args1...> const & args1 = {},
                                   Parameter<Args2...> const & args2 = {} ) noexcept
     {
-        static_assert(std::conjunction_v<std::is_object<Object>
-                ,std::is_base_of<XSecondConstruct,Object>>,
-                      "Class must inherit Class XSecondConstruct");
+        static_assert(std::is_object_v<Object>,"typename Object is not an object");
 
-        static_assert(XPrivate::Has_FRIEND_SECOND_Macro_v<Object>,
-                      "No FRIEND_SECOND in the class!");
+        static_assert(std::conjunction_v< std::is_base_of<XSecondConstruct,Object>
+                        ,std::is_convertible<Object,XSecondConstruct>
+                        > ,"Object must inherit from Class XSecondConstruct");
 
-        static_assert(std::is_convertible_v<Object,XSecondConstruct>,
-                "Class must inherit Class XSecondConstruct");
+        static_assert(XPrivate::Has_FRIEND_SECOND_Macro_v<Object>
+                      ,"No FRIEND_SECOND in the class!");
 
-        static_assert(XPrivate::is_private_mem_func_v<Object,Args2...>,
-            "Construct must be private member function!");
+        static_assert(XPrivate::Has_construct_Func_v<Object,Args2...>
+                    ,"bool Object::construct_(...) non static member function absent!");
 
-        static_assert(XPrivate::is_private_mem_func_v<Object>,
-            "Construct must be private member function!");
+        static_assert(XPrivate::is_private_mem_func_v<Object,Args2...>
+                    ,"bool Object::construct_(...) must be a private non static member function!");
 
-        static_assert(!XPrivate::is_default_constructor_accessible_v<Object,Args1...>,
-            "Construct must be private member function!");
-#if 0
-        if constexpr (std::conjunction_v<
-                std::is_same<std::decay_t<decltype(args1)>, std::tuple<>>
-                ,std::negation<std::is_same<decltype(args2),std::tuple<>>>
-                >)
-        {
-
-            return [&]<std::size_t ...I>(std::index_sequence<I...>) -> ClassType *{
-                auto obj{make_Unique<Class>()};
-                if (obj && obj->Construct(std::get<I>(std::forward<decltype(args2)>(args2))...)) {
-                    return obj.release();
-                }
-                return nullptr;
-            }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
-
-        }else if constexpr (std::conjunction_v<
-                std::is_same<std::decay_t<decltype(args2)>,std::tuple<>>
-                ,std::negation<std::is_same<std::decay_t<decltype(args1)>,std::tuple<>>>
-                >)
-        {
-
-            return [&]<std::size_t ...I>(std::index_sequence<I...>) -> ClassType *{
-                auto obj{make_Unique<Class>(std::get<I>(std::forward<decltype(args1)>(args1))...)};
-                if (obj && obj->Construct()) {
-                    return obj.release();
-                }
-                return nullptr;
-            }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{});
-
-        }else if constexpr (std::conjunction_v<
-                std::negation<std::is_same<std::decay_t<decltype(args1)>,std::tuple<>>>
-                ,std::negation<std::is_same<std::decay_t<decltype(args2)>,std::tuple<>>>
-        >){
-
-            return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> ClassType * {
-                auto obj{make_Unique<Class>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
-                if (obj && obj->Construct(std::get<I2>(std::forward<decltype(args2)>(args2))...)) {
-                    return obj.release();
-                }
-                return nullptr;
-            }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
-              std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
-
-        }else {
-
-            return [&]()-> ClassType *{
-                auto obj{make_Unique<Class>()};
-                if (obj && obj->Construct()) {
-                    return obj.release();
-                }
-                return nullptr;
-            }();
-
-        }
-#else
+        static_assert(!XPrivate::is_default_constructor_accessible_v<Object,Args1...>
+                    ,"The Object (...) constructor (non copy and non move) must be a private member function!");
+#if __cplusplus >= 201402L
         return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> Object * {
-            auto obj{make_Unique<Object>(std::get<I1>(std::forward<decltype(args1)>(args1))...)};
-            return obj && obj->Construct_(std::get<I2>(std::forward<decltype(args2)>(args2))...) ? obj.release() : nullptr;
-        }(std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args1)>>>{},
-          std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(args2)>>>{});
+            auto obj { make_Unique<Object>( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... ) };
+            return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2 ) )... ) ? obj.release() : nullptr;
+        }(indices(args1),indices(args2));
+#else
+        return CreateHelper(args1,args2,indices(args1),indices(args2));
 #endif
     }
 
@@ -506,7 +510,7 @@ public:
         ,Parameter<Args2...> const & args2 = {} ) noexcept
     {
         try{
-            return std::shared_ptr<Object>{Create(args1,args2)};
+            return std::shared_ptr<Object>{ Create(args1,args2) };
         }catch (const std::exception &){
             return {};
         }
@@ -516,7 +520,7 @@ public:
     [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1 = {}
         ,Parameter<Args2...> const & args2 = {} ) noexcept
     {
-        return std::unique_ptr<Object>{Create(args1,args2)};
+        return std::unique_ptr<Object>{ Create(args1,args2) };
     }
 protected:
     XSecondConstruct() = default;
@@ -524,33 +528,45 @@ public:
     ~XSecondConstruct() = default;
 };
 
+#if 1
+/**
+ * 辅助二阶构造,代码可能随时删除
+ * @tparam Obj
+ * @tparam Args1
+ * @tparam Args2
+ * @param args1
+ * @param args2
+ * @return
+ */
 template<typename Obj,typename ...Args1,typename ...Args2>
 inline Obj * XSecondCreate( Parameter<Args1...> const & args1 = {}
     , Parameter<Args2...> const & args2 = {} ) noexcept {
-    return XSecondConstruct<Obj>::Create(args1,args2);
+    return XSecondConstruct<Obj>::Create( args1,args2 );
 }
 
 template<typename Obj,typename ...Args1,typename ...Args2>
 inline std::unique_ptr<Obj> XSecondCreateUniquePtr( Parameter<Args1...> const &args1 = {}
     ,Parameter<Args2...> const & args2 = {} ) noexcept {
-    return XSecondConstruct<Obj>::CreateUniquePtr(args1,args2 );
+    return XSecondConstruct<Obj>::CreateUniquePtr( args1,args2 );
 }
 
 template<typename Obj,typename ...Args1,typename ...Args2>
 inline std::shared_ptr<Obj> XSecondCreateSharedPtr( Parameter<Args1...> const &args1 = {}
     ,Parameter<Args2...> const & args2  = {} ) noexcept {
-    return XSecondConstruct<Obj>::CreateSharedPtr(args1,args2 );
+    return XSecondConstruct<Obj>::CreateSharedPtr( args1,args2 );
 }
+#endif
 
 #define FRIEND_SECOND \
-public: \
-inline void xfriendsecond(){X_ASSERT_W(false,FUNC_SIGNATURE \
-    ,"This function is used for checking, please do not call it!"); } \
 private: \
-    template<typename> \
-    friend class xtd::XSecondConstruct; \
+    inline void xfriendsecond(){ X_ASSERT_W(false,FUNC_SIGNATURE \
+        ,"This function is used for checking, please do not call it!"); \
+    } \
+    template<typename> friend class xtd::XSecondConstruct; \
+    template<typename> friend struct xtd::XPrivate::Has_FRIEND_SECOND_Macro; \
+    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func; \
     template<typename T, typename ... Args> \
-    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...args) noexcept;
+    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...) noexcept;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
