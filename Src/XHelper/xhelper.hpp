@@ -1,14 +1,20 @@
 #ifndef X_HELPER_HPP_
 #define X_HELPER_HPP_
 
-#include <string>
 #include <XHelper/xversion.hpp>
+#include <XHelper/xoverload.hpp>
+#include <XHelper/xtypetraits.hpp>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <memory>
 #include <functional>
 #include <type_traits>
-#include <XHelper/xoverload.hpp>
+#ifdef HAS_QT
+#include <QMetaEnum>
+#include <QString>
+#include <QObject>
+#endif
 
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
@@ -455,7 +461,7 @@ using Parameter = std::tuple<Args...>;
  *
  * @tparam Obj 派生类类型
  */
-
+#if 1
 template<typename Obj>
 class XSecondConstruct {
     template<typename Tuple_>
@@ -527,8 +533,151 @@ protected:
 public:
     ~XSecondConstruct() = default;
 };
+#endif
 
-#if 1
+template<typename Tp_>
+class XHelperClass {
+
+    using Object_t = RemoveRef_T<Tp_>;
+    using Type_t = RemoveRef_T<Tp_>;
+
+    static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
+
+    template<typename Tuple_>
+    inline static constexpr auto indices(Tuple_ &&) noexcept
+        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+    {
+        return std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >{};
+    }
+
+    template<typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2>
+    inline static constexpr Object_t * CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
+        std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept
+    {
+        auto obj { make_Unique<Object>( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... ) };
+        return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2) )... ) ? obj.release() : nullptr;
+    }
+public:
+    using Object = Object_t;
+    using Type = Type_t;
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline constexpr static Object * Create( Parameter<Args1...> const & args1 = {},
+                                  Parameter<Args2...> const & args2 = {} ) noexcept
+    {
+        static_assert(std::is_object_v<Object>,"typename Object is not an object");
+
+        static_assert(std::conjunction_v< std::is_base_of<XHelperClass,Object>
+                        ,std::is_convertible<Object,XHelperClass>
+                        > ,"Object must inherit from Class HelperClass");
+
+        static_assert(XPrivate::Has_FRIEND_SECOND_Macro_v<Object>
+                      ,"No FRIEND_SECOND in the class!");
+
+        static_assert(XPrivate::Has_construct_Func_v<Object,Args2...>
+                    ,"bool Object::construct_(...) non static member function absent!");
+
+        static_assert(XPrivate::is_private_mem_func_v<Object,Args2...>
+                    ,"bool Object::construct_(...) must be a private non static member function!");
+
+        static_assert(!XPrivate::is_default_constructor_accessible_v<Object,Args1...>
+                    ,"The Object (...) constructor (non copy and non move) must be a private member function!");
+#if __cplusplus >= 201402L
+        return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> Object * {
+            auto obj { make_Unique<Object>( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... ) };
+            return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2 ) )... ) ? obj.release() : nullptr;
+        }(indices(args1),indices(args2));
+#else
+        return CreateHelper(args1,args2,indices(args1),indices(args2));
+#endif
+    }
+
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1 = {}
+        ,Parameter<Args2...> const & args2 = {} ) noexcept
+    {
+        try{
+            return std::shared_ptr<Object>{ Create(args1,args2) };
+        }catch (const std::exception &){
+            return {};
+        }
+    }
+
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1 = {}
+        ,Parameter<Args2...> const & args2 = {} ) noexcept
+    {
+        return std::unique_ptr<Object>{ Create(args1,args2) };
+    }
+
+#ifdef HAS_QT
+   #if __cplusplus >= 202002L
+   #define LIKE_WHICH 1
+   #if LIKE_WHICH == 1
+       template<typename ENUM_> requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value))
+       inline static QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+   #elif LIKE_WHICH == 2
+       template<typename ENUM_>
+       inline static QString getEnumTypeAndValueName(ENUM_ && enumValue)
+       requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value)) {
+   #else
+       template<typename T>
+       concept ENUM_T = static_cast<bool>(QtPrivate::IsQEnumHelper<T>::Value);
+       template<ENUM_T ENUM_>
+       inline static QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+   #endif
+   #else
+       template<typename ENUM_>
+       inline static std::enable_if_t<QtPrivate::IsQEnumHelper<ENUM_>::Value, QString>
+       getEnumTypeAndValueName(ENUM_ && enumValue) {
+   #endif
+   #undef LIKE_WHICH
+           const auto metaObj {qt_getEnumMetaObject(enumValue)};
+           const auto EnumTypename {qt_getEnumName(enumValue)};
+           const auto enumIndex {metaObj->indexOfEnumerator(EnumTypename)};
+           const auto metaEnum {metaObj->enumerator(enumIndex)};
+           const auto enumValueName{metaEnum.valueToKey(enumValue)};
+           return QString("%1::%2").arg(EnumTypename).arg(enumValueName);
+       }
+   #if __cplusplus >= 202002L
+   #define LIKE_WHICH 1
+       /*std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T> ==
+        * std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>
+       */
+   #if (LIKE_WHICH == 1)
+       template<typename T> requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>)
+       inline static T *findChildByName(QObject* parent, const QString& objectname) {
+   #elif (LIKE_WHICH == 2 )
+       template<typename T>
+       inline static T *findChildByName(QObject* parent, const QString& objectname)
+       requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>) {
+   #else
+       template<typename T>
+       concept QObject_t = std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>;
+       template<QObject_t T>
+       inline static T *findChildByName(QObject* parent, const QString& objectname) {
+   #endif
+   #else
+       template <typename T>
+       inline static std::enable_if_t<std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T>>,T*>
+       findChildByName(QObject* parent, const QString& objectname) {
+   #endif
+           foreach (QObject* child, parent->children()) {
+               if (child->objectName() == objectname) {
+                   return qobject_cast<T*>(child);
+               }
+           }
+           return nullptr;
+       }
+       template<typename ...Args>
+       inline static QMetaObject::Connection ConnectHelper(Args && ...args) {
+           return QObject::connect(std::forward<Args>(args)...);
+       }
+#endif
+};
+
+using HelperClass = XHelperClass<void>;
+
+#if 0
 /**
  * 辅助二阶构造,代码可能随时删除
  * @tparam Obj
@@ -559,14 +708,14 @@ inline std::shared_ptr<Obj> XSecondCreateSharedPtr( Parameter<Args1...> const &a
 
 #define FRIEND_SECOND \
 private: \
-    inline void xfriendsecond(){ X_ASSERT_W(false,FUNC_SIGNATURE \
+    inline void xfriendsecond(){ X_ASSERT_W( false,FUNC_SIGNATURE \
         ,"This function is used for checking, please do not call it!"); \
     } \
-    template<typename> friend class xtd::XSecondConstruct; \
+    template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_FRIEND_SECOND_Macro; \
     template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func; \
     template<typename T, typename ... Args> \
-    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...) noexcept;
+    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...) noexcept; \
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
