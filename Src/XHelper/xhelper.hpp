@@ -459,7 +459,7 @@ using Parameter = std::tuple<Args...>;
  *   delete Test::Create(xtd::Parameter{10,...},{});
  * }
  *
- * @tparam Obj 派生类类型
+ * @tparam Tp_
  */
 
 template<typename Tp_>
