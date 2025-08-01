@@ -12,6 +12,7 @@
 #include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
 #include <utility>
+#include <XHelper/xtypetraits.hpp>
 
 static std::mutex mtx{};
 
@@ -395,7 +396,7 @@ public:
     };
 };
 
-class CTest : public xtd::XSecondConstruct<CTest> {
+class CTest : public xtd::XHelperClass<CTest> {
     FRIEND_SECOND
 
     bool construct_(int const a){
@@ -440,6 +441,8 @@ public:
     delete CTest::Create({},xtd::Parameter{});
     delete CTest::Create({},xtd::Parameter{200});
     delete CTest::Create(xtd::Parameter{300},{});
+    const int &&a{} ;
+    std::cerr << xtd::typeName(xtd::RemoveRef_T<decltype(a)>{}) << std::endl;
     // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
     // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
