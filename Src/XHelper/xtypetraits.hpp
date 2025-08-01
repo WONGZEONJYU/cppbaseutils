@@ -13,6 +13,28 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+template <typename T> struct [[maybe_unused]] RemoveRef { using Type = T; };
+#define REMOVEREF(...) \
+    template <typename T> struct [[maybe_unused]] RemoveRef<T __VA_ARGS__> { using Type = T; };
+FOR_EACH_CVREF_D(REMOVEREF)
+#undef REMOVEREF
+template <typename T> using RemoveRef_T [[maybe_unused]] = typename RemoveRef<T>::Type;
+
+template <typename T> struct [[maybe_unused]] RemoveConstRef { using Type = T; };
+template <typename T> struct [[maybe_unused]] RemoveConstRef<const T &> { using Type = T; };
+template <typename T> struct [[maybe_unused]] RemoveConstRef<const T &&> { using Type = T; };
+template <typename T> using RemoveConstRef_T [[maybe_unused]] = typename RemoveConstRef<T>::Type;
+
+template<typename T> struct [[maybe_unused]] RemoveVolatileRef { using Type = T; };
+template<typename T> struct [[maybe_unused]] RemoveVolatileRef<volatile T &> { using Type = T; };
+template<typename T> struct [[maybe_unused]] RemoveVolatileRef<volatile T &&> { using Type = T; };
+template<typename T> using RemoveVolatileRef_T [[maybe_unused]] = typename RemoveVolatileRef<T>::Type;
+
+template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef { using Type = T;};
+template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef<const volatile T &> { using Type = T; };
+template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef<const volatile T &&> { using Type = T; };
+template<typename T> using RemoveConstVolatileRef_T [[maybe_unused]] = typename RemoveConstVolatileRef<T>::Type;
+
 template<typename>
 struct is_smart_pointer : std::false_type {};
 
@@ -149,7 +171,7 @@ template<typename Tuple_>
 [[maybe_unused]] inline constexpr auto is_tuple_v {is_tuple<Tuple_>::value};
 
 template<typename Ty>
-[[maybe_unused]] X_API inline auto typeName(Ty) {
+[[maybe_unused]] X_API inline auto typeName(Ty &&) {
 #ifdef HAS_BOOST
     return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
 #else
