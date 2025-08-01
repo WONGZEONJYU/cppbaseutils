@@ -3,6 +3,7 @@
 
 #include <XHelper/xversion.hpp>
 #include <XHelper/xdecorator.hpp>
+#include <XHelper/xtypetraits.hpp>
 #include <type_traits>
 #include <utility>
 
@@ -12,16 +13,6 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XObject;
 
 namespace XPrivate {
-
-    template <typename T> struct [[maybe_unused]] RemoveRef { using Type = T; };
-    template <typename T> struct [[maybe_unused]] RemoveRef<T&> { using Type = T; };
-    template <typename T> struct [[maybe_unused]] RemoveRef<T&&> { using Type = T; };
-    template <typename T> using RemoveRef_T [[maybe_unused]] = typename RemoveRef<T>::Type;
-
-    template <typename T> struct RemoveConstRef { using Type = T; };
-    template <typename T> struct RemoveConstRef<const T&> { using Type = T; };
-    template <typename T> struct RemoveConstRef<const T&&> { using Type = T; };
-    template <typename T> using RemoveConstRef_T = typename RemoveConstRef<T>::Type;
 
     template<typename... Ts>
     struct List {
