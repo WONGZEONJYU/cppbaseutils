@@ -3,11 +3,15 @@
 
 #define FOR_EACH_DECORATOR(op) op() op(noexcept)
 
-#define FOR_EACH_CVREF_DECORATOR(op)\
+#define FOR_EACH_CVREF_D(op) \
     op(&) op(&&) \
-    op(volatile) op(volatile &) op(volatile &&)  \
-    op(const) op(const &) op(const &&) \
-    op(const volatile) op(const volatile &) op(const volatile &&)
+    op(const &) op(const &&) \
+    op(volatile &) op(volatile &&) \
+    op(const volatile &) op(const volatile &&)
+
+#define FOR_EACH_CVREF_DECORATOR(op) \
+    op(volatile)  op(const)  op(const volatile) \
+    FOR_EACH_CVREF_D(op)
 
 #define FOR_EACH_CVREF_DECORATOR_NOEXCEPT(op) \
     FOR_EACH_DECORATOR(op) \
