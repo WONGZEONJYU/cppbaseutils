@@ -397,7 +397,7 @@ public:
 };
 
 class CTest : public xtd::XHelperClass<CTest> {
-    FRIEND_SECOND
+    X_HELPER_CLASS
 
     bool construct_(int const a){
         std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
