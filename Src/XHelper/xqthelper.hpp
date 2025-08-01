@@ -11,6 +11,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+#if 0
 namespace qhelper {
 
 #if __cplusplus >= 202002L
@@ -82,6 +83,7 @@ namespace qhelper {
 
 #define FRIEND_CON template<typename ...Args> friend QMetaObject::Connection xtd::qhelper::ConnectHelper(Args && ...);
 }
+#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
