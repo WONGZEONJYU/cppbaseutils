@@ -5,6 +5,23 @@ project(XCppBaseUtils VERSION 1.0 LANGUAGES CXX)
 
 #set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/XCppBaseUtils")
 
+set(QT_PATH)
+set(HOME_DIR)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "Mac OS X" OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    list(APPEND HOME_DIR $ENV{HOME})
+    if (NOT QT_PATH)
+        list(APPEND QT_PATH "${HOME_DIR}/Qt/6.9.1/macos")
+    endif ()
+elseif (MSVC OR CMAKE_SYSTEM_NAME STREQUAL "Windows" OR (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE))
+    list(APPEND HOME_DIR $ENV{USERPROFILE})
+    if (NOT QT_PATH)
+        list(APPEND QT_PATH "C:/Qt6/6.9.1/msvc2022_64")
+    endif ()
+endif ()
+unset(HOME_DIR)
+
+message(STATUS "QT_PATH = ${QT_PATH}")
 # 设置 C++ 标准
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
@@ -33,8 +50,9 @@ endif()
 # 查找 Boost
 #find_package(Boost COMPONENTS ALL QUIET)
 find_package(Boost QUIET)
-find_package(Qt6 COMPONENTS Core QUIET)
-find_package(Qt5 COMPONENTS Core QUIET)
+find_package(Qt6 COMPONENTS Core QUIET PATHS ${QT_PATH})
+find_package(Qt5 COMPONENTS Core QUIET PATHS ${QT_PATH})
+unset(QT_PATH)
 # 创建库目标列表
 set(LIBRARY_TARGETS)
 
@@ -135,15 +153,21 @@ function(configure_library_target target_name)
         target_compile_definitions(${target_name} PUBLIC -DHAS_BOOST)
         target_include_directories(${target_name} PUBLIC ${Boost_INCLUDE_DIRS})
         target_link_libraries(${target_name} PUBLIC ${Boost_LIBRARIES})
+    else ()
+        message(WARNING "Boost not found!")
     endif()
 
     # 配置 Qt
     if(Qt6_FOUND OR Qt5_FOUND)
+        message(STATUS "Qt6_FOUND = ${Qt6_FOUND}")
+        message(STATUS "Qt5_FOUND = ${Qt5_FOUND}")
         set(CMAKE_AUTOMOC ON)
         set(CMAKE_AUTORCC ON)
         set(CMAKE_AUTOUIC ON)
         target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
         target_link_libraries(${target_name} PUBLIC Qt::Core)
+    else ()
+        message(WARNING "Qt not found!")
     endif()
 
     # 指定库的包含目录
