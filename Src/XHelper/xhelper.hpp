@@ -312,15 +312,18 @@ enum class ConnectionType {
 };
 
 namespace XPrivate {
+
     template<typename Obj>
     struct Has_X_HELPER_CLASS_Macro {
     private:
         static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
+
         template<typename T>
         inline static char test( void (T::*)() ){throw;}
+
         inline static int test( void (Obj::*)() ){throw;}
     public:
-        enum {value = sizeof(test(&Obj::checkFriendXHelperClass_)) == sizeof(int)};
+        enum { value = sizeof(test(&Obj::checkFriendXHelperClass_)) == sizeof(int) };
     };
 
     template<typename Obj>
@@ -330,11 +333,30 @@ namespace XPrivate {
     struct Has_construct_Func {
     private:
         static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
-        template<typename Object,typename ...AS>
-        inline static char test( bool (Object::*)(AS...) ){throw;}
-        inline static int test( bool (Obj::*)(Args...) ){throw;}
+
+    #if __cplusplus >= 202002L
+        template<typename Object>
+        inline static std::true_type test(int)
+            requires ( ( sizeof( std::declval<Object>().construct_( ( std::declval< std::decay_t< Args > >() )...) ) > static_cast<std::size_t>(0) ) )
+        {throw ;}
+    #else
+        template<typename Object>
+        inline static auto test(int)
+            -> std::enable_if_t< ( sizeof(std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0) )
+                ,std::true_type >
+        {throw ;}
+
+        template<typename Object>
+        inline static auto test(int)
+            -> decltype( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0)
+                , std::true_type{} )
+        {throw;}
+    #endif
+        template<typename >
+        inline static std::false_type test(...){throw ;}
+
     public:
-        enum { value = sizeof( test( xOverload<Args...>( &Obj::construct_ ) ) ) == sizeof(int) };
+        enum { value = decltype(test<Obj>(0))::value };
     };
 
     template<typename ...Args>
@@ -344,41 +366,45 @@ namespace XPrivate {
     struct is_private_mem_func {
     private:
     #if __cplusplus >= 202002L
-        template<typename Object>
-        static std::false_type test(void *) requires (
-                std::is_same_v<decltype(std::declval<Object>().construct_( (std::declval<Args>())...) ),void>
-                || (sizeof(std::declval<Object>().construct_( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
-            )
-        {return {};}
-    #else
-        template<typename Object>
-        static std::enable_if_t<
-            std::is_same_v<decltype(std::declval<Object>().construct_( (std::declval<Args>())...) ),void>
-        ,std::false_type> test(void *)
-        {return {};}
 
         template<typename Object>
-        static std::enable_if_t<
-            (sizeof(std::declval<Object>().construct_( (std::declval<Args>())...) ) > static_cast<std::size_t>(0))
-        ,std::false_type> test(std::nullptr_t)
-        {return {};}
+        inline static std::false_type test(int)
+            requires ( std::is_same_v<decltype( std::declval<Object>().construct_( std::declval< std::decay_t< Args > >()...) ),void>
+                || ( sizeof( std::declval<Object>().construct_( std::declval< std::decay_t< Args > >()...) ) > static_cast<std::size_t>(0)) )
+        {throw ;}
+
+        template<typename Object>
+        inline static auto test(int)
+            -> std::enable_if_t< std::is_same_v< decltype( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) ,void >
+                             || ( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0) )
+                ,std::false_type >
+        {throw ;}
+
+    #else
+        template<typename Object>
+        inline static auto test(int)
+            -> decltype( std::is_same_v< decltype(std::declval<Object>().construct_((std::declval< std::decay_t< Args > >())...)), void >
+            || ( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())... ) ) > static_cast<std::size_t>(0) )
+            ,std::false_type {} )
+        { throw ; }
+
     #endif
         template<typename >
-        static std::true_type test(...) {return {};}
+        inline static std::true_type test(...) {throw ;}
     public:
-        static constexpr bool value {decltype(test<Obj>(nullptr))::value};
+        enum { value = decltype(test<Obj>(0))::value };
     };
 
     template<typename ...Args>
-    inline constexpr auto is_private_mem_func_v{ is_private_mem_func<Args...>::value };
+    inline constexpr bool is_private_mem_func_v{ is_private_mem_func<Args...>::value };
 
     template<typename T, typename... Args>
     struct is_default_constructor_accessible {
     private:
         enum {
-            result = std::disjunction_v< std::is_constructible<T, Args...>
-                    ,std::is_nothrow_constructible<T, Args...>
-                    ,std::is_trivially_constructible<T,Args...>
+            result = std::disjunction_v< std::is_constructible< T, std::decay_t< Args >... >
+                    ,std::is_nothrow_constructible< T ,std::decay_t<Args>... >
+                    ,std::is_trivially_constructible< T ,std::decay_t<Args>... >
             >
         };
 
@@ -481,59 +507,59 @@ class XHelperClass {
     inline static constexpr Object_t * CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
         std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept
     {
-        auto obj { make_Unique<Object>( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... ) };
-        return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2) )... ) ? obj.release() : nullptr;
+        auto obj { make_Unique<Object>( std::get<I1>( std::forward< Tuple1_ >( args1 ) )... ) };
+        return obj && obj->construct_( std::get<I2>( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
     }
 public:
     using Object = Object_t;
     using Type = Type_t;
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline constexpr static Object * Create( Parameter<Args1...> const & args1 = {},
-                                  Parameter<Args2...> const & args2 = {} ) noexcept
+    [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > const & args1 = {},
+                                  Parameter< Args2...> const & args2 = {} ) noexcept
     {
-        static_assert(std::is_object_v<Object>,"typename Object is not an object");
+        static_assert( std::is_object_v< Object >,"typename Object is not an object" );
 
-        static_assert(std::conjunction_v< std::is_base_of<XHelperClass,Object>
-                        ,std::is_convertible<Object,XHelperClass>
-                        > ,"Object must inherit from Class HelperClass");
+        static_assert( std::conjunction_v< std::is_base_of< XHelperClass ,Object >
+                        ,std::is_convertible<Object,XHelperClass >
+                        > ,"Object must inherit from Class HelperClass" );
 
-        static_assert(XPrivate::Has_X_HELPER_CLASS_Macro_v<Object>
-                      ,"No X_HELPER_CLASS in the class!");
+        static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object >
+                      ,"No X_HELPER_CLASS in the class!" );
 
-        static_assert(XPrivate::Has_construct_Func_v<Object,Args2...>
-                    ,"bool Object::construct_(...) non static member function absent!");
+        static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... >
+                    ,"bool Object::construct_(...) non static member function absent!" );
 
-        static_assert(XPrivate::is_private_mem_func_v<Object,Args2...>
-                    ,"bool Object::construct_(...) must be a private non static member function!");
+        static_assert( XPrivate::is_private_mem_func_v< Object ,std::decay_t<Args2>... >
+                    ,"bool Object::construct_(...) must be a private non static member function!" );
 
-        static_assert(!XPrivate::is_default_constructor_accessible_v<Object,Args1...>
-                    ,"The Object (...) constructor (non copy and non move) must be a private member function!");
+        static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... >
+                    ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
 #if __cplusplus >= 201402L
-        return [&]<std::size_t ...I1,std::size_t...I2>(std::index_sequence<I1...>,std::index_sequence<I2...>)-> Object * {
-            auto obj { make_Unique<Object>( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... ) };
+        return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > ) -> Object * {
+            auto obj { make_Unique< Object >( std::get< I1 >( std::forward< decltype( args1 ) >( args1 ) )... ) };
             return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2 ) )... ) ? obj.release() : nullptr;
-        }(indices(args1),indices(args2));
+        }( indices( args1 ) ,indices( args2 ) );
 #else
         return CreateHelper(args1,args2,indices(args1),indices(args2));
 #endif
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter<Args1...> const & args1 = {}
-        ,Parameter<Args2...> const & args2 = {} ) noexcept
+    [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
+        ,Parameter< Args2...> const & args2 = {} ) noexcept
     {
         try{
-            return std::shared_ptr<Object>{ Create(args1,args2) };
+            return std::shared_ptr<Object>{ Create( args1 ,args2 ) };
         }catch (const std::exception &){
             return {};
         }
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter<Args1...> const & args1 = {}
-        ,Parameter<Args2...> const & args2 = {} ) noexcept
+    [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter< Args1... > const & args1 = {}
+        ,Parameter< Args2... > const & args2 = {} ) noexcept
     {
-        return std::unique_ptr<Object>{ Create(args1,args2) };
+        return std::unique_ptr<Object>{ Create( args1 ,args2 ) };
     }
 
 #ifdef HAS_QT
