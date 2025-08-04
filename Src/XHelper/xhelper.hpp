@@ -329,70 +329,64 @@ namespace XPrivate {
     template<typename Obj>
     inline constexpr bool Has_X_HELPER_CLASS_Macro_v{Has_X_HELPER_CLASS_Macro<Obj>::value};
 
-    template<typename Obj,typename ...Args>
+    template<typename Object,typename ...Args>
     struct Has_construct_Func {
     private:
-        static_assert(std::is_object_v<Obj>,"typename Obj don't Object type");
-
+        static_assert(std::is_object_v<Object>,"typename Object don't Object type");
     #if __cplusplus >= 202002L
-        template<typename Object>
-        inline static std::true_type test(int)
+        inline static auto test(int) -> std::true_type
             requires ( ( sizeof( std::declval<Object>().construct_( ( std::declval< std::decay_t< Args > >() )...) ) > static_cast<std::size_t>(0) ) )
         {throw ;}
     #else
-        template<typename Object>
-        inline static auto test(int)
-            -> std::enable_if_t< ( sizeof(std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0) )
-                ,std::true_type >
-        {throw ;}
-
-        template<typename Object>
-        inline static auto test(int)
+        #if 0 //只能二选一
+            inline static auto test(int)
+                -> std::enable_if_t< ( sizeof(std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0) )
+                    ,std::true_type >
+            {throw ;}
+        #else
+            inline static auto test(int)
             -> decltype( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0)
-                , std::true_type{} )
-        {throw;}
+                    , std::true_type{} )
+            {throw;}
+        #endif
     #endif
-        template<typename >
-        inline static std::false_type test(...){throw ;}
-
+        inline static auto test(...) -> std::false_type {throw ;}
     public:
-        enum { value = decltype(test<Obj>(0))::value };
+        enum { value = decltype(test(0))::value };
     };
 
     template<typename ...Args>
     inline constexpr bool Has_construct_Func_v {Has_construct_Func<Args...>::value};
 
-    template<typename Obj,typename ...Args>
+    template<typename Object,typename ...Args>
     struct is_private_mem_func {
     private:
     #if __cplusplus >= 202002L
-
-        template<typename Object>
-        inline static std::false_type test(int)
-            requires ( std::is_same_v<decltype( std::declval<Object>().construct_( std::declval< std::decay_t< Args > >()...) ),void>
-                || ( sizeof( std::declval<Object>().construct_( std::declval< std::decay_t< Args > >()...) ) > static_cast<std::size_t>(0)) )
+        inline static auto test(int) -> std::false_type
+            requires (
+                ( sizeof( std::declval<Object>().construct_( std::declval< std::decay_t< Args > >()...) ) > static_cast<std::size_t>(0) )
+                    || std::is_same_v< decltype( std::declval<Object>().construct_( std::declval< std::decay_t< Args > >()...) ),void >
+            )
         {throw ;}
-
-        template<typename Object>
-        inline static auto test(int)
-            -> std::enable_if_t< std::is_same_v< decltype( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) ,void >
-                             || ( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0) )
-                ,std::false_type >
-        {throw ;}
-
     #else
-        template<typename Object>
-        inline static auto test(int)
-            -> decltype( std::is_same_v< decltype(std::declval<Object>().construct_((std::declval< std::decay_t< Args > >())...)), void >
-            || ( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())... ) ) > static_cast<std::size_t>(0) )
-            ,std::false_type {} )
-        { throw ; }
-
+        #if 0 //只能二选一
+            inline static auto test(int)
+                -> std::enable_if_t< std::is_same_v< decltype( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) ,void >
+                     || ( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())...) ) > static_cast<std::size_t>(0) )
+                        ,std::false_type >
+                {throw ;}
+        #else
+            inline static auto test(int)
+                -> decltype( std::is_same_v< decltype(std::declval<Object>().construct_((std::declval< std::decay_t< Args > >())...)), void >
+                    || ( sizeof( std::declval<Object>().construct_( (std::declval< std::decay_t< Args > >())... ) ) > static_cast<std::size_t>(0) )
+                        ,std::false_type {} )
+                { throw ; }
+        #endif
     #endif
-        template<typename >
-        inline static std::true_type test(...) {throw ;}
+
+        inline static auto test(...) ->std::true_type {throw ;}
     public:
-        enum { value = decltype(test<Obj>(0))::value };
+        enum { value = decltype(test(0))::value };
     };
 
     template<typename ...Args>
