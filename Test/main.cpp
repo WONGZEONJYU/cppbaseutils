@@ -403,8 +403,6 @@ class CTest : public xtd::XHelperClass<CTest> {
         std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
         return true;
     }
-    CTest(const CTest &) = delete;
-
 
     bool construct_(std::string & a1,int const a2){
         std::cerr << FUNC_SIGNATURE << " a1 = " << a1 << " ,a2 = " << a2 << std::endl;
@@ -420,7 +418,7 @@ class CTest : public xtd::XHelperClass<CTest> {
     {
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
-    explicit CTest(int  &a) noexcept{
+    explicit CTest(int &a) noexcept{
         std::cerr << FUNC_SIGNATURE << "a = " << a << std::endl;
     }
 public:
