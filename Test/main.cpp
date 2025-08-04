@@ -406,15 +406,11 @@ class CTest : public xtd::XHelperClass<CTest> {
     CTest(const CTest &) = delete;
 
 
-
-    bool construct_(int const a1,int const a2){
+    bool construct_(std::string & a1,int const a2){
         std::cerr << FUNC_SIGNATURE << " a1 = " << a1 << " ,a2 = " << a2 << std::endl;
         return true;
     }
 
-    explicit CTest(int const a) noexcept{
-        std::cerr << FUNC_SIGNATURE << "a = " << a << std::endl;
-    }
 
     bool construct_() {
         std::cerr << FUNC_SIGNATURE << std::endl;
@@ -424,24 +420,28 @@ class CTest : public xtd::XHelperClass<CTest> {
     {
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
+    explicit CTest(int  &a) noexcept{
+        std::cerr << FUNC_SIGNATURE << "a = " << a << std::endl;
+    }
 public:
-
 
     ~CTest(){
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 };
 
-
-
 [[maybe_unused]] static void test6(){
-
-    auto p1 = CTest::CreateUniquePtr(xtd::Parameter{1},xtd::Parameter{100});
-    auto p2 = CTest::CreateSharedPtr(xtd::Parameter{2},xtd::Parameter{2,2});
+    int a1{1};
+    auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
+    std::string aa{"2"};
+    int a2{2};
+    auto p2 = CTest::CreateSharedPtr(xtd::Parameter{std::ref(a2)},xtd::Parameter{std::ref(aa),2});
     delete CTest::Create({},xtd::Parameter{});
     delete CTest::Create({},xtd::Parameter{200});
-    delete CTest::Create(xtd::Parameter{300},{});
-    const int &&a{} ;
+    int a3{300};
+    delete CTest::Create(xtd::Parameter{std::ref(a3)},{});
+
+    const int && a{} ;
     std::cerr << xtd::typeName(xtd::RemoveRef_T<decltype(a)>{}) << std::endl;
     // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
     // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
