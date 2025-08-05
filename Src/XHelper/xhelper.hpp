@@ -160,6 +160,7 @@ X_API void x_assert_what(const std::string &where, const std::string &what,
 X_API void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
 
+#if 0
 /**
  * 创建std::unique_ptr<T>,不抛异常
  * @tparam T
@@ -191,6 +192,7 @@ template<typename T, typename ... Args>
         return {};
     }
 }
+#endif
 
 /**
  * 遍历tuple所有元素
@@ -556,6 +558,38 @@ public:
         return std::unique_ptr<Object>{ Create( args1 ,args2 ) };
     }
 
+    /**
+     * 创建std::unique_ptr<T>,不抛异常
+     * @tparam T
+     * @tparam Args
+     * @param args
+     * @return std::unique_ptr<T>
+     */
+    template<typename T, typename ... Args>
+    [[maybe_unused]] [[nodiscard]] inline static std::unique_ptr<T> make_Unique(Args && ...args) noexcept {
+        try{
+            return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+        }catch (const std::exception &){
+            return {};
+        }
+    }
+
+    /**
+     * 创建std::shared_ptr<T>,不抛异常
+     * @tparam T
+     * @tparam Args
+     * @param args
+     * @return std::shared_ptr<T>
+     */
+    template<typename T, typename ... Args>
+    [[maybe_unused]] [[nodiscard]] inline static std::shared_ptr<T> make_Shared(Args && ...args) noexcept {
+        try{
+            return std::make_shared<T>(std::forward<Args>(args)...);
+        }catch (const std::exception &){
+            return {};
+        }
+    }
+
 #ifdef HAS_QT
    #if __cplusplus >= 202002L
    #define LIKE_WHICH 1
@@ -692,9 +726,12 @@ private: \
     } \
     template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
-    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func; \
-    template<typename T, typename ... Args> \
-    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...) noexcept; \
+    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func;
+
+#if 0
+    template<typename T, typename ... Args>
+    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...) noexcept;
+#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
