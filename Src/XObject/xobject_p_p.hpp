@@ -285,7 +285,7 @@ public:
 
         auto v{m_signalVector.loadRelaxed()};
         if(!v){
-            v = HelperClass::make_Unique<XSignalVector>().release();
+            v = makeUnique<XSignalVector>().release();
             m_signalVector.storeRelaxed(v);
         }
         v->try_emplace(signal_index);

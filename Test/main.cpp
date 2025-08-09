@@ -12,6 +12,7 @@
 #include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
 #include <utility>
+#include <chrono>
 #include <XHelper/xtypetraits.hpp>
 
 static std::mutex mtx{};
@@ -409,7 +410,6 @@ class CTest : public xtd::XHelperClass<CTest> {
         return true;
     }
 
-
     bool construct_() {
         std::cerr << FUNC_SIGNATURE << std::endl;
         return true;
@@ -428,6 +428,23 @@ public:
     }
 };
 
+class AAA{
+
+public:
+    explicit AAA(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+    ~AAA(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+    void p(){
+        using namespace std::chrono_literals;
+        std::cerr << FUNC_SIGNATURE << "\n";
+        std::this_thread::sleep_for(5s);
+    }
+};
+
+
 [[maybe_unused]] static void test6(){
     int a1{1};
     auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
@@ -441,6 +458,11 @@ public:
 
     const int && a{} ;
     std::cerr << xtd::typeName(xtd::RemoveRef_T<decltype(a)>{}) << std::endl;
+
+    AAA{}.p();
+
+    //xtd::makeUnique<CTest>();
+
     // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
     // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;

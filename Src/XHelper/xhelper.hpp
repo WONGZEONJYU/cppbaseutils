@@ -10,6 +10,7 @@
 #include <memory>
 #include <functional>
 #include <type_traits>
+#include <XAtomic/xatomic.hpp>
 #ifdef HAS_QT
 #include <QMetaEnum>
 #include <QString>
@@ -489,6 +490,18 @@ class XHelperClass {
 
     using Object_t = RemoveRef_T<Tp_>;
     using Type_t = RemoveRef_T<Tp_>;
+#if 0
+    inline static XAtomicPointer<Object_t> m_only_{};
+    XAtomicInt m_ref_{};
+#endif
+
+#define MAKE_UnPOINTER \
+            try{ return std::unique_ptr<T>(new T(std::forward<Args>(args)...)); \
+            }catch (const std::exception &){ return {};}
+
+#define MAKE_SHARED_POINTER \
+            try{return std::make_shared<T>(std::forward<Args>(args)...); \
+        }catch (const std::exception &){ return {};}
 
     static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
 
@@ -506,6 +519,19 @@ class XHelperClass {
         auto obj { make_Unique<Object>( std::get<I1>( std::forward< Tuple1_ >( args1 ) )... ) };
         return obj && obj->construct_( std::get<I2>( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
     }
+
+protected:
+
+    template<typename T, typename ... Args>
+    [[maybe_unused]] [[nodiscard]] inline static std::unique_ptr<T> makeUnique(Args && ...args) noexcept {
+        MAKE_UnPOINTER
+    }
+
+    template<typename T, typename ... Args>
+    [[maybe_unused]] [[nodiscard]] inline static std::shared_ptr<T> makeShared(Args && ...args) noexcept {
+        MAKE_SHARED_POINTER
+    }
+
 public:
     using Object = Object_t;
     using Type = Type_t;
@@ -532,18 +558,39 @@ public:
                     ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
 #if __cplusplus >= 201402L
         return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > ) -> Object * {
-            auto obj { make_Unique< Object >( std::get< I1 >( std::forward< decltype( args1 ) >( args1 ) )... ) };
+            auto obj { makeUnique< Object >( std::get< I1 >( std::forward< decltype( args1 ) >( args1 ) )... ) };
             return obj && obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2 ) )... ) ? obj.release() : nullptr;
         }( indices( args1 ) ,indices( args2 ) );
 #else
         return CreateHelper(args1,args2,indices(args1),indices(args2));
 #endif
     }
+#if 0
+    inline static Object * instance() noexcept {
+        auto p {m_only_.loadAcquire()};
+        if (!p) {
+            auto p1 {CreateUniquePtr()};
+            Object * ret{};
+            if (m_only_.testAndSetOrdered(nullptr,p1.get(),ret)) {
+                ret = p1.release();
+            }
+            return ret;
+        }
+        return p;
+    }
 
+    inline static void destroy() noexcept {
+        if (auto p {m_only_.loadAcquire()};p) {
+            if (!static_cast<XHelperClass>(p).m_ref_.deref()) {
+                delete p;
+                m_only_.storeRelease(nullptr);
+            }
+        }
+    }
+#endif
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
-        ,Parameter< Args2...> const & args2 = {} ) noexcept
-    {
+        ,Parameter< Args2...> const & args2 = {} ) noexcept {
         try{
             return std::shared_ptr<Object>{ Create( args1 ,args2 ) };
         }catch (const std::exception &){
@@ -553,41 +600,8 @@ public:
 
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline static std::unique_ptr<Object> CreateUniquePtr ( Parameter< Args1... > const & args1 = {}
-        ,Parameter< Args2... > const & args2 = {} ) noexcept
-    {
+        ,Parameter< Args2... > const & args2 = {} ) noexcept {
         return std::unique_ptr<Object>{ Create( args1 ,args2 ) };
-    }
-
-    /**
-     * 创建std::unique_ptr<T>,不抛异常
-     * @tparam T
-     * @tparam Args
-     * @param args
-     * @return std::unique_ptr<T>
-     */
-    template<typename T, typename ... Args>
-    [[maybe_unused]] [[nodiscard]] inline static std::unique_ptr<T> make_Unique(Args && ...args) noexcept {
-        try{
-            return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-        }catch (const std::exception &){
-            return {};
-        }
-    }
-
-    /**
-     * 创建std::shared_ptr<T>,不抛异常
-     * @tparam T
-     * @tparam Args
-     * @param args
-     * @return std::shared_ptr<T>
-     */
-    template<typename T, typename ... Args>
-    [[maybe_unused]] [[nodiscard]] inline static std::shared_ptr<T> make_Shared(Args && ...args) noexcept {
-        try{
-            return std::make_shared<T>(std::forward<Args>(args)...);
-        }catch (const std::exception &){
-            return {};
-        }
     }
 
 #ifdef HAS_QT
@@ -668,8 +682,6 @@ public:
 #endif
 };
 
-using HelperClass [[maybe_unused]] = XHelperClass<void>;
-
 /**
  * 辅助二阶构造,代码可能随时删除
  * @tparam Obj
@@ -719,19 +731,27 @@ template<typename Obj,typename ...Args1,typename ...Args2>
     return XHelperClass<Obj>::CreateSharedPtr( args1,args2 );
 }
 
+template<typename T,typename ...Args>
+inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
+    MAKE_UnPOINTER
+}
+
+template<typename T,typename ...Args>
+inline auto makeShared(Args && ...args) noexcept -> std::shared_ptr<T> {
+    MAKE_SHARED_POINTER
+}
+
+#undef MAKE_UnPOINTER
+#undef MAKE_SHARED_POINTER
+
 #define X_HELPER_CLASS \
 private: \
     inline void checkFriendXHelperClass_(){ X_ASSERT_W( false,FUNC_SIGNATURE \
         ,"This function is used for checking, please do not call it!"); \
-    } \
+    }\
     template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
     template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func;
-
-#if 0
-    template<typename T, typename ... Args>
-    friend inline std::unique_ptr<T> xtd::make_Unique(Args && ...) noexcept;
-#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
