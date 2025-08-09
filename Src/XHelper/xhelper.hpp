@@ -521,7 +521,6 @@ class XHelperClass {
     }
 
 protected:
-
     template<typename T, typename ... Args>
     [[maybe_unused]] [[nodiscard]] inline static std::unique_ptr<T> makeUnique(Args && ...args) noexcept {
         MAKE_UnPOINTER
@@ -740,6 +739,8 @@ template<typename T,typename ...Args>
 inline auto makeShared(Args && ...args) noexcept -> std::shared_ptr<T> {
     MAKE_SHARED_POINTER
 }
+
+using HelperClass [[maybe_unused]] = XHelperClass<void>;
 
 #undef MAKE_UnPOINTER
 #undef MAKE_SHARED_POINTER
