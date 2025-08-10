@@ -540,7 +540,7 @@ public:
     {
         static_assert( std::is_object_v< Object >,"typename Object is not an object" );
 
-        static_assert( std::conjunction_v< std::is_base_of< XHelperClass ,Object >
+        static_assert( std::disjunction_v< std::is_base_of< XHelperClass ,Object >
                         ,std::is_convertible<Object,XHelperClass >
                         > ,"Object must inherit from Class HelperClass" );
 
