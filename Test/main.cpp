@@ -450,7 +450,7 @@ private:
 };
 
 [[maybe_unused]] static void test6(){
-#if 0
+#if 1
     int a1{1};
     auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
     std::string aa{"2"};
