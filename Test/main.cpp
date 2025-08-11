@@ -428,24 +428,29 @@ public:
     }
 };
 
-class AAA{
-
+class AAA : public xtd::XSingleton<AAA>{
+    X_SINGLETON_CLASS
+    int aa{100};
 public:
+
+    void p(){
+        using namespace std::chrono_literals;
+        std::cerr << FUNC_SIGNATURE << aa <<  "\n";
+    }
+
+
+private:
     explicit AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
     }
     ~AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
     }
-    void p(){
-        using namespace std::chrono_literals;
-        std::cerr << FUNC_SIGNATURE << "\n";
-        std::this_thread::sleep_for(5s);
-    }
+    bool construct_(){return true;}
 };
 
-
 [[maybe_unused]] static void test6(){
+#if 0
     int a1{1};
     auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
     std::string aa{"2"};
@@ -458,8 +463,16 @@ public:
 
     const int && a{} ;
     std::cerr << xtd::typeName(xtd::RemoveRef_T<decltype(a)>{}) << std::endl;
+#endif
 
-    AAA{}.p();
+    //auto a{AAA::instance()};
+
+//    std::cerr << a.use_count() << std::endl;
+
+//    std::cerr << a.use_count() << std::endl;
+//    AAA::destroy();
+//    AAA::destroy();
+//    std::cerr << a.use_count() << std::endl;
 
     //xtd::makeUnique<CTest>();
 
