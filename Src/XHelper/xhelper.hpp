@@ -490,10 +490,6 @@ class XHelperClass {
 
     using Object_t = RemoveRef_T<Tp_>;
     using Type_t = RemoveRef_T<Tp_>;
-#if 0
-    inline static XAtomicPointer<Object_t> m_only_{};
-    XAtomicInt m_ref_{};
-#endif
 
 #define MAKE_UnPOINTER \
             try{ return std::unique_ptr<T>(new T(std::forward<Args>(args)...)); \
@@ -504,6 +500,7 @@ class XHelperClass {
         }catch (const std::exception &){ return {};}
 
     static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
+
 
     template<typename Tuple_>
     inline static constexpr auto indices(Tuple_ &&) noexcept
@@ -516,7 +513,7 @@ class XHelperClass {
     inline static constexpr Object_t * CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
         std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept
     {
-        auto obj { make_Unique<Object>( std::get<I1>( std::forward< Tuple1_ >( args1 ) )... ) };
+        auto obj { makeUnique<Object>( std::get<I1>( std::forward< Tuple1_ >( args1 ) )... ) };
         return obj && obj->construct_( std::get<I2>( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
     }
 
@@ -530,6 +527,8 @@ protected:
     [[maybe_unused]] [[nodiscard]] inline static std::shared_ptr<T> makeShared(Args && ...args) noexcept {
         MAKE_SHARED_POINTER
     }
+
+    XHelperClass() = default;
 
 public:
     using Object = Object_t;
@@ -564,29 +563,7 @@ public:
         return CreateHelper(args1,args2,indices(args1),indices(args2));
 #endif
     }
-#if 0
-    inline static Object * instance() noexcept {
-        auto p {m_only_.loadAcquire()};
-        if (!p) {
-            auto p1 {CreateUniquePtr()};
-            Object * ret{};
-            if (m_only_.testAndSetOrdered(nullptr,p1.get(),ret)) {
-                ret = p1.release();
-            }
-            return ret;
-        }
-        return p;
-    }
 
-    inline static void destroy() noexcept {
-        if (auto p {m_only_.loadAcquire()};p) {
-            if (!static_cast<XHelperClass>(p).m_ref_.deref()) {
-                delete p;
-                m_only_.storeRelease(nullptr);
-            }
-        }
-    }
-#endif
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline static std::shared_ptr<Object> CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
         ,Parameter< Args2...> const & args2 = {} ) noexcept {
@@ -681,6 +658,51 @@ public:
 #endif
 };
 
+template<typename Tp_>
+class XSingleton : protected XHelperClass<Tp_> {
+
+    using Base_ = XHelperClass<Tp_>;
+
+    using DataType_ = std::shared_ptr<typename Base_::Object>;
+
+    inline static std::once_flag& initFlag() {
+        static std::once_flag flag{};
+        return flag;
+    }
+
+    inline static DataType_& data() {
+        static DataType_ d{};
+        return d;
+    }
+
+protected:
+    XSingleton() = default;
+
+public:
+    template<typename ...Args1,typename ...Args2>
+    inline static DataType_ instance(const Parameter<Args1...> & args1 = {}
+        ,const Parameter<Args2...> & args2 = {})
+    {
+        std::call_once(initFlag(),[&]{
+            DataType_ d {};
+            do {
+                d = std::move(Base_::CreateSharedPtr(args1,args2));
+            } while (!d);
+            data() = std::move(d);
+        });
+        return data();
+    }
+
+    [[maybe_unused]] [[nodiscard]] inline static auto isConstruct() -> bool
+    {return static_cast<bool >(data());}
+
+#if 0
+    [[maybe_unused]] inline static void destroy()
+    {data().reset();}
+#endif
+    X_DISABLE_COPY_MOVE(XSingleton)
+};
+
 /**
  * 辅助二阶构造,代码可能随时删除
  * @tparam Obj
@@ -753,6 +775,10 @@ private: \
     template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
     template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func;
+
+#define X_SINGLETON_CLASS \
+    X_HELPER_CLASS  \
+    template<typename> friend class xtd::XSingleton;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
