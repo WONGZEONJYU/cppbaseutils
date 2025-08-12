@@ -473,6 +473,7 @@ protected:
 #endif
 
      auto p{std::move(AAA::UniqueConstruction())};
+    p->p();
     //delete p.get();
     // AAA::instance()->p();
 
