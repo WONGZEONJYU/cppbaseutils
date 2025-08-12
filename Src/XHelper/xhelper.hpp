@@ -833,8 +833,11 @@ inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
 
 template<typename T,typename ...Args>
 inline auto makeShared(Args && ...args) noexcept -> std::shared_ptr<T> {
-    try{return std::make_shared<T>(std::forward<Args>(args)...); \
-    }catch (const std::exception &){ return {};}
+    try{
+        return std::make_shared<T>(std::forward<Args>(args)...);
+    }catch (const std::exception &){
+        return {};
+    }
 }
 
 using HelperClass [[maybe_unused]] = XHelperClass<void>;
