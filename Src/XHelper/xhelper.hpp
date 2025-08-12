@@ -520,8 +520,10 @@ namespace XPrivate {
 
 class XHelperClassBase {
     template<typename > friend class XHelperClass;
+    template<typename > friend class XSingleton;
+
     XHelperClassBase() = default;
-protected:
+
     template<typename Object> struct Destructor_ {
 
         constexpr Destructor_() = default;
