@@ -458,7 +458,7 @@ namespace XPrivate {
     };
 
     template<typename ...Args>
-    inline constexpr bool is_default_constructor_accessible_v {is_default_constructor_accessible<Args...>::value};
+    inline constexpr bool is_default_constructor_accessible_v { is_default_constructor_accessible<Args...>::value };
 
     template<typename Object>
     struct is_destructor_private {
@@ -519,9 +519,9 @@ namespace XPrivate {
 } //namespace XPrivate;
 
 class XHelperClassBase {
-protected:
+    template<typename > friend class XHelperClass;
     XHelperClassBase() = default;
-
+protected:
     template<typename Object> struct Destructor_ {
 
         constexpr Destructor_() = default;
@@ -572,18 +572,18 @@ using Parameter = std::tuple<Args...>;
 template<typename Tp_>
 class XHelperClass : protected XHelperClassBase {
 
-    using Object_t = RemoveRef_T<Tp_>;
-    using Type_t = RemoveRef_T<Tp_>;
+    using Object_t = std::decay_t< RemoveRef_T<Tp_> >;
+    using Type_t = Object_t;
+    static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
 
 protected:
+    XHelperClass() = default;
     using Deleter = Destructor_< Object_t >;
 
 public:
     using ObjectUPtr = std::unique_ptr< Object_t , Deleter >;
 
 private:
-    static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
-
     template<typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2>
     inline static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
         std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept -> Object_t *
@@ -604,8 +604,6 @@ protected:
     {
         return {};
     }
-
-    XHelperClass() = default;
 
 public:
     using Object = Object_t;
@@ -631,6 +629,7 @@ public:
 
         static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... >
                     ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
+
 #if __cplusplus >= 201402L
         return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > ) noexcept -> Object * {
             try{
@@ -649,13 +648,13 @@ public:
     using ObjectSPtr = std::shared_ptr< Object >;
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static auto CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
+    [[nodiscard]] inline static constexpr auto CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
         ,Parameter< Args2...> const & args2 = {} ) noexcept -> ObjectSPtr {
         return { Create( args1 ,args2 ) ,Deleter{} ,XPrivate::Allocator_<Object>{} };
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static auto CreateUniquePtr ( Parameter< Args1... > const & args1 = {}
+    [[nodiscard]] inline static constexpr auto CreateUniquePtr ( Parameter< Args1... > const & args1 = {}
         ,Parameter< Args2... > const & args2 = {} ) noexcept -> ObjectUPtr {
         return { Create( args1 ,args2 ) ,Deleter{} };
     }
@@ -761,24 +760,22 @@ private:
     }
 
     template<typename A1,typename A2,std::size_t ...I1,std::size_t ...I2>
-    inline static auto alloc(A1 && a1,A2 && a2
+    inline static constexpr auto alloc(A1 && a1,A2 && a2
        ,std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept -> DataType_
     {
-        DataType_ obj{};
-        do {
+        while (true) {
             try{
-                obj = DataType_{new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
-                    ,typename Base_::Deleter{} , XPrivate::Allocator_<Object>{}};
+                DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
+                    ,typename Base_::Deleter{} , XPrivate::Allocator_<Object>{} };
+
+                if (obj->construct_( std::get<I2>( std::forward< A2 >( a2 ) )... )) {
+                    return obj;
+                }
             } catch (const std::exception &) {
-               std::cerr << FUNC_SIGNATURE << " retry alloc!\n";
+                std::cerr << FUNC_SIGNATURE << " retry alloc!\n";
             }
-        }while (!obj);
-
-        return obj;
+        }
     }
-
-protected:
-    XSingleton() = default;
 
 public:
     template<typename ...Args1,typename ...Args2>
@@ -821,6 +818,8 @@ public:
     {return static_cast<bool >(data());}
 
     X_DISABLE_COPY_MOVE(XSingleton)
+protected:
+    XSingleton() = default;
 };
 
 template<typename T,typename ...Args>
