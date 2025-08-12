@@ -423,7 +423,9 @@ class CTest : public xtd::XHelperClass<CTest> {
     }
 public:
 
+private:
     ~CTest(){
+        delete new int[10];
         std::cerr << FUNC_SIGNATURE << std::endl;
     }
 };
@@ -436,15 +438,15 @@ public:
     void p(){
         using namespace std::chrono_literals;
         std::cerr << FUNC_SIGNATURE << aa <<  "\n";
+
     }
-
-
 
 private:
     explicit AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
-    }
 
+    }
+protected:
     ~AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
     }
@@ -457,20 +459,24 @@ private:
 #if 1
     int a1{1};
     auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
+
     std::string aa{"2"};
     int a2{2};
     auto p2 = CTest::CreateSharedPtr(xtd::Parameter{std::ref(a2)},xtd::Parameter{std::ref(aa),2});
-    delete CTest::Create({},xtd::Parameter{});
-    delete CTest::Create({},xtd::Parameter{200});
+    //delete CTest::Create({},xtd::Parameter{});
+
+     //std::unique_ptr<CTest> a {CTest::Create({},xtd::Parameter{})};
+
+    //delete CTest::Create({},xtd::Parameter{200});
     int a3{300};
-    delete CTest::Create(xtd::Parameter{std::ref(a3)},{});
+    //delete CTest::Create(xtd::Parameter{std::ref(a3)},{});
 
     //std::cerr << std::boolalpha << static_cast<bool>(xtd::XPrivate::is_destructor_private_v<AAA>) << std::endl;
 #endif
 
-    //auto p = AAA::instance({},{});
-    AAA::UniqueConstruction();
-    AAA::instance()->p();
+     auto p{std::move(AAA::UniqueConstruction())};
+    //delete p.get();
+    // AAA::instance()->p();
 
     //auto a{AAA::instance()};
 
