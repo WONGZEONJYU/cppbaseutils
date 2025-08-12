@@ -483,11 +483,17 @@ namespace XPrivate {
     inline constexpr bool is_destructor_private_v { is_destructor_private<Object>::value };
 
     template<typename Obj>
-    struct Destructor {
+    struct Destructor_ {
         void operator()(Obj * p) const noexcept {
             delete p;
         }
     };
+
+    template<typename T>
+    struct Allocator_ {
+
+    };
+
 };
 
 template<typename ...Args>
@@ -540,15 +546,6 @@ class XHelperClass {
 
     static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
 
-protected:
-    template<typename Tuple_>
-    inline static constexpr auto indices(Tuple_ &&) noexcept
-        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
-    {
-        return std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >{};
-    }
-
-private:
     template<typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2>
     inline static constexpr Object_t * CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
         std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept
@@ -558,6 +555,13 @@ private:
     }
 
 protected:
+    template<typename Tuple_>
+    inline static constexpr auto indices(Tuple_ &&) noexcept
+    -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+    {
+        return std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >{};
+    }
+
     template<typename T, typename ... Args>
     [[maybe_unused]] [[nodiscard]] inline static std::unique_ptr<T> makeUnique(Args && ...args) noexcept {
         MAKE_UnPOINTER
@@ -726,7 +730,7 @@ private:
     {
         try{
             DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
-                    ,XPrivate::Destructor<Object>{} };
+                    ,XPrivate::Destructor_<Object>{} };
             return obj->construct_( std::get<I2>( std::forward<A2>( a2 ) )... ) ? obj : nullptr;
         } catch (const std::exception &) {
             return {};
@@ -779,55 +783,6 @@ public:
     X_DISABLE_COPY_MOVE(XSingleton)
 };
 
-/**
- * 辅助二阶构造,代码可能随时删除
- * @tparam Obj
- * @tparam Args1
- * @tparam Args2
- * @param args1
- * @param args2
- * @return Obj *
- */
-template<typename Obj,typename ...Args1,typename ...Args2>
-[[maybe_unused]] inline auto XSecondCreate( Parameter<Args1...> const & args1 = {}
-    , Parameter<Args2...> const & args2 = {} ) noexcept -> Obj *
-{
-    return XHelperClass<Obj>::Create( args1,args2 );
-}
-
-/**
- * 辅助二阶构造,代码可能随时删除
- * @tparam Obj
- * @tparam Args1
- * @tparam Args2
- * @param args1
- * @param args2
- * @return std::unique_ptr<Obj>
- */
-
-template<typename Obj,typename ...Args1,typename ...Args2>
-[[maybe_unused]] inline auto XSecondCreateUniquePtr( Parameter<Args1...> const &args1 = {}
-    ,Parameter<Args2...> const & args2 = {} ) noexcept -> std::unique_ptr<Obj>
-{
-    return XHelperClass<Obj>::CreateUniquePtr( args1,args2 );
-}
-
-/**
- * 辅助二阶构造,代码可能随时删除
- * @tparam Obj
- * @tparam Args1
- * @tparam Args2
- * @param args1
- * @param args2
- * @return std::shared_ptr<Obj>
- */
-template<typename Obj,typename ...Args1,typename ...Args2>
-[[maybe_unused]] inline auto XSecondCreateSharedPtr( Parameter<Args1...> const &args1 = {}
-    ,Parameter<Args2...> const & args2  = {} ) noexcept -> std::shared_ptr<Obj>
-{
-    return XHelperClass<Obj>::CreateSharedPtr( args1,args2 );
-}
-
 template<typename T,typename ...Args>
 inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
     MAKE_UnPOINTER
@@ -855,7 +810,7 @@ private: \
 #define X_SINGLETON_CLASS \
     X_HELPER_CLASS \
     template<typename> friend class xtd::XSingleton; \
-    template<typename> friend struct xtd::XPrivate::Destructor;
+    template<typename> friend struct xtd::XPrivate::Destructor_;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
