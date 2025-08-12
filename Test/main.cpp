@@ -428,7 +428,7 @@ public:
     }
 };
 
-class AAA : public xtd::XSingleton<AAA>{
+class AAA : public xtd::XSingleton<AAA> {
     X_SINGLETON_CLASS
     int aa{100};
 public:
@@ -439,15 +439,19 @@ public:
     }
 
 
+
 private:
     explicit AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
     }
+
     ~AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
     }
+
     bool construct_(){return true;}
 };
+
 
 [[maybe_unused]] static void test6(){
 #if 1
@@ -461,9 +465,12 @@ private:
     int a3{300};
     delete CTest::Create(xtd::Parameter{std::ref(a3)},{});
 
-    const int && a{} ;
-    std::cerr << xtd::typeName(xtd::RemoveRef_T<decltype(a)>{}) << std::endl;
+    //std::cerr << std::boolalpha << static_cast<bool>(xtd::XPrivate::is_destructor_private_v<AAA>) << std::endl;
 #endif
+
+    //auto p = AAA::instance({},{});
+    AAA::UniqueConstruction();
+    AAA::instance()->p();
 
     //auto a{AAA::instance()};
 
