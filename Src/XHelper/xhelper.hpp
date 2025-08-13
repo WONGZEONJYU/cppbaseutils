@@ -333,6 +333,9 @@ namespace XPrivate {
     template<typename Object>
     inline constexpr bool Has_X_HELPER_CLASS_Macro_v { Has_X_HELPER_CLASS_Macro<Object>::value };
 
+    template <typename Object>
+    inline constexpr auto Has_X_SINGLETON_CLASS_Macro_v { Has_X_HELPER_CLASS_Macro_v< Object > };
+
     template<typename Object,typename ...Args>
     struct Has_construct_Func {
     private:
@@ -488,24 +491,21 @@ namespace XPrivate {
 
         using value_type = Tp_;
 
-        Allocator_() = default;
+        constexpr Allocator_() = default;
 
         template<class U>
-        constexpr explicit Allocator_(const Allocator_ <U>&) noexcept {}
+        [[maybe_unused]] constexpr explicit Allocator_(const Allocator_ <U>&) noexcept {}
 
-        [[nodiscard]] static auto allocate(std::size_t const n) noexcept -> Tp_ * {
-            void* ptr{};
-            do {
-                ptr = std::malloc( sizeof(Tp_) * n );
-                if (!ptr){
-                    std::cerr << FUNC_SIGNATURE << " retry alloc\n";
+        [[maybe_unused]] [[nodiscard]] static auto allocate(std::size_t const n) noexcept -> value_type * {
+            while (true) {
+                auto const ptr{ std::malloc(sizeof(value_type) * n) };
+                if (ptr) {
+                    return static_cast<value_type*>(ptr);
                 }
             }
-            while (!ptr);
-            return static_cast<Tp_ *>(ptr);
         }
 
-        static void deallocate(Tp_ * const ptr, std::size_t) noexcept {
+        [[maybe_unused]] static void deallocate(value_type * const ptr, std::size_t) noexcept {
             std::free(ptr);
         }
     };
@@ -519,10 +519,23 @@ namespace XPrivate {
 } //namespace XPrivate;
 
 class XHelperClassBase {
+
+#define STATIC_ASSERT_P \
+    static_assert( std::is_object_v< Object >,"typename Object is not an class or struct" ); \
+                        \
+    static_assert( std::is_final_v< Object > ,"Object must be a final class" ); \
+                        \
+    static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... > \
+            ,"bool Object::construct_(...) non static member function absent!" ); \
+                        \
+    static_assert( XPrivate::is_private_mem_func_v< Object ,std::decay_t<Args2>... > \
+            ,"bool Object::construct_(...) must be a private non static member function!" ); \
+                        \
+    static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... > \
+            ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
+
     template<typename > friend class XHelperClass;
     //template<typename > friend class XSingleton;
-
-    XHelperClassBase() = default;
 protected:
     template<typename Object> struct Destructor_ {
 
@@ -535,6 +548,8 @@ protected:
             delete p;
         }
     };
+private:
+    XHelperClassBase() = default;
 };
 
 template<typename ...Args>
@@ -575,14 +590,14 @@ template<typename Tp_>
 class XHelperClass : protected XHelperClassBase {
 
     using Object_t = std::decay_t< RemoveRef_T<Tp_> >;
-    using Type_t = Object_t;
-    static_assert(std::negation_v< std::is_pointer< Type_t > >,"Tp_ Cannot be pointer type");
+
+    static_assert(std::negation_v< std::is_pointer< Object_t > >,"Tp_ Cannot be pointer type");
 
 protected:
     XHelperClass() = default;
     using Deleter = Destructor_< Object_t >;
-
 public:
+    using ObjectSPtr = std::shared_ptr< Object_t >;
     using ObjectUPtr = std::unique_ptr< Object_t , Deleter >;
 
 private:
@@ -609,28 +624,19 @@ protected:
 
 public:
     using Object = Object_t;
-    using Type = Type_t;
+
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > const & args1 = {},
                                   Parameter< Args2...> const & args2 = {} ) noexcept
     {
-        static_assert( std::is_object_v< Object >,"typename Object is not an object" );
+        static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object >
+                ,"No X_HELPER_CLASS in the class!" );
 
         static_assert( std::disjunction_v< std::is_base_of< XHelperClass ,Object >
-                        ,std::is_convertible<Object,XHelperClass >
-                        > ,"Object must inherit from Class HelperClass" );
+            ,std::is_convertible<Object,XHelperClass >
+        > ,"Object must inherit from Class XHelperClass" );
 
-        static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object >
-                      ,"No X_HELPER_CLASS in the class!" );
-
-        static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... >
-                    ,"bool Object::construct_(...) non static member function absent!" );
-
-        static_assert( XPrivate::is_private_mem_func_v< Object ,std::decay_t<Args2>... >
-                    ,"bool Object::construct_(...) must be a private non static member function!" );
-
-        static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... >
-                    ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
+        STATIC_ASSERT_P
 
 #if __cplusplus >= 201402L
         return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > ) noexcept -> Object * {
@@ -646,8 +652,6 @@ public:
         return CreateHelper(args1,args2,indices(args1),indices(args2));
 #endif
     }
-
-    using ObjectSPtr = std::shared_ptr< Object >;
 
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline static constexpr auto CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
@@ -749,7 +753,7 @@ public:
     using DataType_ = std::shared_ptr< Object >;
 
 private:
-    static_assert(std::is_object_v<Object>,"Tp_ must be a Object type!");
+    static_assert(std::is_object_v<Object>,"Tp_ must be a class or struct type!");
 
     inline static std::once_flag& initFlag() {
         static std::once_flag flag{};
@@ -784,26 +788,17 @@ public:
     inline static auto UniqueConstruction(const Parameter<Args1...> & args1 = {}
         ,const Parameter<Args2...> & args2 = {}) noexcept -> DataType_
     {
-        static_assert( std::is_object_v< Object >,"typename Object is not an object" );
+        static_assert( XPrivate::Has_X_SINGLETON_CLASS_Macro_v< Object >
+                ,"No X_SINGLETON_CLASS in the class!" );
+
+        static_assert( XPrivate::is_destructor_private_v< Object >
+                , "destructor( ~Object() ) must be private!" );
 
         static_assert( std::disjunction_v< std::is_base_of< XSingleton ,Object >
                 ,std::is_convertible<Object,XSingleton >
         > ,"Object must inherit from Class XSingleton" );
 
-        static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object >
-                ,"No X_SINGLETON_CLASS in the class!" );
-
-        static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... >
-                ,"bool Object::construct_(...) non static member function absent!" );
-
-        static_assert( XPrivate::is_private_mem_func_v< Object ,std::decay_t<Args2>... >
-                ,"bool Object::construct_(...) must be a private non static member function!" );
-
-        static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... >
-                ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
-
-        static_assert( XPrivate::is_destructor_private_v< Object >
-                , "destructor( ~Object() ) must be private!" );
+        STATIC_ASSERT_P
 
         std::call_once(initFlag(),[&]{
             data() = std::move(alloc(args1,args2,Base_::indices(args1),Base_::indices(args2)));
@@ -812,7 +807,7 @@ public:
         return data();
     }
 
-    inline static auto instance() noexcept -> DataType_ {
+    [[maybe_unused]] inline static auto instance() noexcept -> DataType_ {
         return data();
     }
 
@@ -824,8 +819,10 @@ protected:
     XSingleton() = default;
 };
 
+#undef STATIC_ASSERT_P
+
 template<typename T,typename ...Args>
-inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
+[[maybe_unused]] inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
     try{
         return std::unique_ptr<T>{ new T( std::forward<Args>(args)... ) };
     }catch (const std::exception &) {
@@ -834,7 +831,7 @@ inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
 }
 
 template<typename T,typename ...Args>
-inline auto makeShared(Args && ...args) noexcept -> std::shared_ptr<T> {
+[[maybe_unused]] inline auto makeShared(Args && ...args) noexcept -> std::shared_ptr<T> {
     try{
         return std::make_shared<T>(std::forward<Args>(args)...);
     }catch (const std::exception &){
