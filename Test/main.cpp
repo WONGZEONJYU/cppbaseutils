@@ -397,7 +397,7 @@ public:
     };
 };
 
-class CTest : public xtd::XHelperClass<CTest> {
+class CTest final : public xtd::XHelperClass<CTest> {
     X_HELPER_CLASS
 
     bool construct_(int const a){
@@ -434,7 +434,7 @@ public:
     }
 };
 
-class AAA : public xtd::XSingleton<AAA> {
+class AAA final : public xtd::XSingleton<AAA> {
     X_SINGLETON_CLASS
     int aa{100};
 public:
