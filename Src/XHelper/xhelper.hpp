@@ -2,7 +2,6 @@
 #define X_HELPER_HPP_
 
 #include <XHelper/xversion.hpp>
-#include <XHelper/xoverload.hpp>
 #include <XHelper/xtypetraits.hpp>
 #include <string>
 #include <string_view>
@@ -11,7 +10,6 @@
 #include <functional>
 #include <iostream>
 #include <type_traits>
-#include <XAtomic/xatomic.hpp>
 #ifdef HAS_QT
 #include <QMetaEnum>
 #include <QString>
@@ -498,8 +496,7 @@ namespace XPrivate {
 
         [[maybe_unused]] [[nodiscard]] static auto allocate(std::size_t const n) noexcept -> value_type * {
             while (true) {
-                auto const ptr{ std::malloc(sizeof(value_type) * n) };
-                if (ptr) {
+                if (auto const ptr{ std::malloc(sizeof(value_type) * n) }) {
                     return static_cast<value_type*>(ptr);
                 }
             }
@@ -771,10 +768,9 @@ private:
     {
         while (true) {
             try{
-                DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
+                if (DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
                     ,typename Base_::Deleter{} , XPrivate::Allocator_<Object>{} };
-
-                if (obj->construct_( std::get<I2>( std::forward< A2 >( a2 ) )... )) {
+                    obj->construct_( std::get<I2>( std::forward< A2 >( a2 ) )... )) {
                     return obj;
                 }
             } catch (const std::exception &) {
@@ -844,7 +840,7 @@ using HelperClass [[maybe_unused]] = XHelperClass<void>;
 #define X_HELPER_CLASS \
 private: \
     inline void checkFriendXHelperClass_(){ X_ASSERT_W( false ,FUNC_SIGNATURE \
-        ,"This function is used for checking, please do not call it!"); \
+        ,"This function is used for checking, please don't call it!"); \
     } \
     template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
