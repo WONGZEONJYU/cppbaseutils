@@ -405,7 +405,7 @@ class CTest final : public xtd::XHelperClass<CTest> {
         return true;
     }
 
-    bool construct_(std::string & a1,int const a2){
+    bool construct_(std::string && a1,int const a2){
         std::cerr << FUNC_SIGNATURE << " a1 = " << a1 << " ,a2 = " << a2 << std::endl;
         return true;
     }
@@ -460,7 +460,7 @@ protected:
     int a1{1},a2{2};
     std::string aa{"2"};
     auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
-    auto p2 = CTest::CreateSharedPtr(xtd::Parameter{std::ref(a2)},xtd::Parameter{std::ref(aa),2});
+    auto p2 = CTest::CreateSharedPtr(xtd::Parameter{std::ref(a2)},xtd::Parameter{std::move(aa),2});
     delete CTest::Create({},{});
 
     std::unique_ptr<CTest> a {CTest::Create({},xtd::Parameter{})};
@@ -474,6 +474,7 @@ protected:
 
      auto p{std::move(AAA::UniqueConstruction())};
     p->p();
+
     //delete p.get();
     // AAA::instance()->p();
 
@@ -525,8 +526,50 @@ protected:
 #endif
 }
 
+struct Data {
+    explicit Data(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+
+    Data(const Data &a ) = delete;
+
+    Data(Data &&) noexcept{
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+
+    Data &operator=(const Data & ) = delete;
+
+    Data &operator=(Data && ) noexcept{
+        std::cerr << FUNC_SIGNATURE << "\n";
+        return *this;
+    }
+
+    ~Data(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+};
+
+
+
 [[maybe_unused]] static void test7() {
 
+    auto f0{[](Data  const &d){
+
+    }};
+
+    auto f1{[&]<typename T,std::size_t ...I>(T && t,std::index_sequence<I...>){
+        std::cerr << FUNC_SIGNATURE << " " << xtd::typeName(t) << std::endl;
+        f0( std::get<I>( std::forward<T> (t) )... );
+    }};
+
+    auto f2{[&]<typename ...A>(std::tuple<A...> && t){
+        std::cerr << FUNC_SIGNATURE << " " << xtd::typeName(t) << std::endl;
+        f1(std::forward<decltype(t)>(t),std::make_index_sequence<sizeof...(A)>{});
+    }};
+
+    Data d;
+    std::tuple t{std::move(d)};
+    f2(std::move(t));
 }
 
 int main(const int argc,const char **const argv){
