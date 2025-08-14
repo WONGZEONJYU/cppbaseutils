@@ -472,7 +472,7 @@ protected:
 
 #endif
 
-     auto p{std::move(AAA::UniqueConstruction())};
+    auto p{std::move(AAA::UniqueConstruction())};
     p->p();
 
     //delete p.get();
@@ -527,29 +527,29 @@ protected:
 }
 
 struct Data {
-    explicit Data(){
-        std::cerr << FUNC_SIGNATURE << "\n";
-    }
+    int a,b;
+//    explicit Data(){
+//        std::cerr << FUNC_SIGNATURE << "\n";
+//    }
+//
+//    Data(const Data &a ) = delete;
+//
+//    Data(Data &&) noexcept{
+//        std::cerr << FUNC_SIGNATURE << "\n";
+//    }
+//
+//    Data &operator=(const Data & ) = delete;
+//
+//    Data &operator=(Data && ) noexcept{
+//        std::cerr << FUNC_SIGNATURE << "\n";
+//        return *this;
+//    }
+//
+//    ~Data(){
+//        std::cerr << FUNC_SIGNATURE << "\n";
+//    }
 
-    Data(const Data &a ) = delete;
-
-    Data(Data &&) noexcept{
-        std::cerr << FUNC_SIGNATURE << "\n";
-    }
-
-    Data &operator=(const Data & ) = delete;
-
-    Data &operator=(Data && ) noexcept{
-        std::cerr << FUNC_SIGNATURE << "\n";
-        return *this;
-    }
-
-    ~Data(){
-        std::cerr << FUNC_SIGNATURE << "\n";
-    }
 };
-
-
 
 [[maybe_unused]] static void test7() {
 
@@ -572,6 +572,73 @@ struct Data {
     f2(std::move(t));
 }
 
+namespace detail {
+
+// instance类的作用：定义了operator函数，提供到任意类型的隐式转换操作符，用于模拟构造Aggregate类型时所需的任意类型参数
+    struct instance {
+        template<typename Type>
+        operator Type() const { return {};}
+    };
+
+    template <typename Aggregate, typename IndexSequence = std::index_sequence<>,
+            typename = void>
+    struct arity_impl : IndexSequence {};
+
+// 特化版本
+    template <typename Aggregate, std::size_t... Indices>
+    struct arity_impl<Aggregate, std::index_sequence<Indices...>,
+            std::void_t<decltype( Aggregate {
+                    ( Indices,  (std::declval<instance>())  )...,
+                    (std::declval<instance>()) } ) > >
+            : arity_impl<Aggregate,
+                    std::index_sequence<Indices..., sizeof...(Indices)>> {};
+
+}  // namespace detail
+
+template <typename T>
+constexpr std::size_t arity() noexcept {
+// 使用decay_t去除类型修饰（如const/volatile/引用）
+    return detail::arity_impl<std::decay_t<T>>().size();
+}
+
+template<typename Tp_>
+struct DDDD{
+
+    template<typename Obj>
+    struct Deleter{
+        void operator()(Obj * const p){
+            delete p;
+        }
+    };
+};
+
+struct Fuck : DDDD<Fuck> {
+    using Base = DDDD<Fuck>;
+
+    template<typename T>
+    friend struct DDDD;
+
+    static auto create(){
+        return std::unique_ptr<Fuck,Base::Deleter<Fuck>>(new Fuck,Base::Deleter<Fuck>{});
+    }
+
+private:
+    Fuck(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+    ~Fuck() {
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+};
+
+
+[[maybe_unused]] static void test8() {
+
+    Fuck::create();
+
+}
+
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     //test1();
@@ -579,7 +646,8 @@ int main(const int argc,const char **const argv){
     //test3();
     //test4(123);
     //test5();
-    //test6();
-    test7();
+    test6();
+    //test7();
+    //test8();
     return 0;
 }
