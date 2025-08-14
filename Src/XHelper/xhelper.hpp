@@ -736,8 +736,7 @@ public:
 #endif
 protected:
     XHelperClass() = default;
-    template<typename>
-    friend class XSingleton;
+    template<typename> friend class XSingleton;
 };
 
 template<typename Tp_>
