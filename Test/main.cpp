@@ -424,9 +424,9 @@ protected:
     }
 
 public:
-    // CTest() noexcept {
-    //     std::cerr << FUNC_SIGNATURE << std::endl;
-    // }
+//     CTest() noexcept {
+//         std::cerr << FUNC_SIGNATURE << std::endl;
+//     }
 
     ~CTest(){
         delete new int[10];
@@ -435,18 +435,20 @@ public:
 };
 
 class AAA final : public xtd::XSingleton<AAA> {
-    X_SINGLETON_CLASS
+    X_HELPER_CLASS
     int aa{100};
 public:
     void p(){
         using namespace std::chrono_literals;
         std::cerr << FUNC_SIGNATURE << aa <<  "\n";
     }
+
 protected:
     AAA()
     {
         std::cerr << FUNC_SIGNATURE << "\n";
     }
+
     ~AAA(){
         std::cerr << FUNC_SIGNATURE << "\n";
     }
@@ -454,7 +456,6 @@ protected:
 };
 
 [[maybe_unused]] static void test6(){
-    std::cerr << std::boolalpha << std::is_constructible_v<AAA> << std::endl;
 
 #if 1
     int a1{1},a2{2};
