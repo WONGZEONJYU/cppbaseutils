@@ -109,9 +109,9 @@ protected:
     std::size_t senderSignalIndex() const;
 
     template<typename Func,typename ...Args>
-    inline static void emitSignal(typename XPrivate::FunctionPointer<Func>::Object * const sender,
+    inline static void emitSignal(XPrivate::FunctionPointer<Func>::Object * const sender,
                                   Func signal,
-                                  typename XPrivate::FunctionPointer<Func>::ReturnType * const ret,
+                                  XPrivate::FunctionPointer<Func>::ReturnType * const ret,
                                   const Args & ...args) {
         auto const signal_f{reinterpret_cast<void**>(&signal)};
         auto const signal_index{std::hash<void *>{}(*signal_f)};

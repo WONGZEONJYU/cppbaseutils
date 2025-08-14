@@ -120,7 +120,7 @@ void XObject::doActivate(XObject * const sender,std::size_t const signal_index,v
         return;
     }
 
-    if (auto sp{XObjectPrivate::get(sender)}; !sp){
+    if (const auto sp{XObjectPrivate::get(sender)}; !sp){
         X_ASSERT_W(sp,FUNC_SIGNATURE,"sp is empty!");
         return;
     }
