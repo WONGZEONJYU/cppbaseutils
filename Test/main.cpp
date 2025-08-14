@@ -525,6 +525,10 @@ protected:
 #endif
 }
 
+[[maybe_unused]] static void test7() {
+
+}
+
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
     //test1();
@@ -532,6 +536,7 @@ int main(const int argc,const char **const argv){
     //test3();
     //test4(123);
     //test5();
-    test6();
+    //test6();
+    test7();
     return 0;
 }
