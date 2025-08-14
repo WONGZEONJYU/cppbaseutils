@@ -341,19 +341,22 @@ namespace XPrivate {
     #if __cplusplus >= 202002L
         template<typename O,typename ...A>
         inline static auto test(int) -> std::true_type
-            requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) ) > static_cast<std::size_t>(0) ) )
+            requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) )
+                > static_cast<std::size_t>(0) ) )
         {throw ;}
     #else
         #if 0 //只能二选一
             template<typename O,typename ...A>
             inline static auto test(int)
-                -> std::enable_if_t< ( sizeof(std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) > static_cast<std::size_t>(0) )
+                -> std::enable_if_t< ( sizeof(std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
+                    > static_cast<std::size_t>(0) )
                     ,std::true_type >
             {throw ;}
         #else
             template<typename O,typename ...A>
             inline static auto test(int)
-            -> decltype( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) > static_cast<std::size_t>(0)
+            -> decltype( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
+                > static_cast<std::size_t>(0)
                     , std::true_type{} )
             {throw;}
         #endif
@@ -598,14 +601,14 @@ public:
     using ObjectUPtr = std::unique_ptr< Object_t , Deleter >;
 
 private:
-    template<typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2>
-    inline static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2,
-        std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept -> Object_t *
+    template< typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2 >
+    inline static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2
+        ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
     {
         try{
-            ObjectUPtr obj { new Object_t( std::get<I1>( std::forward< Tuple1_ >( args1 ) )... )
+            ObjectUPtr obj { new Object_t( std::get< I1 >( std::forward< Tuple1_ >( args1 ) )... )
                 ,Deleter {} };
-            return obj->construct_( std::get<I2>( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
+            return obj->construct_( std::get< I2 >( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
         } catch (const std::exception &) {
             return nullptr;
         }
@@ -623,8 +626,8 @@ public:
     using Object = Object_t;
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > const & args1 = {},
-                                  Parameter< Args2...> const & args2 = {} ) noexcept
+    [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > && args1 = {},
+                                  Parameter< Args2...> && args2 = {} ) noexcept
     {
         static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object >
                 ,"No X_HELPER_CLASS in the class!" );
@@ -638,9 +641,9 @@ public:
 #if __cplusplus >= 201402L
         return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > ) noexcept -> Object * {
             try{
-                ObjectUPtr obj { new Object( std::get<I1>( std::forward< decltype(args1) >( args1 ) )... )
+                ObjectUPtr obj { new Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... )
                     ,Deleter {} };
-                return obj->construct_( std::get<I2>( std::forward< decltype(args2) >( args2 ) )... ) ? obj.release() : nullptr;
+                return obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
             } catch (const std::exception &) {
                 return nullptr;
             }
@@ -651,15 +654,18 @@ public:
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static constexpr auto CreateSharedPtr ( Parameter< Args1...> const & args1 = {}
-        ,Parameter< Args2...> const & args2 = {} ) noexcept -> ObjectSPtr {
-        return { Create( args1 ,args2 ) ,Deleter{} ,XPrivate::Allocator_<Object>{} };
+    [[nodiscard]] inline static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
+        ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr {
+        return { Create( std::forward< decltype( args1 ) >( args1 )
+            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{}
+            ,XPrivate::Allocator_< Object >{} };
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static constexpr auto CreateUniquePtr ( Parameter< Args1... > const & args1 = {}
-        ,Parameter< Args2... > const & args2 = {} ) noexcept -> ObjectUPtr {
-        return { Create( args1 ,args2 ) ,Deleter{} };
+    [[nodiscard]] inline static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
+        ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr {
+        return { Create( std::forward< decltype( args1 ) >( args1 )
+            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
     }
 
 #ifdef HAS_QT
@@ -781,8 +787,8 @@ private:
 
 public:
     template<typename ...Args1,typename ...Args2>
-    inline static auto UniqueConstruction(const Parameter<Args1...> & args1 = {}
-        ,const Parameter<Args2...> & args2 = {}) noexcept -> DataType_
+    inline static auto UniqueConstruction(Parameter<Args1...> && args1 = {}
+        ,Parameter<Args2...> && args2 = {}) noexcept -> DataType_
     {
         static_assert( XPrivate::Has_X_SINGLETON_CLASS_Macro_v< Object >
                 ,"No X_SINGLETON_CLASS in the class!" );
@@ -797,7 +803,9 @@ public:
         STATIC_ASSERT_P
 
         std::call_once(initFlag(),[&]{
-            data() = std::move(alloc(args1,args2,Base_::indices(args1),Base_::indices(args2)));
+            data() = std::move( alloc( std::forward< decltype(args1) >( args1 )
+                ,std::forward< decltype(args2) >( args2 )
+                ,Base_::indices(args1) ,Base_::indices( args2 ) ) );
         });
 
         return data();
