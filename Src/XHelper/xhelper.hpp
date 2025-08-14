@@ -516,10 +516,6 @@ namespace XPrivate {
     template<typename T, typename U>
     bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&) { return false; }
 
-} //namespace XPrivate;
-
-class XHelperClassBase {
-
 #define STATIC_ASSERT_P \
     static_assert( std::is_object_v< Object >,"typename Object is not an class or struct" ); \
                         \
@@ -534,23 +530,7 @@ class XHelperClassBase {
     static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... > \
             ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
 
-    template<typename > friend class XHelperClass;
-    //template<typename > friend class XSingleton;
-protected:
-    template<typename Object> struct Destructor_ {
-
-        constexpr Destructor_() = default;
-
-        template<typename U>
-        constexpr explicit Destructor_(const Destructor_<U> &) {}
-
-        void operator()(const Object * const p) const noexcept {
-            delete p;
-        }
-    };
-private:
-    XHelperClassBase() = default;
-};
+} //namespace XPrivate;
 
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
@@ -587,43 +567,51 @@ using Parameter = std::tuple<Args...>;
  */
 
 template<typename Tp_>
-class XHelperClass : protected XHelperClassBase {
+class XHelperClass {
 
     using Object_t = std::decay_t< RemoveRef_T<Tp_> >;
 
     static_assert(std::negation_v< std::is_pointer< Object_t > >,"Tp_ Cannot be pointer type");
 
-protected:
-    XHelperClass() = default;
-    using Deleter = Destructor_< Object_t >;
-public:
-    using ObjectSPtr = std::shared_ptr< Object_t >;
-    using ObjectUPtr = std::unique_ptr< Object_t , Deleter >;
-
-private:
+#if __cplusplus < 201402L
     template< typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2 >
     inline static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2
-        ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
+            ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
     {
         try{
             ObjectUPtr obj { new Object_t( std::get< I1 >( std::forward< Tuple1_ >( args1 ) )... )
-                ,Deleter {} };
+                    ,Deleter {} };
             return obj->construct_( std::get< I2 >( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
         } catch (const std::exception &) {
             return nullptr;
         }
     }
+#endif
 
-protected:
     template<typename Tuple_>
     inline static constexpr auto indices(Tuple_ &&) noexcept
-        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
-    {
-        return {};
-    }
+    -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+    {return {};}
+
+protected:
+    template<typename Object> struct Destructor_ {
+
+        constexpr Destructor_() = default;
+
+        template<typename U>
+        [[maybe_unused]] constexpr explicit Destructor_(const Destructor_<U> &) {}
+
+        void operator()(const Object * const p) const noexcept {
+            delete p;
+        }
+    };
+
+    using Deleter = Destructor_< Object_t >;
 
 public:
     using Object = Object_t;
+    using ObjectSPtr = std::shared_ptr< Object >;
+    using ObjectUPtr = std::unique_ptr< Object , Deleter >;
 
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > && args1 = {},
@@ -639,7 +627,9 @@ public:
         STATIC_ASSERT_P
 
 #if __cplusplus >= 201402L
-        return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > ) noexcept -> Object * {
+        return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > )
+            noexcept -> Object *
+        {
             try{
                 ObjectUPtr obj { new Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... )
                     ,Deleter {} };
@@ -744,51 +734,23 @@ public:
            return QObject::connect(std::forward<Args>(args)...);
        }
 #endif
+protected:
+    XHelperClass() = default;
+    template<typename>
+    friend class XSingleton;
 };
 
 template<typename Tp_>
 class XSingleton : protected XHelperClass<Tp_> {
-
     using Base_ = XHelperClass<Tp_>;
-
+    static_assert(std::is_object_v<typename Base_::Object>,"Tp_ must be a class or struct type!");
 public:
     using Object = Base_::Object;
     using DataType_ = std::shared_ptr< Object >;
 
-private:
-    static_assert(std::is_object_v<Object>,"Tp_ must be a class or struct type!");
-
-    inline static std::once_flag& initFlag() {
-        static std::once_flag flag{};
-        return flag;
-    }
-
-    inline static DataType_& data() {
-        static DataType_ d{};
-        return d;
-    }
-
-    template<typename A1,typename A2,std::size_t ...I1,std::size_t ...I2>
-    inline static constexpr auto alloc(A1 && a1,A2 && a2
-       ,std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept -> DataType_
-    {
-        while (true) {
-            try{
-                if (DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
-                    ,typename Base_::Deleter{} , XPrivate::Allocator_<Object>{} };
-                    obj->construct_( std::get<I2>( std::forward< A2 >( a2 ) )... )) {
-                    return obj;
-                }
-            } catch (const std::exception &) {
-                std::cerr << FUNC_SIGNATURE << " retry alloc!\n";
-            }
-        }
-    }
-
-public:
     template<typename ...Args1,typename ...Args2>
-    inline static auto UniqueConstruction(Parameter<Args1...> && args1 = {}
-        ,Parameter<Args2...> && args2 = {}) noexcept -> DataType_
+    inline static auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
+        , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> DataType_
     {
         static_assert( XPrivate::Has_X_SINGLETON_CLASS_Macro_v< Object >
                 ,"No X_SINGLETON_CLASS in the class!" );
@@ -803,7 +765,7 @@ public:
         STATIC_ASSERT_P
 
         std::call_once(initFlag(),[&]{
-            data() = std::move( alloc( std::forward< decltype(args1) >( args1 )
+            data() = std::move( create_( std::forward< decltype(args1) >( args1 )
                 ,std::forward< decltype(args2) >( args2 )
                 ,Base_::indices(args1) ,Base_::indices( args2 ) ) );
         });
@@ -818,9 +780,37 @@ public:
     [[maybe_unused]] [[nodiscard]] inline static constexpr auto isConstruct() -> bool
     {return static_cast<bool >(data());}
 
-    X_DISABLE_COPY_MOVE(XSingleton)
+private:
+    inline static std::once_flag& initFlag() {
+        static std::once_flag flag{};
+        return flag;
+    }
+
+    inline static DataType_& data() {
+        static DataType_ d{};
+        return d;
+    }
+
+    template<typename A1,typename A2,std::size_t ...I1,std::size_t ...I2>
+    inline static constexpr auto create_(A1 && a1,A2 && a2
+            ,std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept -> DataType_
+    {
+        while (true) {
+            try{
+                if (DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
+                            ,typename Base_::Deleter{} , XPrivate::Allocator_<Object>{} };
+                        obj->construct_( std::get<I2>( std::forward< A2 >( a2 ) )... )) {
+                    return obj;
+                }
+            } catch (const std::exception &) {
+                std::cerr << FUNC_SIGNATURE << " retry alloc!\n";
+            }
+        }
+    }
+
 protected:
     XSingleton() = default;
+    X_DISABLE_COPY_MOVE(XSingleton)
 };
 
 #undef STATIC_ASSERT_P
@@ -852,8 +842,7 @@ private: \
     } \
     template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
-    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func; \
-    template<typename> friend struct xtd::XHelperClassBase::Destructor_;
+    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func;
 
 #define X_SINGLETON_CLASS \
     X_HELPER_CLASS \
