@@ -331,9 +331,6 @@ namespace XPrivate {
     template<typename Object>
     inline constexpr bool Has_X_HELPER_CLASS_Macro_v { Has_X_HELPER_CLASS_Macro<Object>::value };
 
-    template <typename Object>
-    inline constexpr auto Has_X_SINGLETON_CLASS_Macro_v { Has_X_HELPER_CLASS_Macro_v< Object > };
-
     template<typename Object,typename ...Args>
     struct Has_construct_Func {
     private:
@@ -521,6 +518,9 @@ namespace XPrivate {
                         \
     static_assert( std::is_final_v< Object > ,"Object must be a final class" ); \
                         \
+    static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object > \
+            ,"No X_HELPER_CLASS in the class!" ); \
+                        \
     static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... > \
             ,"bool Object::construct_(...) non static member function absent!" ); \
                         \
@@ -617,9 +617,6 @@ public:
     [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > && args1 = {},
                                   Parameter< Args2...> && args2 = {} ) noexcept
     {
-        static_assert( XPrivate::Has_X_HELPER_CLASS_Macro_v< Object >
-                ,"No X_HELPER_CLASS in the class!" );
-
         static_assert( std::disjunction_v< std::is_base_of< XHelperClass ,Object >
             ,std::is_convertible<Object,XHelperClass >
         > ,"Object must inherit from Class XHelperClass" );
@@ -751,9 +748,6 @@ public:
     inline static auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
         , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> DataType_
     {
-        static_assert( XPrivate::Has_X_SINGLETON_CLASS_Macro_v< Object >
-                ,"No X_SINGLETON_CLASS in the class!" );
-
         static_assert( XPrivate::is_destructor_private_v< Object >
                 , "destructor( ~Object() ) must be private!" );
 
@@ -841,10 +835,7 @@ private: \
     } \
     template<typename> friend class xtd::XHelperClass; \
     template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
-    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func;
-
-#define X_SINGLETON_CLASS \
-    X_HELPER_CLASS \
+    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func; \
     template<typename> friend class xtd::XSingleton;
 
 XTD_INLINE_NAMESPACE_END
