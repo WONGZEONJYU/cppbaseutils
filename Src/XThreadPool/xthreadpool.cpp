@@ -164,7 +164,7 @@ XAbstractRunnable_Ptr acquireTask() const {
 
         using std::chrono::operator""s;
         if(!m_taskQue_Cond_.wait_for(lock,1s,[this]{
-            return m_tasksQueue_.size() < m_tasksSizeThreshold.loadAcquire();})){
+            return m_tasksQueue_.size() < static_cast<decltype(m_tasksQueue_.size())>(m_tasksSizeThreshold.loadAcquire());})){
             std::cerr << "task queue is full, join task failed.\n" << std::flush;
             return task;
         }
@@ -178,8 +178,8 @@ XAbstractRunnable_Ptr acquireTask() const {
 
         if (XThreadPool::Mode::CACHE == m_mode &&
             m_is_poolRunning.loadAcquire() &&
-            m_threadsContainer_.size() < m_threadsSizeThreshold.loadAcquire() &&
-            m_tasksQueue_.size() > m_idleThreadsSize.loadAcquire()){
+            m_threadsContainer_.size() < static_cast<decltype(m_threadsContainer_.size())>(m_threadsSizeThreshold.loadAcquire()) &&
+            m_tasksQueue_.size() > static_cast<decltype(m_tasksQueue_.size())>(m_idleThreadsSize.loadAcquire())){
 
             auto thSize{static_cast<XSize_t>(m_tasksQueue_.size())};
 
