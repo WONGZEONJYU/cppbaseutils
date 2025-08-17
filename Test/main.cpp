@@ -321,7 +321,7 @@ static void test5(){
 
 class ATest:public xtd::XObject {
 public:
-    void send(int d) && noexcept {
+    void send(int ) && noexcept {
 
     }
 
@@ -473,7 +473,7 @@ protected:
 
 #endif
 
-    auto p{std::move(AAA::UniqueConstruction())};
+    auto p{AAA::UniqueConstruction()};
     p->p();
 
     //delete p.get();
@@ -554,7 +554,7 @@ struct Data {
 
 [[maybe_unused]] static void test7() {
 
-    auto f0{[](Data  const &d){
+    auto f0{[](Data  const &){
 
     }};
 
