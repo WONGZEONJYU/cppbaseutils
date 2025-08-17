@@ -111,10 +111,10 @@
         #define X_LOCAL
     #endif
 
-    // 类导出宏
-    #define X_CLASS_EXPORT X_API
+// 类导出宏
+#define X_CLASS_EXPORT X_API
 
-    // 模板导出宏（主要用于 Windows）
+// 模板导出宏（主要用于 Windows）
     #ifdef X_PLATFORM_WINDOWS
         #define X_TEMPLATE_EXPORT X_API
     #else

@@ -42,9 +42,12 @@ function(configure_library_target target_name)
     endif()
 
     # 配置 Qt
-    if(XUtils_Qt6_FOUND OR XUtils_Qt5_FOUND)
+    if(XUtils_Qt6_FOUND)
         target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
-        target_link_libraries(${target_name} PUBLIC Qt::Core)
+        target_link_libraries(${target_name} PUBLIC Qt6::Core)
+    elseif(XUtils_Qt5_FOUND)
+        target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
+        target_link_libraries(${target_name} PUBLIC Qt5::Core)
     endif()
 
     # 链接线程库
@@ -56,6 +59,6 @@ function(configure_library_target target_name)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
             $<INSTALL_INTERFACE:include>
         PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/XObject
+            ${CMAKE_CURRENT_SOURCE_DIR}
     )
 endfunction() 

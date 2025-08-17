@@ -1,5 +1,35 @@
 @PACKAGE_INIT@
 
+# 寻找依赖项
+include(CMakeFindDependencyMacro)
+
+# 寻找线程库
+find_dependency(Threads REQUIRED)
+
+# 寻找 Boost (如果构建时使用了 Boost)
+set(_XUtils_Boost_FOUND "@XUtils_Boost_FOUND@")
+if(_XUtils_Boost_FOUND STREQUAL "TRUE" OR _XUtils_Boost_FOUND STREQUAL "ON")
+    find_dependency(Boost)
+    if(NOT Boost_FOUND)
+        message(WARNING "XUtils was built with Boost, but Boost was not found in this environment")
+    endif()
+endif()
+
+# 寻找 Qt (如果构建时使用了 Qt)
+set(_XUtils_Qt6_FOUND "@XUtils_Qt6_FOUND@")
+set(_XUtils_Qt5_FOUND "@XUtils_Qt5_FOUND@")
+if(_XUtils_Qt6_FOUND STREQUAL "TRUE" OR _XUtils_Qt6_FOUND STREQUAL "ON")
+    find_package(Qt6 COMPONENTS Core QUIET)
+    if(NOT Qt6_FOUND)
+        message(WARNING "XUtils was built with Qt6, but Qt6 was not found in this environment. Qt-dependent features may not work.")
+    endif()
+elseif(_XUtils_Qt5_FOUND STREQUAL "TRUE" OR _XUtils_Qt5_FOUND STREQUAL "ON")
+    find_package(Qt5 COMPONENTS Core QUIET)
+    if(NOT Qt5_FOUND)
+        message(WARNING "XUtils was built with Qt5, but Qt5 was not found in this environment. Qt-dependent features may not work.")
+    endif()
+endif()
+
 # 包含导出的目标
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
 

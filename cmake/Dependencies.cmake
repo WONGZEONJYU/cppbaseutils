@@ -20,58 +20,67 @@ else()
     message(WARNING "Boost not found - some features may be disabled")
 endif()
 
+# 添加选项来禁用 Qt
+option(DISABLE_QT "Disable Qt dependency" OFF)
+
 # Qt路径配置
 set(QT_PATHS)
-if(APPLE)
-    # macOS Qt路径
-    list(APPEND QT_PATHS 
-        "$ENV{HOME}/Qt/6.9.1/macos"
-        "$ENV{HOME}/Qt/6.8.0/macos"
-        "$ENV{HOME}/Qt/6.7.0/macos"
-        "/usr/local/Qt-6.9.1"
-        "/usr/local/Qt-6.8.0"
-        "/usr/local/Qt-6.7.0"
-    )
-elseif(WIN32)
-    # Windows Qt路径
-    list(APPEND QT_PATHS
-        "C:/Qt6/6.9.1/msvc2022_64"
-        "C:/Qt6/6.8.0/msvc2022_64"
-        "C:/Qt6/6.7.0/msvc2022_64"
-        "C:/Qt/6.9.1/msvc2022_64"
-        "C:/Qt/6.8.0/msvc2022_64"
-        "C:/Qt/6.7.0/msvc2022_64"
-    )
-elseif(UNIX)
-    # Linux Qt路径
-    list(APPEND QT_PATHS
-        "/usr/local/Qt-6.9.1"
-        "/usr/local/Qt-6.8.0"
-        "/usr/local/Qt-6.7.0"
-        "/opt/Qt/6.9.1"
-        "/opt/Qt/6.8.0"
-        "/opt/Qt/6.7.0"
-    )
-endif()
+if(NOT DISABLE_QT)
+    if(APPLE)
+        # macOS Qt路径
+        list(APPEND QT_PATHS 
+            "$ENV{HOME}/Qt/6.9.1/macos"
+            "$ENV{HOME}/Qt/6.8.0/macos"
+            "$ENV{HOME}/Qt/6.7.0/macos"
+            "/usr/local/Qt-6.9.1"
+            "/usr/local/Qt-6.8.0"
+            "/usr/local/Qt-6.7.0"
+        )
+    elseif(WIN32)
+        # Windows Qt路径
+        list(APPEND QT_PATHS
+            "C:/Qt6/6.9.1/msvc2022_64"
+            "C:/Qt6/6.8.0/msvc2022_64"
+            "C:/Qt6/6.7.0/msvc2022_64"
+            "C:/Qt/6.9.1/msvc2022_64"
+            "C:/Qt/6.8.0/msvc2022_64"
+            "C:/Qt/6.7.0/msvc2022_64"
+        )
+    elseif(UNIX)
+        # Linux Qt路径
+        list(APPEND QT_PATHS
+            "/usr/local/Qt-6.9.1"
+            "/usr/local/Qt-6.8.0"
+            "/usr/local/Qt-6.7.0"
+            "/opt/Qt/6.9.1"
+            "/opt/Qt/6.8.0"
+            "/opt/Qt/6.7.0"
+        )
+    endif()
 
-# 查找Qt6
-find_package(Qt6 COMPONENTS Core QUIET PATHS ${QT_PATHS})
-if(Qt6_FOUND)
-    message(STATUS "Qt6 found: ${Qt6_VERSION}")
-    set(CMAKE_AUTOMOC ON)
-    set(CMAKE_AUTORCC ON)
-    set(CMAKE_AUTOUIC ON)
-else()
-    # 如果Qt6没找到，尝试Qt5
-    find_package(Qt5 COMPONENTS Core QUIET PATHS ${QT_PATHS})
-    if(Qt5_FOUND)
-        message(STATUS "Qt5 found: ${Qt5_VERSION}")
+    # 查找Qt6
+    find_package(Qt6 COMPONENTS Core QUIET PATHS ${QT_PATHS})
+    if(Qt6_FOUND)
+        message(STATUS "Qt6 found: ${Qt6_VERSION}")
         set(CMAKE_AUTOMOC ON)
         set(CMAKE_AUTORCC ON)
         set(CMAKE_AUTOUIC ON)
     else()
-        message(WARNING "Qt not found - Qt-dependent features will be disabled")
+        # 如果Qt6没找到，尝试Qt5
+        find_package(Qt5 COMPONENTS Core QUIET PATHS ${QT_PATHS})
+        if(Qt5_FOUND)
+            message(STATUS "Qt5 found: ${Qt5_VERSION}")
+            set(CMAKE_AUTOMOC ON)
+            set(CMAKE_AUTORCC ON)
+            set(CMAKE_AUTOUIC ON)
+        else()
+            message(WARNING "Qt not found - Qt-dependent features will be disabled")
+        endif()
     endif()
+else()
+    message(STATUS "Qt disabled by user option")
+    set(Qt6_FOUND FALSE)
+    set(Qt5_FOUND FALSE)
 endif()
 
 # 查找其他可能的依赖

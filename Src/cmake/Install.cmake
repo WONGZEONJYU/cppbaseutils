@@ -86,6 +86,25 @@ install(EXPORT ${PROJECT_NAME}Targets
 # 生成 CMake 配置文件
 include(CMakePackageConfigHelpers)
 
+# 设置配置文件需要的变量
+if(Boost_FOUND)
+    set(XUtils_Boost_FOUND "TRUE")
+else()
+    set(XUtils_Boost_FOUND "FALSE")
+endif()
+
+if(Qt6_FOUND)
+    set(XUtils_Qt6_FOUND "TRUE")
+else()
+    set(XUtils_Qt6_FOUND "FALSE")
+endif()
+
+if(Qt5_FOUND)
+    set(XUtils_Qt5_FOUND "TRUE")
+else()
+    set(XUtils_Qt5_FOUND "FALSE")
+endif()
+
 # 创建包配置文件
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
