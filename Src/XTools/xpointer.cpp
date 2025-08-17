@@ -1,7 +1,7 @@
 #include "xpointer.hpp"
 #include <XObject/xobject_p.hpp>
 
-[[maybe_unused]] xtd::v1::ExternalRefCountData * xtd::v1::ExternalRefCountData::getAndRef(const XObject *obj){
+[[maybe_unused]] XUtils::v1::ExternalRefCountData * XUtils::v1::ExternalRefCountData::getAndRef(const XObject *obj){
 
     X_ASSERT(obj);
     const auto d{XObjectPrivate::get(const_cast<XObject*>(obj))};

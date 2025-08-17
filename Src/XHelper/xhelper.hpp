@@ -65,8 +65,8 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 #define X_D(Class) Class##Private * const d{d_func()};
 #define X_X(...) __VA_ARGS__ * const x{x_func()};
 
-#define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : xtd::x_assert(#cond, __FILE__, __LINE__))
-#define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : xtd::x_assert_what(where, what, __FILE__, __LINE__))
+#define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : XUtils::x_assert(#cond, __FILE__, __LINE__))
+#define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : XUtils::x_assert_what(where, what, __FILE__, __LINE__))
 
 #define X_IN
 #define X_OUT
@@ -833,10 +833,10 @@ private: \
     inline void checkFriendXHelperClass_(){ X_ASSERT_W( false ,FUNC_SIGNATURE \
         ,"This function is used for checking, please don't call it!"); \
     } \
-    template<typename> friend class xtd::XHelperClass; \
-    template<typename> friend struct xtd::XPrivate::Has_X_HELPER_CLASS_Macro; \
-    template<typename ,typename ...> friend struct xtd::XPrivate::Has_construct_Func; \
-    template<typename> friend class xtd::XSingleton;
+    template<typename> friend class XUtils::XHelperClass; \
+    template<typename> friend struct XUtils::XPrivate::Has_X_HELPER_CLASS_Macro; \
+    template<typename ,typename ...> friend struct XUtils::XPrivate::Has_construct_Func; \
+    template<typename> friend class XUtils::XSingleton;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

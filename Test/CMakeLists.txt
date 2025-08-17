@@ -1,14 +1,26 @@
-cmake_minimum_required(VERSION 3.20)
+# 测试配置
 
-project(XCppBaseUtilsTest)
+# 创建测试可执行文件
+add_executable(${PROJECT_NAME}_test)
 
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# 添加测试源文件
+target_sources(${PROJECT_NAME}_test PRIVATE
+    main.cpp
+    main.hpp
+)
 
-file(GLOB H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SRC_FILES)
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${H_FILES})
+# 链接库 - 现在可以使用简化的方式
+target_link_libraries(${PROJECT_NAME}_test
+    ${PROJECT_NAME}
+)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE XCppBaseUtils_shared)
+# 设置测试可执行文件的输出名称
+set_target_properties(${PROJECT_NAME}_test PROPERTIES
+    OUTPUT_NAME "${PROJECT_NAME}_test"
+)
+
+# 添加测试
+if(BUILD_TESTING)
+    enable_testing()
+    add_test(NAME ${PROJECT_NAME}_test COMMAND ${PROJECT_NAME}_test)
+endif()

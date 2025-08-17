@@ -1,4 +1,4 @@
-# XCppBaseUtils 自动符号导出导入构建说明
+# XUtils 自动符号导出导入构建说明
 
 ## 新增的 CMake 选项
 

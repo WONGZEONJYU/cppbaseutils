@@ -26,7 +26,7 @@ struct Functor {
                 std::unique_lock lock(mtx);
                 std::cout << FUNC_SIGNATURE << " id = " << id << "\n";
             }
-            xtd::sleep_for_s(wait_time);
+            XUtils::sleep_for_s(wait_time);
         }
         return id;
     }
@@ -39,7 +39,7 @@ struct Functor2 {
                 std::unique_lock lock(mtx);
                 std::cout << FUNC_SIGNATURE << " id = " << 33 << "\n";
             }
-            xtd::sleep_for_s(wait_time);
+            XUtils::sleep_for_s(wait_time);
         }
         return 33;
     }
@@ -53,7 +53,7 @@ struct Functor3 {
                 std::unique_lock lock(mtx);
                 std::cout << FUNC_SIGNATURE << " name = " << name << "\n";
             }
-            xtd::sleep_for_s(wait_time);
+            XUtils::sleep_for_s(wait_time);
         }
         return name + m_name;
     }
@@ -65,12 +65,12 @@ static double Double(const double f){
             std::unique_lock lock(mtx);
             std::cout << FUNC_SIGNATURE << " f = " << f << "\n";
         }
-        xtd::sleep_for_s(wait_time);
+        XUtils::sleep_for_s(wait_time);
     }
     return f + 100.0;
 }
 
-class A final : public xtd::XRunnable<xtd::NonConst> {
+class A final : public XUtils::XRunnable<XUtils::NonConst> {
     std::any run() override {
         for (int i {}; i < 3 ;++i){
             {
@@ -78,7 +78,7 @@ class A final : public xtd::XRunnable<xtd::NonConst> {
                 std::cout << FUNC_SIGNATURE << " id = " << m_id_ << "\n";
                 m_id_++;
             }
-            xtd::sleep_for_s(wait_time);
+            XUtils::sleep_for_s(wait_time);
         }
         return std::string(FUNC_SIGNATURE) + "end";
     }
@@ -91,22 +91,22 @@ public:
 [[maybe_unused]] static void test1() {
     bool exit_{};
 #if !defined(_WIN64) && !defined(_WIN64)
-    const auto sigterm{xtd::Signal_Register(SIGTERM,{},[&]{
+    const auto sigterm{XUtils::Signal_Register(SIGTERM,{},[&]{
         exit_ = true;
     })};
 
-    const auto sigint{xtd::Signal_Register(SIGINT,{},[&]{
+    const auto sigint{XUtils::Signal_Register(SIGINT,{},[&]{
         exit_ = true;
     })};
 
-    const auto sigkill {xtd::Signal_Register(SIGKILL,{},[&]{
+    const auto sigkill {XUtils::Signal_Register(SIGKILL,{},[&]{
         exit_ = true;
     })};
 #endif
-    const auto pool2{xtd::XThreadPool::create(xtd::XThreadPool::Mode::CACHE)},
-                pool3{xtd::XThreadPool::create(xtd::XThreadPool::Mode::CACHE)};
+    const auto pool2{XUtils::XThreadPool::create(XUtils::XThreadPool::Mode::CACHE)},
+                pool3{XUtils::XThreadPool::create(XUtils::XThreadPool::Mode::CACHE)};
 #if 1
-    //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
+    //pool2->setMode(XUtils::XThreadPool2::Mode::FIXED);
     pool2->setThreadTimeout(70);
     //pool2->start();
 
@@ -121,12 +121,12 @@ public:
     const auto p1{pool2->runnableJoin(&Functor3::func, std::addressof(f3), "34")} ,
             p2{pool2->runnableJoin(Double,35.0)};
 
-    xtd::XAbstractRunnable_Ptr lambda{};
+    XUtils::XAbstractRunnable_Ptr lambda{};
     lambda = pool2->runnableJoin([&](const int& id){
         pool2->stop();
         pool2->start();
         pool2->runnableJoin(lambda);
-        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>(xtd::XAbstractRunnable::Model::NONBLOCK) << "\n" << std::flush;
+        std::cerr << "p1->result<std::string>(): " << p1->result<std::string>(XUtils::XAbstractRunnable::Model::NONBLOCK) << "\n" << std::flush;
         for (int i {}; i < 3;++i){
             {
                 std::unique_lock lock(mtx);
@@ -164,8 +164,8 @@ public:
     std::cout << "pool3 lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
     std::cout << "pool3 lambda->result<int>(): " << lambda->result<int>() << "\n" << std::flush;
 #else
-    //pool2->setMode(xtd::XThreadPool2::Mode::FIXED);
-    xtd::XAbstractTask2_Ptr task1{},task2{};
+    //pool2->setMode(XUtils::XThreadPool2::Mode::FIXED);
+    XUtils::XAbstractTask2_Ptr task1{},task2{};
     task1 = pool2->taskJoin([&](const auto &data_){
         std::cerr << "task1->result<int>(): " <<
             task1->result<int>() << "\n" << std::flush;
@@ -177,7 +177,7 @@ public:
                 std::unique_lock lock(mtx);
                 std::cout << __PRETTY_FUNCTION__ << " data = " << data_ << "\n";
             }
-            xtd::sleep_for_s(wait_time);
+            XUtils::sleep_for_s(wait_time);
         }
         std::cerr <<
             "task2->result<std::string>(): " <<
@@ -197,7 +197,7 @@ public:
                       "tasks :" << pool2->currentTasksSize() << "\n" <<
                       std::flush;
         }
-        xtd::sleep_for_s(1);
+        XUtils::sleep_for_s(1);
     }
     std::cerr << "task1 return: " << task1->result<int>(std::chrono::seconds(5)) << "\n";
     std::cerr << "task1 return: " << task1->result<int>(std::chrono::seconds(5)) << "\n";
@@ -216,7 +216,7 @@ public:
     std::atomic_bool b{};
     std::thread{[&]{
         while (!exit_){
-            xtd::sleep_for_s(10);
+            XUtils::sleep_for_s(10);
             b.wait({},std::memory_order_acquire);
             std::cerr << FUNC_SIGNATURE << "\n";
             b.store({},std::memory_order_release);
@@ -239,7 +239,7 @@ public:
 
     using namespace std::chrono;
 
-    std::deque<xtd::XAbstractRunnable_Ptr> tasks1,task2s{};
+    std::deque<XUtils::XAbstractRunnable_Ptr> tasks1,task2s{};
     for (int i{};i < 1000000;++i){
         tasks1.push_back(std::make_shared<A>(10));
     }
@@ -251,7 +251,7 @@ public:
     auto runtime{duration_cast<milliseconds>(system_clock::now() - last_time).count()};
     std::cerr <<  "deque w:" << runtime << std::endl;
 
-    std::unordered_map<void*,xtd::XAbstractRunnable_Ptr> tasks2{};
+    std::unordered_map<void*,XUtils::XAbstractRunnable_Ptr> tasks2{};
     last_time = system_clock::now();
 
     for (const auto &task : tasks1){
@@ -281,12 +281,12 @@ void call(const int a){
 
 [[maybe_unused]] static void test4(int)
 {
-    using namespace xtd;
+    using namespace XUtils;
     using List_t = XPrivate::List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
     using Value = XPrivate::List_Left<List_t,6>::Value;
-    std::cout << xtd::typeName<Value>() << std::endl;
+    std::cout << XUtils::typeName<Value>() << std::endl;
     std::string filename{"IMAGE01.PNG"};
-    filename = xtd::toLower(std::move(filename));
+    filename = XUtils::toLower(std::move(filename));
     std::cerr << filename << std::endl;
     std::cerr << filename.substr(filename.find('.')) << std::endl;
 }
@@ -298,28 +298,28 @@ static void test5(){
 
     std::tuple t{0,1l,2ll,3ul,4ull,0.1f,0.2,"const char *",std::string{"std::string"}};
 
-    std::cerr << std::boolalpha << xtd::is_tuple_v<decltype(t)> << std::endl;
-    std::cerr << std::boolalpha << xtd::is_tuple_v<std::tuple<>> << std::endl;
+    std::cerr << std::boolalpha << XUtils::is_tuple_v<decltype(t)> << std::endl;
+    std::cerr << std::boolalpha << XUtils::is_tuple_v<std::tuple<>> << std::endl;
 
-    xtd::for_each_tuple(xtd::Left_Tuple<2>(t),[](std::size_t & index,const auto &i) {
+    XUtils::for_each_tuple(XUtils::Left_Tuple<2>(t),[](std::size_t & index,const auto &i) {
         std::cerr << "index:" <<  index++ << std::endl;
         std::cerr << i << std::endl;
     });
 
     std::cerr << std::endl;
 
-    xtd::for_each_tuple(xtd::SkipFront_Tuple<2>(t),[](std::size_t & ,const auto &i) {
+    XUtils::for_each_tuple(XUtils::SkipFront_Tuple<2>(t),[](std::size_t & ,const auto &i) {
         std::cerr << i << std::endl;
     });
 
     std::cerr << std::endl;
 
-    xtd::for_each_tuple(xtd::Last_Tuple<2>(t),[](std::size_t & ,const auto &i) {
+    XUtils::for_each_tuple(XUtils::Last_Tuple<2>(t),[](std::size_t & ,const auto &i) {
         std::cerr << i << std::endl;
     });
 }
 
-class ATest:public xtd::XObject {
+class ATest:public XUtils::XObject {
 public:
     void send(int ) && noexcept {
 
@@ -330,7 +330,7 @@ public:
     }
 };
 
-class BTest:public xtd::XObject {
+class BTest:public XUtils::XObject {
 
 public:
     void send(int d)  noexcept {
@@ -397,7 +397,7 @@ public:
     };
 };
 
-class CTest final : public xtd::XHelperClass<CTest> {
+class CTest final : public XUtils::XHelperClass<CTest> {
     X_HELPER_CLASS
 
     bool construct_(int const a){
@@ -434,7 +434,7 @@ public:
     }
 };
 
-class AAA final : public xtd::XSingleton<AAA> {
+class AAA final : public XUtils::XSingleton<AAA> {
     X_HELPER_CLASS
     int aa{100};
 public:
@@ -460,16 +460,16 @@ protected:
 #if 1
     int a1{1},a2{2};
     std::string aa{"2"};
-    auto p1 = CTest::CreateUniquePtr(xtd::Parameter{std::ref(a1)},xtd::Parameter{100});
-    auto p2 = CTest::CreateSharedPtr(xtd::Parameter{std::ref(a2)},xtd::Parameter{std::move(aa),2});
+    auto p1 = CTest::CreateUniquePtr(XUtils::Parameter{std::ref(a1)},XUtils::Parameter{100});
+    auto p2 = CTest::CreateSharedPtr(XUtils::Parameter{std::ref(a2)},XUtils::Parameter{std::move(aa),2});
     delete CTest::Create({},{});
 
-    std::unique_ptr<CTest> a {CTest::Create({},xtd::Parameter{})};
+    std::unique_ptr<CTest> a {CTest::Create({},XUtils::Parameter{})};
 
-    delete CTest::Create({},xtd::Parameter{200});
+    delete CTest::Create({},XUtils::Parameter{200});
 
     int a3{300};
-    delete CTest::Create(xtd::Parameter{std::ref(a3)},{});
+    delete CTest::Create(XUtils::Parameter{std::ref(a3)},{});
 
 #endif
 
@@ -488,30 +488,30 @@ protected:
 //    AAA::destroy();
 //    std::cerr << a.use_count() << std::endl;
 
-    //xtd::makeUnique<CTest>();
+    //XUtils::makeUnique<CTest>();
 
-    // std::cerr << std::boolalpha << xtd::is_private_mem_func<CTest,int>::value << std::endl;
-    // std::cerr << xtd::is_private_mem_func<CTest>::value << std::endl;
+    // std::cerr << std::boolalpha << XUtils::is_private_mem_func<CTest,int>::value << std::endl;
+    // std::cerr << XUtils::is_private_mem_func<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
     //std::cerr << std::boolalpha << is_default_constructor_accessible<CTest>::value << std::endl;
 
 #if 0
     ATest obja;
     BTest objb;
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&obja,xtd::xOverload<int>(&ATest::slot)) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
-    std::cerr << std::boolalpha << xtd::XObject::connect(&obja,xtd::xOverload<int>(&ATest::send),&objb,[](const int &){}) << "\n";
-    xtd::XObject::disconnect(&obja, nullptr,&objb, nullptr);
+    std::cerr << std::boolalpha << XUtils::XObject::connect(&obja,XUtils::xOverload<int>(&ATest::send),&obja,XUtils::xOverload<int>(&ATest::slot)) << "\n";
+    std::cerr << std::boolalpha << XUtils::XObject::connect(&obja,XUtils::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
+    std::cerr << std::boolalpha << XUtils::XObject::connect(&obja,XUtils::xOverload<int>(&ATest::send),&objb,&BTest::slot) << "\n";
+    std::cerr << std::boolalpha << XUtils::XObject::connect(&obja,XUtils::xOverload<int>(&ATest::send),&objb,[](const int &){}) << "\n";
+    XUtils::XObject::disconnect(&obja, nullptr,&objb, nullptr);
 
 
-    auto ff{xtd::xOverload<int>(&ATest::send)};
+    auto ff{XUtils::xOverload<int>(&ATest::send)};
     const auto signal_{reinterpret_cast<void**>(&ff)};
     void *args[]{signal_};
     //std::cerr << std::boolalpha << showaddr(&ATest::send,args) << std::endl;
     //MemberFunctionInfo a (&ATest::send);
     std::cerr << std::hash<void*>{}(*signal_) << std::endl;
-    xtd::sleep_for_s(3);
+    XUtils::sleep_for_s(3);
 #endif
 
 #if 0
@@ -559,12 +559,12 @@ struct Data {
     }};
 
     auto f1{[&]<typename T,std::size_t ...I>(T && t,std::index_sequence<I...>){
-        std::cerr << FUNC_SIGNATURE << " " << xtd::typeName(t) << std::endl;
+        std::cerr << FUNC_SIGNATURE << " " << XUtils::typeName(t) << std::endl;
         f0( std::get<I>( std::forward<T> (t) )... );
     }};
 
     auto f2{[&]<typename ...A>(std::tuple<A...> && t){
-        std::cerr << FUNC_SIGNATURE << " " << xtd::typeName(t) << std::endl;
+        std::cerr << FUNC_SIGNATURE << " " << XUtils::typeName(t) << std::endl;
         f1(std::forward<decltype(t)>(t),std::make_index_sequence<sizeof...(A)>{});
     }};
 

@@ -1,23 +1,24 @@
-cmake_minimum_required(VERSION 3.20)
+# XTools 模块
 
-project(XTools)
+# 收集源文件
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SRC_FILES)
+file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 20)
+# 过滤掉 CMakeLists.txt 文件
+list(FILTER SRC_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
+list(FILTER HEADER_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
 
-aux_source_directory(. SRC_FILS)
-file(GLOB HEAD_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
-
-if (TARGET XCppBaseUtils_shared)
-    target_sources(XCppBaseUtils_shared PRIVATE
-        ${SRC_FILS}
-        ${HEAD_FILES}
-    )
-endif ()
-
-if (TARGET XCppBaseUtils_static)
-    target_sources(XCppBaseUtils_static PRIVATE
-        ${SRC_FILS}
-        ${HEAD_FILES}
-    )
-endif ()
+# 为所有库目标添加源文件
+foreach(target IN LISTS LIBRARY_TARGETS)
+    if(TARGET ${target})
+        target_sources(${target} PRIVATE
+            ${SRC_FILES}
+            ${HEADER_FILES}
+        )
+        
+        # 设置包含目录
+        target_include_directories(${target} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+    endif()
+endforeach()
