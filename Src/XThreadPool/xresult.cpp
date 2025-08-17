@@ -23,7 +23,7 @@ public:
     explicit XResultPrivate() = default;
     ~XResultPrivate() override = default;
     std::any get_value() const override {
-        return std::move(m_result_.get_future().get());
+        return m_result_.get_future().get();
     }
 };
 
@@ -73,7 +73,7 @@ std::any XResult::get_() const {
     d->m_allow_get_.storeRelease({});
 
     d->m_bin_sem_.acquire();
-    return std::move(d->get_value());
+    return d->get_value();
 }
 
 std::any XResult::try_get_() const {
@@ -81,7 +81,7 @@ std::any XResult::try_get_() const {
     if (!d->m_bin_sem_.try_acquire()){
         return {};
     }
-    return std::move(d->get_value());
+    return d->get_value();
 }
 
 std::any XResult::get_for_(std::chrono::nanoseconds const &del_time) const {
@@ -89,7 +89,7 @@ std::any XResult::get_for_(std::chrono::nanoseconds const &del_time) const {
     if (d->m_bin_sem_.try_acquire_for(del_time)){
         return {};
     }
-    return std::move(d->get_value());
+    return d->get_value();
 }
 
 XResultStorage::XResultStorage(XResult & obj):

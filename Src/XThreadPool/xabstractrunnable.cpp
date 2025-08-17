@@ -53,10 +53,10 @@ void XAbstractRunnable::call() const {
 #endif
     try {
         if (FuncVer::CONST == d->m_is_OverrideConst){
-            ret.set(std::move(run()));
+            ret.set(run());
         }else{
             auto &obj{const_cast<XAbstractRunnable &>(*this)};
-            ret.set(std::move(obj.run()));
+            ret.set(obj.run());
         }
     } catch (const std::exception &e) {
         ret.set({});

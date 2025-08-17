@@ -37,7 +37,7 @@ public:
 
 class X_CLASS_EXPORT XResult final {
     X_DISABLE_COPY_MOVE(XResult)
-    X_DECLARE_PRIVATE(XResult);
+    X_DECLARE_PRIVATE(XResult)
     mutable std::unique_ptr<XResultData> m_d_ptr_{};
     std::any get_() const;
     std::any try_get_() const;
@@ -50,12 +50,12 @@ public:
 
     template<typename Ty>
     Ty get() const noexcept(false) {
-        RETURN_VALUE(std::move(get_()));
+        RETURN_VALUE(get_());
     }
 
     template<typename Ty>
     Ty try_get() const noexcept(false) {
-        RETURN_VALUE(std::move(try_get_()));
+        RETURN_VALUE(try_get_());
     }
 
     template<typename Ty,typename Rep_,typename Period_>
@@ -68,7 +68,7 @@ public:
         if (!m_d_ptr_->m_bin_sem_.try_acquire_until(abs_time_)){
             return Ty{};
         }
-        RETURN_VALUE(std::move(m_d_ptr_->get_value()));
+        RETURN_VALUE(m_d_ptr_->get_value());
     }
 #undef RETURN_VALUE
     ///复位允许重复使用
