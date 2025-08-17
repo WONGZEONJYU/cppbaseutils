@@ -114,7 +114,7 @@ std::size_t XObject::senderSignalIndex() const {
 }
 
 void XObject::doActivate(XObject * const sender,std::size_t const signal_index,void ** args) {
-
+    (void )signal_index;
     if (!sender){
         X_ASSERT_W(sender,FUNC_SIGNATURE,"sender is empty!");
         return;
