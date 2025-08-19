@@ -11,7 +11,7 @@ using namespace XUtils;
  */
 class CustomCrashHandler : public ICrashHandler {
 public:
-    void onCrash(std::string_view crash_info) override {
+    void onCrash(std::string_view const & crash_info) override {
         std::cout << "\n=== Custom Crash Handler ===\n";
         std::cout << "Application is about to crash!\n";
         std::cout << "Crash info:\n" << crash_info << std::endl;
@@ -38,7 +38,7 @@ void testBasicLogging() {
     XLOG_FATAL("This is a FATAL message");
     
     // 测试直接调用log方法
-    logger->log(LogLevel::INFO, "Direct log call test");
+    logger->log(LogLevel::INFO_LEVEL, "Direct log call test");
     
     std::cout << "Basic logging test completed.\n";
 }
@@ -52,7 +52,7 @@ void testConfiguration() {
     auto logger = XLog::instance();
     
     // 测试日志级别设置
-    logger->setLogLevel(LogLevel::DEBUG);
+    logger->setLogLevel(LogLevel::DEBUG_LEVEL);
     std::cout << "Current log level: " << static_cast<int>(logger->getLogLevel()) << "\n";
     
     // 测试文件输出设置
@@ -111,7 +111,7 @@ int main() {
         std::cout << "Created logger instance successfully\n";
         
         // 设置基本配置
-        logger->setLogLevel(LogLevel::TRACE);
+        logger->setLogLevel(LogLevel::TRACE_LEVEL);
         logger->setOutput(LogOutput::BOTH);
         logger->setColorOutput(true);
         
