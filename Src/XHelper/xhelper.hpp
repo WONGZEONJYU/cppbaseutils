@@ -14,6 +14,8 @@
 #include <QMetaEnum>
 #include <QString>
 #include <QObject>
+#include <QScopedPointer>
+#include <QScopedPointer>
 #endif
 
 #define X_DISABLE_COPY(...) \
@@ -601,8 +603,14 @@ protected:
         template<typename U>
         [[maybe_unused]] constexpr explicit Destructor_(const Destructor_<U> &) {}
 
-        void operator()(const Object * const p) const noexcept {
-            delete p;
+        inline static void cleanup(const Object * const pointer) noexcept {
+            using IsIncompleteType = char[ sizeof(Object) ? 1 : -1 ];
+            (void) sizeof(IsIncompleteType);
+            delete pointer;
+        }
+
+        void operator()(const Object * const pointer) const noexcept {
+            cleanup(pointer);
         }
     };
 
@@ -656,6 +664,28 @@ public:
     }
 
 #ifdef HAS_QT
+
+    using ObjectQUPtr = QScopedPointer<Object,Deleter>;
+    using ObjectQSPtr = QSharedPointer<Object>;
+
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
+            ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectQUPtr {
+        return ObjectQUPtr{ Create( std::forward< decltype( args1 ) >( args1 )
+                ,std::forward< decltype( args2 ) >( args2 ) ) };
+    }
+
+    template<typename ...Args1,typename ...Args2>
+    [[nodiscard]] inline static constexpr auto CreateQSharedPointer ( Parameter< Args1...> && args1 = {}
+            ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectQSPtr {
+        try{
+            return ObjectQSPtr{ Create( std::forward< decltype( args1 ) >( args1 )
+                    ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
+        }catch (std::exception const &) {
+            return ObjectQSPtr{};
+        }
+    }
+
    #if __cplusplus >= 202002L
    #define LIKE_WHICH 1
    #if LIKE_WHICH == 1
@@ -742,11 +772,11 @@ class XSingleton : protected XHelperClass<Tp_> {
     static_assert(std::is_object_v<typename Base_::Object>,"Tp_ must be a class or struct type!");
 public:
     using Object = Base_::Object;
-    using DataType_ = std::shared_ptr< Object >;
+    using SingletonPtr = typename Base_::ObjectSPtr;
 
     template<typename ...Args1,typename ...Args2>
     inline static auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
-        , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> DataType_
+        , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> SingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
                 , "destructor( ~Object() ) must be private!" );
@@ -758,48 +788,83 @@ public:
         STATIC_ASSERT_P
 
         std::call_once(initFlag(),[&]{
-            data() = std::move( create_( std::forward< decltype(args1) >( args1 )
-                ,std::forward< decltype(args2) >( args2 )
-                ,Base_::indices(args1) ,Base_::indices( args2 ) ) );
+            while (true) {
+                if (auto ptr {Base_ ::CreateSharedPtr( std::forward< decltype( args1 ) >( args1 )
+                            ,std::forward< decltype( args2 ) >( args2 ) )})
+                {
+                    data() = std::move(ptr);
+                    return;
+                }
+            }
         });
 
         return data();
     }
 
-    [[maybe_unused]] inline static auto instance() noexcept -> DataType_ {
+    [[maybe_unused]] inline static auto instance() noexcept -> SingletonPtr {
         return data();
     }
 
-    [[maybe_unused]] [[nodiscard]] inline static constexpr auto isConstruct() -> bool
+    [[maybe_unused]] [[nodiscard]] inline static constexpr bool isConstruct() noexcept
     {return static_cast<bool >(data());}
 
+#ifdef HAS_QT
+    using QSingletonPtr = typename Base_::ObjectQSPtr;
+
+    template<typename ...Args1,typename ...Args2>
+    [[maybe_unused]] [[nodiscard]]
+    inline static auto QUniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
+            , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> QSingletonPtr
+    {
+        static_assert( XPrivate::is_destructor_private_v< Object >
+                , "destructor( ~Object() ) must be private or protected!" );
+
+        static_assert( std::disjunction_v<
+                std::conjunction< std::is_base_of< QObject ,Object >
+                ,std::is_base_of< XSingleton ,Object > >
+                ,std::is_convertible<Object,XSingleton >
+        > ,"Object must inherit from Class QObject and Class XSingleton!" );
+
+        STATIC_ASSERT_P
+
+        std::call_once(initFlag(),[&]{
+            while (true){
+                if (auto ptr { Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
+                        ,std::forward< decltype( args2 ) >( args2 ) ) })
+                {
+                    qdata() = std::move(ptr);
+                    return ;
+                }
+            }
+        });
+        return qdata();
+    };
+
+    [[maybe_unused]] inline static auto qInstance() noexcept -> SingletonPtr {
+        return qdata();
+    }
+
+    [[maybe_unused]] [[nodiscard]] inline static constexpr bool isQConstruct() noexcept
+    {return static_cast<bool >(qdata());}
+#endif
+
 private:
-    inline static std::once_flag& initFlag() {
+    inline static auto initFlag() noexcept -> std::once_flag& {
         static std::once_flag flag{};
         return flag;
     }
 
-    inline static DataType_& data() {
-        static DataType_ d{};
+    inline static auto data() noexcept -> SingletonPtr& {
+        static SingletonPtr d{};
         return d;
     }
 
-    template<typename A1,typename A2,std::size_t ...I1,std::size_t ...I2>
-    inline static constexpr auto create_(A1 && a1,A2 && a2
-            ,std::index_sequence<I1...>,std::index_sequence<I2...>) noexcept -> DataType_
-    {
-        while (true) {
-            try{
-                if (DataType_ obj { new Object ( std::get<I1>( std::forward<A1>( a1 ) )... )
-                            ,typename Base_::Deleter{} , XPrivate::Allocator_<Object>{} };
-                        obj->construct_( std::get<I2>( std::forward< A2 >( a2 ) )... )) {
-                    return obj;
-                }
-            } catch (const std::exception &) {
-                std::cerr << FUNC_SIGNATURE << " retry alloc!\n";
-            }
-        }
+#ifdef HAS_QT
+    inline static auto qdata() noexcept -> QSingletonPtr& {
+        static QSingletonPtr d{};
+        return d;
     }
+#endif
 
 protected:
     XSingleton() = default;
