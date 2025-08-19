@@ -160,7 +160,7 @@ public:
      * @brief 设置日志输出方式
      * @param output 输出方式（控制台、文件或两者）
      */
-    void setOutput(LogOutput output) noexcept;
+    void setOutput(LogOutput const & output) noexcept;
     
     /**
      * @brief 设置日志文件路径
@@ -168,40 +168,40 @@ public:
      * @param max_size 单个日志文件最大大小（字节），0表示不限制
      * @param max_files 最大日志文件数量
      */
-    void setLogFile(std::string_view filepath, std::size_t max_size = 0, int max_files = 5);
-    
+    void setLogFile(std::string_view const & filepath, std::size_t max_size = 0, int max_files = 5);
+
     /**
      * @brief 启用/禁用控制台彩色输出
      * @param enable 是否启用彩色输出
      */
     void setColorOutput(bool enable) noexcept;
-    
+
     /**
      * @brief 设置异步队列大小
      * @param size 队列大小，0表示无限制
      */
     void setAsyncQueueSize(std::size_t size) noexcept;
-    
+
     /**
      * @brief 启用崩溃诊断
      * @param enable 是否启用崩溃诊断
      */
     void enableCrashDiagnostics(bool enable = true);
-    
+
     /**
      * @brief 设置崩溃处理器
      * @param handler 崩溃处理器
      */
     void setCrashHandler(CrashHandlerPtr handler);
-    
+
     /**
      * @brief 记录日志（现代化接口）
      * @param level 日志级别
      * @param message 日志消息
      * @param location 源代码位置信息
      */
-    void log(LogLevel level, std::string_view message, 
-             SourceLocation location = {});
+    void log(LogLevel const & level, std::string_view const & message,
+             SourceLocation const & location = {});
     
     /**
      * @brief 格式化记录日志
@@ -212,8 +212,8 @@ public:
      * @param location 源代码位置信息
      */
     template<typename... Args>
-    void logf(LogLevel level, const char* format_str, Args&&... args,
-              SourceLocation location = {}) {
+    void logf(LogLevel const & level, const char * const format_str, Args&&... args,
+              SourceLocation const & location = {}) {
         if (!shouldLog(level)) return;
         
         try {
@@ -238,8 +238,8 @@ public:
      * @param message 日志消息
      */
     [[deprecated("Use log() with SourceLocation instead")]]
-    void log(LogLevel level, const char* file, int line, 
-             const char* function, std::string_view message);
+    void log(LogLevel const & level, const char* file, int line,
+             const char* function, std::string_view const & message);
     
     /**
      * @brief 刷新所有待处理的日志
@@ -273,7 +273,7 @@ public:
      * @param level 日志级别
      * @return 级别名称
      */
-    [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel level) noexcept {
+    [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
         switch (level) {
             case LogLevel::TRACE: return "TRACE";
             case LogLevel::DEBUG: return "DEBUG";
@@ -318,8 +318,8 @@ private:
             if (*p == '%' && *(p + 1) != '%') {
                 oss << std::forward<T>(value);
                 // 跳过格式说明符
-                while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\0') ++p;
-                if (*p) oss << p;
+                while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\0') { ++p; }
+                if (*p) { oss << p; }
                 return;
             } else if (*p == '%' && *(p + 1) == '%') {
                 oss << '%';
@@ -331,14 +331,14 @@ private:
     }
     
     template<typename T, typename... Args>
-    void formatImpl(std::ostringstream& oss, const char* format, T&& value, Args&&... args) {
-        const char* p = format;
+    void formatImpl(std::ostringstream& oss, const char * const format, T&& value, Args&&... args) {
+        auto p{format};
         while (*p) {
             if (*p == '%' && *(p + 1) != '%') {
                 oss << std::forward<T>(value);
                 // 跳过格式说明符
-                while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\0') ++p;
-                if (*p) formatImpl(oss, p, std::forward<Args>(args)...);
+                while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\0') { ++p; }
+                if (*p) { formatImpl(oss, p, std::forward<Args>(args)...); }
                 return;
             } else if (*p == '%' && *(p + 1) == '%') {
                 oss << '%';
@@ -349,27 +349,27 @@ private:
         }
     }
     
-    static void formatImpl(std::ostringstream& oss, const char* format) {
+    static void formatImpl(std::ostringstream& oss, const char* const format) {
         oss << format;
     }
-    
+
     // 异步日志处理
     void processLogQueue();
     void writeToConsole(const LogMessage& msg) const;
     void writeToFile(const LogMessage& msg);
-    [[nodiscard]] std::string formatLogMessage(const LogMessage& msg) const;
-    
+    [[nodiscard]] static std::string formatLogMessage(const LogMessage& msg) ;
+
     // 文件轮转
     void rotateLogFile();
     [[nodiscard]] bool shouldRotateFile() const noexcept;
     [[nodiscard]] std::string getRotatedFileName(int index) const;
     
     // 崩溃处理
-    void setupCrashHandlers();
-    void removeCrashHandlers() noexcept;
+    static void setupCrashHandlers();
+    static void removeCrashHandlers() noexcept;
     static void handleCrash(int signal);
-    static void writeCrashLog(std::string_view crash_info);
-    
+    static void writeCrashLog(std::string_view const & crash_info);
+
 #ifdef _WIN32
     static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS* ex_info);
 #endif
@@ -379,21 +379,21 @@ private:
     std::atomic<LogLevel> m_log_level_ {LogLevel::INFO};
     std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
     std::atomic_bool m_color_output_{true}
-                    , m_crash_diagnostics_{true};
-    std::atomic_size_t  m_max_queue_size_ {10000};
+                    ,m_crash_diagnostics_{true};
+    std::atomic_size_t m_max_queue_size_ {10000};
 
     // 文件相关
-    std::string m_log_file_path_;
-    std::atomic_size_t  m_max_file_size_{0};
+    std::string m_log_file_path_{};
+    std::atomic_size_t  m_max_file_size_{};
     std::atomic_int m_max_files_{5};
-    std::unique_ptr<std::ofstream> m_file_stream_;
-    std::atomic_size_t m_current_file_size_{0};
+    std::unique_ptr<std::ofstream> m_file_stream_{};
+    std::atomic_size_t m_current_file_size_{};
 
     // 异步处理
-    std::queue<LogMessage> m_log_queue_;
-    mutable std::shared_mutex m_queue_mutex_;
-    std::condition_variable_any m_queue_cv_;
-    std::thread m_worker_thread_;
+    std::queue<LogMessage> m_log_queue_{};
+    mutable std::shared_mutex m_queue_mutex_{};
+    std::condition_variable_any m_queue_cv_{};
+    std::thread m_worker_thread_{};
     std::atomic_bool m_running_{}
                     , m_shutdown_requested_{};
     
@@ -409,7 +409,7 @@ private:
 // 现代化的便利宏定义
 #define XLOG_TRACE(msg) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::TRACE)) { \
             logger->log(XUtils::LogLevel::TRACE, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
@@ -417,7 +417,7 @@ private:
 
 #define XLOG_DEBUG(msg) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::DEBUG)) { \
             logger->log(XUtils::LogLevel::DEBUG, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
@@ -425,7 +425,7 @@ private:
 
 #define XLOG_INFO(msg) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::INFO)) { \
             logger->log(XUtils::LogLevel::INFO, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
@@ -433,7 +433,7 @@ private:
 
 #define XLOG_WARN(msg) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::WARN)) { \
             logger->log(XUtils::LogLevel::WARN, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
@@ -441,7 +441,7 @@ private:
 
 #define XLOG_ERROR(msg) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::ERROR)) { \
             logger->log(XUtils::LogLevel::ERROR, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
@@ -449,7 +449,7 @@ private:
 
 #define XLOG_FATAL(msg) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::FATAL)) { \
             logger->log(XUtils::LogLevel::FATAL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
             logger->flush(); \
@@ -459,7 +459,7 @@ private:
 // 格式化日志宏
 #define XLOGF_TRACE(fmt, ...) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::TRACE)) { \
             logger->logf(XUtils::LogLevel::TRACE, fmt, __VA_ARGS__); \
         } \
@@ -467,7 +467,7 @@ private:
 
 #define XLOGF_DEBUG(fmt, ...) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::DEBUG)) { \
             logger->logf(XUtils::LogLevel::DEBUG, fmt, __VA_ARGS__); \
         } \
@@ -475,7 +475,7 @@ private:
 
 #define XLOGF_INFO(fmt, ...) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::INFO)) { \
             logger->logf(XUtils::LogLevel::INFO, fmt, __VA_ARGS__); \
         } \
@@ -483,7 +483,7 @@ private:
 
 #define XLOGF_WARN(fmt, ...) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::WARN)) { \
             logger->logf(XUtils::LogLevel::WARN, fmt, __VA_ARGS__); \
         } \
@@ -491,7 +491,7 @@ private:
 
 #define XLOGF_ERROR(fmt, ...) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::ERROR)) { \
             logger->logf(XUtils::LogLevel::ERROR, fmt, __VA_ARGS__); \
         } \
@@ -499,7 +499,7 @@ private:
 
 #define XLOGF_FATAL(fmt, ...) \
     do { \
-        if (auto logger = XUtils::XLog::instance(); \
+        if (auto const logger {XUtils::XLog::instance()}; \
             logger && logger->shouldLog(XUtils::LogLevel::FATAL)) { \
             logger->logf(XUtils::LogLevel::FATAL, fmt, __VA_ARGS__); \
             logger->flush(); \
