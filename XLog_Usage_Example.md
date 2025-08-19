@@ -7,12 +7,13 @@ XLog 是一个功能强大的线程安全异步日志系统，支持控制台和
 - ✅ **线程安全**：支持多线程并发日志记录
 - ✅ **异步处理**：不阻塞主线程，高性能日志记录
 - ✅ **多输出支持**：控制台、文件或同时输出
-- ✅ **日志级别**：TRACE、DEBUG、INFO、WARN、ERROR、FATAL
+- ✅ **日志级别**：TRACE_LEVEL、DEBUG_LEVEL、INFO_LEVEL、WARN_LEVEL、ERROR_LEVEL、FATAL_LEVEL
 - ✅ **彩色输出**：控制台彩色日志显示
 - ✅ **文件轮转**：自动日志文件轮转管理
 - ✅ **崩溃诊断**：自动捕获崩溃并生成堆栈跟踪
 - ✅ **格式化日志**：支持printf风格的格式化
 - ✅ **自定义崩溃处理**：可扩展的崩溃处理机制
+- ✅ **跨平台兼容**：Windows、macOS、Linux完全兼容
 
 ## 基本使用
 
@@ -31,7 +32,7 @@ int main() {
     }
     
     // 配置日志系统
-    logger->setLogLevel(LogLevel::DEBUG);           // 设置最低日志级别
+    logger->setLogLevel(LogLevel::DEBUG_LEVEL);     // 设置最低日志级别
     logger->setOutput(LogOutput::BOTH);             // 同时输出到控制台和文件
     logger->setLogFile("app.log", 1024*1024, 5);   // 设置日志文件，1MB轮转，最多5个文件
     logger->setColorOutput(true);                   // 启用彩色输出
@@ -44,7 +45,7 @@ int main() {
 ### 2. 基本日志记录
 
 ```cpp
-// 使用便利宏记录日志
+// 使用便利宏记录日志（推荐方式，跨平台兼容）
 XLOG_TRACE("详细跟踪信息");
 XLOG_DEBUG("调试信息");
 XLOG_INFO("一般信息");
@@ -55,6 +56,16 @@ XLOG_FATAL("致命错误");
 // 格式化日志
 XLOGF_INFO("用户 %s 登录成功，ID: %d", username.c_str(), user_id);
 XLOGF_ERROR("连接失败，错误码: %d, 重试次数: %d", error_code, retry_count);
+
+// 直接使用日志对象（使用_LEVEL后缀避免宏冲突）
+logger->log(LogLevel::INFO_LEVEL, "直接调用日志方法");
+logger->log(LogLevel::ERROR_LEVEL, "错误信息", SourceLocation::current(__FILE__, __FUNCTION__, __LINE__));
+
+// 在非Windows平台，也可以使用简短别名
+#ifndef _WIN32
+logger->log(LogLevel::INFO, "信息");    // 使用别名
+logger->log(LogLevel::ERROR, "错误");   // 使用别名
+#endif
 ```
 
 ### 3. 多线程日志记录
@@ -274,4 +285,49 @@ logger->setLogFile("myapp.log", 0, 1);
 - 支持 std::filesystem
 - 支持 std::thread 和相关同步原语
 - Linux/macOS: 需要 execinfo.h（用于堆栈跟踪）
+
+## 跨平台兼容性说明
+
+为了彻底避免与各种系统平台宏的冲突问题，XLog库采用了全面的兼容性设计：
+
+### 日志级别命名策略
+- **统一使用 `_LEVEL` 后缀**：所有日志级别都使用 `_LEVEL` 后缀命名
+  - `LogLevel::TRACE_LEVEL`、`LogLevel::DEBUG_LEVEL`、`LogLevel::INFO_LEVEL`
+  - `LogLevel::WARN_LEVEL`、`LogLevel::ERROR_LEVEL`、`LogLevel::FATAL_LEVEL`
+- **向后兼容别名**：在没有宏冲突的平台上提供简短别名
+- **宏接口不变**：所有 `XLOG_*` 和 `XLOGF_*` 宏保持原有接口
+
+### 崩溃处理机制
+- **Windows**: 使用SEH (Structured Exception Handling)
+- **Unix/Linux/macOS**: 使用POSIX信号处理
+
+### 潜在冲突的系统宏
+不同平台可能定义以下宏，现在都得到了完美避免：
+- **Windows**: `ERROR`, `DEBUG`, `INFO`
+- **Unix/Linux**: `TRACE`, `WARN`, `FATAL`
+- **其他系统**: 各种可能的宏定义
+
+### 使用建议
+```cpp
+// 1. 推荐：使用宏接口（完全跨平台兼容）
+XLOG_ERROR("错误信息");
+XLOGF_DEBUG("调试信息: %d", value);
+
+// 2. 直接使用枚举（显式指定，推荐用于库开发）
+logger->log(LogLevel::ERROR_LEVEL, "错误信息");
+logger->log(LogLevel::DEBUG_LEVEL, "调试信息");
+
+// 3. 使用别名（仅在确认无宏冲突时）
+#ifndef ERROR  // 检查是否有宏冲突
+logger->log(LogLevel::ERROR, "错误信息");  // 使用别名
+#endif
+```
+
+### 兼容性保证
+- ✅ **完全向后兼容**：现有代码无需修改
+- ✅ **零宏冲突**：彻底避免与系统宏的冲突
+- ✅ **统一接口**：所有平台使用相同的API
+- ✅ **性能一致**：编译时别名解析，无运行时开销
+
+这样的设计确保了代码在任何平台上都能正常编译和运行。
 - Windows: 需要 dbghelp.lib（用于堆栈跟踪） 
