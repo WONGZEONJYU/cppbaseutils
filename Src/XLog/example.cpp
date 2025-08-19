@@ -28,7 +28,7 @@ int main() {
     auto logger = XLog::UniqueConstruction();
     
     // 2. 配置日志系统
-    logger->setLogLevel(LogLevel::DEBUG);
+    logger->setLogLevel(LogLevel::DEBUG_LEVEL);
     logger->setOutputMode(OutputMode::BOTH);  // 同时输出到控制台和文件
     logger->setLogFile("example.log");
     
