@@ -37,6 +37,15 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XHelper/
     PATTERN "*_private.hpp" EXCLUDE
 )
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XLog/
+    DESTINATION include/XLog
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+    PATTERN "*_p.hpp" EXCLUDE
+    PATTERN "*_private.hpp" EXCLUDE
+)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
     DESTINATION include/XObject
     FILES_MATCHING
