@@ -4,49 +4,53 @@
 #include <XHelper/xhelper.hpp>
 #include <string>
 #include <string_view>
-#include <fstream>
-#include <sstream>
 #include <memory>
+#include <atomic>
+#include <chrono>
+#include <cstdint>
+#include <fstream>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
 #include <queue>
 #include <condition_variable>
-#include <atomic>
-#include <chrono>
-#include <iomanip>
-#include <functional>
-#include <array>
-#include <optional>
-#include <variant>
-#include <csignal>
-#include <cstdlib>
-
-#ifdef _WIN32
-#include <windows.h>
-#include <dbghelp.h>
-#pragma comment(lib, "dbghelp.lib")
-#else
-#include <execinfo.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#endif
+#include <sstream>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 /**
  * @brief 日志级别枚举
+ * 使用_LEVEL后缀避免与系统平台宏冲突
  */
 enum class LogLevel : std::uint8_t {
-    TRACE = 0,
-    DEBUG = 1,
-    INFO = 2,
-    WARN = 3,
-    ERROR = 4,
-    FATAL = 5
+    TRACE_LEVEL = 0,
+    DEBUG_LEVEL = 1,
+    INFO_LEVEL = 2,
+    WARN_LEVEL = 3,
+    ERROR_LEVEL = 4,
+    FATAL_LEVEL = 5
 };
+
+// 为了向后兼容和便于使用，提供简短别名（在没有宏冲突的平台上）
+#ifndef TRACE
+    [[maybe_unused]] inline constexpr LogLevel TRACE = LogLevel::TRACE_LEVEL;
+#endif
+#ifndef DEBUG
+    [[maybe_unused]] inline constexpr LogLevel DEBUG = LogLevel::DEBUG_LEVEL;
+#endif
+#ifndef INFO
+    [[maybe_unused]] inline constexpr LogLevel INFO = LogLevel::INFO_LEVEL;
+#endif
+#ifndef WARN
+    [[maybe_unused]] inline constexpr LogLevel WARN = LogLevel::WARN_LEVEL;
+#endif
+#ifndef ERROR
+    [[maybe_unused]] inline constexpr LogLevel ERROR = LogLevel::ERROR_LEVEL;
+#endif
+#ifndef FATAL
+    [[maybe_unused]] inline constexpr LogLevel FATAL = LogLevel::FATAL_LEVEL;
+#endif
 
 /**
  * @brief 日志输出类型
@@ -121,7 +125,7 @@ struct LogMessage {
 class X_API ICrashHandler {
 public:
     virtual ~ICrashHandler() = default;
-    virtual void onCrash(std::string_view crash_info) = 0;
+    virtual void onCrash(std::string_view const & crash_info) = 0;
 };
 
 /**
@@ -225,7 +229,7 @@ public:
             // 格式化失败时记录错误
             std::ostringstream error_oss;
             error_oss << "Log format error: " << e.what();
-            log(LogLevel::ERROR, error_oss.str(), location);
+            log(LogLevel::ERROR_LEVEL, error_oss.str(), location);
         }
     }
     
@@ -275,12 +279,12 @@ public:
      */
     [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
         switch (level) {
-            case LogLevel::TRACE: return "TRACE";
-            case LogLevel::DEBUG: return "DEBUG";
-            case LogLevel::INFO:  return "INFO";
-            case LogLevel::WARN:  return "WARN";
-            case LogLevel::ERROR: return "ERROR";
-            case LogLevel::FATAL: return "FATAL";
+            case LogLevel::TRACE_LEVEL: return "TRACE";
+            case LogLevel::DEBUG_LEVEL: return "DEBUG";
+            case LogLevel::INFO_LEVEL:  return "INFO";
+            case LogLevel::WARN_LEVEL:  return "WARN";
+            case LogLevel::ERROR_LEVEL: return "ERROR";
+            case LogLevel::FATAL_LEVEL: return "FATAL";
             default: return "UNKNOWN";
         }
     }
@@ -312,7 +316,7 @@ private:
     
     // 格式化辅助函数
     template<typename T>
-    void formatImpl(std::ostringstream& oss, const char* const format, T&& value) {
+    inline static void formatImpl(std::ostringstream& oss, const char* const format, T&& value) {
         auto p{format};
         while (*p) {
             if (*p == '%' && *(p + 1) != '%') {
@@ -331,7 +335,7 @@ private:
     }
     
     template<typename T, typename... Args>
-    void formatImpl(std::ostringstream& oss, const char * const format, T&& value, Args&&... args) {
+    inline static void formatImpl(std::ostringstream& oss, const char * const format, T&& value, Args&&... args) {
         auto p{format};
         while (*p) {
             if (*p == '%' && *(p + 1) != '%') {
@@ -349,7 +353,7 @@ private:
         }
     }
     
-    static void formatImpl(std::ostringstream& oss, const char* const format) {
+    inline static void formatImpl(std::ostringstream& oss, const char* const format) {
         oss << format;
     }
 
@@ -376,7 +380,7 @@ private:
 
 private:
     // 配置参数
-    std::atomic<LogLevel> m_log_level_ {LogLevel::INFO};
+    std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
     std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
     std::atomic_bool m_color_output_{true}
                     ,m_crash_diagnostics_{true};
@@ -410,48 +414,48 @@ private:
 #define XLOG_TRACE(msg) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::TRACE)) { \
-            logger->log(XUtils::LogLevel::TRACE, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            logger && logger->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
+            logger->log(XUtils::LogLevel::TRACE_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_DEBUG(msg) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::DEBUG)) { \
-            logger->log(XUtils::LogLevel::DEBUG, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            logger && logger->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
+            logger->log(XUtils::LogLevel::DEBUG_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_INFO(msg) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::INFO)) { \
-            logger->log(XUtils::LogLevel::INFO, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            logger && logger->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
+            logger->log(XUtils::LogLevel::INFO_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_WARN(msg) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::WARN)) { \
-            logger->log(XUtils::LogLevel::WARN, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            logger && logger->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
+            logger->log(XUtils::LogLevel::WARN_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_ERROR(msg) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::ERROR)) { \
-            logger->log(XUtils::LogLevel::ERROR, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            logger && logger->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
+            logger->log(XUtils::LogLevel::ERROR_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_FATAL(msg) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::FATAL)) { \
-            logger->log(XUtils::LogLevel::FATAL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            logger && logger->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
+            logger->log(XUtils::LogLevel::FATAL_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
             logger->flush(); \
         } \
     } while(false)
@@ -460,49 +464,48 @@ private:
 #define XLOGF_TRACE(fmt, ...) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::TRACE)) { \
-            logger->logf(XUtils::LogLevel::TRACE, fmt, __VA_ARGS__); \
+            logger && logger->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
+            logger->logf(XUtils::LogLevel::TRACE_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_DEBUG(fmt, ...) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::DEBUG)) { \
-            logger->logf(XUtils::LogLevel::DEBUG, fmt, __VA_ARGS__); \
+            logger && logger->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
+            logger->logf(XUtils::LogLevel::DEBUG_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_INFO(fmt, ...) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::INFO)) { \
-            logger->logf(XUtils::LogLevel::INFO, fmt, __VA_ARGS__); \
+            logger && logger->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
+            logger->logf(XUtils::LogLevel::INFO_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_WARN(fmt, ...) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::WARN)) { \
-            logger->logf(XUtils::LogLevel::WARN, fmt, __VA_ARGS__); \
+            logger && logger->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
+            logger->logf(XUtils::LogLevel::WARN_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_ERROR(fmt, ...) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::ERROR)) { \
-            logger->logf(XUtils::LogLevel::ERROR, fmt, __VA_ARGS__); \
+            logger && logger->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
+            logger->logf(XUtils::LogLevel::ERROR_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_FATAL(fmt, ...) \
     do { \
         if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::FATAL)) { \
-            logger->logf(XUtils::LogLevel::FATAL, fmt, __VA_ARGS__); \
-            logger->flush(); \
+            logger && logger->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
+            logger->logf(XUtils::LogLevel::FATAL_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 

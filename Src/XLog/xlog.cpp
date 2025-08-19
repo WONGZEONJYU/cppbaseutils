@@ -2,6 +2,21 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
+#include <csignal>
+#include <cstdlib>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp.lib")
+#else
+#include <execinfo.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -350,23 +365,23 @@ void XLog::writeToConsole(const LogMessage& msg) const {
         // 添加颜色代码
         std::string_view color_code{};
         switch (msg.level) {
-            case LogLevel::TRACE: color_code = "\033[37m"; break;  // 白色
-            case LogLevel::DEBUG: color_code = "\033[36m"; break;  // 青色
-            case LogLevel::INFO:  color_code = "\033[32m"; break;  // 绿色
-            case LogLevel::WARN:  color_code = "\033[33m"; break;  // 黄色
-            case LogLevel::ERROR: color_code = "\033[31m"; break;  // 红色
-            case LogLevel::FATAL: color_code = "\033[35m"; break;  // 紫色
+        case LogLevel::TRACE_LEVEL: color_code = "\033[37m"; break;  // 白色
+        case LogLevel::DEBUG_LEVEL: color_code = "\033[36m"; break;  // 青色
+        case LogLevel::INFO_LEVEL:  color_code = "\033[32m"; break;  // 绿色
+        case LogLevel::WARN_LEVEL:  color_code = "\033[33m"; break;  // 黄色
+        case LogLevel::ERROR_LEVEL: color_code = "\033[31m"; break;  // 红色
+        case LogLevel::FATAL_LEVEL: color_code = "\033[35m"; break;  // 紫色
         }
 
         constexpr std::string_view reset_code {"\033[0m"};
 
-        if (msg.level >= LogLevel::ERROR) {
+        if (msg.level >= LogLevel::ERROR_LEVEL) {
             std::cerr << color_code << formatted << reset_code << '\n';
         } else {
             std::cout << color_code << formatted << reset_code << '\n';
         }
     } else {
-        if (msg.level >= LogLevel::ERROR) {
+        if (msg.level >= LogLevel::ERROR_LEVEL) {
             std::cerr << formatted << '\n';
         } else {
             std::cout << formatted << '\n';

@@ -771,7 +771,7 @@ class XSingleton : protected XHelperClass<Tp_> {
     using Base_ = XHelperClass<Tp_>;
     static_assert(std::is_object_v<typename Base_::Object>,"Tp_ must be a class or struct type!");
 public:
-    using Object = Base_::Object;
+    using Object = typename Base_::Object;
     using SingletonPtr = typename Base_::ObjectSPtr;
 
     template<typename ...Args1,typename ...Args2>
