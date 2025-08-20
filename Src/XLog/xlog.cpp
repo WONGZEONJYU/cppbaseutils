@@ -776,18 +776,19 @@ void XLogPrivate::initializeLogFile() {
 }
 
 #ifdef _WIN32
-LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS* const ex_info) {
+LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_info) {
     std::ostringstream oss{};
     oss << "Windows exception occurred: 0x" << std::hex
         << ex_info->ExceptionRecord->ExceptionCode << std::dec
-        << "\nStack trace:\n" << getStackTrace(0);
+        << "\nStack trace:\n" << XLog::getStackTrace(0);
     auto const crash_info {oss.str()};
 
     writeCrashLog(crash_info);
 
-    if (s_instance_ && s_instance_->m_crash_handler_) {
+    if (auto const p{ XLog::instance() };
+       p && p->d_func()->m_crash_handler_) {
         try {
-            s_instance_->m_crash_handler_->onCrash(crash_info);
+            p->d_func()->m_crash_handler_->onCrash(crash_info);
         } catch (...) {
             // 忽略崩溃处理器中的异常
         }
