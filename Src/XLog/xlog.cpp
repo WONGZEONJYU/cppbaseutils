@@ -80,7 +80,7 @@ void XLog::setLogFile(std::string_view const & filepath, std::size_t const max_s
     m_max_files_.store(max_files, std::memory_order_relaxed);
     
     // 重新打开文件流
-    std::lock_guard file_lock(m_file_mutex_);
+    std::unique_lock file_lock(m_file_mutex_);
     m_file_stream_.reset();
     m_current_file_size_.store(0, std::memory_order_relaxed);
 }
@@ -194,7 +194,7 @@ void XLog::flush() {
     m_queue_cv_.wait(lock, [this] { return m_log_queue_.empty(); });
     
     // 强制刷新文件流
-    std::lock_guard file_lock(m_file_mutex_);
+    std::unique_lock file_lock(m_file_mutex_);
     if (m_file_stream_ && m_file_stream_->is_open()) {
         m_file_stream_->flush();
     }
@@ -221,13 +221,58 @@ std::size_t XLog::getQueueSize() const {
 
 std::string XLog::getCurrentTimestamp() {
     using namespace std::chrono;
+    
+    // 获取当前时间点和毫秒精度
     const auto now{system_clock::now()};
-    const auto time_t{system_clock::to_time_t(now)};
+    const auto time_t_value{system_clock::to_time_t(now)};
     const auto ms{duration_cast<milliseconds>(now.time_since_epoch()) % 1000};
+    
+    // C++17 RAII线程安全时间格式化器
+    class SafeTimeFormatter {
+    private:
+        std::tm tm_buffer_{};
+        bool valid_{};
+    public:
+        explicit SafeTimeFormatter(std::time_t const & time) {
+            // 优先尝试线程安全的本地时间函数
+#ifdef _WIN32
+            valid_ = (localtime_s(&tm_buffer_, &time) == 0);
+            if (!valid_) {
+                // Fallback to UTC
+                valid_ = (gmtime_s(&tm_buffer_, &time) == 0);
+            }
+#else
+            // POSIX系统：使用线程安全版本
+            valid_ = (localtime_r(&time, &tm_buffer_) != nullptr);
+            if (!valid_) {
+                // Fallback to UTC
+                valid_ = (gmtime_r(&time, &tm_buffer_) != nullptr);
+            }
+#endif
+        }
+        // 禁用拷贝和移动，确保线程安全
+        X_DISABLE_COPY_MOVE(SafeTimeFormatter)
 
-    return (std::ostringstream{}
-        << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S")
-        << '.' << std::setfill('0') << std::setw(3) << ms.count()).str();
+        [[nodiscard]] bool is_valid() const noexcept { return valid_; }
+        [[nodiscard]] const std::tm* get() const noexcept { 
+            return valid_ ? &tm_buffer_ : nullptr; 
+        }
+    };
+    
+    // 使用RAII格式化器
+    SafeTimeFormatter formatter{time_t_value};
+    
+    if (!formatter.is_valid()) {
+        // 如果时间格式化失败，返回固定的错误时间戳
+        return "1970-01-01 00:00:00.000";
+    }
+    
+    // 使用现代C++17流式语法格式化时间
+    std::ostringstream oss;
+    oss << std::put_time(formatter.get(), "%Y-%m-%d %H:%M:%S")
+        << '.' << std::setfill('0') << std::setw(3) << ms.count();
+    
+    return oss.str();
 }
 
 std::string XLog::getCurrentThreadId() {
