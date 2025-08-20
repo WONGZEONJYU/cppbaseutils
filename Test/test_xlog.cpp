@@ -2,7 +2,6 @@
 #include <iostream>
 #include <thread>
 #include <vector>
-#include <chrono>
 
 using namespace XUtils;
 
@@ -68,7 +67,7 @@ void testFormattedLogging() {
     XLOGF_INFO("INFO: Operation completed successfully in %.3f seconds", value);
     XLOGF_WARN("WARN: Memory usage is at %d%% capacity", 85);
     XLOGF_ERROR("ERROR: Failed to process %d/%d items", 38, count);
-    XLOGF_FATAL("FATAL: Critical system failure - error code: %d", 500);
+    XLOGF_FATAL("FATAL: Critical system failure - error code: %d",500);
     
     // 测试复杂格式化
     XLOGF_INFO("Complex format: string='%s', int=%d, float=%.2f, hex=0x%X", 
