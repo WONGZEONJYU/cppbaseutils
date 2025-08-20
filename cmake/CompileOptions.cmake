@@ -10,6 +10,7 @@ if(MSVC)
         /W4                      # 警告级别4
         /wd4251                  # 禁用dll-interface警告
         /wd4275                  # 禁用dll-interface警告
+        /Zc:preprocessor         # 启用__VA_OPT__
     )
     
     # 根据构建类型设置优化选项
