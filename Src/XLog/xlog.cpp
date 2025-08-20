@@ -205,12 +205,12 @@ void XLog::flush() {
 bool XLog::waitForCompletion(std::chrono::milliseconds const & timeout) {
     std::unique_lock lock(m_queue_mutex_);
 
-    if ( timeout == std::chrono::milliseconds::zero() ) {
-        m_queue_cv_.wait(lock, [this] { return m_log_queue_.empty(); });
+    if ( std::chrono::milliseconds::zero() == timeout ) {
+        m_queue_cv_.wait(lock, [this]{ return m_log_queue_.empty(); });
         return true;
     } else {
         return m_queue_cv_.wait_for(lock, timeout,
-                                   [this] { return m_log_queue_.empty(); });
+                                   [this]{ return m_log_queue_.empty(); });
     }
 }
 
@@ -445,12 +445,13 @@ void XLog::writeToFile(const LogMessage& msg) {
     // 打开文件流（如果需要）
     if (!m_file_stream_ || !m_file_stream_->is_open()) {
 
-        if (m_file_stream_){
-            m_file_stream_->close();
-            m_file_stream_.reset();
-        }
+        m_file_stream_ = makeUnique<std::ofstream>(m_log_file_path_, std::ios::app);
 
-        while (!m_file_stream_){ m_file_stream_ = makeUnique<std::ofstream>(m_log_file_path_, std::ios::app); }
+        // 检查智能指针是否创建成功
+        if (!m_file_stream_) {
+            std::cerr << "Failed to create file stream for: " << m_log_file_path_ << '\n';
+            return;
+        }
 
         if (!m_file_stream_->is_open()) {
             std::cerr << "Failed to open log file: " << m_log_file_path_ << '\n';
@@ -468,6 +469,12 @@ void XLog::writeToFile(const LogMessage& msg) {
         } catch (const std::exception &) {
             m_current_file_size_.store(0, std::memory_order_relaxed);
         }
+    }
+
+    // 写入日志前再次检查文件流的有效性
+    if (!m_file_stream_ || !m_file_stream_->is_open()) {
+        std::cerr << "File stream is not available for writing\n";
+        return;
     }
 
     // 写入日志
