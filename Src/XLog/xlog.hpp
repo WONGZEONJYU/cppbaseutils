@@ -126,7 +126,10 @@ struct LogMessage {
 /**
  * @brief 崩溃处理器接口
  */
-class X_API ICrashHandler {
+class X_API ICrashHandler : public std::enable_shared_from_this<ICrashHandler>
+        ,public XHelperClass<ICrashHandler>
+{
+    X_HELPER_CLASS
 public:
     virtual ~ICrashHandler() = default;
     virtual void onCrash(std::string_view const & crash_info) = 0;
@@ -259,7 +262,7 @@ public:
      * @param timeout 超时时间（毫秒），0表示无限等待
      * @return 是否在超时前完成
      */
-    [[nodiscard]] bool waitForCompletion(std::chrono::milliseconds timeout = std::chrono::milliseconds::zero());
+    [[nodiscard]] bool waitForCompletion(std::chrono::milliseconds const & timeout = std::chrono::milliseconds::zero());
     
     /**
      * @brief 获取当前队列大小
@@ -370,7 +373,7 @@ private:
     // 文件轮转
     void rotateLogFile();
     [[nodiscard]] bool shouldRotateFile() const noexcept;
-    [[nodiscard]] std::string getRotatedFileName(int index) const;
+    [[nodiscard]] std::string getRotatedFileName(int ) const;
     
     // 崩溃处理
     static void setupCrashHandlers();
@@ -392,7 +395,7 @@ private:
 
     // 文件相关
     std::string m_log_file_path_{};
-    std::atomic_size_t  m_max_file_size_{};
+    std::atomic_size_t m_max_file_size_{};
     std::atomic_int m_max_files_{5};
     std::unique_ptr<std::ofstream> m_file_stream_{};
     std::atomic_size_t m_current_file_size_{};
@@ -403,7 +406,7 @@ private:
     std::condition_variable_any m_queue_cv_{};
     std::thread m_worker_thread_{};
     std::atomic_bool m_running_{}
-                    , m_shutdown_requested_{};
+                    ,m_shutdown_requested_{};
     
     // 崩溃处理
     CrashHandlerPtr m_crash_handler_{};
@@ -417,99 +420,99 @@ private:
 // 现代化的便利宏定义
 #define XLOG_TRACE(msg) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
-            logger->log(XUtils::LogLevel::TRACE_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
+            _logger_->log(XUtils::LogLevel::TRACE_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_DEBUG(msg) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
-            logger->log(XUtils::LogLevel::DEBUG_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
+            _logger_->log(XUtils::LogLevel::DEBUG_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_INFO(msg) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
-            logger->log(XUtils::LogLevel::INFO_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
+            _logger_->log(XUtils::LogLevel::INFO_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_WARN(msg) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
-            logger->log(XUtils::LogLevel::WARN_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
+            _logger_->log(XUtils::LogLevel::WARN_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_ERROR(msg) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
-            logger->log(XUtils::LogLevel::ERROR_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
+            _logger_->log(XUtils::LogLevel::ERROR_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
 #define XLOG_FATAL(msg) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
-            logger->log(XUtils::LogLevel::FATAL_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-            logger->flush(); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
+            _logger_->log(XUtils::LogLevel::FATAL_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            _logger_->flush(); \
         } \
     } while(false)
 
 // 格式化日志宏
 #define XLOGF_TRACE(fmt, ...) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
-            logger->logf(XUtils::LogLevel::TRACE_LEVEL, fmt, __VA_ARGS__); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
+            _logger_->logf(XUtils::LogLevel::TRACE_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_DEBUG(fmt, ...) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
-            logger->logf(XUtils::LogLevel::DEBUG_LEVEL, fmt, __VA_ARGS__); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
+            _logger_->logf(XUtils::LogLevel::DEBUG_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_INFO(fmt, ...) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
-            logger->logf(XUtils::LogLevel::INFO_LEVEL, fmt, __VA_ARGS__); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
+            _logger_->logf(XUtils::LogLevel::INFO_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_WARN(fmt, ...) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
-            logger->logf(XUtils::LogLevel::WARN_LEVEL, fmt, __VA_ARGS__); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
+            _logger_->logf(XUtils::LogLevel::WARN_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_ERROR(fmt, ...) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
-            logger->logf(XUtils::LogLevel::ERROR_LEVEL, fmt, __VA_ARGS__); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
+            _logger_->logf(XUtils::LogLevel::ERROR_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 
 #define XLOGF_FATAL(fmt, ...) \
     do { \
-        if (auto const logger {XUtils::XLog::instance()}; \
-            logger && logger->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
-            logger->logf(XUtils::LogLevel::FATAL_LEVEL, fmt, __VA_ARGS__); \
+        if (auto const _logger_ {XUtils::XLog::instance()}; \
+            _logger_ && _logger_->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
+            _logger_->logf(XUtils::LogLevel::FATAL_LEVEL, fmt, __VA_ARGS__); \
         } \
     } while(false)
 

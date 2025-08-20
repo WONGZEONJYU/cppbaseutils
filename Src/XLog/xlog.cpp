@@ -202,7 +202,7 @@ void XLog::flush() {
     std::cerr.flush();
 }
 
-bool XLog::waitForCompletion(std::chrono::milliseconds timeout) {
+bool XLog::waitForCompletion(std::chrono::milliseconds const & timeout) {
     std::unique_lock lock(m_queue_mutex_);
 
     if ( timeout == std::chrono::milliseconds::zero() ) {
@@ -236,10 +236,10 @@ std::string XLog::getCurrentTimestamp() {
         explicit SafeTimeFormatter(std::time_t const & time) {
             // 优先尝试线程安全的本地时间函数
 #ifdef _WIN32
-            valid_ = (localtime_s(&tm_buffer_, &time) == 0);
+            valid_ = !localtime_s(&tm_buffer_, &time);
             if (!valid_) {
                 // Fallback to UTC
-                valid_ = (gmtime_s(&tm_buffer_, &time) == 0);
+                valid_ = !gmtime_s(&tm_buffer_, &time);
             }
 #else
             // POSIX系统：使用线程安全版本
@@ -266,17 +266,14 @@ std::string XLog::getCurrentTimestamp() {
         // 如果时间格式化失败，返回固定的错误时间戳
         return "1970-01-01 00:00:00.000";
     }
-    
+
     // 使用现代C++17流式语法格式化时间
-    std::ostringstream oss;
-    oss << std::put_time(formatter.get(), "%Y-%m-%d %H:%M:%S")
-        << '.' << std::setfill('0') << std::setw(3) << ms.count();
-    
-    return oss.str();
+    return (std::ostringstream{} << std::put_time(formatter.get(), "%Y-%m-%d %H:%M:%S")
+                                << '.' << std::setfill('0') << std::setw(3) << ms.count()).str();
 }
 
 std::string XLog::getCurrentThreadId() {
-    return (std::ostringstream{} << std::this_thread::get_id()).str() ;
+    return ( std::ostringstream{} << std::this_thread::get_id() ).str() ;
 }
 
 std::string XLog::getStackTrace(int const skip_frames) {
@@ -298,12 +295,12 @@ std::string XLog::getStackTrace(int const skip_frames) {
     
 #ifdef _M_IX86
     image = IMAGE_FILE_MACHINE_I386;
-    stackFrame_.AddrPC.Offset = context.Eip;
-    stackFrame_.AddrPC.Mode = AddrModeFlat;
-    stackFrame_.AddrFrame.Offset = context.Ebp;
-    stackFrame_.AddrFrame.Mode = AddrModeFlat;
-    stackFrame_.AddrStack.Offset = context.Esp;
-    stackFrame_.AddrStack.Mode = AddrModeFlat;
+    stackFrame.AddrPC.Offset = context.Eip;
+    stackFrame.AddrPC.Mode = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Ebp;
+    stackFrame.AddrFrame.Mode = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Esp;
+    stackFrame.AddrStack.Mode = AddrModeFlat;
 #elif _M_X64
     image = IMAGE_FILE_MACHINE_AMD64;
     stackFrame.AddrPC.Offset = context.Rip;
@@ -374,18 +371,18 @@ void XLog::processLogQueue() {
         std::unique_lock lock(m_queue_mutex_);
         
         // 等待新消息或停止信号
-        m_queue_cv_.wait(lock, [this] {
+        m_queue_cv_.wait(lock, [this]{
             return !m_log_queue_.empty() || m_shutdown_requested_.load();
         });
 
         // 处理队列中的所有消息
         while (!m_log_queue_.empty()) {
-            LogMessage msg = std::move(m_log_queue_.front());
+            auto const msg{std::move(m_log_queue_.front())};
             m_log_queue_.pop();
             lock.unlock();
             
             // 处理日志消息
-            const auto output = m_output_.load(std::memory_order_relaxed);
+            const auto output {m_output_.load(std::memory_order_relaxed)};
             if ((output & LogOutput::CONSOLE) != LogOutput{}) {
                 writeToConsole(msg);
             }
@@ -411,13 +408,14 @@ void XLog::writeToConsole(const LogMessage& msg) const {
     if (m_color_output_.load(std::memory_order_relaxed)) {
         // 添加颜色代码
         std::string_view color_code{};
+
         switch (msg.level) {
-        case LogLevel::TRACE_LEVEL: color_code = "\033[37m"; break;  // 白色
-        case LogLevel::DEBUG_LEVEL: color_code = "\033[36m"; break;  // 青色
-        case LogLevel::INFO_LEVEL:  color_code = "\033[32m"; break;  // 绿色
-        case LogLevel::WARN_LEVEL:  color_code = "\033[33m"; break;  // 黄色
-        case LogLevel::ERROR_LEVEL: color_code = "\033[31m"; break;  // 红色
-        case LogLevel::FATAL_LEVEL: color_code = "\033[35m"; break;  // 紫色
+            case LogLevel::TRACE_LEVEL: color_code = "\033[37m"; break;  // 白色
+            case LogLevel::DEBUG_LEVEL: color_code = "\033[36m"; break;  // 青色
+            case LogLevel::INFO_LEVEL:  color_code = "\033[32m"; break;  // 绿色
+            case LogLevel::WARN_LEVEL:  color_code = "\033[33m"; break;  // 黄色
+            case LogLevel::ERROR_LEVEL: color_code = "\033[31m"; break;  // 红色
+            case LogLevel::FATAL_LEVEL: color_code = "\033[35m"; break;  // 紫色
         }
 
         constexpr std::string_view reset_code {"\033[0m"};
@@ -446,22 +444,28 @@ void XLog::writeToFile(const LogMessage& msg) {
 
     // 打开文件流（如果需要）
     if (!m_file_stream_ || !m_file_stream_->is_open()) {
-        m_file_stream_ = std::make_unique<std::ofstream>(
-            m_log_file_path_, std::ios::app);
-        
+
+        if (m_file_stream_){
+            m_file_stream_->close();
+            m_file_stream_.reset();
+        }
+
+        while (!m_file_stream_){ m_file_stream_ = makeUnique<std::ofstream>(m_log_file_path_, std::ios::app); }
+
         if (!m_file_stream_->is_open()) {
             std::cerr << "Failed to open log file: " << m_log_file_path_ << '\n';
             return;
         }
-        
+
         // 获取当前文件大小
         try {
             if (std::filesystem::exists(m_log_file_path_)) {
                 m_current_file_size_.store(
-                    std::filesystem::file_size(m_log_file_path_), 
-                    std::memory_order_relaxed);
+                        std::filesystem::file_size(m_log_file_path_)
+                       ,std::memory_order_relaxed
+               );
             }
-        } catch (const std::exception&) {
+        } catch (const std::exception &) {
             m_current_file_size_.store(0, std::memory_order_relaxed);
         }
     }
@@ -476,41 +480,42 @@ void XLog::writeToFile(const LogMessage& msg) {
 }
 
 std::string XLog::formatLogMessage(const LogMessage& msg)  {
-    std::ostringstream oss{};
-    oss << "[" << msg.timestamp << "] "
-        << "[" << getLevelName(msg.level) << "] "
-        << "[" << msg.thread_id << "] "
-        << msg.file << ":" << msg.line << " "
-        << msg.function << "() - "
-        << msg.message;
-    return oss.str();
+    return (
+        std::ostringstream {} << "[" << msg.timestamp << "] "
+                             << "[" << getLevelName(msg.level) << "] "
+                             << "[" << msg.thread_id << "] "
+                             << msg.file << ":" << msg.line << " "
+                             << msg.function << "() - "
+                             << msg.message).str();
 }
 
 void XLog::rotateLogFile() {
+
     if (m_file_stream_ && m_file_stream_->is_open()) {
         m_file_stream_->close();
         m_file_stream_.reset();
     }
-    
+
     try {
         auto const max_files{m_max_files_.load(std::memory_order_relaxed)};
 
         // 删除最旧的文件
-        auto const oldest_file{getRotatedFileName(max_files - 1)};
-        if (std::filesystem::exists(oldest_file)) {
+        if (auto const oldest_file{getRotatedFileName(max_files - 1)}
+            ;std::filesystem::exists(oldest_file))
+        {
             std::filesystem::remove(oldest_file);
         }
 
         // 重命名现有文件
         for (int i {max_files - 2}; i >= 0; --i) {
-            auto const old_name{ !i ? m_log_file_path_ : getRotatedFileName(i)},
-                    new_name{getRotatedFileName(i + 1)};
-
-            if (std::filesystem::exists(old_name)) {
+            if (auto const old_name{ !i ? m_log_file_path_ : getRotatedFileName(i) }
+                ,new_name{getRotatedFileName(i + 1)}
+                ;std::filesystem::exists(old_name))
+            {
                 std::filesystem::rename(old_name, new_name);
             }
         }
-        
+
         m_current_file_size_.store(0, std::memory_order_relaxed);
         
     } catch (const std::exception& e) {
@@ -525,15 +530,17 @@ bool XLog::shouldRotateFile() const noexcept {
 
 std::string XLog::getRotatedFileName(int const index) const {
     const std::filesystem::path path(m_log_file_path_);
-    auto const stem{path.stem().string()}
-        ,extension{path.extension().string()}
-        ,parent{path.parent_path().string()};
+
+    auto const stem{path.stem().string()} //文件名字
+        ,extension{path.extension().string()} //扩展名
+        ,parent{path.parent_path().string()}; //路径
 
     std::ostringstream oss{};
     if (!parent.empty()) {
         oss << parent << "/";
     }
-    oss << stem << "." << index << extension;
+    oss << stem << "." << index << extension; /* windows : 例如 C:/xxx.1.log
+                                            * unix/linux : 例如 /home/xxx.1.log */
     return oss.str();
 }
 
