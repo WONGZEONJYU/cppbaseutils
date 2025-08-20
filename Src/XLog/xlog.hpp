@@ -7,7 +7,6 @@
 #include <memory>
 #include <atomic>
 #include <chrono>
-#include <cstdint>
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
@@ -38,57 +37,52 @@ enum class LogLevel : std::uint8_t {
 
 // 为了向后兼容和便于使用，提供简短别名（在没有宏冲突的平台上）
 #ifndef TRACE
-    [[maybe_unused]] inline constexpr LogLevel TRACE = LogLevel::TRACE_LEVEL;
+    [[maybe_unused]] inline constexpr auto TRACE {LogLevel::TRACE_LEVEL};
 #endif
 #ifndef DEBUG
-    [[maybe_unused]] inline constexpr LogLevel DEBUG = LogLevel::DEBUG_LEVEL;
+    [[maybe_unused]] inline constexpr auto DEBUG {LogLevel::DEBUG_LEVEL};
 #endif
 #ifndef INFO
-    [[maybe_unused]] inline constexpr LogLevel INFO = LogLevel::INFO_LEVEL;
+    [[maybe_unused]] inline constexpr auto INFO {LogLevel::INFO_LEVEL};
 #endif
 #ifndef WARN
-    [[maybe_unused]] inline constexpr LogLevel WARN = LogLevel::WARN_LEVEL;
+    [[maybe_unused]] inline constexpr auto WARN {LogLevel::WARN_LEVEL};
 #endif
 #ifndef ERROR
-    [[maybe_unused]] inline constexpr LogLevel ERROR = LogLevel::ERROR_LEVEL;
+    [[maybe_unused]] inline constexpr auto ERROR {LogLevel::ERROR_LEVEL};
 #endif
 #ifndef FATAL
-    [[maybe_unused]] inline constexpr LogLevel FATAL = LogLevel::FATAL_LEVEL;
+    [[maybe_unused]] inline constexpr auto FATAL {LogLevel::FATAL_LEVEL};
 #endif
 
 /**
  * @brief 日志输出类型
  */
-enum class LogOutput : std::uint8_t {
+enum class LogOutput : uint8_t {
     CONSOLE = 1 << 0,  // 控制台输出
     FILE = 1 << 1,     // 文件输出
     BOTH = CONSOLE | FILE  // 同时输出到控制台和文件
 };
 
 // 启用位运算操作符
-constexpr LogOutput operator|(LogOutput lhs, LogOutput rhs) noexcept {
-    return static_cast<LogOutput>(
-        static_cast<std::uint8_t>(lhs) | static_cast<std::uint8_t>(rhs)
-    );
-}
+constexpr LogOutput operator| (LogOutput const & lhs, LogOutput const & rhs) noexcept
+{return static_cast<LogOutput>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));}
 
-constexpr LogOutput operator&(LogOutput lhs, LogOutput rhs) noexcept {
-    return static_cast<LogOutput>(
-        static_cast<std::uint8_t>(lhs) & static_cast<std::uint8_t>(rhs)
-    );
-}
+constexpr LogOutput operator& (LogOutput const & lhs, LogOutput const & rhs) noexcept
+{return static_cast<LogOutput>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));}
 
 /**
  * @brief 源代码位置信息（C++17兼容版本）
  */
-struct SourceLocation {
+struct SourceLocation final {
+
     const char* m_fileName{},
             * m_functionName{};
     std::uint32_t m_line{};
 
     SourceLocation() = default;
 
-    constexpr SourceLocation(const char * const file
+    [[maybe_unused]] constexpr SourceLocation(const char * const file
                             ,const char * const function
                             ,uint32_t const line_num) noexcept
     :m_fileName(file),m_functionName(function),m_line(line_num){}
@@ -97,14 +91,14 @@ struct SourceLocation {
     static constexpr SourceLocation current(const char* const file = {},
                                           const char * const function = {},
                                           std::uint32_t const line_num = {}) noexcept {
-        return SourceLocation{file,function, line_num};
+        return{file,function, line_num};
     }
 };
 
 /**
  * @brief 日志消息结构
  */
-struct LogMessage {
+struct LogMessage final {
 
     LogLevel level{};
     std::string timestamp{}
@@ -116,8 +110,8 @@ struct LogMessage {
 
     LogMessage() = default;
 
-    LogMessage(LogLevel lv, std::string ts, std::string tid, 
-               std::string f, std::uint32_t l, std::string func, std::string msg) noexcept
+    LogMessage(LogLevel const lv, std::string ts, std::string tid,
+               std::string f, std::uint32_t const l, std::string func, std::string msg) noexcept
         : level(lv), timestamp(std::move(ts)), thread_id(std::move(tid))
         , file(std::move(f)), function(std::move(func))
         , message(std::move(msg)), line(l) {}
@@ -148,7 +142,7 @@ public:
  * - 优雅关闭机制
  * - 现代C++特性优化
  */
-class X_API XLog final : public XUtils::XSingleton<XLog> {
+class X_API XLog final : public XSingleton<XLog> {
     X_HELPER_CLASS
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
     // 配置参数
@@ -233,7 +227,7 @@ public:
      * @brief 设置崩溃处理器
      * @param handler 崩溃处理器
      */
-    void setCrashHandler(CrashHandlerPtr handler);
+    void setCrashHandler(CrashHandlerPtr && handler);
 
     /**
      * @brief 记录日志（现代化接口）
