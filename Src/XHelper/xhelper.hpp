@@ -575,7 +575,7 @@ class XHelperClass {
 
     static_assert(std::negation_v< std::is_pointer< Object_t > >,"Tp_ Cannot be pointer type");
 
-#if __cplusplus < 201402L
+#if __cplusplus < 202002L
     template< typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2 >
     inline static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2
             ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
@@ -609,9 +609,8 @@ protected:
             delete pointer;
         }
 
-        void operator()(const Object * const pointer) const noexcept {
-            cleanup(pointer);
-        }
+        void operator()(const Object * const pointer) const noexcept
+        {cleanup(pointer);}
     };
 
     using Deleter = Destructor_< Object_t >;
@@ -631,7 +630,7 @@ public:
 
         STATIC_ASSERT_P
 
-#if __cplusplus >= 201402L
+#if __cplusplus >= 202002L
         return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > )
             noexcept -> Object *
         {
@@ -801,9 +800,8 @@ public:
         return data();
     }
 
-    [[maybe_unused]] inline static auto instance() noexcept -> SingletonPtr {
-        return data();
-    }
+    [[maybe_unused]] inline static auto instance() noexcept -> SingletonPtr
+    {return data();}
 
     [[maybe_unused]] [[nodiscard]] inline static constexpr bool isConstruct() noexcept
     {return static_cast<bool >(data());}
@@ -829,8 +827,8 @@ public:
 
         std::call_once(initFlag(),[&]{
             while (true){
-                if (auto ptr { Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
-                        ,std::forward< decltype( args2 ) >( args2 ) ) })
+                if ( auto ptr { Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
+                        ,std::forward< decltype( args2 ) >( args2 ) ) } )
                 {
                     qdata() = std::move(ptr);
                     return ;
@@ -840,30 +838,23 @@ public:
         return qdata();
     };
 
-    [[maybe_unused]] inline static auto qInstance() noexcept -> QSingletonPtr {
-        return qdata();
-    }
+    [[maybe_unused]] inline static auto qInstance() noexcept -> QSingletonPtr
+    {return qdata();}
 
     [[maybe_unused]] [[nodiscard]] inline static constexpr bool isQConstruct() noexcept
     {return static_cast<bool >(qdata());}
 #endif
 
 private:
-    inline static auto initFlag() noexcept -> std::once_flag& {
-        static std::once_flag flag{};
-        return flag;
-    }
+    inline static auto initFlag() noexcept -> std::once_flag &
+    {static std::once_flag flag{};return flag;}
 
-    inline static auto data() noexcept -> SingletonPtr& {
-        static SingletonPtr d{};
-        return d;
-    }
+    inline static auto data() noexcept -> SingletonPtr &
+    {static SingletonPtr d{};return d;}
 
 #ifdef HAS_QT
-    inline static auto qdata() noexcept -> QSingletonPtr& {
-        static QSingletonPtr d{};
-        return d;
-    }
+    inline static auto qdata() noexcept -> QSingletonPtr &
+    {static QSingletonPtr d{};return d;}
 #endif
 
 protected:
