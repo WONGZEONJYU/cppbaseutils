@@ -9,19 +9,19 @@ set(CMAKE_CXX_STANDARD 20)
 
 # 定义源文件
 set(XOBJECT_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.cpp
 )
 
 # 定义头文件
 set(XOBJECT_HEADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/xobjectdefs_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p_p.hpp
-)
+        ${CMAKE_CURRENT_SOURCE_DIR}/xfunctionaltools_impl.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xsignalslot.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobjectdefs_impl.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/xobject_p_p.hpp
+    )
 
 # 为所有库目标添加源文件
 foreach(target IN LISTS LIBRARY_TARGETS)

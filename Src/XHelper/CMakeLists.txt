@@ -14,11 +14,11 @@ foreach(target IN LISTS LIBRARY_TARGETS)
         target_sources(${target} PRIVATE
             ${SRC_FILES}
             ${HEADER_FILES}
-        )
+    )
         
         # 设置包含目录
         target_include_directories(${target} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
-        )
+    )
     endif()
 endforeach()
