@@ -64,8 +64,8 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
     inline const __VA_ARGS__ * x_func() const noexcept { return static_cast<const __VA_ARGS__ *>(m_x_ptr_); } \
     friend class __VA_ARGS__;
 
-#define X_D(Class) Class##Private * const d{d_func()};
-#define X_X(...) __VA_ARGS__ * const x{x_func()};
+#define X_D(Class) Class##Private * const d{d_func()}
+#define X_X(...) __VA_ARGS__ * const x{x_func()}
 
 #define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : XUtils::x_assert(#cond, __FILE__, __LINE__))
 #define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : XUtils::x_assert_what(where, what, __FILE__, __LINE__))
