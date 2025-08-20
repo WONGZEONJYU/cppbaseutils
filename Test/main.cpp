@@ -14,6 +14,7 @@
 #include <utility>
 #include <chrono>
 #include <XHelper/xtypetraits.hpp>
+#include <XLog/xlog.hpp>
 
 static std::mutex mtx{};
 
@@ -636,13 +637,10 @@ private:
     }
 };
 
-
 [[maybe_unused]] static void test8() {
 
     Fuck::create();
-
 }
-
 
 int main(const int argc,const char **const argv){
     (void )argc,(void )argv;
