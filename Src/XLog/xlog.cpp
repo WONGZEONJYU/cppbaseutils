@@ -239,8 +239,8 @@ std::string XLog::getStackTrace(int const skip_frames) {
 
 #ifdef _WIN32
     // Windows 堆栈跟踪
-    HANDLE process = GetCurrentProcess();
-    HANDLE thread = GetCurrentThread();
+    auto const process{GetCurrentProcess()},
+                thread{GetCurrentThread()};
     
     CONTEXT context{};
     context.ContextFlags = CONTEXT_FULL;
@@ -248,47 +248,49 @@ std::string XLog::getStackTrace(int const skip_frames) {
     
     SymInitialize(process, nullptr, TRUE);
     
-    DWORD image;
-    STACKFRAME64 stackframe{};
+    DWORD image{};
+    STACKFRAME64 stackFrame{};
     
 #ifdef _M_IX86
     image = IMAGE_FILE_MACHINE_I386;
-    stackframe.AddrPC.Offset = context.Eip;
-    stackframe.AddrPC.Mode = AddrModeFlat;
-    stackframe.AddrFrame.Offset = context.Ebp;
-    stackframe.AddrFrame.Mode = AddrModeFlat;
-    stackframe.AddrStack.Offset = context.Esp;
-    stackframe.AddrStack.Mode = AddrModeFlat;
+    stackFrame_.AddrPC.Offset = context.Eip;
+    stackFrame_.AddrPC.Mode = AddrModeFlat;
+    stackFrame_.AddrFrame.Offset = context.Ebp;
+    stackFrame_.AddrFrame.Mode = AddrModeFlat;
+    stackFrame_.AddrStack.Offset = context.Esp;
+    stackFrame_.AddrStack.Mode = AddrModeFlat;
 #elif _M_X64
     image = IMAGE_FILE_MACHINE_AMD64;
-    stackframe.AddrPC.Offset = context.Rip;
-    stackframe.AddrPC.Mode = AddrModeFlat;
-    stackframe.AddrFrame.Offset = context.Rsp;
-    stackframe.AddrFrame.Mode = AddrModeFlat;
-    stackframe.AddrStack.Offset = context.Rsp;
-    stackframe.AddrStack.Mode = AddrModeFlat;
+    stackFrame.AddrPC.Offset = context.Rip;
+    stackFrame.AddrPC.Mode = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Rsp;
+    stackFrame.AddrFrame.Mode = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Rsp;
+    stackFrame.AddrStack.Mode = AddrModeFlat;
 #endif
-    
-    int frame_count = 0;
-    constexpr int max_frames = 64;
+
+    constexpr auto max_frames{64};
+
     std::array<char, 256> symbol_buffer{};
-    auto* symbol = reinterpret_cast<SYMBOL_INFO*>(symbol_buffer.data());
-    symbol->MaxNameLen = symbol_buffer.size() - sizeof(SYMBOL_INFO);
+
+    auto const symbol{reinterpret_cast<SYMBOL_INFO *>(symbol_buffer.data())};
+    symbol->MaxNameLen = static_cast<decltype(symbol->MaxNameLen)>(symbol_buffer.size() - sizeof(SYMBOL_INFO));
     symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-    
-    while (StackWalk64(image, process, thread, &stackframe, &context,
-                      nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr) 
+
+    int frame_count{};
+    while (StackWalk64(image, process, thread, &stackFrame, &context,
+                       nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr)
            && frame_count < max_frames) {
         
         if (frame_count >= skip_frames) {
-            DWORD64 address = stackframe.AddrPC.Offset;
+            DWORD64 address = stackFrame.AddrPC.Offset;
             if (SymFromAddr(process, address, nullptr, symbol)) {
-                std::ostringstream oss;
+                std::ostringstream oss{};
                 oss << "  #" << (frame_count - skip_frames) << ": " << symbol->Name 
                     << " [0x" << std::hex << address << "]";
                 result += oss.str() + '\n';
             } else {
-                std::ostringstream oss;
+                std::ostringstream oss{};
                 oss << "  #" << (frame_count - skip_frames) << ": <unknown> [0x" 
                     << std::hex << address << "]";
                 result += oss.str() + '\n';
