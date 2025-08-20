@@ -26,9 +26,7 @@ public:
  */
 void testBasicLogging() {
     std::cout << "\n=== Testing Basic Logging ===\n";
-    
-    auto logger = XLog::instance();
-    
+
     // 测试所有日志级别
     XLOG_TRACE("This is a TRACE message");
     XLOG_DEBUG("This is a DEBUG message");
@@ -38,7 +36,7 @@ void testBasicLogging() {
     XLOG_FATAL("This is a FATAL message");
     
     // 测试直接调用log方法
-    logger->log(LogLevel::INFO_LEVEL, "Direct log call test");
+    XLog::instance()->log(LogLevel::INFO_LEVEL, "Direct log call test");
     
     std::cout << "Basic logging test completed.\n";
 }
