@@ -150,9 +150,39 @@ public:
  */
 class X_API XLog final : public XUtils::XSingleton<XLog> {
     X_HELPER_CLASS
+    using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
+    // 配置参数
+    std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
+    std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
+    std::atomic_bool m_color_output_{true}
+    ,m_crash_diagnostics_{true};
+    std::atomic_size_t m_max_queue_size_ {10000};
+
+    // 文件相关
+    std::string m_log_file_path_{};
+    std::atomic_size_t m_max_file_size_{};
+    std::atomic_int m_max_files_{5};
+    std::unique_ptr<std::ofstream> m_file_stream_{};
+    std::atomic_size_t m_current_file_size_{};
+
+    // 异步处理
+    std::queue<LogMessage> m_log_queue_{};
+    mutable std::shared_mutex m_queue_mutex_{};
+    std::condition_variable_any m_queue_cv_{};
+    std::thread m_worker_thread_{};
+    std::atomic_bool m_running_{}
+    ,m_shutdown_requested_{};
+
+    // 崩溃处理
+    CrashHandlerPtr_ m_crash_handler_{};
+    static inline XLog* s_instance_{};
+
+    // 同步
+    mutable std::shared_mutex m_config_mutex_{};
+    mutable std::mutex m_file_mutex_{};
 
 public:
-    using CrashHandlerPtr = std::shared_ptr<ICrashHandler>;
+    using CrashHandlerPtr = CrashHandlerPtr_;
     using TimePoint [[maybe_unused]] = std::chrono::system_clock::time_point;
 
     /**
@@ -366,9 +396,9 @@ private:
 
     // 异步日志处理
     void processLogQueue();
-    void writeToConsole(const LogMessage& msg) const;
-    void writeToFile(const LogMessage& msg);
-    [[nodiscard]] static std::string formatLogMessage(const LogMessage& msg) ;
+    void writeToConsole(const LogMessage& ) const;
+    void writeToFile(const LogMessage& );
+    [[nodiscard]] static std::string formatLogMessage(const LogMessage& ) ;
 
     // 文件轮转
     void rotateLogFile();
@@ -378,43 +408,13 @@ private:
     // 崩溃处理
     static void setupCrashHandlers();
     static void removeCrashHandlers() noexcept;
-    static void handleCrash(int signal);
-    static void writeCrashLog(std::string_view const & crash_info);
+    static void handleCrash(int );
+    static void writeCrashLog(std::string_view const & );
 
 #ifdef _WIN32
     static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS* ex_info);
 #endif
 
-private:
-    // 配置参数
-    std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
-    std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
-    std::atomic_bool m_color_output_{true}
-                    ,m_crash_diagnostics_{true};
-    std::atomic_size_t m_max_queue_size_ {10000};
-
-    // 文件相关
-    std::string m_log_file_path_{};
-    std::atomic_size_t m_max_file_size_{};
-    std::atomic_int m_max_files_{5};
-    std::unique_ptr<std::ofstream> m_file_stream_{};
-    std::atomic_size_t m_current_file_size_{};
-
-    // 异步处理
-    std::queue<LogMessage> m_log_queue_{};
-    mutable std::shared_mutex m_queue_mutex_{};
-    std::condition_variable_any m_queue_cv_{};
-    std::thread m_worker_thread_{};
-    std::atomic_bool m_running_{}
-                    ,m_shutdown_requested_{};
-    
-    // 崩溃处理
-    CrashHandlerPtr m_crash_handler_{};
-    static inline XLog* s_instance_{};
-
-    // 同步
-    mutable std::shared_mutex m_config_mutex_{};
-    mutable std::mutex m_file_mutex_{};
 };
 
 // 现代化的便利宏定义
