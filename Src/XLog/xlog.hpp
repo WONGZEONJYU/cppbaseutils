@@ -2,19 +2,6 @@
 #define XUTILS_XLOG_HPP 1
 
 #include <XHelper/xhelper.hpp>
-#include <string>
-#include <string_view>
-#include <memory>
-#include <atomic>
-#include <chrono>
-#include <fstream>
-#include <mutex>
-#include <shared_mutex>
-#include <thread>
-#include <queue>
-#include <condition_variable>
-#include <cstdio>
-#include <sstream>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -27,7 +14,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
  * @brief 日志级别枚举
  * 使用_LEVEL后缀避免与系统平台宏冲突
  */
-enum class LogLevel : std::uint8_t {
+enum class LogLevel : uint8_t {
     TRACE_LEVEL = 0,
     DEBUG_LEVEL = 1,
     INFO_LEVEL = 2,
@@ -110,6 +97,16 @@ public:
     virtual void onCrash(std::string_view const & crash_info) = 0;
 };
 
+class XLog;
+class XLogPrivate;
+class XLogData {
+protected:
+    XLogData() = default;
+public:
+    virtual ~XLogData() = default;
+    XLog * m_x_ptr_{};
+};
+
 /**
  * @brief 线程安全的异步日志系统
  * 
@@ -125,7 +122,10 @@ public:
  */
 class X_API XLog final : public XSingleton<XLog> {
     X_HELPER_CLASS
+    X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
+    std::unique_ptr<XLogData> m_d_ptr{};
+#if 0
     // 配置参数
     std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
     std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
@@ -154,11 +154,11 @@ class X_API XLog final : public XSingleton<XLog> {
 
     // 崩溃处理
     CrashHandlerPtr_ m_crash_handler_{};
-    static inline XLog* s_instance_{};
 
     // 同步
     mutable std::shared_mutex m_config_mutex_{};
     mutable std::mutex m_file_mutex_{};
+#endif
 
 public:
     using CrashHandlerPtr = CrashHandlerPtr_;
@@ -203,7 +203,7 @@ public:
     /**
      * @brief 清理过期的日志文件
      */
-    void cleanupOldLogFiles();
+    void cleanupOldLogFiles() const noexcept;
 
     /**
      * @brief 启用/禁用控制台彩色输出
@@ -287,9 +287,7 @@ public:
      * @param level 日志级别
      * @return 是否应该记录
      */
-    [[nodiscard]] bool shouldLog(LogLevel const & level) const noexcept {
-        return level >= m_log_level_.load(std::memory_order_relaxed);
-    }
+    [[nodiscard]] bool shouldLog(LogLevel const & level) const noexcept;
 
     /**
      * @brief 获取日志级别名称
@@ -307,7 +305,7 @@ public:
             default: return "UNKNOWN";
         }
     }
-    
+
     /**
      * @brief 获取当前时间戳字符串
      * @return 时间戳字符串
@@ -335,59 +333,28 @@ private:
     
     // 格式化辅助函数 - 使用标准printf风格格式化
     template<typename... Args>
-    inline static void formatImpl(std::ostringstream& oss, const char* const format, Args&&... args) {
-        if constexpr (sizeof...(args) == 0) {
+    inline static void formatImpl(std::ostringstream& oss, const char* const format, Args &&... args) {
+        if constexpr (0 == sizeof...(args)) {
             // 无参数时直接输出格式字符串
             oss << format;
         } else {
             // 有参数时使用snprintf进行格式化
-            constexpr size_t buffer_size = 4096;
-            char buffer[buffer_size];
-            
-            int result = std::snprintf(buffer, buffer_size, format, args...);
-            if (result > 0 && static_cast<size_t>(result) < buffer_size) {
-                oss << buffer;
+            std::array<char,4096> buffer{};
+            if (auto const result {std::snprintf(buffer.data(), buffer.size(), format, args...)}
+                ; result > 0 && static_cast<std::size_t>(result) < buffer.size())
+            {
+                oss << buffer.data();
             } else if (result > 0) {
                 // 缓冲区太小，需要更大的缓冲区
-                auto larger_buffer = std::make_unique<char[]>(result + 1);
-                std::snprintf(larger_buffer.get(), result + 1, format, args...);
-                oss << larger_buffer.get();
+                std::vector larger_buffer ( result + 1,char{} );
+                std::snprintf(larger_buffer.data(), result + 1, format, args...);
+                oss << larger_buffer.data();
             } else {
                 // 格式化失败，输出原始格式字符串
                 oss << format;
             }
         }
     }
-
-    // 异步日志处理
-    void processLogQueue();
-    void writeToConsole(const LogMessage& ) const;
-    void writeToFile(const LogMessage& );
-    [[nodiscard]] static std::string formatLogMessage(const LogMessage& ) ;
-
-    // 文件轮转
-    void rotateLogFile();
-    [[nodiscard]] bool shouldRotateFile() const noexcept;
-    
-    // 崩溃处理
-    static void setupCrashHandlers();
-    static void removeCrashHandlers() noexcept;
-    static void handleCrash(int );
-    static void writeCrashLog(std::string_view const & );
-
-    // 文件管理
-    void initializeLogFile();
-    [[nodiscard]] std::string generateLogFileName() const;
-    [[nodiscard]] std::string findLatestLogFile() const;
-    [[nodiscard]] bool isLogFileFromToday(std::string_view const & filename) const;
-    [[nodiscard]] std::string getTodayDateString() const;
-    [[nodiscard]] std::string getLogFilePattern() const;
-    void ensureLogDirectory() const;
-
-#ifdef _WIN32
-    static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS* ex_info);
-#endif
-
 };
 
 // 现代化的便利宏定义 - 使用辅助宏减少重复代码
