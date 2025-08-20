@@ -840,7 +840,7 @@ public:
         return qdata();
     };
 
-    [[maybe_unused]] inline static auto qInstance() noexcept -> SingletonPtr {
+    [[maybe_unused]] inline static auto qInstance() noexcept -> QSingletonPtr {
         return qdata();
     }
 
