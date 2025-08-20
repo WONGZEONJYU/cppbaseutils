@@ -305,10 +305,10 @@ public:
      * @param level 日志级别
      * @return 是否应该记录
      */
-    [[nodiscard]] bool shouldLog(LogLevel level) const noexcept {
+    [[nodiscard]] bool shouldLog(LogLevel const & level) const noexcept {
         return level >= m_log_level_.load(std::memory_order_relaxed);
     }
-    
+
     /**
      * @brief 获取日志级别名称
      * @param level 日志级别
