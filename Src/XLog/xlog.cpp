@@ -4,18 +4,15 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
-#include <csignal>
-#include <cstdlib>
-
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
 #pragma comment(lib, "dbghelp.lib")
 #else
+#include <csignal>
 #include <execinfo.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #endif
 
 XTD_NAMESPACE_BEGIN
@@ -103,7 +100,7 @@ void XLog::enableCrashDiagnostics(bool const enable) {
     }
 }
 
-void XLog::setCrashHandler(CrashHandlerPtr handler) {
+void XLog::setCrashHandler(CrashHandlerPtr && handler) {
     std::unique_lock lock(m_config_mutex_);
     m_crash_handler_ = std::move(handler);
 }
@@ -115,7 +112,7 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
 
     try {
         // 创建日志消息
-        LogMessage log_msg(
+        LogMessage log_msg {
             level,
             getCurrentTimestamp(),
             getCurrentThreadId(),
@@ -123,22 +120,19 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
             location.m_line,
             location.m_functionName ? location.m_functionName : "unknown",
             std::string(message)
-        );
+        };
 
-        // 添加到队列
-        {
-            std::unique_lock lock(m_queue_mutex_);
-            
-            // 检查队列大小限制
-            const auto max_size{m_max_queue_size_.load(std::memory_order_relaxed)};
-            if (max_size > 0 && m_log_queue_.size() >= max_size) {
-                // 队列满时丢弃最旧的消息
-                m_log_queue_.pop();
-            }
+        std::unique_lock lock(m_queue_mutex_);
 
-            m_log_queue_.push(std::move(log_msg));
+        // 检查队列大小限制
+        if (const auto max_size{m_max_queue_size_.load(std::memory_order_relaxed)}
+            ; max_size > 0 && m_log_queue_.size() >= max_size) {
+            // 队列满时丢弃最旧的消息
+            m_log_queue_.pop();
         }
-        
+        // 添加到队列
+        m_log_queue_.push(std::move(log_msg));
+
         // 通知处理线程
         m_queue_cv_.notify_one();
         
@@ -155,7 +149,7 @@ void XLog::log(LogLevel const & level, const char * const file, int const line,
 
     try {
         // 创建日志消息
-        LogMessage log_msg(
+        LogMessage log_msg {
             level,
             getCurrentTimestamp(),
             getCurrentThreadId(),
@@ -163,22 +157,18 @@ void XLog::log(LogLevel const & level, const char * const file, int const line,
             static_cast<std::uint32_t>(line),
             function ? function : "unknown",
             std::string(message)
-        );
-        
-        // 添加到队列
-        {
-            std::unique_lock lock(m_queue_mutex_);
-            
-            // 检查队列大小限制
-            const auto max_size = m_max_queue_size_.load(std::memory_order_relaxed);
-            if (max_size > 0 && m_log_queue_.size() >= max_size) {
-                // 队列满时丢弃最旧的消息
-                m_log_queue_.pop();
-            }
-            
-            m_log_queue_.push(std::move(log_msg));
+        };
+        std::unique_lock lock(m_queue_mutex_);
+
+        // 检查队列大小限制
+        if (const auto max_size = m_max_queue_size_.load(std::memory_order_relaxed)
+            ; max_size > 0 && m_log_queue_.size() >= max_size) {
+            // 队列满时丢弃最旧的消息
+            m_log_queue_.pop();
         }
-        
+        // 添加到队列
+        m_log_queue_.push(std::move(log_msg));
+
         // 通知处理线程
         m_queue_cv_.notify_one();
         
@@ -229,7 +219,6 @@ std::string XLog::getCurrentTimestamp() {
     
     // C++17 RAII线程安全时间格式化器
     class SafeTimeFormatter {
-    private:
         std::tm tm_buffer_{};
         bool valid_{};
     public:
@@ -260,8 +249,8 @@ std::string XLog::getCurrentTimestamp() {
     };
     
     // 使用RAII格式化器
-    SafeTimeFormatter formatter{time_t_value};
-    
+    SafeTimeFormatter const formatter{time_t_value};
+
     if (!formatter.is_valid()) {
         // 如果时间格式化失败，返回固定的错误时间戳
         return "1970-01-01 00:00:00.000";
