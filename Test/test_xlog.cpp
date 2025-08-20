@@ -47,7 +47,7 @@ void testBasicLogging() {
 void testConfiguration() {
     std::cout << "\n=== Testing Configuration ===\n";
     
-    auto logger = XLog::instance();
+    auto const logger{XLog::instance()};
     
     // 测试日志级别设置
     logger->setLogLevel(LogLevel::DEBUG_LEVEL);
@@ -71,23 +71,21 @@ void testConfiguration() {
  */
 void testMultiThreadLogging() {
     std::cout << "\n=== Testing Multi-threaded Logging ===\n";
-    
 
-    const int num_threads = 4;
-    const int messages_per_thread = 10;
-    
-    std::vector<std::thread> threads;
+    constexpr auto num_threads {4},messages_per_thread {10};
+
+    std::vector<std::thread> threads{};
     threads.reserve(num_threads);
 
-    for (int t = 0; t < num_threads; ++t) {
-        threads.emplace_back([t]() {
-            for (int i = 0; i < messages_per_thread; ++i) {
+    for (int t {}; t < num_threads; ++t) {
+        threads.emplace_back([t] {
+            for (int i {}; i < messages_per_thread; ++i) {
                 XLOG_DEBUG("Thread " + std::to_string(t) + " processing item " + std::to_string(i));
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         });
     }
-    
+
     for (auto& thread : threads) {
         thread.join();
     }
@@ -100,41 +98,41 @@ int main() {
     
     try {
         // 初始化日志实例
-        auto logger = XLog::UniqueConstruction();
+        auto const logger{XLog::UniqueConstruction()};
         if (!logger) {
             std::cout << "Failed to create logger instance\n";
-            return 1;
+            return -1;
         }
-        
+
         std::cout << "Created logger instance successfully\n";
-        
+
         // 设置基本配置
         logger->setLogLevel(LogLevel::TRACE_LEVEL);
         logger->setOutput(LogOutput::BOTH);
         logger->setColorOutput(true);
-        
+
         // 运行各项测试
         testBasicLogging();
         testConfiguration();
         testMultiThreadLogging();
-        
+
         // 测试崩溃处理器设置
         std::cout << "\n=== Testing Crash Handler ===\n";
-        auto crash_handler = std::make_shared<CustomCrashHandler>();
+        auto const crash_handler{makeShared<CustomCrashHandler>()};
         logger->setCrashHandler(crash_handler);
         logger->enableCrashDiagnostics(true);
         std::cout << "Crash handler setup completed.\n";
-        
+
         // 等待所有日志处理完成
         logger->flush();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        
+
         std::cout << "\n=== All Tests Completed Successfully ===\n";
-        
+
     } catch (const std::exception& e) {
         std::cout << "Exception: " << e.what() << '\n';
         return 1;
     }
-    
+
     return 0;
 } 
