@@ -16,6 +16,10 @@
 #include <condition_variable>
 #include <sstream>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
