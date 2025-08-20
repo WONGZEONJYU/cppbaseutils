@@ -46,7 +46,7 @@ public:
 XObject::XObject():m_d_ptr_(std::make_unique<XObjectPrivate>()) {}
 
 XObject::~XObject() {
-    X_D(XObject)
+    X_D(XObject);
 
     if (const auto cd{d->m_connections.loadRelaxed()};
         cd && !cd->m_ref.deref()){
@@ -67,14 +67,14 @@ XObject::~XObject() {
 }
 
 bool XObject::blockSignals(bool b) noexcept {
-    X_D(XObject)
+    X_D(XObject);
     const auto previous{static_cast<bool>(d->m_blockSig)};
     d->m_blockSig = b;
     return previous;
 }
 
 XObject *XObject::sender() const {
-    X_D(const XObject)
+    X_D(const XObject);
 
     std::unique_lock locker(*signalSlotLock(this));
 
@@ -95,7 +95,7 @@ XObject *XObject::sender() const {
 }
 
 std::size_t XObject::senderSignalIndex() const {
-    X_D(const XObject)
+    X_D(const XObject);
     std::unique_lock locker(*signalSlotLock(this));
     auto const cd{d->m_connections.loadRelaxed()};
     if (!cd || !cd->m_currentSender){

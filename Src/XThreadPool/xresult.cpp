@@ -33,24 +33,24 @@ m_d_ptr_{std::make_unique<XResultPrivate>()}{
 }
 
 void XResult::set(std::any && v) const {
-    X_D(const XResult)
+    X_D(const XResult);
     d->m_result_ = {};
     d->m_result_.set_value(std::move(v));
     d->m_bin_sem_.release();
 }
 
 void XResult::reset() const {
-    X_D(const XResult)
+    X_D(const XResult);
     d->m_recall_.storeRelease({});
 }
 
 void XResult::allow_get() const{
-    X_D(const XResult)
+    X_D(const XResult);
     d->m_allow_get_.storeRelease(true);
 }
 
 std::any XResult::get_() const {
-    X_D(const XResult)
+    X_D(const XResult);
 #ifndef UNUSE_STD_THREAD_LOCAL
     if (this == d->sm_isSelf){
 #else
@@ -77,7 +77,7 @@ std::any XResult::get_() const {
 }
 
 std::any XResult::try_get_() const {
-    X_D(const XResult)
+    X_D(const XResult);
     if (!d->m_bin_sem_.try_acquire()){
         return {};
     }
@@ -85,7 +85,7 @@ std::any XResult::try_get_() const {
 }
 
 std::any XResult::get_for_(std::chrono::nanoseconds const &del_time) const {
-    X_D(const XResult)
+    X_D(const XResult);
     if (d->m_bin_sem_.try_acquire_for(del_time)){
         return {};
     }
