@@ -34,7 +34,7 @@ XLog::~XLog() {
             d->m_worker_thread_.join();
         }
     }
-    d->removeCrashHandlers();
+    XLogPrivate::removeCrashHandlers();
 }
 
 bool XLog::construct_() {
@@ -63,7 +63,7 @@ bool XLog::construct_() {
 
         // 设置崩溃处理器
         if (d->m_crash_diagnostics_.load()) {
-            d->setupCrashHandlers();
+            XLogPrivate::setupCrashHandlers();
         }
 
         return true;
@@ -182,7 +182,7 @@ void XLog::setAsyncQueueSize(std::size_t const size) noexcept {
 void XLog::enableCrashDiagnostics(bool const enable) {
     X_D(XLog);
     d->m_crash_diagnostics_.store(enable, std::memory_order_relaxed);
-    enable ? d->setupCrashHandlers() : d->removeCrashHandlers();
+    enable ? XLogPrivate::setupCrashHandlers() : XLogPrivate::removeCrashHandlers();
 }
 
 void XLog::setCrashHandler(CrashHandlerPtr && handler) {
@@ -217,10 +217,10 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
         if (const auto max_size{d->m_max_queue_size_.load(std::memory_order_relaxed)}
             ; max_size > 0 && d->m_log_queue_.size() >= max_size) {
             // 队列满时丢弃最旧的消息
-            d->m_log_queue_.pop();
+            d->m_log_queue_.pop_front();
         }
         // 添加到队列
-        d->m_log_queue_.push(std::move(log_msg));
+        d->m_log_queue_.push_back(std::move(log_msg));
 
         // 通知处理线程
         d->m_queue_cv_.notify_one();
@@ -468,23 +468,20 @@ std::string XLogPrivate::findLatestLogFile() const {
     }
 }
 
-bool XLogPrivate::isLogFileFromToday(std::string_view const & filename) const {
+[[maybe_unused]] bool XLogPrivate::isLogFileFromToday(std::string_view const & filename) {
     return filename.find(getTodayDateString()) != std::string::npos;
 }
 
-std::string XLogPrivate::getTodayDateString() const {
+std::string XLogPrivate::getTodayDateString() {
     using namespace std::chrono;
-    
-    auto const now = system_clock::now();
-    auto const time_t_value = system_clock::to_time_t(now);
+
+    auto const time_t_value{system_clock::to_time_t(system_clock::now())};
     
     std::tm tm_buffer{};
-    bool valid = false;
-    
 #ifdef _WIN32
-    valid = !localtime_s(&tm_buffer, &time_t_value);
+    auto const valid {!localtime_s(&tm_buffer, &time_t_value)};
 #else
-    valid = (localtime_r(&time_t_value, &tm_buffer) != nullptr);
+    auto const valid {localtime_r(&time_t_value, &tm_buffer) != nullptr};
 #endif
     
     if (!valid) {
@@ -498,7 +495,7 @@ std::string XLogPrivate::getLogFilePattern() const {
     // 匹配格式：basename_YYYY-MM-DD_NNN.log
     // 例如：application_2024-01-15_001.log
     return (std::ostringstream{}
-        << "(" << m_log_base_name_ << ")_(\\d{4}-\\d{2}-\\d{2})_(\\d{3})\\.log").str();
+        << "(" << m_log_base_name_ << R"()_(\d{4}-\d{2}-\d{2})_(\d{3})\.log)").str();
 }
 
 void XLogPrivate::ensureLogDirectory() const {
@@ -524,7 +521,7 @@ void XLogPrivate::processLogQueue(){
         // 处理队列中的所有消息
         while (!m_log_queue_.empty()) {
             auto const msg{std::move(m_log_queue_.front())};
-            m_log_queue_.pop();
+            m_log_queue_.pop_front();
             lock.unlock();
 
             // 处理日志消息

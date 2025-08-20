@@ -31,21 +31,20 @@ private:
     // 文件相关
     std::string m_log_file_path_{}
                 ,m_log_base_name_{"application"} // 基础文件名
-                ,m_log_directory_{"logs"};      // 日志目录
-    std::atomic_size_t m_max_file_size_{5 * 1024 * 1024}; // 默认5MB
-    std::atomic_int m_max_files_{5}
-                ,m_retention_days_{7}; // 默认保存7天
+                ,m_log_directory_{"logs"}      // 日志目录
+                ,m_current_log_file_{}; // 当前正在使用的日志文件名
+    std::atomic_size_t m_max_file_size_{5 * 1024 * 1024} // 默认5MB
+                        ,m_current_file_size_{};
+    std::atomic_int m_retention_days_{7}; // 默认保存7天
     std::unique_ptr<std::ofstream> m_file_stream_{};
-    std::atomic_size_t m_current_file_size_{};
-    std::string m_current_log_file_{}; // 当前正在使用的日志文件名
 
     // 异步处理
-    std::queue<LogMessage> m_log_queue_{};
+    std::deque<LogMessage> m_log_queue_{};
     mutable std::shared_mutex m_queue_mutex_{};
     std::condition_variable_any m_queue_cv_{};
     std::thread m_worker_thread_{};
     std::atomic_bool m_running_{}
-    ,m_shutdown_requested_{};
+                    ,m_shutdown_requested_{};
 
     // 崩溃处理
     CrashHandlerPtr m_crash_handler_{};
@@ -78,8 +77,8 @@ public:
     void initializeLogFile();
     [[nodiscard]] std::string generateLogFileName() const;
     [[nodiscard]] std::string findLatestLogFile() const;
-    [[nodiscard]] bool isLogFileFromToday(std::string_view const & filename) const;
-    [[nodiscard]] std::string getTodayDateString() const;
+    [[maybe_unused]] [[nodiscard]] static bool isLogFileFromToday(std::string_view const & filename);
+    [[nodiscard]] static std::string getTodayDateString();
     [[nodiscard]] std::string getLogFilePattern() const;
     void ensureLogDirectory() const;
 
