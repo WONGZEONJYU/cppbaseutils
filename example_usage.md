@@ -97,9 +97,16 @@ target_link_libraries(my_app
 #include "XAtomic/xatomic.h"
 #include "XThreadPool/xthreadpool.h"
 #include "XTools/xtools.h"
+#include "XLog/xlog.hpp"
 
 int main() {
     std::cout << "XUtils 简化链接示例" << std::endl;
+    
+    // 初始化日志系统
+    auto logger = XUtils::XLog::UniqueConstruction();
+    logger->setLogLevel(XUtils::LogLevel::INFO_LEVEL);
+    logger->setOutput(XUtils::LogOutput::BOTH);
+    logger->setLogFileConfig("myapp", "logs", 10, 7);  // 使用现代化配置方法
     
     // 使用原子操作
     XUtils::XAtomic::Atomic<int> counter(0);
@@ -110,6 +117,9 @@ int main() {
     
     // 使用工具类
     auto ptr = XUtils::XTools::make_unique<int>(42);
+    
+    // 记录日志
+    XLOG_INFO("所有功能正常工作！");
     
     std::cout << "所有功能正常工作！" << std::endl;
     return 0;
@@ -196,5 +206,6 @@ export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 2. **设置正确的 C++ 标准**：确保使用 C++20 或更高版本
 3. **正确处理依赖**：使用 `find_package` 而不是手动指定路径
 4. **测试兼容性**：在不同构建配置下测试您的项目
+5. **使用现代化API**：使用 `setLogFileConfig()` 而不是已弃用的 `setLogFile()`
 
 这样的设计让使用 XUtils 变得更加简单和直观！ 

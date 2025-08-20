@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <regex>
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
@@ -38,8 +39,14 @@ XLog::~XLog() {
 
 bool XLog::construct_() {
     try {
-        // 设置默认日志文件路径
-        m_log_file_path_ = "application.log";
+        // 确保日志目录存在
+        ensureLogDirectory();
+        
+        // 初始化日志文件（智能续写或创建新文件）
+        initializeLogFile();
+        
+        // 清理过期的日志文件
+        cleanupOldLogFiles();
         
         // 启动异步处理线程
         m_running_.store(true);
@@ -69,17 +76,74 @@ void XLog::setOutput(LogOutput const & output) noexcept {
     m_output_.store(output, std::memory_order_relaxed);
 }
 
-void XLog::setLogFile(std::string_view const & filepath, std::size_t const max_size, int const max_files) {
+void XLog::setLogFileConfig(std::string_view const & base_name, 
+                           std::string_view const & directory,
+                           std::size_t const max_size_mb, 
+                           int const retention_days) {
     std::unique_lock lock(m_config_mutex_);
     
-    m_log_file_path_ = filepath;
-    m_max_file_size_.store(max_size, std::memory_order_relaxed);
-    m_max_files_.store(max_files, std::memory_order_relaxed);
+    m_log_base_name_ = base_name;
+    m_log_directory_ = directory;
+    m_max_file_size_.store(max_size_mb * 1024 * 1024, std::memory_order_relaxed);
+    m_retention_days_.store(retention_days, std::memory_order_relaxed);
     
-    // 重新打开文件流
+    // 重新初始化文件
     std::unique_lock file_lock(m_file_mutex_);
     m_file_stream_.reset();
     m_current_file_size_.store(0, std::memory_order_relaxed);
+    
+    // 确保目录存在并初始化新的日志文件
+    ensureLogDirectory();
+    initializeLogFile();
+    cleanupOldLogFiles();
+}
+
+std::string XLog::getCurrentLogFile() const {
+    std::shared_lock lock(m_config_mutex_);
+    return m_current_log_file_;
+}
+
+void XLog::cleanupOldLogFiles() {
+    try {
+        if (!std::filesystem::exists(m_log_directory_)) {
+            return;
+        }
+        
+        auto const retention_days = m_retention_days_.load(std::memory_order_relaxed);
+        if (retention_days <= 0) {
+            return; // 不限制保存天数
+        }
+        
+        auto const cutoff_time = std::chrono::system_clock::now() - 
+                                std::chrono::hours(24 * retention_days);
+        
+        // 获取日志文件模式
+        auto const pattern = getLogFilePattern();
+        std::regex const log_regex(pattern);
+        
+        for (auto const& entry : std::filesystem::directory_iterator(m_log_directory_)) {
+            if (!entry.is_regular_file()) continue;
+            
+            auto const filename = entry.path().filename().string();
+            if (!std::regex_match(filename, log_regex)) continue;
+            
+            try {
+                auto const file_time = std::filesystem::last_write_time(entry.path());
+                auto const sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                    file_time - std::filesystem::file_time_type::clock::now() + 
+                    std::chrono::system_clock::now());
+                
+                if (sctp < cutoff_time) {
+                    std::filesystem::remove(entry.path());
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Failed to check/remove old log file " << filename 
+                         << ": " << e.what() << '\n';
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to cleanup old log files: " << e.what() << '\n';
+    }
 }
 
 void XLog::setColorOutput(bool const enable) noexcept {
@@ -126,42 +190,6 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
 
         // 检查队列大小限制
         if (const auto max_size{m_max_queue_size_.load(std::memory_order_relaxed)}
-            ; max_size > 0 && m_log_queue_.size() >= max_size) {
-            // 队列满时丢弃最旧的消息
-            m_log_queue_.pop();
-        }
-        // 添加到队列
-        m_log_queue_.push(std::move(log_msg));
-
-        // 通知处理线程
-        m_queue_cv_.notify_one();
-        
-    } catch (const std::exception& e) {
-        // 如果日志系统本身出错，直接输出到stderr
-        std::cerr << "XLog error: " << e.what() << '\n';
-    }
-}
-
-// 兼容旧接口
-void XLog::log(LogLevel const & level, const char * const file, int const line,
-               const char * const function, std::string_view const & message) {
-    if (!shouldLog(level)) return;
-
-    try {
-        // 创建日志消息
-        LogMessage log_msg {
-            level,
-            getCurrentTimestamp(),
-            getCurrentThreadId(),
-            file ? std::filesystem::path(file).filename().string() : "unknown",
-            static_cast<std::uint32_t>(line),
-            function ? function : "unknown",
-            std::string(message)
-        };
-        std::unique_lock lock(m_queue_mutex_);
-
-        // 检查队列大小限制
-        if (const auto max_size = m_max_queue_size_.load(std::memory_order_relaxed)
             ; max_size > 0 && m_log_queue_.size() >= max_size) {
             // 队列满时丢弃最旧的消息
             m_log_queue_.pop();
@@ -434,24 +462,24 @@ void XLog::writeToFile(const LogMessage& msg) {
     // 打开文件流（如果需要）
     if (!m_file_stream_ || !m_file_stream_->is_open()) {
 
-        m_file_stream_ = makeUnique<std::ofstream>(m_log_file_path_, std::ios::app);
+        m_file_stream_ = makeUnique<std::ofstream>(m_current_log_file_, std::ios::app);
 
         // 检查智能指针是否创建成功
         if (!m_file_stream_) {
-            std::cerr << "Failed to create file stream for: " << m_log_file_path_ << '\n';
+            std::cerr << "Failed to create file stream for: " << m_current_log_file_ << '\n';
             return;
         }
 
         if (!m_file_stream_->is_open()) {
-            std::cerr << "Failed to open log file: " << m_log_file_path_ << '\n';
+            std::cerr << "Failed to open log file: " << m_current_log_file_ << '\n';
             return;
         }
 
         // 获取当前文件大小
         try {
-            if (std::filesystem::exists(m_log_file_path_)) {
+            if (std::filesystem::exists(m_current_log_file_)) {
                 m_current_file_size_.store(
-                        std::filesystem::file_size(m_log_file_path_)
+                        std::filesystem::file_size(m_current_log_file_)
                        ,std::memory_order_relaxed
                );
             }
@@ -493,25 +521,9 @@ void XLog::rotateLogFile() {
     }
 
     try {
-        auto const max_files{m_max_files_.load(std::memory_order_relaxed)};
-
-        // 删除最旧的文件
-        if (auto const oldest_file{getRotatedFileName(max_files - 1)}
-            ;std::filesystem::exists(oldest_file))
-        {
-            std::filesystem::remove(oldest_file);
-        }
-
-        // 重命名现有文件
-        for (int i {max_files - 2}; i >= 0; --i) {
-            if (auto const old_name{ !i ? m_log_file_path_ : getRotatedFileName(i) }
-                ,new_name{getRotatedFileName(i + 1)}
-                ;std::filesystem::exists(old_name))
-            {
-                std::filesystem::rename(old_name, new_name);
-            }
-        }
-
+        // 生成新的日志文件名
+        m_current_log_file_ = generateLogFileName();
+        m_log_file_path_ = m_current_log_file_;
         m_current_file_size_.store(0, std::memory_order_relaxed);
         
     } catch (const std::exception& e) {
@@ -524,21 +536,7 @@ bool XLog::shouldRotateFile() const noexcept {
     return max_size > 0 && m_current_file_size_.load(std::memory_order_relaxed) >= max_size;
 }
 
-std::string XLog::getRotatedFileName(int const index) const {
-    const std::filesystem::path path(m_log_file_path_);
 
-    auto const stem{path.stem().string()} //文件名字
-        ,extension{path.extension().string()} //扩展名
-        ,parent{path.parent_path().string()}; //路径
-
-    std::ostringstream oss{};
-    if (!parent.empty()) {
-        oss << parent << "/";
-    }
-    oss << stem << "." << index << extension; /* windows : 例如 C:/xxx.1.log
-                                            * unix/linux : 例如 /home/xxx.1.log */
-    return oss.str();
-}
 
 void XLog::setupCrashHandlers() {
 #ifdef _WIN32
@@ -628,6 +626,145 @@ LONG WINAPI XLog::handleWindowsException(EXCEPTION_POINTERS* const ex_info) {
     return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif
+
+void XLog::initializeLogFile() {
+    try {
+        // 查找今天最新的日志文件
+        auto const latest_file = findLatestLogFile();
+        
+        if (!latest_file.empty()) {
+            // 检查文件大小是否超出限制
+            auto const file_size = std::filesystem::file_size(latest_file);
+            auto const max_size = m_max_file_size_.load(std::memory_order_relaxed);
+            
+            if (max_size == 0 || file_size < max_size) {
+                // 文件未满，继续使用
+                m_current_log_file_ = latest_file;
+                m_log_file_path_ = latest_file;
+                m_current_file_size_.store(file_size, std::memory_order_relaxed);
+                return;
+            }
+        }
+        
+        // 需要创建新文件
+        m_current_log_file_ = generateLogFileName();
+        m_log_file_path_ = m_current_log_file_;
+        m_current_file_size_.store(0, std::memory_order_relaxed);
+        
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to initialize log file: " << e.what() << '\n';
+        // 回退到简单的文件名
+        m_current_log_file_ = m_log_directory_ + "/application.log";
+        m_log_file_path_ = m_current_log_file_;
+        m_current_file_size_.store(0, std::memory_order_relaxed);
+    }
+}
+
+std::string XLog::generateLogFileName() const {
+    auto const today = getTodayDateString();
+    int sequence = 1;
+    
+    std::string filename;
+    do {
+        std::ostringstream oss;
+        oss << m_log_directory_ << "/" << m_log_base_name_ 
+            << "_" << today << "_" << std::setfill('0') << std::setw(3) << sequence << ".log";
+        filename = oss.str();
+        sequence++;
+    } while (std::filesystem::exists(filename));
+    
+    return filename;
+}
+
+std::string XLog::findLatestLogFile() const {
+    try {
+        if (!std::filesystem::exists(m_log_directory_)) {
+            return {};
+        }
+        
+        auto const today = getTodayDateString();
+        std::string latest_file;
+        int max_sequence = 0;
+        
+        // 获取日志文件模式
+        auto const pattern = getLogFilePattern();
+        std::regex const log_regex(pattern);
+        
+        for (auto const& entry : std::filesystem::directory_iterator(m_log_directory_)) {
+            if (!entry.is_regular_file()) continue;
+            
+            auto const filename = entry.path().filename().string();
+            std::smatch match;
+            
+            if (std::regex_match(filename, match, log_regex)) {
+                auto const file_date = match[2].str();
+                auto const sequence_str = match[3].str();
+                
+                // 只考虑今天的文件
+                if (file_date == today) {
+                    int const sequence = std::stoi(sequence_str);
+                    if (sequence > max_sequence) {
+                        max_sequence = sequence;
+                        latest_file = entry.path().string();
+                    }
+                }
+            }
+        }
+        
+        return latest_file;
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to find latest log file: " << e.what() << '\n';
+        return {};
+    }
+}
+
+bool XLog::isLogFileFromToday(std::string_view const & filename) const {
+    auto const today = getTodayDateString();
+    return filename.find(today) != std::string::npos;
+}
+
+std::string XLog::getTodayDateString() const {
+    using namespace std::chrono;
+    
+    auto const now = system_clock::now();
+    auto const time_t_value = system_clock::to_time_t(now);
+    
+    std::tm tm_buffer{};
+    bool valid = false;
+    
+#ifdef _WIN32
+    valid = !localtime_s(&tm_buffer, &time_t_value);
+#else
+    valid = (localtime_r(&time_t_value, &tm_buffer) != nullptr);
+#endif
+    
+    if (!valid) {
+        return "1970-01-01";
+    }
+    
+    std::ostringstream oss;
+    oss << std::put_time(&tm_buffer, "%Y-%m-%d");
+    return oss.str();
+}
+
+std::string XLog::getLogFilePattern() const {
+    // 匹配格式：basename_YYYY-MM-DD_NNN.log
+    // 例如：application_2024-01-15_001.log
+    std::ostringstream oss;
+    oss << "(" << m_log_base_name_ << ")_(\\d{4}-\\d{2}-\\d{2})_(\\d{3})\\.log";
+    return oss.str();
+}
+
+void XLog::ensureLogDirectory() const {
+    try {
+        if (!std::filesystem::exists(m_log_directory_)) {
+            std::filesystem::create_directories(m_log_directory_);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to create log directory " << m_log_directory_ 
+                 << ": " << e.what() << '\n';
+    }
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

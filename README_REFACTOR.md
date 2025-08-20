@@ -11,6 +11,7 @@
 3. **现代化构建系统**: 使用 CMake 3.20+ 的现代特性
 4. **跨平台支持**: 统一的构建和安装流程
 5. **简化使用**: 提供统一的接口目标
+6. **API清理**: 移除不必要的兼容API，保持代码整洁
 
 ## 新的目录结构
 
@@ -19,6 +20,7 @@ Src/
 ├── XAtomic/          # 原子操作模块
 ├── XGlobal/          # 全局类型和常量
 ├── XHelper/          # 辅助工具模块
+├── XLog/             # 现代化日志系统
 ├── XObject/          # 对象系统模块
 ├── XSignal/          # 信号槽系统（Unix/macOS）
 ├── XThreadPool/      # 线程池模块
@@ -42,6 +44,13 @@ Src/
 - 通用辅助函数
 - Qt 集成工具
 - 字符串处理
+
+### XLog
+- 现代化异步日志系统
+- 线程安全的日志记录
+- 支持控制台和文件输出
+- 崩溃诊断和堆栈跟踪
+- 智能文件轮转管理
 
 ### XObject
 - 对象基类
@@ -162,7 +171,7 @@ target_link_libraries(your_target XUtils)
    # 旧方式
    target_link_libraries(${PROJECT_NAME} XUtils_shared)
    
-   # 新方式
+   # 新方式（推荐）
    target_link_libraries(${PROJECT_NAME} XUtils)
    ```
 
@@ -182,6 +191,22 @@ target_link_libraries(your_target XUtils)
    
    // 新方式
    using namespace XUtils::XAtomic;
+   ```
+
+4. **更新日志系统API**:
+   ```cpp
+   // 推荐使用现代化API
+   logger->setLogFileConfig("myapp", "logs", 10, 7);
+   
+   // 使用统一的日志级别枚举
+   logger->setLogLevel(LogLevel::INFO_LEVEL);
+   ```
+
+5. **使用现代化宏接口**:
+   ```cpp
+   // 推荐使用的跨平台兼容宏
+   XLOG_INFO("信息日志");
+   XLOGF_ERROR("错误: %d", error_code);
    ```
 
 ## 测试
@@ -217,6 +242,7 @@ target_link_libraries(your_target XUtils)
 - 遵循现代 C++ 最佳实践
 - 添加适当的文档和注释
 - 确保测试覆盖
+- 避免使用已弃用的API
 
 ## 版本历史
 
@@ -225,10 +251,13 @@ target_link_libraries(your_target XUtils)
 - 实现现代化构建系统
 - 添加简化链接方式
 - 完善文档和测试
+- 清理不必要的兼容API
+- 统一日志系统接口
 
 ## 未来计划
 
 - [ ] 添加更多平台支持
 - [ ] 性能优化
 - [ ] 更多工具模块
-- [ ] 包管理器支持 
+- [ ] 包管理器支持
+- [ ] 持续API现代化 

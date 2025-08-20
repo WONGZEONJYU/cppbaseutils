@@ -13,6 +13,7 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
+#include <cstdio>
 #include <sstream>
 
 #ifdef _WIN32
@@ -34,26 +35,6 @@ enum class LogLevel : std::uint8_t {
     ERROR_LEVEL = 4,
     FATAL_LEVEL = 5
 };
-
-// 为了向后兼容和便于使用，提供简短别名（在没有宏冲突的平台上）
-#ifndef TRACE
-    [[maybe_unused]] inline constexpr auto TRACE {LogLevel::TRACE_LEVEL};
-#endif
-#ifndef DEBUG
-    [[maybe_unused]] inline constexpr auto DEBUG {LogLevel::DEBUG_LEVEL};
-#endif
-#ifndef INFO
-    [[maybe_unused]] inline constexpr auto INFO {LogLevel::INFO_LEVEL};
-#endif
-#ifndef WARN
-    [[maybe_unused]] inline constexpr auto WARN {LogLevel::WARN_LEVEL};
-#endif
-#ifndef ERROR
-    [[maybe_unused]] inline constexpr auto ERROR {LogLevel::ERROR_LEVEL};
-#endif
-#ifndef FATAL
-    [[maybe_unused]] inline constexpr auto FATAL {LogLevel::FATAL_LEVEL};
-#endif
 
 /**
  * @brief 日志输出类型
@@ -154,10 +135,14 @@ class X_API XLog final : public XSingleton<XLog> {
 
     // 文件相关
     std::string m_log_file_path_{};
-    std::atomic_size_t m_max_file_size_{};
+    std::string m_log_base_name_{"application"}; // 基础文件名
+    std::string m_log_directory_{"logs"};        // 日志目录
+    std::atomic_size_t m_max_file_size_{5 * 1024 * 1024}; // 默认5MB
     std::atomic_int m_max_files_{5};
+    std::atomic_int m_retention_days_{7}; // 默认保存7天
     std::unique_ptr<std::ofstream> m_file_stream_{};
     std::atomic_size_t m_current_file_size_{};
+    std::string m_current_log_file_{}; // 当前正在使用的日志文件名
 
     // 异步处理
     std::queue<LogMessage> m_log_queue_{};
@@ -198,12 +183,27 @@ public:
     void setOutput(LogOutput const & output) noexcept;
     
     /**
-     * @brief 设置日志文件路径
-     * @param filepath 日志文件路径
-     * @param max_size 单个日志文件最大大小（字节），0表示不限制
-     * @param max_files 最大日志文件数量
+     * @brief 设置日志文件配置
+     * @param base_name 基础文件名（不包含扩展名和时间戳）
+     * @param directory 日志文件目录
+     * @param max_size_mb 单个日志文件最大大小（MB），默认5MB
+     * @param retention_days 日志保存天数，默认7天
      */
-    void setLogFile(std::string_view const & filepath, std::size_t max_size = 0, int max_files = 5);
+    void setLogFileConfig(std::string_view const & base_name = "application", 
+                         std::string_view const & directory = "logs",
+                         std::size_t max_size_mb = 5, 
+                         int retention_days = 7);
+
+    /**
+     * @brief 获取当前日志文件路径
+     * @return 当前日志文件的完整路径
+     */
+    [[nodiscard]] std::string getCurrentLogFile() const;
+
+    /**
+     * @brief 清理过期的日志文件
+     */
+    void cleanupOldLogFiles();
 
     /**
      * @brief 启用/禁用控制台彩色输出
@@ -243,12 +243,12 @@ public:
      * @tparam Args 参数类型
      * @param level 日志级别
      * @param format_str 格式字符串
-     * @param args 格式参数
      * @param location 源代码位置信息
+     * @param args 格式参数
      */
     template<typename... Args>
-    void logf(LogLevel const & level, const char * const format_str, Args&&... args,
-              SourceLocation const & location = {}) {
+    void logf(LogLevel const & level, const char * const format_str, 
+              SourceLocation const & location, Args&&... args) {
         if (!shouldLog(level)) return;
         
         try {
@@ -263,18 +263,6 @@ public:
             log(LogLevel::ERROR_LEVEL, error_oss.str(), location);
         }
     }
-    
-    /**
-     * @brief 兼容旧接口的日志记录
-     * @param level 日志级别
-     * @param file 源文件名
-     * @param line 行号
-     * @param function 函数名
-     * @param message 日志消息
-     */
-    [[deprecated("Use log() with SourceLocation instead")]]
-    void log(LogLevel const & level, const char* file, int line,
-             const char* function, std::string_view const & message);
     
     /**
      * @brief 刷新所有待处理的日志
@@ -345,47 +333,30 @@ private:
     bool construct_();
     X_DISABLE_COPY_MOVE(XLog)
     
-    // 格式化辅助函数
-    template<typename T>
-    inline static void formatImpl(std::ostringstream& oss, const char* const format, T&& value) {
-        auto p{format};
-        while (*p) {
-            if (*p == '%' && *(p + 1) != '%') {
-                oss << std::forward<T>(value);
-                // 跳过格式说明符
-                while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\0') { ++p; }
-                if (*p) { oss << p; }
-                return;
-            } else if (*p == '%' && *(p + 1) == '%') {
-                oss << '%';
-                p += 2;
+    // 格式化辅助函数 - 使用标准printf风格格式化
+    template<typename... Args>
+    inline static void formatImpl(std::ostringstream& oss, const char* const format, Args&&... args) {
+        if constexpr (sizeof...(args) == 0) {
+            // 无参数时直接输出格式字符串
+            oss << format;
+        } else {
+            // 有参数时使用snprintf进行格式化
+            constexpr size_t buffer_size = 4096;
+            char buffer[buffer_size];
+            
+            int result = std::snprintf(buffer, buffer_size, format, args...);
+            if (result > 0 && static_cast<size_t>(result) < buffer_size) {
+                oss << buffer;
+            } else if (result > 0) {
+                // 缓冲区太小，需要更大的缓冲区
+                auto larger_buffer = std::make_unique<char[]>(result + 1);
+                std::snprintf(larger_buffer.get(), result + 1, format, args...);
+                oss << larger_buffer.get();
             } else {
-                oss << *p++;
+                // 格式化失败，输出原始格式字符串
+                oss << format;
             }
         }
-    }
-    
-    template<typename T, typename... Args>
-    inline static void formatImpl(std::ostringstream& oss, const char * const format, T&& value, Args&&... args) {
-        auto p{format};
-        while (*p) {
-            if (*p == '%' && *(p + 1) != '%') {
-                oss << std::forward<T>(value);
-                // 跳过格式说明符
-                while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\0') { ++p; }
-                if (*p) { formatImpl(oss, p, std::forward<Args>(args)...); }
-                return;
-            } else if (*p == '%' && *(p + 1) == '%') {
-                oss << '%';
-                p += 2;
-            } else {
-                oss << *p++;
-            }
-        }
-    }
-    
-    inline static void formatImpl(std::ostringstream& oss, const char* const format) {
-        oss << format;
     }
 
     // 异步日志处理
@@ -397,7 +368,6 @@ private:
     // 文件轮转
     void rotateLogFile();
     [[nodiscard]] bool shouldRotateFile() const noexcept;
-    [[nodiscard]] std::string getRotatedFileName(int ) const;
     
     // 崩溃处理
     static void setupCrashHandlers();
@@ -405,110 +375,70 @@ private:
     static void handleCrash(int );
     static void writeCrashLog(std::string_view const & );
 
+    // 文件管理
+    void initializeLogFile();
+    [[nodiscard]] std::string generateLogFileName() const;
+    [[nodiscard]] std::string findLatestLogFile() const;
+    [[nodiscard]] bool isLogFileFromToday(std::string_view const & filename) const;
+    [[nodiscard]] std::string getTodayDateString() const;
+    [[nodiscard]] std::string getLogFilePattern() const;
+    void ensureLogDirectory() const;
+
 #ifdef _WIN32
     static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS* ex_info);
 #endif
 
 };
 
-// 现代化的便利宏定义
-#define XLOG_TRACE(msg) \
+// 现代化的便利宏定义 - 使用辅助宏减少重复代码
+#define XLOG_IMPL(level, msg) \
     do { \
         if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
-            _logger_->log(XUtils::LogLevel::TRACE_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            _logger_ && _logger_->shouldLog(level)) { \
+            _logger_->log(level, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
         } \
     } while(false)
 
-#define XLOG_DEBUG(msg) \
+#define XLOG_FATAL_IMPL(level, msg) \
     do { \
         if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
-            _logger_->log(XUtils::LogLevel::DEBUG_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-        } \
-    } while(false)
-
-#define XLOG_INFO(msg) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
-            _logger_->log(XUtils::LogLevel::INFO_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-        } \
-    } while(false)
-
-#define XLOG_WARN(msg) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
-            _logger_->log(XUtils::LogLevel::WARN_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-        } \
-    } while(false)
-
-#define XLOG_ERROR(msg) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
-            _logger_->log(XUtils::LogLevel::ERROR_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-        } \
-    } while(false)
-
-#define XLOG_FATAL(msg) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
-            _logger_->log(XUtils::LogLevel::FATAL_LEVEL, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
+            _logger_ && _logger_->shouldLog(level)) { \
+            _logger_->log(level, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
             _logger_->flush(); \
         } \
     } while(false)
 
-// 格式化日志宏
-#define XLOGF_TRACE(fmt, ...) \
+#define XLOG_TRACE(msg) XLOG_IMPL(XUtils::LogLevel::TRACE_LEVEL, msg)
+#define XLOG_DEBUG(msg) XLOG_IMPL(XUtils::LogLevel::DEBUG_LEVEL, msg)
+#define XLOG_INFO(msg)  XLOG_IMPL(XUtils::LogLevel::INFO_LEVEL, msg)
+#define XLOG_WARN(msg)  XLOG_IMPL(XUtils::LogLevel::WARN_LEVEL, msg)
+#define XLOG_ERROR(msg) XLOG_IMPL(XUtils::LogLevel::ERROR_LEVEL, msg)
+#define XLOG_FATAL(msg) XLOG_FATAL_IMPL(XUtils::LogLevel::FATAL_LEVEL, msg)
+
+// 格式化日志宏 - 使用辅助宏来处理可变参数
+#define XLOGF_IMPL(level, fmt, ...) \
     do { \
         if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::TRACE_LEVEL)) { \
-            _logger_->logf(XUtils::LogLevel::TRACE_LEVEL, fmt, __VA_ARGS__); \
+            _logger_ && _logger_->shouldLog(level)) { \
+            _logger_->logf(level, fmt, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) __VA_OPT__(,) __VA_ARGS__); \
         } \
     } while(false)
 
-#define XLOGF_DEBUG(fmt, ...) \
+#define XLOGF_FATAL_IMPL(level, fmt, ...) \
     do { \
         if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::DEBUG_LEVEL)) { \
-            _logger_->logf(XUtils::LogLevel::DEBUG_LEVEL, fmt, __VA_ARGS__); \
+            _logger_ && _logger_->shouldLog(level)) { \
+            _logger_->logf(level, fmt, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) __VA_OPT__(,) __VA_ARGS__); \
+            _logger_->flush(); \
         } \
     } while(false)
 
-#define XLOGF_INFO(fmt, ...) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::INFO_LEVEL)) { \
-            _logger_->logf(XUtils::LogLevel::INFO_LEVEL, fmt, __VA_ARGS__); \
-        } \
-    } while(false)
-
-#define XLOGF_WARN(fmt, ...) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::WARN_LEVEL)) { \
-            _logger_->logf(XUtils::LogLevel::WARN_LEVEL, fmt, __VA_ARGS__); \
-        } \
-    } while(false)
-
-#define XLOGF_ERROR(fmt, ...) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::ERROR_LEVEL)) { \
-            _logger_->logf(XUtils::LogLevel::ERROR_LEVEL, fmt, __VA_ARGS__); \
-        } \
-    } while(false)
-
-#define XLOGF_FATAL(fmt, ...) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(XUtils::LogLevel::FATAL_LEVEL)) { \
-            _logger_->logf(XUtils::LogLevel::FATAL_LEVEL, fmt, __VA_ARGS__); \
-        } \
-    } while(false)
+#define XLOGF_TRACE(fmt, ...) XLOGF_IMPL(XUtils::LogLevel::TRACE_LEVEL, fmt, __VA_ARGS__)
+#define XLOGF_DEBUG(fmt, ...) XLOGF_IMPL(XUtils::LogLevel::DEBUG_LEVEL, fmt, __VA_ARGS__)
+#define XLOGF_INFO(fmt, ...)  XLOGF_IMPL(XUtils::LogLevel::INFO_LEVEL, fmt, __VA_ARGS__)
+#define XLOGF_WARN(fmt, ...)  XLOGF_IMPL(XUtils::LogLevel::WARN_LEVEL, fmt, __VA_ARGS__)
+#define XLOGF_ERROR(fmt, ...) XLOGF_IMPL(XUtils::LogLevel::ERROR_LEVEL, fmt, __VA_ARGS__)
+#define XLOGF_FATAL(fmt, ...) XLOGF_FATAL_IMPL(XUtils::LogLevel::FATAL_LEVEL, fmt, __VA_ARGS__)
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

@@ -14,6 +14,7 @@ XLog 是一个功能强大的线程安全异步日志系统，支持控制台和
 - ✅ **格式化日志**：支持printf风格的格式化
 - ✅ **自定义崩溃处理**：可扩展的崩溃处理机制
 - ✅ **跨平台兼容**：Windows、macOS、Linux完全兼容
+- ✅ **现代化API**：清洁的接口设计，无历史包袱
 
 ## 基本使用
 
@@ -32,11 +33,11 @@ int main() {
     }
     
     // 配置日志系统
-    logger->setLogLevel(LogLevel::DEBUG_LEVEL);     // 设置最低日志级别
-    logger->setOutput(LogOutput::BOTH);             // 同时输出到控制台和文件
-    logger->setLogFile("app.log", 1024*1024, 5);   // 设置日志文件，1MB轮转，最多5个文件
-    logger->setColorOutput(true);                   // 启用彩色输出
-    logger->enableCrashDiagnostics(true);           // 启用崩溃诊断
+    logger->setLogLevel(LogLevel::DEBUG_LEVEL);           // 设置最低日志级别
+    logger->setOutput(LogOutput::BOTH);                   // 同时输出到控制台和文件
+    logger->setLogFileConfig("myapp", "logs", 10, 7);     // 现代化文件配置：基础名、目录、10MB轮转、保留7天
+    logger->setColorOutput(true);                         // 启用彩色输出
+    logger->enableCrashDiagnostics(true);                 // 启用崩溃诊断
     
     return 0;
 }
@@ -60,12 +61,6 @@ XLOGF_ERROR("连接失败，错误码: %d, 重试次数: %d", error_code, retry_
 // 直接使用日志对象（使用_LEVEL后缀避免宏冲突）
 logger->log(LogLevel::INFO_LEVEL, "直接调用日志方法");
 logger->log(LogLevel::ERROR_LEVEL, "错误信息", SourceLocation::current(__FILE__, __FUNCTION__, __LINE__));
-
-// 在非Windows平台，也可以使用简短别名
-#ifndef _WIN32
-logger->log(LogLevel::INFO, "信息");    // 使用别名
-logger->log(LogLevel::ERROR, "错误");   // 使用别名
-#endif
 ```
 
 ### 3. 多线程日志记录
@@ -207,13 +202,13 @@ void processData(const std::vector<int>& data) {
 
 ```cpp
 // 只记录INFO及以上级别的日志
-logger->setLogLevel(LogLevel::INFO);
+logger->setLogLevel(LogLevel::INFO_LEVEL);
 
 // 在调试模式下记录所有日志
 #ifdef DEBUG
-    logger->setLogLevel(LogLevel::TRACE);
+    logger->setLogLevel(LogLevel::TRACE_LEVEL);
 #else
-    logger->setLogLevel(LogLevel::WARN);
+    logger->setLogLevel(LogLevel::WARN_LEVEL);
 #endif
 ```
 
@@ -233,11 +228,14 @@ logger->setOutput(LogOutput::BOTH);
 ### 文件轮转配置
 
 ```cpp
-// 设置日志文件，10MB轮转，保留10个历史文件
-logger->setLogFile("myapp.log", 10 * 1024 * 1024, 10);
+// 现代化配置方法：基础名、目录、大小(MB)、保留天数
+logger->setLogFileConfig("myapp", "logs", 10, 7);  // 10MB轮转，保留7天
 
-// 不限制文件大小（不轮转）
-logger->setLogFile("myapp.log", 0, 1);
+// 大型应用配置
+logger->setLogFileConfig("server", "/var/log/myapp", 50, 30);  // 50MB轮转，保留30天
+
+// 开发环境配置
+logger->setLogFileConfig("debug", "debug_logs", 1, 1);  // 1MB轮转，保留1天
 ```
 
 ## 日志格式
@@ -261,6 +259,7 @@ logger->setLogFile("myapp.log", 0, 1);
 2. **队列管理**：可配置队列大小防止内存过度使用
 3. **级别过滤**：在记录前就过滤不需要的日志级别
 4. **批量处理**：内部批量处理日志消息提高效率
+5. **现代化设计**：避免不必要的兼容开销
 
 ## 最佳实践
 
@@ -270,6 +269,8 @@ logger->setLogFile("myapp.log", 0, 1);
 4. **使用格式化日志**：提高日志的可读性
 5. **设置崩溃处理器**：及时响应程序崩溃
 6. **定期清理日志文件**：避免磁盘空间不足
+7. **使用现代化API**：使用 `setLogFileConfig()` 进行文件配置
+8. **使用宏接口**：使用 `XLOG_*` 和 `XLOGF_*` 宏以获得最佳跨平台兼容性
 
 ## 注意事项
 
@@ -285,6 +286,7 @@ logger->setLogFile("myapp.log", 0, 1);
 - 支持 std::filesystem
 - 支持 std::thread 和相关同步原语
 - Linux/macOS: 需要 execinfo.h（用于堆栈跟踪）
+- Windows: 需要 dbghelp.lib（用于堆栈跟踪）
 
 ## 跨平台兼容性说明
 
@@ -294,7 +296,6 @@ logger->setLogFile("myapp.log", 0, 1);
 - **统一使用 `_LEVEL` 后缀**：所有日志级别都使用 `_LEVEL` 后缀命名
   - `LogLevel::TRACE_LEVEL`、`LogLevel::DEBUG_LEVEL`、`LogLevel::INFO_LEVEL`
   - `LogLevel::WARN_LEVEL`、`LogLevel::ERROR_LEVEL`、`LogLevel::FATAL_LEVEL`
-- **向后兼容别名**：在没有宏冲突的平台上提供简短别名
 - **宏接口不变**：所有 `XLOG_*` 和 `XLOGF_*` 宏保持原有接口
 
 ### 崩溃处理机制
@@ -317,17 +318,15 @@ XLOGF_DEBUG("调试信息: %d", value);
 logger->log(LogLevel::ERROR_LEVEL, "错误信息");
 logger->log(LogLevel::DEBUG_LEVEL, "调试信息");
 
-// 3. 使用别名（仅在确认无宏冲突时）
-#ifndef ERROR  // 检查是否有宏冲突
-logger->log(LogLevel::ERROR, "错误信息");  // 使用别名
-#endif
+// 3. 使用现代化文件配置API
+logger->setLogFileConfig("myapp", "logs", 10, 7);
 ```
 
 ### 兼容性保证
 - ✅ **完全向后兼容**：现有代码无需修改
 - ✅ **零宏冲突**：彻底避免与系统宏的冲突
 - ✅ **统一接口**：所有平台使用相同的API
-- ✅ **性能一致**：编译时别名解析，无运行时开销
+- ✅ **性能一致**：编译时优化，无运行时开销
+- ✅ **现代化设计**：清洁的API，无历史包袱
 
-这样的设计确保了代码在任何平台上都能正常编译和运行。
-- Windows: 需要 dbghelp.lib（用于堆栈跟踪） 
+这样的设计确保了代码在任何平台上都能正常编译和运行，同时提供了最佳的开发体验。 

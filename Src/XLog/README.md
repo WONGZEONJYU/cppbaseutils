@@ -24,11 +24,18 @@ int main() {
     // 初始化日志系统
     auto logger = XLog::UniqueConstruction();
     
-    // 使用宏记录日志
+    // 使用普通日志宏
     XLOG_INFO("程序启动");
     XLOG_DEBUG("调试信息: " + std::to_string(42));
     XLOG_WARN("警告信息");
     XLOG_ERROR("错误信息");
+    
+    // 使用格式化日志宏
+    int count = 100;
+    double progress = 85.5;
+    XLOGF_INFO("处理进度: %d/%d (%.1f%%)", 85, count, progress);
+    XLOGF_DEBUG("用户 %s 登录成功，ID: %d", "admin", 1001);
+    XLOGF_ERROR("连接失败，错误代码: %d, 重试 %d 次", 500, 3);
     
     return 0;
 }
@@ -43,18 +50,21 @@ int main() {
     auto logger = XLog::UniqueConstruction();
     
     // 设置日志级别
-    logger->setLogLevel(LogLevel::DEBUG);
+    logger->setLogLevel(LogLevel::DEBUG_LEVEL);
     
     // 设置输出方式
-    logger->setOutputMode(OutputMode::BOTH); // 同时输出到控制台和文件
+    logger->setOutput(LogOutput::BOTH); // 同时输出到控制台和文件
     
-    // 设置日志文件
-    logger->setLogFile("myapp.log");
+    // 启用彩色输出
+    logger->setColorOutput(true);
     
-    // 启用文件轮转 (10MB, 保留5个文件)
-    logger->enableFileRotation(10 * 1024 * 1024, 5);
+    // 设置日志文件 (文件名, 最大大小, 最大文件数)
+    logger->setLogFile("myapp.log", 10 * 1024 * 1024, 5);
     
-    XLOG_INFO("配置完成");
+    // 设置异步队列大小
+    logger->setAsyncQueueSize(10000);
+    
+    XLOGF_INFO("配置完成，当前日志级别: %d", static_cast<int>(logger->getLogLevel()));
     
     return 0;
 }
@@ -69,7 +79,7 @@ int main() {
 
 void workerThread(int threadId) {
     for (int i = 0; i < 100; ++i) {
-        XLOG_DEBUG("线程 " + std::to_string(threadId) + " 处理任务 " + std::to_string(i));
+        XLOGF_DEBUG("线程 %d 处理任务 %d", threadId, i);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
@@ -90,9 +100,51 @@ int main() {
 }
 ```
 
+### 4. 格式化日志详细示例
+
+```cpp
+#include "xlog.hpp"
+
+void demonstrateFormattedLogging() {
+    auto logger = XLog::UniqueConstruction();
+    
+    // 基本格式化
+    int userId = 1001;
+    std::string username = "admin";
+    XLOGF_INFO("用户登录: ID=%d, 用户名=%s", userId, username.c_str());
+    
+    // 数值格式化
+    double temperature = 23.456;
+    int humidity = 65;
+    XLOGF_DEBUG("环境数据: 温度=%.1f°C, 湿度=%d%%", temperature, humidity);
+    
+    // 十六进制和八进制
+    int errorCode = 255;
+    XLOGF_ERROR("错误代码: 十进制=%d, 十六进制=0x%X, 八进制=%o", errorCode, errorCode, errorCode);
+    
+    // 字符串格式化
+    const char* operation = "数据库连接";
+    int retryCount = 3;
+    XLOGF_WARN("%s失败，将在%d秒后重试第%d次", operation, 5, retryCount);
+    
+    // 布尔值（通过条件表达式）
+    bool isConnected = false;
+    XLOGF_INFO("连接状态: %s", isConnected ? "已连接" : "未连接");
+    
+    // 性能测量
+    auto start = std::chrono::high_resolution_clock::now();
+    // ... 执行一些操作 ...
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    XLOGF_INFO("操作完成，耗时: %ld 毫秒", duration.count());
+}
+```
+
 ## API参考
 
 ### 日志宏
+
+#### 普通日志宏
 
 | 宏 | 级别 | 用途 |
 |---|---|---|
@@ -101,7 +153,18 @@ int main() {
 | `XLOG_INFO(msg)` | INFO | 一般信息 |
 | `XLOG_WARN(msg)` | WARN | 警告信息 |
 | `XLOG_ERROR(msg)` | ERROR | 错误信息 |
-| `XLOG_FATAL(msg)` | FATAL | 致命错误 |
+| `XLOG_FATAL(msg)` | FATAL | 致命错误（自动flush） |
+
+#### 格式化日志宏
+
+| 宏 | 级别 | 用途 |
+|---|---|---|
+| `XLOGF_TRACE(fmt, ...)` | TRACE | 格式化详细跟踪信息 |
+| `XLOGF_DEBUG(fmt, ...)` | DEBUG | 格式化调试信息 |
+| `XLOGF_INFO(fmt, ...)` | INFO | 格式化一般信息 |
+| `XLOGF_WARN(fmt, ...)` | WARN | 格式化警告信息 |
+| `XLOGF_ERROR(fmt, ...)` | ERROR | 格式化错误信息 |
+| `XLOGF_FATAL(fmt, ...)` | FATAL | 格式化致命错误（自动flush） |
 
 ### 配置方法
 
@@ -120,23 +183,32 @@ public:
     // 获取当前日志级别
     LogLevel getLogLevel() const;
     
+    // 检查是否应该记录指定级别的日志
+    bool shouldLog(LogLevel level) const;
+    
     // 设置输出模式
-    void setOutputMode(OutputMode mode);
+    void setOutput(LogOutput output);
     
-    // 设置日志文件路径
-    void setLogFile(const std::string& filename);
+    // 设置彩色输出
+    void setColorOutput(bool enable);
     
-    // 启用文件轮转
-    void enableFileRotation(size_t maxSize, size_t maxFiles);
+    // 设置日志文件（文件名，最大大小，最大文件数）
+    void setLogFile(std::string_view filename, size_t maxSize = 10*1024*1024, size_t maxFiles = 5);
     
-    // 禁用文件轮转
-    void disableFileRotation();
+    // 设置异步队列大小
+    void setAsyncQueueSize(size_t size);
     
     // 设置崩溃处理器
-    void setCrashHandler(std::function<void()> handler);
+    void setCrashHandler(std::shared_ptr<ICrashHandler> handler);
+    
+    // 启用/禁用崩溃诊断
+    void enableCrashDiagnostics(bool enable);
     
     // 刷新日志缓冲区
     void flush();
+    
+    // 记录日志（通常不直接调用，使用宏）
+    void log(LogLevel level, std::string_view message, SourceLocation location = SourceLocation::current());
 };
 ```
 
@@ -144,15 +216,15 @@ public:
 
 ```cpp
 enum class LogLevel {
-    TRACE = 0,
-    DEBUG = 1,
-    INFO = 2,
-    WARN = 3,
-    ERROR = 4,
-    FATAL = 5
+    TRACE_LEVEL = 0,
+    DEBUG_LEVEL = 1,
+    INFO_LEVEL = 2,
+    WARN_LEVEL = 3,
+    ERROR_LEVEL = 4,
+    FATAL_LEVEL = 5
 };
 
-enum class OutputMode {
+enum class LogOutput {
     CONSOLE_ONLY,  // 仅控制台输出
     FILE_ONLY,     // 仅文件输出
     BOTH          // 同时输出到控制台和文件
@@ -180,6 +252,9 @@ enum class OutputMode {
 - **内存池**：使用内存池减少内存分配开销
 - **批量写入**：支持批量写入提高I/O效率
 - **线程安全**：使用无锁队列实现高并发性能
+- **优化宏设计**：减少代码重复，提高编译效率和运行时性能
+- **级别检查**：自动检查日志级别，避免不必要的字符串构造
+- **FATAL自动刷新**：FATAL级别日志自动调用flush()确保立即写入
 
 ## 最佳实践
 
@@ -190,9 +265,10 @@ enum class OutputMode {
 auto logger = XLog::UniqueConstruction();
 
 // 配置日志系统
-logger->setLogLevel(LogLevel::INFO);
-logger->setOutputMode(OutputMode::BOTH);
-logger->setLogFile("app.log");
+logger->setLogLevel(LogLevel::INFO_LEVEL);
+logger->setOutput(LogOutput::BOTH);
+logger->setColorOutput(true);
+logger->setLogFile("app.log", 50*1024*1024, 10); // 50MB, 保留10个文件
 ```
 
 ### 2. 日志级别使用建议
@@ -204,16 +280,24 @@ logger->setLogFile("app.log");
 - **ERROR**：错误信息，程序遇到错误但可以恢复
 - **FATAL**：致命错误，程序无法继续运行
 
-### 3. 字符串构建
+### 3. 选择合适的日志宏
 
 ```cpp
-// 推荐：使用字符串连接
+// 简单字符串：使用普通宏
+XLOG_INFO("程序启动完成");
+XLOG_ERROR("连接失败");
+
+// 字符串连接：使用普通宏
 XLOG_INFO("用户登录: " + username);
+XLOG_DEBUG("处理文件: " + filename);
 
-// 推荐：使用std::to_string转换数字
-XLOG_DEBUG("处理第 " + std::to_string(count) + " 个请求");
+// 多个变量或复杂格式：使用格式化宏（推荐）
+XLOGF_INFO("用户 %s (ID: %d) 登录成功", username.c_str(), userId);
+XLOGF_DEBUG("处理进度: %d/%d (%.1f%%)", current, total, percentage);
 
-// 避免：复杂的字符串格式化（影响性能）
+// 避免：不必要的字符串转换
+// 不好：XLOG_DEBUG("数量: " + std::to_string(count));
+// 好：  XLOGF_DEBUG("数量: %d", count);
 ```
 
 ### 4. 条件日志
@@ -239,8 +323,9 @@ if (logger->getLogLevel() <= LogLevel::DEBUG) {
 
 ```cpp
 // 启用详细日志用于调试
-logger->setLogLevel(LogLevel::TRACE);
+logger->setLogLevel(LogLevel::TRACE_LEVEL);
 XLOG_TRACE("详细的调试信息");
+XLOGF_TRACE("变量值: count=%d, status=%s", count, status.c_str());
 ```
 
 ## 编译要求

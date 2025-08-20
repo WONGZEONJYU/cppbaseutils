@@ -25,20 +25,56 @@ public:
  * @brief 测试基本日志功能
  */
 void testBasicLogging() {
-    std::cout << "\n=== Testing Basic Logging ===\n";
+    std::cout << "=== 测试基本日志功能 ===" << std::endl;
+    
+    auto logger = XUtils::XLog::UniqueConstruction();
+    if (!logger) {
+        std::cerr << "Failed to create logger instance!" << std::endl;
+        return;
+    }
 
-    // 测试所有日志级别
-    XLOG_TRACE("This is a TRACE message");
-    XLOG_DEBUG("This is a DEBUG message");
-    XLOG_INFO("This is an INFO message");
-    XLOG_WARN("This is a WARN message");
-    XLOG_ERROR("This is an ERROR message");
-    XLOG_FATAL("This is a FATAL message");
+    // 配置日志系统
+    logger->setLogLevel(XUtils::LogLevel::TRACE_LEVEL);
+    logger->setOutput(XUtils::LogOutput::BOTH);
+    logger->setLogFileConfig("test_basic", "test_logs", 1, 1);  // 使用现代化配置方法
+    logger->setColorOutput(true);
+
+    // 测试各种日志级别
+    XLOG_TRACE("这是一条TRACE日志");
+    XLOG_DEBUG("这是一条DEBUG日志");
+    XLOG_INFO("这是一条INFO日志");
+    XLOG_WARN("这是一条WARN日志");
+    XLOG_ERROR("这是一条ERROR日志");
+    XLOG_FATAL("这是一条FATAL日志");
+
+    // 刷新确保写入
+    logger->flush();
+    std::cout << "基本日志测试完成" << std::endl;
+}
+
+/**
+ * @brief 测试格式化日志功能
+ */
+void testFormattedLogging() {
+    std::cout << "\n=== Testing Formatted Logging ===\n";
+
+    int count = 42;
+    double value = 3.14159;
+    const char* name = "XLog";
     
-    // 测试直接调用log方法
-    XLog::instance()->log(LogLevel::INFO_LEVEL, "Direct log call test");
+    // 测试所有格式化日志级别
+    XLOGF_TRACE("TRACE: Processing %d items with value %.2f", count, value);
+    XLOGF_DEBUG("DEBUG: %s system initialized with %d threads", name, count);
+    XLOGF_INFO("INFO: Operation completed successfully in %.3f seconds", value);
+    XLOGF_WARN("WARN: Memory usage is at %d%% capacity", 85);
+    XLOGF_ERROR("ERROR: Failed to process %d/%d items", 38, count);
+    XLOGF_FATAL("FATAL: Critical system failure - error code: %d", 500);
     
-    std::cout << "Basic logging test completed.\n";
+    // 测试复杂格式化
+    XLOGF_INFO("Complex format: string='%s', int=%d, float=%.2f, hex=0x%X", 
+               name, count, value, 255);
+    
+    std::cout << "Formatted logging test completed.\n";
 }
 
 /**
@@ -54,7 +90,7 @@ void testConfiguration() {
     std::cout << "Current log level: " << static_cast<int>(logger->getLogLevel()) << "\n";
     
     // 测试文件输出设置
-    logger->setLogFile("test_log.txt", 1024 * 1024, 3);  // 1MB, 3个文件
+    logger->setLogFileConfig("test_config", "test_logs", 1, 1);  // 使用现代化配置方法
     logger->setOutput(LogOutput::BOTH);
     
     // 测试彩色输出
@@ -93,6 +129,36 @@ void testMultiThreadLogging() {
     std::cout << "Multi-threaded logging completed.\n";
 }
 
+/**
+ * @brief 性能测试 - 测试优化后宏的性能
+ */
+void testPerformance() {
+    std::cout << "\n=== Testing Performance ===\n";
+    
+    constexpr int test_count = 1000;
+    
+    // 测试普通日志宏性能
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < test_count; ++i) {
+        XLOG_INFO("Performance test message #" + std::to_string(i) + " - optimized macros should have better performance");
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    
+    std::cout << "Regular logging: " << test_count << " messages in " << duration.count() << " ms\n";
+    
+    // 测试格式化日志宏性能
+    start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < test_count; ++i) {
+        XLOGF_INFO("Formatted performance test #%d - %.2f%% complete", i, (i * 100.0) / test_count);
+    }
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    
+    std::cout << "Formatted logging: " << test_count << " messages in " << duration.count() << " ms\n";
+    std::cout << "Performance test completed.\n";
+}
+
 int main() {
     std::cout << "Starting comprehensive XLog test...\n";
     
@@ -113,8 +179,10 @@ int main() {
 
         // 运行各项测试
         testBasicLogging();
+        testFormattedLogging();
         testConfiguration();
         testMultiThreadLogging();
+        testPerformance();
 
         // 测试崩溃处理器设置
         std::cout << "\n=== Testing Crash Handler ===\n";
