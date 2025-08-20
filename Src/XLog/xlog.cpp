@@ -12,8 +12,6 @@
 #else
 #include <csignal>
 #include <execinfo.h>
-#include <unistd.h>
-#include <sys/types.h>
 #endif
 
 XTD_NAMESPACE_BEGIN
@@ -797,6 +795,19 @@ LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_in
     return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif
+
+void XLog::xlogHelper(LogLevel const &level
+                ,std::string_view const &msg
+                ,SourceLocation const &location
+                ,bool const b)
+{
+    if (auto const logger{instance()}
+        ;logger && logger->shouldLog(level))
+    {
+        logger->log(level,msg,location);
+        if (b){logger->flush();}
+    }
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

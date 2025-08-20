@@ -2,7 +2,6 @@
 #define XUTILS_XLOG_HPP 1
 
 #include <XHelper/xhelper.hpp>
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -125,41 +124,6 @@ class X_API XLog final : public XSingleton<XLog> {
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
     std::unique_ptr<XLogData> m_d_ptr{};
-#if 0
-    // 配置参数
-    std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
-    std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
-    std::atomic_bool m_color_output_{true}
-    ,m_crash_diagnostics_{true};
-    std::atomic_size_t m_max_queue_size_ {10000};
-
-    // 文件相关
-    std::string m_log_file_path_{};
-    std::string m_log_base_name_{"application"}; // 基础文件名
-    std::string m_log_directory_{"logs"};        // 日志目录
-    std::atomic_size_t m_max_file_size_{5 * 1024 * 1024}; // 默认5MB
-    std::atomic_int m_max_files_{5};
-    std::atomic_int m_retention_days_{7}; // 默认保存7天
-    std::unique_ptr<std::ofstream> m_file_stream_{};
-    std::atomic_size_t m_current_file_size_{};
-    std::string m_current_log_file_{}; // 当前正在使用的日志文件名
-
-    // 异步处理
-    std::queue<LogMessage> m_log_queue_{};
-    mutable std::shared_mutex m_queue_mutex_{};
-    std::condition_variable_any m_queue_cv_{};
-    std::thread m_worker_thread_{};
-    std::atomic_bool m_running_{}
-    ,m_shutdown_requested_{};
-
-    // 崩溃处理
-    CrashHandlerPtr_ m_crash_handler_{};
-
-    // 同步
-    mutable std::shared_mutex m_config_mutex_{};
-    mutable std::mutex m_file_mutex_{};
-#endif
-
 public:
     using CrashHandlerPtr = CrashHandlerPtr_;
     using TimePoint [[maybe_unused]] = std::chrono::system_clock::time_point;
@@ -247,23 +211,24 @@ public:
      * @param args 格式参数
      */
     template<typename... Args>
-    void logf(LogLevel const & level, const char * const format_str, 
+    inline void logFormat(LogLevel const & level, const char * const format_str,
               SourceLocation const & location, Args&&... args) {
-        if (!shouldLog(level)) return;
+
+        if (!shouldLog(level)) { return; }
         
         try {
             // 使用简单的字符串格式化（C++17兼容）
-            std::ostringstream oss;
+            std::ostringstream oss{};
             formatImpl(oss, format_str, std::forward<Args>(args)...);
             log(level, oss.str(), location);
         } catch (const std::exception& e) {
             // 格式化失败时记录错误
-            std::ostringstream error_oss;
+            std::ostringstream error_oss{};
             error_oss << "Log format error: " << e.what();
             log(LogLevel::ERROR_LEVEL, error_oss.str(), location);
         }
     }
-    
+
     /**
      * @brief 刷新所有待处理的日志
      */
@@ -325,12 +290,30 @@ public:
      */
     [[nodiscard]] static std::string getStackTrace(int skip_frames = 1);
 
+    static void xlogHelper(LogLevel const &
+            ,std::string_view const &
+            ,SourceLocation const &
+            ,bool = false);
+
+    template<typename ...Args>
+    inline static void xlogFormatHelper(LogLevel const & level
+                                        ,const char * const format
+                                        ,SourceLocation const & location
+                                        ,bool const b
+                                        ,Args && ...args)
+    {
+        if (auto const logger{instance()}
+            ;logger && logger->shouldLog(level))
+        {
+            logger->logFormat(level,format,location,std::forward< Args >(args)...);
+            if (b){logger->flush();}
+        }
+    }
+
 private:
     XLog();
     ~XLog();
     bool construct_();
-    X_DISABLE_COPY_MOVE(XLog)
-    
     // 格式化辅助函数 - 使用标准printf风格格式化
     template<typename... Args>
     inline static void formatImpl(std::ostringstream& oss, const char* const format, Args &&... args) {
@@ -355,25 +338,19 @@ private:
             }
         }
     }
+    X_DISABLE_COPY_MOVE(XLog)
 };
 
 // 现代化的便利宏定义 - 使用辅助宏减少重复代码
 #define XLOG_IMPL(level, msg) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(level)) { \
-            _logger_->log(level, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-        } \
-    } while(false)
+    XUtils::XLog::xlogHelper(level \
+    ,msg                      \
+    ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__))
 
 #define XLOG_FATAL_IMPL(level, msg) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(level)) { \
-            _logger_->log(level, msg, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__)); \
-            _logger_->flush(); \
-        } \
-    } while(false)
+    XUtils::XLog::xlogHelper(level  \
+    ,msg                            \
+    ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__),true)
 
 #define XLOG_TRACE(msg) XLOG_IMPL(XUtils::LogLevel::TRACE_LEVEL, msg)
 #define XLOG_DEBUG(msg) XLOG_IMPL(XUtils::LogLevel::DEBUG_LEVEL, msg)
@@ -383,29 +360,22 @@ private:
 #define XLOG_FATAL(msg) XLOG_FATAL_IMPL(XUtils::LogLevel::FATAL_LEVEL, msg)
 
 // 格式化日志宏 - 使用辅助宏来处理可变参数
-#define XLOGF_IMPL(level, fmt, ...) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(level)) { \
-            _logger_->logf(level, fmt, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) __VA_OPT__(,) __VA_ARGS__); \
-        } \
-    } while(false)
+#define XLOG_FORMAT_IMPL(level, fmt, ...) \
+    XUtils::XLog::xlogFormatHelper(level,fmt \
+        ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) \
+        , false __VA_OPT__(, ) __VA_ARGS__ )
 
-#define XLOGF_FATAL_IMPL(level, fmt, ...) \
-    do { \
-        if (auto const _logger_ {XUtils::XLog::instance()}; \
-            _logger_ && _logger_->shouldLog(level)) { \
-            _logger_->logf(level, fmt, XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) __VA_OPT__(,) __VA_ARGS__); \
-            _logger_->flush(); \
-        } \
-    } while(false)
+#define XLOG_FATAL_FORMAT_IMPL(level, fmt, ...) \
+    XUtils::XLog::xlogFormatHelper(level,fmt        \
+        ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) \
+        , true __VA_OPT__(, ) __VA_ARGS__ )
 
-#define XLOGF_TRACE(fmt, ...) XLOGF_IMPL(XUtils::LogLevel::TRACE_LEVEL, fmt, __VA_ARGS__)
-#define XLOGF_DEBUG(fmt, ...) XLOGF_IMPL(XUtils::LogLevel::DEBUG_LEVEL, fmt, __VA_ARGS__)
-#define XLOGF_INFO(fmt, ...)  XLOGF_IMPL(XUtils::LogLevel::INFO_LEVEL, fmt, __VA_ARGS__)
-#define XLOGF_WARN(fmt, ...)  XLOGF_IMPL(XUtils::LogLevel::WARN_LEVEL, fmt, __VA_ARGS__)
-#define XLOGF_ERROR(fmt, ...) XLOGF_IMPL(XUtils::LogLevel::ERROR_LEVEL, fmt, __VA_ARGS__)
-#define XLOGF_FATAL(fmt, ...) XLOGF_FATAL_IMPL(XUtils::LogLevel::FATAL_LEVEL, fmt, __VA_ARGS__)
+#define XLOGF_TRACE(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::TRACE_LEVEL, fmt  , __VA_ARGS__)
+#define XLOGF_DEBUG(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::DEBUG_LEVEL, fmt , __VA_ARGS__)
+#define XLOGF_INFO(fmt, ...)  XLOG_FORMAT_IMPL(XUtils::LogLevel::INFO_LEVEL, fmt , __VA_ARGS__)
+#define XLOGF_WARN(fmt, ...)  XLOG_FORMAT_IMPL(XUtils::LogLevel::WARN_LEVEL, fmt , __VA_ARGS__)
+#define XLOGF_ERROR(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::ERROR_LEVEL, fmt , __VA_ARGS__)
+#define XLOGF_FATAL(fmt, ...) XLOG_FATAL_FORMAT_IMPL(XUtils::LogLevel::FATAL_LEVEL, fmt , __VA_ARGS__)
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
