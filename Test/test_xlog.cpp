@@ -26,7 +26,7 @@ public:
 void testBasicLogging() {
     std::cout << "=== 测试基本日志功能 ===" << std::endl;
     
-    auto logger = XUtils::XLog::UniqueConstruction();
+    auto logger{XlogHandle()};
     if (!logger) {
         std::cerr << "Failed to create logger instance!" << std::endl;
         return;
@@ -82,7 +82,7 @@ void testFormattedLogging() {
 void testConfiguration() {
     std::cout << "\n=== Testing Configuration ===\n";
     
-    auto const logger{XLog::instance()};
+    auto const logger{XUtils::XlogHandle()};
     
     // 测试日志级别设置
     logger->setLogLevel(LogLevel::DEBUG_LEVEL);
@@ -163,7 +163,7 @@ int main() {
 
     try {
         // 初始化日志实例
-        auto const logger{XLog::UniqueConstruction()};
+        auto const logger{XlogHandle()};
         if (!logger) {
             std::cout << "Failed to create logger instance\n";
             return -1;
