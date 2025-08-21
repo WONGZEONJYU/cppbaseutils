@@ -795,5 +795,9 @@ void XLog::xlogHelper(LogLevel const &level
     }
 }
 
+[[maybe_unused]] XLog * XlogHandle() noexcept {
+    return XLog::UniqueConstruction().get();
+}
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

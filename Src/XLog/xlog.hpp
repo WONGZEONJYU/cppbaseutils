@@ -119,7 +119,7 @@ public:
  * - 优雅关闭机制
  * - 现代C++特性优化
  */
-class X_API XLog final : public XSingleton<XLog> {
+class X_API XLog final : XSingleton<XLog> {
     X_HELPER_CLASS
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
@@ -339,7 +339,10 @@ private:
         }
     }
     X_DISABLE_COPY_MOVE(XLog)
+    friend X_API XLog * XlogHandle() noexcept;
 };
+
+[[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;
 
 // 现代化的便利宏定义 - 使用辅助宏减少重复代码
 #define XLOG_IMPL(level, msg) \
