@@ -438,6 +438,7 @@ public:
 class AAA final : public XUtils::XSingleton<AAA> {
     X_HELPER_CLASS
     int aa{100};
+    inline static AAA * s_instance_{};
 public:
     void p(){
         using namespace std::chrono_literals;
