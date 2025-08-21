@@ -828,7 +828,7 @@ public:
 
         STATIC_ASSERT_P
 
-        Allocator_([&]{
+        Allocator_([&args1,&args2]{
             return Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
                     ,std::forward< decltype( args2 ) >( args2 ) );
         });
