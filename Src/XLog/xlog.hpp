@@ -49,7 +49,7 @@ struct SourceLocation final {
 
     SourceLocation() = default;
 
-    [[maybe_unused]] constexpr SourceLocation(const char * const file
+    constexpr SourceLocation(const char * const file
                             ,const char * const function
                             ,uint32_t const line_num) noexcept
     :m_fileName(file),m_functionName(function),m_line(line_num){}
@@ -162,7 +162,7 @@ public:
      * @brief 获取当前日志文件路径
      * @return 当前日志文件的完整路径
      */
-    [[nodiscard]] std::string getCurrentLogFile() const;
+    [[maybe_unused]] [[nodiscard]] std::string getCurrentLogFile() const;
 
     /**
      * @brief 清理过期的日志文件
@@ -223,9 +223,9 @@ public:
             log(level, oss.str(), location);
         } catch (const std::exception& e) {
             // 格式化失败时记录错误
-            std::ostringstream error_oss{};
-            error_oss << "Log format error: " << e.what();
-            log(LogLevel::ERROR_LEVEL, error_oss.str(), location);
+            log(LogLevel::ERROR_LEVEL
+                , (std::ostringstream{} << "Log format error: " << e.what()).str()
+                , location);
         }
     }
 
@@ -239,13 +239,13 @@ public:
      * @param timeout 超时时间（毫秒），0表示无限等待
      * @return 是否在超时前完成
      */
-    [[nodiscard]] bool waitForCompletion(std::chrono::milliseconds const & timeout = std::chrono::milliseconds::zero());
+    [[maybe_unused]] [[nodiscard]] bool waitForCompletion(std::chrono::milliseconds const & timeout = std::chrono::milliseconds::zero());
     
     /**
      * @brief 获取当前队列大小
      * @return 队列中待处理的日志数量
      */
-    [[nodiscard]] std::size_t getQueueSize() const;
+    [[maybe_unused]] [[nodiscard]] std::size_t getQueueSize() const;
     
     /**
      * @brief 检查是否应该记录指定级别的日志
@@ -259,7 +259,7 @@ public:
      * @param level 日志级别
      * @return 级别名称
      */
-    [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
+    [[nodiscard]] inline static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
         switch (level) {
             case LogLevel::TRACE_LEVEL: return "TRACE";
             case LogLevel::DEBUG_LEVEL: return "DEBUG";

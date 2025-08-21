@@ -2,9 +2,6 @@
 #define XUTILS_XLOG_P_HPP
 
 #include <XLog/xlog.hpp>
-#include <string>
-#include <string_view>
-#include <memory>
 #include <atomic>
 #include <fstream>
 #include <mutex>
@@ -16,11 +13,9 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XLogPrivate final: public XLogData {
+class X_API XLogPrivate final: public XLogData {
 public:
     X_DECLARE_PUBLIC(XLog)
-    using CrashHandlerPtr = std::shared_ptr<ICrashHandler>;
-private:
     // 配置参数
     std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
     std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
@@ -47,16 +42,15 @@ private:
                     ,m_shutdown_requested_{};
 
     // 崩溃处理
+    using CrashHandlerPtr = std::shared_ptr<ICrashHandler>;
     CrashHandlerPtr m_crash_handler_{};
 
     // 同步
     mutable std::shared_mutex m_config_mutex_{};
     mutable std::mutex m_file_mutex_{};
 
-public:
-    explicit XLogPrivate(XLog * );
+    XLogPrivate() = default;
     ~XLogPrivate() override = default;
-
     // 异步日志处理
     void processLogQueue();
     void writeToConsole(const LogMessage& ) const;

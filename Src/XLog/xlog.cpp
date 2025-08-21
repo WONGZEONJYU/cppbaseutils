@@ -1,5 +1,4 @@
 #include "xlog_p.hpp"
-#include <iostream>
 #include <filesystem>
 #include <algorithm>
 #include <fstream>
@@ -16,10 +15,6 @@
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
-
-XLogPrivate::XLogPrivate(XLog * const o){
-    this->m_x_ptr_ = o;
-}
 
 XLog::XLog() = default;
 
@@ -39,12 +34,11 @@ XLog::~XLog() {
 
 bool XLog::construct_() {
 
-    auto dd{makeUnique<XLogPrivate>(this)};
-    if (!dd){
+    if (m_d_ptr = makeUnique<XLogPrivate>();!m_d_ptr){
         std::cerr << "XLogData create failed!\n";
         return {};
     }
-    m_d_ptr = std::move(dd);
+    m_d_ptr->m_x_ptr_ = this;
 
     try {
         X_D(XLog);
@@ -116,7 +110,7 @@ bool XLog::shouldLog(LogLevel const & level) const noexcept {
     return level >= d->m_log_level_.load(std::memory_order_relaxed);
 }
 
-std::string XLog::getCurrentLogFile() const {
+[[maybe_unused]] std::string XLog::getCurrentLogFile() const {
     X_D(const XLog);
     std::shared_lock lock(d->m_config_mutex_);
     return d->m_current_log_file_;
@@ -126,8 +120,10 @@ void XLog::cleanupOldLogFiles() const noexcept {
 
     using namespace std::filesystem;
     using namespace std::chrono;
+
     X_D(const XLog);
     try {
+
         if (!exists(d->m_log_directory_)) {
             return;
         }
@@ -147,11 +143,11 @@ void XLog::cleanupOldLogFiles() const noexcept {
         {
             if (!entry.is_regular_file()) {continue;}
 
-            auto const filename = entry.path().filename().string();
+            auto const filename{entry.path().filename().string()};
             if (!std::regex_match(filename, log_regex)) {continue;}
             
             try {
-                auto const file_time {last_write_time(entry.path())};
+                auto const file_time{last_write_time(entry.path())};
 
                 if (auto const sctp{
                     time_point_cast<system_clock::duration>(file_time - file_time_type::clock::now() + system_clock::now())
@@ -197,9 +193,8 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
         return;
     }
 
-    X_D(XLog);
-
     try {
+        X_D(XLog);
         // 创建日志消息
         LogMessage log_msg {
             level,
@@ -246,7 +241,7 @@ void XLog::flush() {
     std::cerr.flush();
 }
 
-bool XLog::waitForCompletion(std::chrono::milliseconds const & timeout) {
+[[maybe_unused]] bool XLog::waitForCompletion(std::chrono::milliseconds const & timeout) {
     X_D(XLog);
     std::unique_lock lock(d->m_queue_mutex_);
 
@@ -259,7 +254,7 @@ bool XLog::waitForCompletion(std::chrono::milliseconds const & timeout) {
     }
 }
 
-std::size_t XLog::getQueueSize() const {
+[[maybe_unused]] std::size_t XLog::getQueueSize() const {
     X_D(const XLog);
     std::shared_lock lock(d->m_queue_mutex_);
     return d->m_log_queue_.size();
@@ -334,12 +329,10 @@ std::string XLog::getStackTrace(int const skip_frames) {
     RtlCaptureContext(&context);
     
     SymInitialize(process, nullptr, TRUE);
-    
-    DWORD image{};
-    STACKFRAME64 stackFrame{};
-    
+
 #ifdef _M_IX86
-    image = IMAGE_FILE_MACHINE_I386;
+    auto const image{IMAGE_FILE_MACHINE_I386};
+    STACKFRAME64 stackFrame{};
     stackFrame.AddrPC.Offset = context.Eip;
     stackFrame.AddrPC.Mode = AddrModeFlat;
     stackFrame.AddrFrame.Offset = context.Ebp;
@@ -347,7 +340,8 @@ std::string XLog::getStackTrace(int const skip_frames) {
     stackFrame.AddrStack.Offset = context.Esp;
     stackFrame.AddrStack.Mode = AddrModeFlat;
 #elif _M_X64
-    image = IMAGE_FILE_MACHINE_AMD64;
+    auto const image {IMAGE_FILE_MACHINE_AMD64};
+    STACKFRAME64 stackFrame{};
     stackFrame.AddrPC.Offset = context.Rip;
     stackFrame.AddrPC.Mode = AddrModeFlat;
     stackFrame.AddrFrame.Offset = context.Rsp;
@@ -368,7 +362,7 @@ std::string XLog::getStackTrace(int const skip_frames) {
     while (StackWalk64(image, process, thread, &stackFrame, &context,
                        nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr)
            && frame_count < max_frames) {
-        
+
         if (frame_count >= skip_frames) {
             DWORD64 address = stackFrame.AddrPC.Offset;
             if (SymFromAddr(process, address, nullptr, symbol)) {
@@ -414,7 +408,7 @@ std::string XLogPrivate::generateLogFileName() const {
     auto const today{getTodayDateString()};
     auto sequence {1};
 
-    std::string filename;
+    std::string filename{};
     do {
         std::ostringstream oss{};
         oss << m_log_directory_ << "/" << m_log_base_name_ 
@@ -428,31 +422,31 @@ std::string XLogPrivate::generateLogFileName() const {
 
 std::string XLogPrivate::findLatestLogFile() const {
     try {
+
         if (!std::filesystem::exists(m_log_directory_)) {
             return {};
         }
 
         std::string latest_file{};
-        int max_sequence{};
-
+        auto max_sequence{0};
         auto const today{getTodayDateString()};
         // 获取日志文件模式
-        std::regex const log_regex(getLogFilePattern());
 
-        for (auto const& entry : std::filesystem::directory_iterator(m_log_directory_)) {
-            if (!entry.is_regular_file()) continue;
-            
+        for (std::regex const log_regex(getLogFilePattern());
+            auto const& entry : std::filesystem::directory_iterator(m_log_directory_))
+        {
+            if (!entry.is_regular_file()) { continue; }
+
             auto const filename{entry.path().filename().string()};
 
             if (std::smatch match{}
                 ; std::regex_match(filename, match, log_regex))
             {
-                auto const file_date{match[2].str()}
-                            ,sequence_str{match[3].str()};
-                
                 // 只考虑今天的文件
-                if (file_date == today) {
-                    if (int const sequence = std::stoi(sequence_str)
+                if (auto const file_date{match[2].str()}
+                    ,sequence_str{match[3].str()};file_date == today)
+                {
+                    if (auto const sequence{std::stoi(sequence_str)}
                         ; sequence > max_sequence)
                     {
                         max_sequence = sequence;
@@ -520,7 +514,7 @@ void XLogPrivate::processLogQueue(){
 
         // 处理队列中的所有消息
         while (!m_log_queue_.empty()) {
-            auto const msg{std::move(m_log_queue_.front())};
+            auto const msg { std::move(m_log_queue_.front()) };
             m_log_queue_.pop_front();
             lock.unlock();
 
@@ -547,34 +541,30 @@ void XLogPrivate::processLogQueue(){
 
 void XLogPrivate::writeToConsole(const LogMessage& msg) const {
 
-    auto const formatted{formatLogMessage(msg)};
-
-    if (m_color_output_.load(std::memory_order_relaxed)) {
+    if (auto const formatted{formatLogMessage(msg)}
+        ;m_color_output_.load(std::memory_order_relaxed))
+    {
         // 添加颜色代码
         std::string_view color_code{};
 
         switch (msg.level) {
-        case LogLevel::TRACE_LEVEL: color_code = "\033[37m"; break;  // 白色
-        case LogLevel::DEBUG_LEVEL: color_code = "\033[36m"; break;  // 青色
-        case LogLevel::INFO_LEVEL:  color_code = "\033[32m"; break;  // 绿色
-        case LogLevel::WARN_LEVEL:  color_code = "\033[33m"; break;  // 黄色
-        case LogLevel::ERROR_LEVEL: color_code = "\033[31m"; break;  // 红色
-        case LogLevel::FATAL_LEVEL: color_code = "\033[35m"; break;  // 紫色
+            case LogLevel::TRACE_LEVEL: color_code = "\033[37m"; break;  // 白色
+            case LogLevel::DEBUG_LEVEL: color_code = "\033[36m"; break;  // 青色
+            case LogLevel::INFO_LEVEL:  color_code = "\033[32m"; break;  // 绿色
+            case LogLevel::WARN_LEVEL:  color_code = "\033[33m"; break;  // 黄色
+            case LogLevel::ERROR_LEVEL: color_code = "\033[31m"; break;  // 红色
+            case LogLevel::FATAL_LEVEL: color_code = "\033[35m"; break;  // 紫色
         }
 
         constexpr std::string_view reset_code {"\033[0m"};
+        msg.level >= LogLevel::ERROR_LEVEL ?
+            std::cerr << color_code << formatted << reset_code << '\n':
+                std::cout << color_code << formatted << reset_code << '\n';
 
-        if (msg.level >= LogLevel::ERROR_LEVEL) {
-            std::cerr << color_code << formatted << reset_code << '\n';
-        } else {
-            std::cout << color_code << formatted << reset_code << '\n';
-        }
     } else {
-        if (msg.level >= LogLevel::ERROR_LEVEL) {
-            std::cerr << formatted << '\n';
-        } else {
-            std::cout << formatted << '\n';
-        }
+        msg.level >= LogLevel::ERROR_LEVEL ?
+            std::cerr << formatted << '\n' :
+                std::cout << formatted << '\n';
     }
 }
 
@@ -590,10 +580,10 @@ void XLogPrivate::writeToFile(const LogMessage & msg) {
     // 打开文件流（如果需要）
     if (!m_file_stream_ || !m_file_stream_->is_open()) {
 
-        m_file_stream_ = makeUnique<std::ofstream>(m_current_log_file_, std::ios::app);
-
         // 检查智能指针是否创建成功
-        if (!m_file_stream_) {
+        if (m_file_stream_ = makeUnique<std::ofstream>(m_current_log_file_, std::ios::app)
+                ;!m_file_stream_)
+        {
             std::cerr << "Failed to create file stream for: " << m_current_log_file_ << '\n';
             return;
         }
@@ -654,7 +644,6 @@ void XLogPrivate::rotateLogFile() {
         m_current_log_file_ = generateLogFileName();
         m_log_file_path_ = m_current_log_file_;
         m_current_file_size_.store(0, std::memory_order_relaxed);
-
     } catch (const std::exception& e) {
         std::cerr << "Failed to rotate log file: " << e.what() << '\n';
     }

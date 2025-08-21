@@ -160,7 +160,7 @@ void testPerformance() {
 
 int main() {
     std::cout << "Starting comprehensive XLog test...\n";
-    
+
     try {
         // 初始化日志实例
         auto const logger{XLog::UniqueConstruction()};

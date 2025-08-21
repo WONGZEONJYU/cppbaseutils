@@ -39,11 +39,6 @@
     X_DEFAULT_COPY(__VA_ARGS__)\
     X_DEFAULT_MOVE(__VA_ARGS__)
 
-template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
-template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
-{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
-template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
-{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 #define X_DECLARE_PRIVATE(Class) \
     inline Class##Private* d_func() noexcept \
@@ -70,10 +65,6 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 #define X_ASSERT(cond) ((cond) ? static_cast<void>(0) : XUtils::x_assert(#cond, __FILE__, __LINE__))
 #define X_ASSERT_W(cond, where, what) ((cond) ? static_cast<void>(0) : XUtils::x_assert_what(where, what, __FILE__, __LINE__))
 
-#define X_IN
-#define X_OUT
-#define X_IN_OUT
-
 #if defined(_MSC_VER) && defined(_WIN32) && defined(_WIN64)
     #define FUNC_SIGNATURE __FUNCSIG__
 #else
@@ -82,6 +73,12 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
+template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
+{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
+template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
+{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 template<typename F>
 class [[maybe_unused]]  Destroyer final {
