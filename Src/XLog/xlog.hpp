@@ -105,7 +105,7 @@ public:
     virtual ~XLogData() = default;
     XLog * m_x_ptr_{};
 };
-
+[[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;
 /**
  * @brief 线程安全的异步日志系统
  * 
@@ -300,10 +300,9 @@ public:
                                         ,const char * const format
                                         ,SourceLocation const & location
                                         ,bool const b
-                                        ,Args && ...args)
-    {
-        if (auto const logger{instance()}
-            ;logger && logger->shouldLog(level))
+                                        ,Args && ...args) noexcept {
+        if (auto const &logger{instance()}
+            ; logger && logger->shouldLog(level))
         {
             logger->logFormat(level,format,location,std::forward< Args >(args)...);
             if (b){logger->flush();}
@@ -341,8 +340,6 @@ private:
     X_DISABLE_COPY_MOVE(XLog)
     friend X_API XLog * XlogHandle() noexcept;
 };
-
-[[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;
 
 // 现代化的便利宏定义 - 使用辅助宏减少重复代码
 #define XLOG_IMPL(level, msg)       \

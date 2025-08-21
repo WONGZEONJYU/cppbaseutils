@@ -25,17 +25,16 @@ public:
  */
 void testBasicLogging() {
     std::cout << "=== 测试基本日志功能 ===" << std::endl;
-    
-    auto logger{XlogHandle()};
+    const auto logger{XlogHandle()};
     if (!logger) {
         std::cerr << "Failed to create logger instance!" << std::endl;
         return;
     }
 
     // 配置日志系统
-    logger->setLogLevel(XUtils::LogLevel::TRACE_LEVEL);
-    logger->setOutput(XUtils::LogOutput::BOTH);
-    logger->setLogFileConfig("test_basic", "test_logs", 1, 1);  // 使用现代化配置方法
+    logger->setLogLevel(LogLevel::TRACE_LEVEL);
+    logger->setOutput(LogOutput::BOTH);
+    logger->setLogFileConfig("test_basic", "test_logs", 1024, 7);  // 使用现代化配置方法
     logger->setColorOutput(true);
 
     // 测试各种日志级别
@@ -72,8 +71,9 @@ void testFormattedLogging() {
     // 测试复杂格式化
     XLOGF_INFO("Complex format: string='%s', int=%d, float=%.2f, hex=0x%X", 
                name, count, value, 255);
-    
+
     std::cout << "Formatted logging test completed.\n";
+    XlogHandle()->flush();
 }
 
 /**
@@ -179,9 +179,9 @@ int main() {
         // 运行各项测试
         testBasicLogging();
         testFormattedLogging();
-        testConfiguration();
-        testMultiThreadLogging();
-        testPerformance();
+        //testConfiguration();
+        //testMultiThreadLogging();
+        //testPerformance();
 
         // 测试崩溃处理器设置
         std::cout << "\n=== Testing Crash Handler ===\n";

@@ -833,7 +833,7 @@ public:
                     ,std::forward< decltype( args2 ) >( args2 ) );
         });
         return qdata();
-    };
+    }
 
     [[maybe_unused]] inline static auto qInstance() noexcept -> QSingletonPtr
     {return qdata();}
@@ -868,9 +868,9 @@ private:
                     using ptrType = std::decay_t < std::invoke_result_t< Callable > >;
 
                     if constexpr (std::is_same_v < SingletonPtr, ptrType > ) {
-                        data() = std::move(ptr);
+                        data().swap(ptr);
                     } else if constexpr ( std::is_same_v< QSingletonPtr , ptrType > ) {
-                        qdata() = std::move(ptr);
+                        qdata().swap(ptr);
                     }else {
                         static_assert(std::disjunction_v< std::is_same < SingletonPtr, ptrType >
                                       , std::is_same < QSingletonPtr, ptrType > >
