@@ -856,14 +856,14 @@ private:
 
     template<typename Callable>
     inline static void Allocator_([[maybe_unused]] Callable && callable) noexcept {
-
+#if 0
         static_assert(XPrivate::Has_S_INSTANCE_MEM_v<Object>,
             "Derived classes must have a static member variable named s_instance_, "
             "the type must be the class type of the derived class itself, and it must be private");
 
         static_assert(XPrivate::Non_INSTANCE_MEM_v<Object>
             ,"The s_instance static member variable must be private");
-
+#endif
         std::call_once(initFlag(),[&]{
 
             std::ostringstream err_msg{};
@@ -884,7 +884,7 @@ private:
                                 , "no SingletonPtr and  QSingletonPtr!");
                     }
 #else
-                    data() = std::move(ptr);
+                    data().swap(ptr);
 #endif
                     return;
                 }

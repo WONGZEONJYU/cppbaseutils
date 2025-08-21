@@ -105,7 +105,9 @@ public:
     virtual ~XLogData() = default;
     XLog * m_x_ptr_{};
 };
+
 [[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;
+
 /**
  * @brief 线程安全的异步日志系统
  * 
@@ -124,7 +126,6 @@ class X_API XLog final : XSingleton<XLog> {
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
     std::unique_ptr<XLogData> m_d_ptr{};
-    inline static XLog * s_instance_{};
 public:
     using CrashHandlerPtr = CrashHandlerPtr_;
     using TimePoint [[maybe_unused]] = std::chrono::system_clock::time_point;
@@ -303,9 +304,10 @@ public:
                                         ,bool const b
                                         ,Args && ...args) noexcept {
 
-        if (s_instance_ && s_instance_->shouldLog(level)) {
-            s_instance_->logFormat(level,format,location,std::forward< Args >(args)...);
-            if (b){s_instance_->flush();}
+        if ( auto const logger{XlogHandle()}
+            ;logger && logger->shouldLog(level)) {
+            logger->logFormat(level,format,location,std::forward< Args >(args)...);
+            if (b){logger->flush();}
         }
     }
 

@@ -16,7 +16,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-XLog::XLog() {s_instance_ = this;}
+XLog::XLog() = default;
 
 XLog::~XLog() {
     X_D(XLog);
@@ -30,7 +30,6 @@ XLog::~XLog() {
         }
     }
     XLogPrivate::removeCrashHandlers();
-    s_instance_ = nullptr;
 }
 
 bool XLog::construct_() {
@@ -688,10 +687,11 @@ void XLogPrivate::handleCrash(int const signal) {
 
     writeCrashLog(crash_info);
 
-    if (XLog::s_instance_ && XLog::s_instance_->d_func()->m_crash_handler_)
+    if (auto const logger{XlogHandle()}
+        ;logger && logger->d_func()->m_crash_handler_)
     {
         try {
-            XLog::s_instance_->d_func()->m_crash_handler_->onCrash(crash_info);
+            logger->d_func()->m_crash_handler_->onCrash(crash_info);
         } catch (...) {
             // 忽略崩溃处理器中的异常
         }
@@ -769,9 +769,11 @@ LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_in
 
     writeCrashLog(crash_info);
 
-    if (XLog::s_instance_ && XLog::s_instance_->d_func()->m_crash_handler_) {
+    if (auto const logger{XlogHandle()}
+        ;logger && logger->d_func()->m_crash_handler_)
+    {
         try {
-            XLog::s_instance_->d_func()->m_crash_handler_->onCrash(crash_info);
+            logger->d_func()->m_crash_handler_->onCrash(crash_info);
         } catch (...) {
             // 忽略崩溃处理器中的异常
         }
@@ -786,10 +788,11 @@ void XLog::xlogHelper(LogLevel const &level
                 ,SourceLocation const &location
                 ,bool const b)
 {
-    if (s_instance_ && s_instance_->shouldLog(level))
+    if ( auto const logger{XlogHandle()}
+        ;logger && logger->shouldLog(level))
     {
-        s_instance_->log(level,msg,location);
-        if (b){s_instance_->flush();}
+        logger->log(level,msg,location);
+        if (b){logger->flush();}
     }
 }
 
