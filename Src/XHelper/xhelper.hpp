@@ -10,6 +10,8 @@
 #include <functional>
 #include <iostream>
 #include <type_traits>
+#include <thread>
+#include <chrono>
 #ifdef HAS_QT
 #include <QMetaEnum>
 #include <QString>
@@ -74,6 +76,16 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+template<typename > class XSingleton;
+template<typename > class XHelperClass;
+
+class X_API XUtilsLibErrorLog final {
+    XUtilsLibErrorLog() = default;
+    static void log(std::string_view const & );
+    template<typename > friend class XSingleton;
+    template<typename >friend class XHelperClass;
+};
+
 template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
 template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
@@ -81,7 +93,7 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 template<typename F>
-class [[maybe_unused]]  Destroyer final {
+class [[maybe_unused]] Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
     mutable F m_fn_{};
     mutable uint32_t m_is_destroy:1;
@@ -665,7 +677,7 @@ public:
     using ObjectQSPtr = QSharedPointer<Object>;
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
+    [[nodiscard]] [[maybe_unused]] inline static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
             ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectQUPtr {
         return ObjectQUPtr{ Create( std::forward< decltype( args1 ) >( args1 )
                 ,std::forward< decltype( args2 ) >( args2 ) ) };
@@ -783,15 +795,9 @@ public:
 
         STATIC_ASSERT_P
 
-        std::call_once(initFlag(),[&]{
-            while (true) {
-                if (auto ptr {Base_ ::CreateSharedPtr( std::forward< decltype( args1 ) >( args1 )
-                            ,std::forward< decltype( args2 ) >( args2 ) )})
-                {
-                    data() = std::move(ptr);
-                    return;
-                }
-            }
+        Allocator_([&args1,&args2] {
+            return Base_::CreateSharedPtr(std::forward< decltype(args1) >(args1)
+                    ,std::forward<decltype(args2) >(args2));
         });
 
         return data();
@@ -822,15 +828,9 @@ public:
 
         STATIC_ASSERT_P
 
-        std::call_once(initFlag(),[&]{
-            while (true){
-                if ( auto ptr { Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
-                        ,std::forward< decltype( args2 ) >( args2 ) ) } )
-                {
-                    qdata() = std::move(ptr);
-                    return ;
-                }
-            }
+        Allocator_([&]{
+            return Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
+                    ,std::forward< decltype( args2 ) >( args2 ) );
         });
         return qdata();
     };
@@ -853,6 +853,52 @@ private:
     inline static auto qdata() noexcept -> QSingletonPtr &
     {static QSingletonPtr d{};return d;}
 #endif
+
+    template<typename Callable>
+    inline static void Allocator_([[maybe_unused]] Callable && callable) noexcept {
+
+        std::call_once(initFlag(),[&]{
+
+            std::ostringstream err_msg{};
+
+            for (int i{}; i < 5; ++i) {
+
+                if (auto ptr { std::forward<Callable>(callable)() }) {
+#ifdef HAS_QT
+                    using ptrType = std::decay_t < std::invoke_result_t< Callable > >;
+
+                    if constexpr (std::is_same_v < SingletonPtr, ptrType > ) {
+                        data() = std::move(ptr);
+                    } else if constexpr ( std::is_same_v< QSingletonPtr , ptrType > ) {
+                        qdata() = std::move(ptr);
+                    }else {
+                        static_assert(std::disjunction_v< std::is_same < SingletonPtr, ptrType >
+                                      , std::is_same < QSingletonPtr, ptrType > >
+                                , "no SingletonPtr and  QSingletonPtr!");
+                    }
+#else
+                    data() = std::move(ptr);
+#endif
+                    return;
+                }
+
+                err_msg << FUNC_SIGNATURE << typeName<Object>()
+                        << " memory allocation failed, retry in 1 second\n";
+
+                XUtilsLibErrorLog::log(err_msg.str());
+                std::cerr << err_msg.str();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+
+            err_msg.clear();
+            err_msg  << FUNC_SIGNATURE << " : " << typeName<Object>()
+                     << " memory allocation failed"
+                        ",The maximum number of retries has been reached!\n";
+
+            XUtilsLibErrorLog::log(err_msg.str());
+            std::cerr << err_msg.str();
+        });
+    }
 
 protected:
     XSingleton() = default;

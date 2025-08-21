@@ -1,6 +1,9 @@
 #include "xhelper.hpp"
 #include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <filesystem>
+#include <XLog/xlog.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -114,6 +117,41 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
 
 [[maybe_unused]] std::string toUpper(const std::string_view &str) {
     return toUpper(std::string(str));
+}
+
+void XUtilsLibErrorLog::log(std::string_view const & msg)
+{
+    constexpr auto logName{"XUtilsLib.log"};
+    constexpr auto fileMaxSize {1024 * 1024 * 1024};
+    using namespace std::filesystem;
+    try {
+        if (exists(logName)) {
+            if (auto const fileSize{file_size(logName)}
+            ;fileSize >= fileMaxSize)
+            {
+                remove(logName);
+            }
+        }
+    } catch (const filesystem_error &e) {
+        std::cerr << FUNC_SIGNATURE << " " << e.what() << "\n";
+        return;
+    }
+
+    try {
+        std::ofstream logFs {logName,std::ios::app};
+
+        if (!logFs) {
+            std::cerr << FUNC_SIGNATURE << " : " << logName << " open failed!\n";
+            return;
+        }
+
+        logFs << ( std::ostringstream {} << XLog::getCurrentTimestamp()
+            << " XUtilsLib error message: " << msg ).str() << "\n";
+
+        logFs.flush();
+    } catch (std::exception const &e) {
+        std::cerr <<  logName << " Write err! " << e.what() << '\n';
+    }
 }
 
 XTD_INLINE_NAMESPACE_END
