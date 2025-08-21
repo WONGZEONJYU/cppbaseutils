@@ -345,9 +345,9 @@ private:
 [[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;
 
 // 现代化的便利宏定义 - 使用辅助宏减少重复代码
-#define XLOG_IMPL(level, msg) \
-    XUtils::XLog::xlogHelper(level \
-    ,msg                      \
+#define XLOG_IMPL(level, msg)       \
+    XUtils::XLog::xlogHelper(level  \
+    ,msg                            \
     ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__))
 
 #define XLOG_FATAL_IMPL(level, msg) \
@@ -369,16 +369,16 @@ private:
         , false __VA_OPT__(, ) __VA_ARGS__ )
 
 #define XLOG_FATAL_FORMAT_IMPL(level, fmt, ...) \
-    XUtils::XLog::xlogFormatHelper(level,fmt        \
+    XUtils::XLog::xlogFormatHelper(level,fmt \
         ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) \
         , true __VA_OPT__(, ) __VA_ARGS__ )
 
-#define XLOGF_TRACE(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::TRACE_LEVEL, fmt  , __VA_ARGS__)
-#define XLOGF_DEBUG(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::DEBUG_LEVEL, fmt , __VA_ARGS__)
-#define XLOGF_INFO(fmt, ...)  XLOG_FORMAT_IMPL(XUtils::LogLevel::INFO_LEVEL, fmt , __VA_ARGS__)
-#define XLOGF_WARN(fmt, ...)  XLOG_FORMAT_IMPL(XUtils::LogLevel::WARN_LEVEL, fmt , __VA_ARGS__)
-#define XLOGF_ERROR(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::ERROR_LEVEL, fmt , __VA_ARGS__)
-#define XLOGF_FATAL(fmt, ...) XLOG_FATAL_FORMAT_IMPL(XUtils::LogLevel::FATAL_LEVEL, fmt , __VA_ARGS__)
+#define XLOGF_TRACE(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::TRACE_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define XLOGF_DEBUG(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::DEBUG_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define XLOGF_INFO(fmt, ...)  XLOG_FORMAT_IMPL(XUtils::LogLevel::INFO_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define XLOGF_WARN(fmt, ...)  XLOG_FORMAT_IMPL(XUtils::LogLevel::WARN_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define XLOGF_ERROR(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::ERROR_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
+#define XLOGF_FATAL(fmt, ...) XLOG_FATAL_FORMAT_IMPL(XUtils::LogLevel::FATAL_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
