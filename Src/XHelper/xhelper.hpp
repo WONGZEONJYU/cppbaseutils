@@ -3,6 +3,7 @@
 
 #include <XHelper/xversion.hpp>
 #include <XHelper/xtypetraits.hpp>
+#include <XHelper/xutility.hpp>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -171,40 +172,6 @@ X_API void x_assert_what(const std::string &where, const std::string &what,
 X_API void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
 
-#if 0
-/**
- * 创建std::unique_ptr<T>,不抛异常
- * @tparam T
- * @tparam Args
- * @param args
- * @return std::unique_ptr<T>
- */
-template<typename T, typename ... Args>
-[[maybe_unused]] [[nodiscard]] inline std::unique_ptr<T> make_Unique(Args && ...args) noexcept {
-    try{
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-    }catch (const std::exception &){
-        return {};
-    }
-}
-
-/**
- * 创建std::shared_ptr<T>,不抛异常
- * @tparam T
- * @tparam Args
- * @param args
- * @return std::shared_ptr<T>
- */
-template<typename T, typename ... Args>
-[[maybe_unused]] [[nodiscard]] inline std::shared_ptr<T> make_Shared(Args && ...args) noexcept {
-    try{
-        return std::make_shared<T>(std::forward<Args>(args)...);
-    }catch (const std::exception &){
-        return {};
-    }
-}
-#endif
-
 /**
  * 遍历tuple所有元素
  * Pred参数为一个函数,
@@ -325,6 +292,39 @@ enum class ConnectionType {
 };
 
 namespace XPrivate {
+
+    template<typename Object>
+    struct Non_INSTANCE_MEM {
+    private:
+        template<typename ,typename = void>
+        struct Test : std::true_type {};
+
+        template<typename O>
+        struct Test<O, std::void_t< decltype(O::s_instance_) > > : std::false_type {};
+    public:
+        enum {value = Test<Object>::value};
+    };
+
+    template<typename Object>
+    inline constexpr bool Non_INSTANCE_MEM_v {Non_INSTANCE_MEM<Object>::value};
+
+    template<typename Object>
+    struct Has_S_INSTANCE_MEM {
+    private:
+        template<typename ,typename = void>
+        struct Test : std::false_type {};
+
+        template<typename O>
+        struct Test<O, std::void_t< decltype(O::s_instance_) > > : std::true_type {
+            static_assert(std::is_same_v<Object *,decltype(O::s_instance_)>
+                ,"The type must be Object pointer type");
+        };
+    public:
+        enum {value = Test<Object>::value};
+    };
+
+    template<typename Object>
+    inline constexpr bool Has_S_INSTANCE_MEM_v { Has_S_INSTANCE_MEM< Object >::value };
 
     template<typename Object>
     struct Has_X_HELPER_CLASS_Macro {
@@ -857,6 +857,13 @@ private:
     template<typename Callable>
     inline static void Allocator_([[maybe_unused]] Callable && callable) noexcept {
 
+        static_assert(XPrivate::Has_S_INSTANCE_MEM_v<Object>,
+            "Derived classes must have a static member variable named s_instance_, "
+            "the type must be the class type of the derived class itself, and it must be private");
+
+        static_assert(XPrivate::Non_INSTANCE_MEM_v<Object>
+            ,"The s_instance static member variable must be private");
+
         std::call_once(initFlag(),[&]{
 
             std::ostringstream err_msg{};
@@ -935,6 +942,7 @@ private: \
     template<typename> friend class XUtils::XHelperClass; \
     template<typename> friend struct XUtils::XPrivate::Has_X_HELPER_CLASS_Macro; \
     template<typename ,typename ...> friend struct XUtils::XPrivate::Has_construct_Func; \
+    template<typename > friend struct XUtils::XPrivate::Has_S_INSTANCE_MEM;\
     template<typename> friend class XUtils::XSingleton;
 
 XTD_INLINE_NAMESPACE_END
