@@ -773,6 +773,8 @@ protected:
     template<typename> friend class XSingleton;
 };
 
+using HelperClass [[maybe_unused]] = XHelperClass<void>;
+
 template<typename Tp_>
 class XSingleton : protected XHelperClass<Tp_> {
     using Base_ = XHelperClass<Tp_>;
@@ -880,7 +882,7 @@ private:
                     }else {
                         static_assert(std::disjunction_v< std::is_same < SingletonPtr, ptrType >
                                       , std::is_same < QSingletonPtr, ptrType > >
-                                , "no SingletonPtr and  QSingletonPtr!");
+                                , "no SingletonPtr and QSingletonPtr!");
                     }
 #else
                     data().swap(ptr);
@@ -913,26 +915,6 @@ protected:
 
 #undef STATIC_ASSERT_P
 
-template<typename T,typename ...Args>
-[[maybe_unused]] inline auto makeUnique(Args && ...args) noexcept -> std::unique_ptr<T> {
-    try{
-        return std::unique_ptr<T>{ new T( std::forward<Args>(args)... ) };
-    }catch (const std::exception &) {
-        return {};
-    }
-}
-
-template<typename T,typename ...Args>
-[[maybe_unused]] inline auto makeShared(Args && ...args) noexcept -> std::shared_ptr<T> {
-    try{
-        return std::make_shared<T>(std::forward<Args>(args)...);
-    }catch (const std::exception &){
-        return {};
-    }
-}
-
-using HelperClass [[maybe_unused]] = XHelperClass<void>;
-
 #define X_HELPER_CLASS \
 private: \
     inline void checkFriendXHelperClass_(){ X_ASSERT_W( false ,FUNC_SIGNATURE \
@@ -943,6 +925,32 @@ private: \
     template<typename ,typename ...> friend struct XUtils::XPrivate::Has_construct_Func; \
     template<typename > friend struct XUtils::XPrivate::Has_S_INSTANCE_MEM;\
     template<typename> friend class XUtils::XSingleton;
+
+template<typename T,typename Ret = std::shared_ptr<T>,typename ...Args>
+[[maybe_unused]] [[nodiscard]] inline auto makeShared(Args && ...args) noexcept -> Ret {
+    try{
+        return std::make_shared<T>( std::forward<Args>(args)... );
+    }catch (const std::exception &){
+        return Ret {};
+    }
+}
+
+#define MAKE_POINTER_FUNC(funcName,type) \
+    template<typename T,typename Ret = type<T>,typename ...Args> \
+    [[maybe_unused]] [[nodiscard]] \
+    inline auto funcName (Args && ...args) noexcept -> Ret { \
+        try{ return Ret { new T( std::forward<Args>(args)... ) };} \
+        catch (const std::exception &) {return Ret {};}  \
+    }
+
+MAKE_POINTER_FUNC(makeUnique,std::unique_ptr)
+
+#ifdef HAS_QT
+    MAKE_POINTER_FUNC(makeQScoped,QScopedPointer)
+    MAKE_POINTER_FUNC(makeQShared,QSharedPointer)
+#endif
+
+#undef MAKE_POINTER_FUNC
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
