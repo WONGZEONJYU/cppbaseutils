@@ -292,6 +292,7 @@ enum class ConnectionType {
 
 namespace XPrivate {
 
+#if 0
     template<typename Object>
     struct Non_INSTANCE_MEM {
     private:
@@ -305,7 +306,7 @@ namespace XPrivate {
     };
 
     template<typename Object>
-    inline constexpr bool Non_INSTANCE_MEM_v {Non_INSTANCE_MEM<Object>::value};
+    inline constexpr bool Non_INSTANCE_MEM_v { Non_INSTANCE_MEM<Object>::value };
 
     template<typename Object>
     struct Has_S_INSTANCE_MEM {
@@ -324,6 +325,7 @@ namespace XPrivate {
 
     template<typename Object>
     inline constexpr bool Has_S_INSTANCE_MEM_v { Has_S_INSTANCE_MEM< Object >::value };
+#endif
 
     template<typename Object>
     struct Has_X_HELPER_CLASS_Macro {
@@ -478,14 +480,12 @@ namespace XPrivate {
 
         template<typename O>
         inline static auto test(int)
-        -> decltype(std::declval<O>().~O(),std::false_type{}){
-            throw ;
-        }
+        -> decltype(std::declval<O>().~O(),std::false_type{})
+        { throw ; }
 
         template<typename >
-        inline static auto test(...) -> std::true_type {
-            throw ;
-        }
+        inline static auto test(...) -> std::true_type
+        { throw ; }
 
     public:
         enum {value = decltype(test<Object>(0))::value };
@@ -512,16 +512,23 @@ namespace XPrivate {
             }
         }
 
-        [[maybe_unused]] static void deallocate(value_type * const ptr, std::size_t) noexcept {
-            std::free(ptr);
-        }
+        [[maybe_unused]] static void deallocate(value_type * const ptr, std::size_t) noexcept
+        { std::free(ptr); }
+
+        friend bool operator==(Allocator_ const &,Allocator_ const &) noexcept
+        { return true; }
+
+        friend bool operator!=(const Allocator_ &, const Allocator_ &)
+        { return false; }
     };
 
     template<typename T, typename U>
-    bool operator==(const Allocator_ <T>&, const Allocator_ <U>&) { return true; }
+    bool operator==(const Allocator_ <T>&, const Allocator_ <U>&)
+    { return true; }
 
     template<typename T, typename U>
-    bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&) { return false; }
+    bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&)
+    { return false; }
 
 #define STATIC_ASSERT_P \
     static_assert( std::is_object_v< Object >,"typename Object is not an class or struct" ); \
@@ -601,24 +608,27 @@ class XHelperClass {
     template<typename Tuple_>
     inline static constexpr auto indices(Tuple_ &&) noexcept
     -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
-    {return {};}
+    { return {}; }
 
 protected:
-    template<typename Object> struct Destructor_ {
+    template<typename Type> struct Destructor_ {
+
+        using type = Type;
+        using value_type = type;
 
         constexpr Destructor_() = default;
 
         template<typename U>
-        [[maybe_unused]] constexpr explicit Destructor_(const Destructor_<U> &) {}
+        [[maybe_unused]] constexpr explicit Destructor_(Destructor_<U> const &) {}
 
-        inline static void cleanup(const Object * const pointer) noexcept {
-            using IsIncompleteType = char[ sizeof(Object) ? 1 : -1 ];
-            (void) sizeof(IsIncompleteType);
+        inline static void cleanup(const value_type * const pointer) noexcept {
+            static_assert(sizeof(Object) > static_cast<std::size_t>(0)
+                    ,"Object must be a complete type!");
             delete pointer;
         }
 
-        void operator()(const Object * const pointer) const noexcept
-        {cleanup(pointer);}
+        void operator()(const value_type * const pointer) const noexcept
+        { cleanup(pointer); }
     };
 
     using Deleter = Destructor_< Object_t >;
@@ -629,8 +639,9 @@ public:
     using ObjectUPtr = std::unique_ptr< Object , Deleter >;
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline constexpr static Object * Create( Parameter< Args1... > && args1 = {},
-                                  Parameter< Args2...> && args2 = {} ) noexcept
+    [[nodiscard]]
+    inline static constexpr auto Create( Parameter< Args1... > && args1 = {},
+          Parameter< Args2...> && args2 = {} ) noexcept -> Object *
     {
         static_assert( std::disjunction_v< std::is_base_of< XHelperClass ,Object >
             ,std::is_convertible<Object,XHelperClass >
@@ -656,16 +667,20 @@ public:
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
-        ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr {
+    [[nodiscard]] [[maybe_unused]]
+    inline static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
+        ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr
+    {
         return { Create( std::forward< decltype( args1 ) >( args1 )
             ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{}
             ,XPrivate::Allocator_< Object >{} };
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
-        ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr {
+    [[nodiscard]] [[maybe_unused]]
+    inline static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
+        ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr
+    {
         return { Create( std::forward< decltype( args1 ) >( args1 )
             ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
     }
@@ -676,20 +691,24 @@ public:
     using ObjectQSPtr = QSharedPointer<Object>;
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] [[maybe_unused]] inline static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
-            ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectQUPtr {
+    [[nodiscard]] [[maybe_unused]]
+    inline static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
+            ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectQUPtr
+    {
         return ObjectQUPtr{ Create( std::forward< decltype( args1 ) >( args1 )
                 ,std::forward< decltype( args2 ) >( args2 ) ) };
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] inline static constexpr auto CreateQSharedPointer ( Parameter< Args1...> && args1 = {}
-            ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectQSPtr {
+    [[nodiscard]] [[maybe_unused]]
+    inline static constexpr auto CreateQSharedPointer ( Parameter< Args1...> && args1 = {}
+            ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectQSPtr
+    {
         try{
-            return ObjectQSPtr{ Create( std::forward< decltype( args1 ) >( args1 )
+            return ObjectQSPtr { Create( std::forward< decltype( args1 ) >( args1 )
                     ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
         }catch (std::exception const &) {
-            return ObjectQSPtr{};
+            return ObjectQSPtr {};
         }
     }
 
@@ -784,7 +803,7 @@ public:
     using SingletonPtr = typename Base_::ObjectSPtr;
 
     template<typename ...Args1,typename ...Args2>
-    inline static auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
+    inline static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
         , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> SingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
@@ -804,18 +823,18 @@ public:
         return data();
     }
 
-    [[maybe_unused]] inline static auto instance() noexcept -> SingletonPtr
-    {return data();}
+    [[maybe_unused]] inline static constexpr auto instance() noexcept -> SingletonPtr
+    { return data(); }
 
     [[maybe_unused]] [[nodiscard]] inline static constexpr bool isConstruct() noexcept
-    {return static_cast<bool >(data());}
+    { return static_cast<bool >(data()); }
 
 #ifdef HAS_QT
     using QSingletonPtr = typename Base_::ObjectQSPtr;
 
     template<typename ...Args1,typename ...Args2>
     [[maybe_unused]] [[nodiscard]]
-    inline static auto QUniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
+    inline static constexpr auto QUniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
             , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> QSingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
@@ -836,35 +855,28 @@ public:
         return qdata();
     }
 
-    [[maybe_unused]] inline static auto qInstance() noexcept -> QSingletonPtr
-    {return qdata();}
+    [[maybe_unused]] inline static constexpr auto qInstance() noexcept -> QSingletonPtr
+    { return qdata(); }
 
     [[maybe_unused]] [[nodiscard]] inline static constexpr bool isQConstruct() noexcept
-    {return static_cast<bool >(qdata());}
+    { return static_cast<bool>(qdata()); }
 #endif
 
 private:
     inline static auto initFlag() noexcept -> std::once_flag &
-    {static std::once_flag flag{};return flag;}
+    { static std::once_flag flag{};return flag; }
 
     inline static auto data() noexcept -> SingletonPtr &
-    {static SingletonPtr d{};return d;}
+    { static SingletonPtr d{}; return d; }
 
 #ifdef HAS_QT
     inline static auto qdata() noexcept -> QSingletonPtr &
-    {static QSingletonPtr d{};return d;}
+    { static QSingletonPtr d{}; return d; }
 #endif
 
     template<typename Callable>
-    inline static void Allocator_([[maybe_unused]] Callable && callable) noexcept {
-#if 0
-        static_assert(XPrivate::Has_S_INSTANCE_MEM_v<Object>,
-            "Derived classes must have a static member variable named s_instance_, "
-            "the type must be the class type of the derived class itself, and it must be private");
+    inline static constexpr void Allocator_([[maybe_unused]] Callable && callable) noexcept {
 
-        static_assert(XPrivate::Non_INSTANCE_MEM_v<Object>
-            ,"The s_instance static member variable must be private");
-#endif
         std::call_once(initFlag(),[&]{
 
             std::ostringstream err_msg{};
@@ -917,17 +929,21 @@ protected:
 
 #define X_HELPER_CLASS \
 private: \
-    inline void checkFriendXHelperClass_(){ X_ASSERT_W( false ,FUNC_SIGNATURE \
+    inline void checkFriendXHelperClass_() { X_ASSERT_W( false ,FUNC_SIGNATURE \
         ,"This function is used for checking, please don't call it!"); \
     } \
     template<typename> friend class XUtils::XHelperClass; \
     template<typename> friend struct XUtils::XPrivate::Has_X_HELPER_CLASS_Macro; \
     template<typename ,typename ...> friend struct XUtils::XPrivate::Has_construct_Func; \
-    template<typename > friend struct XUtils::XPrivate::Has_S_INSTANCE_MEM;\
     template<typename> friend class XUtils::XSingleton;
 
-template<typename T,typename Ret = std::shared_ptr<T>,typename ...Args>
-[[maybe_unused]] [[nodiscard]] inline auto makeShared(Args && ...args) noexcept -> Ret {
+#if __cplusplus >= 201402L
+
+template< typename T,typename ...Args,typename Ret = std::shared_ptr<T>>
+[[maybe_unused]] [[nodiscard]]
+inline auto makeShared(Args && ...args) noexcept
+    -> std::enable_if_t<std::negation_v<std::is_array<T>>,Ret>
+{
     try{
         return std::make_shared<T>( std::forward<Args>(args)... );
     }catch (const std::exception &){
@@ -935,15 +951,57 @@ template<typename T,typename Ret = std::shared_ptr<T>,typename ...Args>
     }
 }
 
+template<typename T ,typename Ret = std::shared_ptr<T>>
+[[maybe_unused]] [[nodiscard]]
+inline auto makeShared(std::size_t const n) noexcept
+    -> std::enable_if_t<std::is_unbounded_array_v<T>,Ret>
+{
+    try{
+        return std::make_shared<T>(n);
+    }catch (const std::exception &){
+        return Ret {};
+    }
+}
+
+template<typename T ,typename Ret = std::shared_ptr<T>>
+[[maybe_unused]] [[nodiscard]]
+inline auto makeShared(std::size_t const n,const std::remove_extent_t<T> & u ) noexcept
+    -> std::enable_if_t<std::is_unbounded_array_v<T>,Ret>
+{
+    try{
+        return std::make_shared<T>(n,u);
+    }catch (const std::exception &){
+        return Ret {};
+    }
+}
+
+template<typename T,typename Ret = std::unique_ptr<T> >
+[[maybe_unused]] [[nodiscard]]
+inline auto makeUnique(std::size_t const n) noexcept
+    -> std::enable_if_t<std::is_array_v<T> && !std::extent_v<T>, Ret>
+{
+    try {
+        return std::make_unique<T>(n);
+    } catch (std::exception const &) {
+        return Ret {};
+    }
+}
+
+template<typename T,typename ...Args,std::enable_if_t<std::extent_v<T> != 0,int> = 0>
+void makeUnique(Args && ...) noexcept = delete;
+
+#endif
+
 #define MAKE_POINTER_FUNC(funcName,type) \
-    template<typename T,typename Ret = type<T>,typename ...Args> \
+    template<typename T,typename ...Args,typename Ret = type<T> > \
     [[maybe_unused]] [[nodiscard]] \
-    inline auto funcName (Args && ...args) noexcept -> Ret { \
+    inline auto funcName (Args && ...args) noexcept \
+        -> std::enable_if_t< !std::is_array_v<T> , Ret> { \
         try{ return Ret { new T( std::forward<Args>(args)... ) };} \
         catch (const std::exception &) {return Ret {};}  \
     }
 
-MAKE_POINTER_FUNC(makeUnique,std::unique_ptr)
+    MAKE_POINTER_FUNC(makeUnique,std::unique_ptr)
 
 #ifdef HAS_QT
     MAKE_POINTER_FUNC(makeQScoped,QScopedPointer)
