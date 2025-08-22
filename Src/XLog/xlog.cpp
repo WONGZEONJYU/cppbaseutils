@@ -67,6 +67,10 @@ bool XLog::construct_() {
     }
 }
 
+auto XLog::instance() noexcept -> XLog * {
+    return XSingleton::instance().get();
+}
+
 void XLog::setLogLevel(LogLevel const & level) noexcept {
     X_D(XLog);
     d->m_log_level_.store(level, std::memory_order_relaxed);
@@ -687,7 +691,7 @@ void XLogPrivate::handleCrash(int const signal) {
 
     writeCrashLog(crash_info);
 
-    if (auto const logger{XlogHandle()}
+    if (auto const logger{XLog::instance()}
         ;logger && logger->d_func()->m_crash_handler_)
     {
         try {
@@ -769,7 +773,7 @@ LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_in
 
     writeCrashLog(crash_info);
 
-    if (auto const logger{XlogHandle()}
+    if (auto const logger{instance()}
         ;logger && logger->d_func()->m_crash_handler_)
     {
         try {
@@ -788,7 +792,7 @@ void XLog::xlogHelper(LogLevel const &level
                 ,SourceLocation const &location
                 ,bool const b)
 {
-    if ( auto const logger{XlogHandle()}
+    if ( auto const logger{instance()}
         ;logger && logger->shouldLog(level))
     {
         logger->log(level,msg,location);

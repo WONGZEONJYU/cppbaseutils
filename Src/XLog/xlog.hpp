@@ -214,10 +214,10 @@ public:
      */
     template<typename... Args>
     inline void logFormat(LogLevel const & level, const char * const format_str,
-              SourceLocation const & location, Args&&... args) {
-
+              SourceLocation const & location, Args &&... args)
+    {
         if (!shouldLog(level)) { return; }
-        
+
         try {
             // 使用简单的字符串格式化（C++17兼容）
             std::ostringstream oss{};
@@ -304,7 +304,7 @@ public:
                                         ,bool const b
                                         ,Args && ...args) noexcept {
 
-        if ( auto const logger{XlogHandle()}
+        if ( auto const logger{instance()}
             ;logger && logger->shouldLog(level)) {
             logger->logFormat(level,format,location,std::forward< Args >(args)...);
             if (b){logger->flush();}
@@ -315,33 +315,42 @@ private:
     XLog();
     ~XLog();
     bool construct_();
+    static auto instance() noexcept -> XLog *;
     // 格式化辅助函数 - 使用标准printf风格格式化
     template<typename... Args>
-    inline static void formatImpl(std::ostringstream& oss, const char* const format, Args &&... args) {
-        if constexpr (0 == sizeof...(args)) {
-            // 无参数时直接输出格式字符串
-            oss << format;
-        } else {
-            // 有参数时使用snprintf进行格式化
-            std::array<char,4096> buffer{};
-            if (auto const result {std::snprintf(buffer.data(), buffer.size(), format, args...)}
-                ; result > 0 && static_cast<std::size_t>(result) < buffer.size())
-            {
-                oss << buffer.data();
-            } else if (result > 0) {
-                // 缓冲区太小，需要更大的缓冲区
-                std::vector larger_buffer ( result + 1,char{} );
-                std::snprintf(larger_buffer.data(), result + 1, format, args...);
-                oss << larger_buffer.data();
-            } else {
-                // 格式化失败，输出原始格式字符串
-                oss << format;
-            }
-        }
-    }
+    inline static void formatImpl(std::ostringstream & , const char* , Args &&...);
     X_DISABLE_COPY_MOVE(XLog)
     friend X_API XLog * XlogHandle() noexcept;
 };
+
+template<typename... Args>
+inline void XLog::formatImpl(std::ostringstream & oss
+                            , const char * const format
+                            , Args &&... args)
+{
+    if constexpr ( sizeof...(args) > 0 ) { //有参数时使用snprintf进行格式化
+        using BufferType = std::vector<char,XPrivate::Allocator_<char>>;
+        constexpr auto PredictSize {4096};
+        BufferType buffer(PredictSize,{});
+        if (auto const result { std::snprintf(buffer.data(), buffer.size(), format, args...) }
+            ; result > 0 && static_cast<std::size_t>(result) < buffer.size())
+        {
+            oss << buffer.data();
+        } else if (result > 0) {
+            // 缓冲区太小，需要更大的缓冲区
+            buffer.clear();
+            buffer.resize(result + 1);
+            std::snprintf(buffer.data(), result + 1, format, args...);
+            oss << buffer.data();
+        } else {
+            // 格式化失败，输出原始格式字符串
+            oss << format;
+        }
+    } else {
+        // 无参数时直接输出格式字符串
+        oss << format;
+    }
+}
 
 // 现代化的便利宏定义 - 使用辅助宏减少重复代码
 #define XLOG_IMPL(level, msg)       \
