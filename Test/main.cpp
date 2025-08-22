@@ -455,6 +455,18 @@ protected:
     bool construct_(){return true;}
 };
 
+
+struct BBB{
+
+    BBB(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+    ~BBB(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+};
+
+
 [[maybe_unused]] static void test6(){
 
 #if 1
@@ -478,6 +490,8 @@ protected:
     AAA::UniqueConstruction(XUtils::Parameter{1},{});
     LibTestHandle();
     LibTest::print();
+
+    (void )XUtils::makeUnique<BBB>();
 
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
