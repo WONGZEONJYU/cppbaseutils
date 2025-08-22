@@ -328,8 +328,9 @@ inline void XLog::formatImpl(std::ostringstream & oss
                             , const char * const format
                             , Args &&... args)
 {
+    using BufferType = std::vector<char,XPrivate::Allocator_<char>>;
+
     if constexpr ( sizeof...(args) > 0 ) { //有参数时使用snprintf进行格式化
-        using BufferType = std::vector<char,XPrivate::Allocator_<char>>;
         constexpr auto PredictSize {4096};
         BufferType buffer(PredictSize,{});
         if (auto const result { std::snprintf(buffer.data(), buffer.size(), format, args...) }
@@ -338,10 +339,9 @@ inline void XLog::formatImpl(std::ostringstream & oss
             oss << buffer.data();
         } else if (result > 0) {
             // 缓冲区太小，需要更大的缓冲区
-            buffer.clear();
-            buffer.resize(result + 1);
-            std::snprintf(buffer.data(), result + 1, format, args...);
-            oss << buffer.data();
+            BufferType largerBuffer(result + 1,{});
+            std::snprintf(largerBuffer.data(), result + 1, format, args...);
+            oss << largerBuffer.data();
         } else {
             // 格式化失败，输出原始格式字符串
             oss << format;
