@@ -14,7 +14,7 @@
 #include <utility>
 #include <chrono>
 #include <XHelper/xtypetraits.hpp>
-#include <XLog/xlog.hpp>
+#include "libtest.hpp"
 
 static std::mutex mtx{};
 
@@ -438,8 +438,6 @@ public:
 class AAA final : public XUtils::XSingleton<AAA> {
     X_HELPER_CLASS
     int aa{100};
-    inline static AAA * s_instance_{};
-public:
     void p(){
         using namespace std::chrono_literals;
         std::cerr << FUNC_SIGNATURE << aa <<  "\n";
@@ -477,10 +475,13 @@ protected:
     std::cerr << "\n\n";
 #endif
 
-    AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
-    AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
-    AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
-    AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
+    AAA::UniqueConstruction(XUtils::Parameter{1},{});
+    LibTestHandle();
+    LibTest::print();
+
+    // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
+    // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
+    // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
 
     //delete p.get();
     // AAA::instance()->p();
