@@ -3,7 +3,6 @@
 
 #include <XHelper/xversion.hpp>
 #include <XHelper/xtypetraits.hpp>
-#include <XHelper/xutility.hpp>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -18,7 +17,7 @@
 #include <QString>
 #include <QObject>
 #include <QScopedPointer>
-#include <QScopedPointer>
+#include <QSharedPointer>
 #endif
 
 #define X_DISABLE_COPY(...) \
@@ -84,7 +83,7 @@ class X_API XUtilsLibErrorLog final {
     XUtilsLibErrorLog() = default;
     static void log(std::string_view const & );
     template<typename > friend class XSingleton;
-    template<typename >friend class XHelperClass;
+    template<typename > friend class XHelperClass;
 };
 
 template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
