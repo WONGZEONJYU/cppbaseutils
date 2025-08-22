@@ -654,6 +654,14 @@ private:
 };
 
 [[maybe_unused]] static void test8() {
+    auto a0 = std::make_shared<DDDD<int>>();
+    auto a1 = std::make_unique<int[][2]>(10);
+    auto a2 = XUtils::makeShared<int[][2]>(10,{545,14512});
+    auto a3 = std::make_shared<int[][2]>(10,{10,20});
+    auto a4 = std::make_shared<int[][2]>(10);
+    auto a5 = XUtils::makeShared< DDDD<int> >();
+    auto a6 = std::make_unique<int[][2]>(10);
+    auto a7 = XUtils::makeUnique<int[]>(10);
 
     Fuck::create();
 }
