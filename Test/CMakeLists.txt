@@ -7,6 +7,8 @@ add_executable(${PROJECT_NAME}_test)
 target_sources(${PROJECT_NAME}_test PRIVATE
     main.cpp
     main.hpp
+    libtest.cpp
+    libtest.hpp
 )
 
 # 创建XLog测试可执行文件
