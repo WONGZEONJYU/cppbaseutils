@@ -773,7 +773,7 @@ LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_in
 
     writeCrashLog(crash_info);
 
-    if (auto const logger{instance()}
+    if (auto const logger{XLog::instance()}
         ;logger && logger->d_func()->m_crash_handler_)
     {
         try {
