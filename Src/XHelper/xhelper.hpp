@@ -717,6 +717,12 @@ public:
    #if LIKE_WHICH == 1
        template<typename ENUM_> requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value))
        inline static QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+
+           if constexpr ( std::is_object_v<Object_t> ) {
+               static_assert(XPrivate::Has_X_HELPER_CLASS_Macro_v<Object_t>
+                       ,"No X_HELPER_CLASS in the class!");
+           }
+
    #elif LIKE_WHICH == 2
        template<typename ENUM_>
        inline static QString getEnumTypeAndValueName(ENUM_ && enumValue)
@@ -733,10 +739,7 @@ public:
        getEnumTypeAndValueName(ENUM_ && enumValue) {
    #endif
    #undef LIKE_WHICH
-           if constexpr ( std::is_object_v<Object_t> ) {
-               static_assert(XPrivate::Has_X_HELPER_CLASS_Macro_v<Object_t>
-                       ,"No X_HELPER_CLASS in the class!");
-           }
+
            const auto metaObj {qt_getEnumMetaObject(enumValue)};
            const auto EnumTypename {qt_getEnumName(enumValue)};
            const auto enumIndex {metaObj->indexOfEnumerator(EnumTypename)};
@@ -752,6 +755,12 @@ public:
    #if (LIKE_WHICH == 1)
        template<typename T> requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>)
        inline static T *findChildByName(QObject* parent, const QString& objectname) {
+
+           if constexpr ( std::is_object_v<Object_t> ) {
+               static_assert(XPrivate::Has_X_HELPER_CLASS_Macro_v<Object_t>
+                       ,"No X_HELPER_CLASS in the class!");
+           }
+
    #elif (LIKE_WHICH == 2 )
        template<typename T>
        inline static T *findChildByName(QObject* parent, const QString& objectname)
@@ -767,10 +776,7 @@ public:
        inline static std::enable_if_t<std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T>>,T*>
        findChildByName(QObject* parent, const QString& objectname) {
    #endif
-           if constexpr ( std::is_object_v<Object_t> ) {
-               static_assert(XPrivate::Has_X_HELPER_CLASS_Macro_v<Object_t>
-                       ,"No X_HELPER_CLASS in the class!");
-           }
+
            foreach (QObject* child, parent->children()) {
                if (child->objectName() == objectname) {
                    return qobject_cast<T*>(child);
