@@ -59,7 +59,8 @@ EOF
 }
 
 # 默认参数
-BUILD_TYPE="Release"
+CMAKE_BUILD_TYPE=""
+CMAKE_CONFIG_TYPES=""
 BUILD_SHARED=true
 BUILD_STATIC=false
 CLEAN_BUILD=false
@@ -129,9 +130,11 @@ done
 if [[ "$BUILD_TYPE" == "Multi" ]]; then
     print_info "多配置构建模式"
     CMAKE_CONFIG_TYPES="-DCMAKE_CONFIGURATION_TYPES=Debug;Release"
+    CMAKE_BUILD_TYPE=""
 else
     print_info "构建类型: $BUILD_TYPE"
     CMAKE_BUILD_TYPE="-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
+    CMAKE_CONFIG_TYPES=""
 fi
 
 # 设置库构建选项
@@ -165,15 +168,43 @@ fi
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-# 配置项目
-print_info "配置项目..."
-CMAKE_CMD="cmake .. $CMAKE_BUILD_TYPE $CMAKE_CONFIG_TYPES $LIB_OPTIONS $OTHER_OPTIONS"
-
-if [[ "$VERBOSE" == true ]]; then
-    print_info "执行命令: $CMAKE_CMD"
+# Determine the correct source directory for CMake
+CMAKE_SOURCE_DIR=".."
+if [[ "$BUILD_TYPE" == "Multi" ]]; then
+    CMAKE_SOURCE_DIR="../.."
 fi
 
-if eval $CMAKE_CMD; then
+# 配置项目
+print_info "配置项目..."
+CMAKE_ARGS=("cmake" "$CMAKE_SOURCE_DIR")
+
+if [[ -n "$CMAKE_BUILD_TYPE" ]]; then
+    CMAKE_ARGS+=("$CMAKE_BUILD_TYPE")
+fi
+
+if [[ -n "$CMAKE_CONFIG_TYPES" ]]; then
+    CMAKE_ARGS+=("$CMAKE_CONFIG_TYPES")
+fi
+
+if [[ -n "$LIB_OPTIONS" ]]; then
+    # Split LIB_OPTIONS into an array to handle multiple arguments
+    read -r -a LIB_OPTS_ARRAY <<< "$LIB_OPTIONS"
+    CMAKE_ARGS+=("${LIB_OPTS_ARRAY[@]}")
+fi
+
+if [[ -n "$OTHER_OPTIONS" ]]; then
+    # Split OTHER_OPTIONS into an array to handle multiple arguments
+    read -r -a OTHER_OPTS_ARRAY <<< "$OTHER_OPTIONS"
+    CMAKE_ARGS+=("${OTHER_OPTS_ARRAY[@]}")
+fi
+
+CMAKE_CMD_STR="${CMAKE_ARGS[*]}"
+
+if [[ "$VERBOSE" == true ]]; then
+    print_info "执行命令: ${CMAKE_ARGS[*]}"
+fi
+
+if "${CMAKE_ARGS[@]}"; then
     print_success "配置成功"
 else
     print_error "配置失败"
