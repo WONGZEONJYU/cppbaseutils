@@ -623,47 +623,37 @@ constexpr std::size_t arity() noexcept {
     return detail::arity_impl<std::decay_t<T>>().size();
 }
 
-template<typename Tp_>
-struct DDDD{
-
-    template<typename Obj>
-    struct Deleter{
-        void operator()(Obj * const p){
-            delete p;
-        }
-    };
+class A1 {
+public:
+    virtual void f1(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+    virtual void f2(){
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
 };
 
-struct Fuck : DDDD<Fuck> {
-    using Base = DDDD<Fuck>;
-
-    template<typename T>
-    friend struct DDDD;
-
-    static auto create(){
-        return std::unique_ptr<Fuck,Base::Deleter<Fuck>>(new Fuck,Base::Deleter<Fuck>{});
-    }
-
-private:
-    Fuck(){
+class A2 {
+    virtual void f1() {
         std::cerr << FUNC_SIGNATURE << "\n";
     }
-    ~Fuck() {
+};
+
+struct A3 : public A1 , public A2 {
+    virtual void f4()  {
         std::cerr << FUNC_SIGNATURE << "\n";
     }
+    int a;
 };
 
 [[maybe_unused]] static void test8() {
-    auto a0 = std::make_shared<DDDD<int>>();
     auto a1 = std::make_unique<int[][2]>(10);
     auto a2 = XUtils::makeShared<int[][2]>(10,{545,14512});
     auto a3 = std::make_shared<int[][2]>(10,{10,20});
     auto a4 = std::make_shared<int[][2]>(10);
-    auto a5 = XUtils::makeShared< DDDD<int> >();
     auto a6 = std::make_unique<int[][2]>(10);
     auto a7 = XUtils::makeUnique<int[]>(10);
 
-    Fuck::create();
 }
 
 int main(const int argc,const char **const argv){
@@ -673,8 +663,8 @@ int main(const int argc,const char **const argv){
     //test3();
     //test4(123);
     //test5();
-    test6();
+    //test6();
     //test7();
-    //test8();
+    test8();
     return 0;
 }
