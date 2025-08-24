@@ -5,19 +5,27 @@ if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW)
 endif()
 
-# 设置Boost查找选项
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_DEBUG_LIBS ON)
-set(Boost_DEBUG OFF)
+# 添加选项来禁用 Boost
+option(DISABLE_BOOST "Disable Boost dependency" OFF)
 
-# 查找Boost
-find_package(Boost QUIET)
-if(Boost_FOUND)
-    message(STATUS "Boost found: ${Boost_VERSION}")
-    message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
-    message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
+# 设置Boost查找选项
+if(NOT DISABLE_BOOST)
+    set(Boost_USE_MULTITHREADED ON)
+    set(Boost_USE_DEBUG_LIBS ON)
+    set(Boost_DEBUG OFF)
+
+    # 查找Boost
+    find_package(Boost QUIET)
+    if(Boost_FOUND)
+        message(STATUS "Boost found: ${Boost_VERSION}")
+        message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+        message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
+    else()
+        message(WARNING "Boost not found - some features may be disabled")
+    endif()
 else()
-    message(WARNING "Boost not found - some features may be disabled")
+    message(STATUS "Boost disabled by user option")
+    set(Boost_FOUND FALSE)
 endif()
 
 # 添加选项来禁用 Qt
@@ -93,4 +101,11 @@ endif()
 set(XUtils_Boost_FOUND ${Boost_FOUND})
 set(XUtils_Qt6_FOUND ${Qt6_FOUND})
 set(XUtils_Qt5_FOUND ${Qt5_FOUND})
-set(XUtils_Qt_FOUND ${Qt6_FOUND} OR ${Qt5_FOUND}) 
+set(XUtils_Qt_FOUND ${Qt6_FOUND} OR ${Qt5_FOUND})
+
+# 输出依赖状态摘要
+message(STATUS "=== 依赖状态摘要 ===")
+message(STATUS "Boost: ${XUtils_Boost_FOUND}")
+message(STATUS "Qt: ${XUtils_Qt_FOUND}")
+message(STATUS "Threads: ${Threads_FOUND}")
+message(STATUS "=====================") 

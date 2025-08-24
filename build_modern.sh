@@ -47,6 +47,10 @@ XUtils 现代化构建脚本
     --shared                构建共享库
     --static                构建静态库
     --both                  同时构建共享库和静态库
+    --disable-qt            禁用 Qt 依赖
+    --enable-qt             启用 Qt 依赖
+    --disable-boost         禁用 Boost 依赖
+    --enable-boost          启用 Boost 依赖
 
 示例:
     $0 --debug --shared     构建 Debug 版本的共享库
@@ -54,19 +58,23 @@ XUtils 现代化构建脚本
     $0 --multi --both       同时构建所有版本
     $0 --install            构建并安装
     $0 --test               运行测试
+    $0 --multi --disable-qt --enable-boost 多配置构建，禁用Qt，启用Boost
 
 EOF
 }
 
 # 默认参数
-CMAKE_BUILD_TYPE=""
-CMAKE_CONFIG_TYPES=""
+BUILD_TYPE="Release"
 BUILD_SHARED=true
 BUILD_STATIC=false
 CLEAN_BUILD=false
 INSTALL_BUILD=false
 RUN_TESTS=false
 VERBOSE=false
+DISABLE_QT=false
+ENABLE_QT=false
+DISABLE_BOOST=false
+ENABLE_BOOST=false
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -118,6 +126,22 @@ while [[ $# -gt 0 ]]; do
             BUILD_STATIC=true
             shift
             ;;
+        --disable-qt)
+            DISABLE_QT=true
+            shift
+            ;;
+        --enable-qt)
+            ENABLE_QT=true
+            shift
+            ;;
+        --disable-boost)
+            DISABLE_BOOST=true
+            shift
+            ;;
+        --enable-boost)
+            ENABLE_BOOST=true
+            shift
+            ;;
         *)
             print_error "未知选项: $1"
             show_help
@@ -128,7 +152,7 @@ done
 
 # 检查构建类型
 if [[ "$BUILD_TYPE" == "Multi" ]]; then
-    print_info "多配置构建模式"
+    print_info "多配置构建模式 - 将同时构建 Debug 和 Release 版本"
     CMAKE_CONFIG_TYPES="-DCMAKE_CONFIGURATION_TYPES=Debug;Release"
     CMAKE_BUILD_TYPE=""
 else
@@ -140,10 +164,25 @@ fi
 # 设置库构建选项
 LIB_OPTIONS=""
 if [[ "$BUILD_SHARED" == true ]]; then
-    LIB_OPTIONS="$LIB_OPTIONS -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF"
+    LIB_OPTIONS="$LIB_OPTIONS -DBUILD_SHARED_LIBS=ON"
 fi
 if [[ "$BUILD_STATIC" == true ]]; then
-    LIB_OPTIONS="$LIB_OPTIONS -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON"
+    LIB_OPTIONS="$LIB_OPTIONS -DBUILD_STATIC_LIBS=ON"
+fi
+
+# 设置依赖选项
+DEPENDENCY_OPTIONS=""
+if [[ "$DISABLE_QT" == true ]]; then
+    DEPENDENCY_OPTIONS="$DEPENDENCY_OPTIONS -DDISABLE_QT=ON"
+fi
+if [[ "$ENABLE_QT" == true ]]; then
+    DEPENDENCY_OPTIONS="$DEPENDENCY_OPTIONS -DDISABLE_QT=OFF"
+fi
+if [[ "$DISABLE_BOOST" == true ]]; then
+    DEPENDENCY_OPTIONS="$DEPENDENCY_OPTIONS -DDISABLE_BOOST=ON"
+fi
+if [[ "$ENABLE_BOOST" == true ]]; then
+    DEPENDENCY_OPTIONS="$DEPENDENCY_OPTIONS -DDISABLE_BOOST=OFF"
 fi
 
 # 设置其他选项
@@ -168,7 +207,7 @@ fi
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-# Determine the correct source directory for CMake
+# 确定 CMake 源目录
 CMAKE_SOURCE_DIR=".."
 if [[ "$BUILD_TYPE" == "Multi" ]]; then
     CMAKE_SOURCE_DIR="../.."
@@ -187,18 +226,22 @@ if [[ -n "$CMAKE_CONFIG_TYPES" ]]; then
 fi
 
 if [[ -n "$LIB_OPTIONS" ]]; then
-    # Split LIB_OPTIONS into an array to handle multiple arguments
+    # 将 LIB_OPTIONS 分割成数组以处理多个参数
     read -r -a LIB_OPTS_ARRAY <<< "$LIB_OPTIONS"
     CMAKE_ARGS+=("${LIB_OPTS_ARRAY[@]}")
 fi
 
+if [[ -n "$DEPENDENCY_OPTIONS" ]]; then
+    # 将 DEPENDENCY_OPTIONS 分割成数组以处理多个参数
+    read -r -a DEP_OPTS_ARRAY <<< "$DEPENDENCY_OPTIONS"
+    CMAKE_ARGS+=("${DEP_OPTS_ARRAY[@]}")
+fi
+
 if [[ -n "$OTHER_OPTIONS" ]]; then
-    # Split OTHER_OPTIONS into an array to handle multiple arguments
+    # 将 OTHER_OPTIONS 分割成数组以处理多个参数
     read -r -a OTHER_OPTS_ARRAY <<< "$OTHER_OPTIONS"
     CMAKE_ARGS+=("${OTHER_OPTS_ARRAY[@]}")
 fi
-
-CMAKE_CMD_STR="${CMAKE_ARGS[*]}"
 
 if [[ "$VERBOSE" == true ]]; then
     print_info "执行命令: ${CMAKE_ARGS[*]}"
@@ -214,36 +257,52 @@ fi
 # 构建项目
 print_info "构建项目..."
 if [[ "$BUILD_TYPE" == "Multi" ]]; then
-    # 多配置构建
-    cmake --build . --config Debug
-    cmake --build . --config Release
+    # 多配置构建 - 同时构建 Debug 和 Release
+    print_info "构建 Debug 版本..."
+    if ! cmake --build . --config Debug; then
+        print_error "Debug 版本构建失败"
+        exit 1
+    fi
+    
+    print_info "构建 Release 版本..."
+    if ! cmake --build . --config Release; then
+        print_error "Release 版本构建失败"
+        exit 1
+    fi
+    
+    print_success "多配置构建成功"
 else
     # 单配置构建
-    cmake --build .
-fi
-
-if [[ $? -eq 0 ]]; then
+    if ! cmake --build .; then
+        print_error "构建失败"
+        exit 1
+    fi
     print_success "构建成功"
-else
-    print_error "构建失败"
-    exit 1
 fi
 
 # 运行测试
 if [[ "$RUN_TESTS" == true ]]; then
     print_info "运行测试..."
     if [[ "$BUILD_TYPE" == "Multi" ]]; then
-        ctest --output-on-failure -C Debug
-        ctest --output-on-failure -C Release
+        print_info "运行 Debug 版本测试..."
+        if ! ctest --output-on-failure -C Debug; then
+            print_error "Debug 版本测试失败"
+            exit 1
+        fi
+        
+        print_info "运行 Release 版本测试..."
+        if ! ctest --output-on-failure -C Release; then
+            print_error "Release 版本测试失败"
+            exit 1
+        fi
+        
+        print_success "所有测试通过"
     else
-        ctest --output-on-failure
-    fi
-    
-    if [[ $? -eq 0 ]]; then
+        if ! ctest --output-on-failure; then
+            print_error "测试失败"
+            exit 1
+        fi
         print_success "测试通过"
-    else
-        print_error "测试失败"
-        exit 1
     fi
 fi
 
@@ -251,17 +310,25 @@ fi
 if [[ "$INSTALL_BUILD" == true ]]; then
     print_info "安装项目..."
     if [[ "$BUILD_TYPE" == "Multi" ]]; then
-        cmake --install . --config Debug
-        cmake --install . --config Release
+        print_info "安装 Debug 版本..."
+        if ! cmake --install . --config Debug; then
+            print_error "Debug 版本安装失败"
+            exit 1
+        fi
+        
+        print_info "安装 Release 版本..."
+        if ! cmake --install . --config Release; then
+            print_error "Release 版本安装失败"
+            exit 1
+        fi
+        
+        print_success "所有版本安装成功"
     else
-        cmake --install .
-    fi
-    
-    if [[ $? -eq 0 ]]; then
+        if ! cmake --install .; then
+            print_error "安装失败"
+            exit 1
+        fi
         print_success "安装成功"
-    else
-        print_error "安装失败"
-        exit 1
     fi
 fi
 
@@ -269,10 +336,12 @@ print_success "构建完成！"
 print_info "构建目录: $BUILD_DIR"
 
 # 显示生成的文件
+print_info "生成的文件:"
 if [[ "$BUILD_TYPE" == "Multi" ]]; then
-    print_info "生成的文件:"
-    find . -name "*.a" -o -name "*.so" -o -name "*.dll" | sort
+    echo "Debug 版本:"
+    find . -path "*/Debug/*" \( -name "*.a" -o -name "*.so" -o -name "*.dll" -o -name "*.exe" \) | sort
+    echo "Release 版本:"
+    find . -path "*/Release/*" \( -name "*.a" -o -name "*.so" -o -name "*.dll" -o -name "*.exe" \) | sort
 else
-    print_info "生成的文件:"
-    find . -name "*.a" -o -name "*.so" -o -name "*.dll" | sort
+    find . -name "*.a" -o -name "*.so" -o -name "*.dll" -o -name "*.exe" | sort
 fi 
