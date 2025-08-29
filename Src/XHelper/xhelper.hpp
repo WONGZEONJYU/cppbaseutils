@@ -12,12 +12,13 @@
 #include <type_traits>
 #include <thread>
 #include <chrono>
+#include <XHelper/xqt_detection.hpp>
 #ifdef HAS_QT
-#include <QMetaEnum>
-#include <QString>
-#include <QObject>
-#include <QScopedPointer>
-#include <QSharedPointer>
+    #include <QMetaEnum>
+    #include <QString>
+    #include <QObject>
+    #include <QScopedPointer>
+    #include <QSharedPointer>
 #endif
 
 #define X_DISABLE_COPY(...) \
