@@ -41,13 +41,21 @@ function(configure_library_target target_name)
         target_link_libraries(${target_name} PUBLIC ${Boost_LIBRARIES})
     endif()
 
-    # 配置 Qt
+    # 配置 Qt - 自动检测Qt
     if(XUtils_Qt6_FOUND)
-        target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
-        target_link_libraries(${target_name} PUBLIC Qt6::Core)
+        # 传递Qt的宏定义，让库自动检测Qt
+        target_compile_definitions(${target_name} PUBLIC 
+            -DQT_VERSION_MAJOR=6
+            -DQT_CORE_LIB
+        )
+        # 不链接Qt库，让用户自己链接
     elseif(XUtils_Qt5_FOUND)
-        target_compile_definitions(${target_name} PUBLIC -DHAS_QT)
-        target_link_libraries(${target_name} PUBLIC Qt5::Core)
+        # 传递Qt的宏定义，让库自动检测Qt
+        target_compile_definitions(${target_name} PUBLIC 
+            -DQT_VERSION_MAJOR=5
+            -DQT_CORE_LIB
+        )
+        # 不链接Qt库，让用户自己链接
     endif()
 
     # 链接线程库
