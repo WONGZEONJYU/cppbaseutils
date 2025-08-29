@@ -29,7 +29,7 @@ else()
 endif()
 
 # 添加选项来禁用 Qt
-option(DISABLE_QT "Disable Qt dependency" OFF)
+option(DISABLE_QT "Disable Qt dependency" ON)
 
 # Qt路径配置
 set(QT_PATHS)
