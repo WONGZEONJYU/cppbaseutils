@@ -3,6 +3,7 @@
 
 #include <XHelper/xversion.hpp>
 #include <XHelper/xtypetraits.hpp>
+#include <XHelper/xqt_detection.hpp>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -12,7 +13,6 @@
 #include <type_traits>
 #include <thread>
 #include <chrono>
-#include <XHelper/xqt_detection.hpp>
 #ifdef HAS_QT
     #include <QMetaEnum>
     #include <QString>
