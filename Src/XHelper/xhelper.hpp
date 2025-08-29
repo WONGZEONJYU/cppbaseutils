@@ -806,8 +806,8 @@ class XSingleton : protected XHelperClass<Tp_> {
     using Base_ = XHelperClass<Tp_>;
     static_assert(std::is_object_v<typename Base_::Object>,"Tp_ must be a class or struct type!");
 public:
-    using Object = typename Base_::Object;
-    using SingletonPtr = typename Base_::ObjectSPtr;
+    using Object = Base_::Object;
+    using SingletonPtr = Base_::ObjectSPtr;
 
     template<typename ...Args1,typename ...Args2>
     inline static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
@@ -837,7 +837,7 @@ public:
     { return static_cast<bool >(data()); }
 
 #ifdef HAS_QT
-    using QSingletonPtr = typename Base_::ObjectQSPtr;
+    using QSingletonPtr = Base_::ObjectQSPtr;
 
     template<typename ...Args1,typename ...Args2>
     [[maybe_unused]] [[nodiscard]]

@@ -63,7 +63,7 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
 
 [[maybe_unused]] std::string toLower(std::string &str) {
 #if __cplusplus >= 202002L
-    std::ranges::transform(str,str.begin(),::tolower);
+    std::ranges::transform(str,str.begin(),[](uint8_t const ch) {return static_cast<char>(std::tolower(ch));});
 #else
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 #endif
@@ -96,7 +96,7 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
 
 [[maybe_unused]] std::string toUpper(std::string &&str) {
 #if __cplusplus >= 202002L
-    std::ranges::transform(str,str.begin(),::toupper);
+    std::ranges::transform(str,str.begin(),[](uint8_t const ch) {return static_cast<char>(std::toupper(ch));});
 #else
     std::transform(str.begin(),str.end(),str.begin(),::toupper);
 #endif
