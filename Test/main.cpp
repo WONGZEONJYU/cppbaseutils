@@ -15,6 +15,7 @@
 #include <chrono>
 #include <XHelper/xtypetraits.hpp>
 #include "libtest.hpp"
+#include <XMath/xmath.hpp>
 
 static std::mutex mtx{};
 
@@ -654,6 +655,9 @@ struct A3 : public A1 , public A2 {
     auto a6 = std::make_unique<int[][2]>(10);
     auto a7 = XUtils::makeUnique<int[]>(10);
 
+    std::cerr << std::boolalpha
+        << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
+        << std::endl;
 }
 
 int main(const int argc,const char **const argv){
