@@ -356,12 +356,12 @@ inline void XLog::formatImpl(std::ostringstream & oss
 #define XLOG_IMPL(level, msg)       \
     XUtils::XLog::xlogHelper(level  \
     ,msg                            \
-    ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__))
+    ,XUtils::SourceLocation::current(__FILE__, FUNC_SIGNATURE, __LINE__))
 
 #define XLOG_FATAL_IMPL(level, msg) \
     XUtils::XLog::xlogHelper(level  \
     ,msg                            \
-    ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__),true)
+    ,XUtils::SourceLocation::current(__FILE__, FUNC_SIGNATURE, __LINE__),true)
 
 #define XLOG_TRACE(msg) XLOG_IMPL(XUtils::LogLevel::TRACE_LEVEL, msg)
 #define XLOG_DEBUG(msg) XLOG_IMPL(XUtils::LogLevel::DEBUG_LEVEL, msg)
@@ -373,12 +373,12 @@ inline void XLog::formatImpl(std::ostringstream & oss
 // 格式化日志宏 - 使用辅助宏来处理可变参数
 #define XLOG_FORMAT_IMPL(level, fmt, ...) \
     XUtils::XLog::xlogFormatHelper(level,fmt \
-        ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) \
+        ,XUtils::SourceLocation::current(__FILE__, FUNC_SIGNATURE, __LINE__) \
         , false __VA_OPT__(, ) __VA_ARGS__ )
 
 #define XLOG_FATAL_FORMAT_IMPL(level, fmt, ...) \
     XUtils::XLog::xlogFormatHelper(level,fmt \
-        ,XUtils::SourceLocation::current(__FILE__, __FUNCTION__, __LINE__) \
+        ,XUtils::SourceLocation::current(__FILE__, FUNC_SIGNATURE, __LINE__) \
         , true __VA_OPT__(, ) __VA_ARGS__ )
 
 #define XLOGF_TRACE(fmt, ...) XLOG_FORMAT_IMPL(XUtils::LogLevel::TRACE_LEVEL, fmt __VA_OPT__(, ) __VA_ARGS__)
