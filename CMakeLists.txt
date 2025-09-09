@@ -34,6 +34,6 @@ include(cmake/Options.cmake)
 # 查找依赖包
 include(cmake/Dependencies.cmake)
 
-# 添加子目录
+# 添加测试子目录
 add_subdirectory(Src)
 add_subdirectory(Test)
