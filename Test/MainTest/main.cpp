@@ -1,4 +1,3 @@
-#include "main.hpp"
 #include <future>
 #include <iostream>
 #include <XThreadPool/xthreadpool.hpp>
@@ -14,7 +13,6 @@
 #include <utility>
 #include <chrono>
 #include <XHelper/xtypetraits.hpp>
-#include "libtest.hpp"
 #include <XMath/xmath.hpp>
 
 static std::mutex mtx{};
@@ -489,8 +487,7 @@ struct BBB{
 #endif
 
     AAA::UniqueConstruction(XUtils::Parameter{1},{});
-    LibTestHandle();
-    LibTest::print();
+
 
     (void )XUtils::makeUnique<BBB>();
 
