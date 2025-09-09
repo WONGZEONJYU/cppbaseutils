@@ -17,6 +17,8 @@ target_sources(${UnitTestName} PRIVATE ${SRC_FILES} ${HEADER_FILES})
 # 链接库 - 现在可以使用简化的方式
 target_link_libraries(${UnitTestName} ${PROJECT_NAME} )
 
+target_include_directories(${UnitTestName} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 # 设置测试可执行文件的输出名称
 set_target_properties(${UnitTestName} PROPERTIES
         OUTPUT_NAME "${UnitTestName}"

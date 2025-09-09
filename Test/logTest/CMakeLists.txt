@@ -14,6 +14,8 @@ add_executable(${UnitTestName})
 # 添加XLog测试源文件
 target_sources(${UnitTestName} PRIVATE ${SRC_FILES} ${HEADER_FILES})
 
+target_include_directories(${UnitTestName} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 target_link_libraries(${UnitTestName} ${PROJECT_NAME})
 
 set_target_properties(${UnitTestName} PROPERTIES
