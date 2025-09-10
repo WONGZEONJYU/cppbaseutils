@@ -42,7 +42,7 @@ protected:
     public:
         XFactoryCallable() = delete;
         template<typename Callable_>
-        static inline auto create(Callable_ &&call) {
+        inline static auto create(Callable_ && call) {
             using XCallable_t = XCallable<Callable_>;
             return std::make_shared<XCallable_t>(std::forward<Callable_>(call),Private{});
         }
@@ -64,7 +64,7 @@ protected:
         template<typename Fn_, typename... Args_>
         struct result_<std::tuple<Fn_, Args_...>> : std::invoke_result<Fn_, Args_...>{};
 
-        using result_t = typename result_<Tuple_>::type;
+        using result_t = result_<Tuple_>::type;
 
         template<size_t... Ind_>
         inline result_t M_invoke_(std::index_sequence<Ind_...>) const {
