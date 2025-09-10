@@ -87,7 +87,7 @@ struct LogMessage final {
 /**
  * @brief 崩溃处理器接口
  */
-class X_API ICrashHandler : public std::enable_shared_from_this<ICrashHandler>
+class X_CLASS_EXPORT ICrashHandler : public std::enable_shared_from_this<ICrashHandler>
         ,public XHelperClass<ICrashHandler>
 {
     X_HELPER_CLASS
@@ -121,7 +121,7 @@ public:
  * - 优雅关闭机制
  * - 现代C++特性优化
  */
-class X_API XLog final : XSingleton<XLog> {
+class X_CLASS_EXPORT XLog final : XSingleton<XLog> {
     X_HELPER_CLASS
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;

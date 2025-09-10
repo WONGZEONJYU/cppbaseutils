@@ -80,7 +80,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 template<typename > class XSingleton;
 template<typename > class XHelperClass;
 
-class X_API XUtilsLibErrorLog final {
+class X_CLASS_EXPORT XUtilsLibErrorLog final {
     XUtilsLibErrorLog() = default;
     static void log(std::string_view const & );
     template<typename > friend class XSingleton;

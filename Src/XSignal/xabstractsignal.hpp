@@ -8,12 +8,12 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XAbstractSignal : public XCallableHelper {
+class X_CLASS_EXPORT XAbstractSignal : public XCallableHelper {
     X_DISABLE_COPY_MOVE(XAbstractSignal)
 protected:
     template<typename... Args>
     inline void Callable_join(Args&& ...args){
-        auto invoker_{XFactoryInvoker::create(std::forward<Args>(args)...)};
+        auto invoker_{ XFactoryInvoker::create(std::forward<Args>(args)...) };
         set_call(XFactoryCallable::create(std::forward<decltype(invoker_)>(invoker_)));
     }
 

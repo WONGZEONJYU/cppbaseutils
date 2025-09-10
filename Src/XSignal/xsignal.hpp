@@ -9,7 +9,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XSignal;
 using Signal_Ptr = std::shared_ptr<XSignal>;
 
-class XSignal : public XAbstractSignal {
+class X_CLASS_EXPORT XSignal : public XAbstractSignal {
     X_DISABLE_COPY_MOVE(XSignal)
     static Signal_Ptr create(const int &,const int &);
 protected:

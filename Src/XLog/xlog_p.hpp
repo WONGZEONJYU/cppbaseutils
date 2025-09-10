@@ -7,13 +7,13 @@
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
-#include <queue>
+#include <deque>
 #include <condition_variable>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class X_API XLogPrivate final: public XLogData {
+class X_CLASS_EXPORT XLogPrivate final: public XLogData {
 public:
     X_DECLARE_PUBLIC(XLog)
     // 配置参数
