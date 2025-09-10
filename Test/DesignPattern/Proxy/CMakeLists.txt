@@ -6,28 +6,28 @@ file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 list(FILTER SRC_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
 list(FILTER HEADER_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
 
-set(UnitTestName Proxy)
+set(Proxy Proxy)
 
 # 创建主测试可执行文件
-add_executable(${UnitTestName})
+add_executable(${Proxy})
 
 # 添加主测试源文件
-target_sources(${UnitTestName} PRIVATE ${SRC_FILES} ${HEADER_FILES})
+target_sources(${Proxy} PRIVATE ${SRC_FILES} ${HEADER_FILES})
 
 # 链接库 - 现在可以使用简化的方式
-target_link_libraries(${UnitTestName} ${PROJECT_NAME} )
+target_link_libraries(${Proxy} PRIVATE ${PROJECT_NAME})
 
-target_include_directories(${UnitTestName} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${Proxy} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # 设置测试可执行文件的输出名称
-set_target_properties(${UnitTestName} PROPERTIES
-        OUTPUT_NAME "${UnitTestName}"
+set_target_properties(${Proxy} PROPERTIES
+        OUTPUT_NAME "${Proxy}"
 )
 
 # 添加测试
 if(BUILD_TESTING)
     enable_testing()
-    add_test(NAME ${UnitTestName} COMMAND ${UnitTestName})
+    add_test(NAME ${Proxy} COMMAND ${Proxy})
 endif()
 
-unset(UnitTestName)
+unset(Proxy)
