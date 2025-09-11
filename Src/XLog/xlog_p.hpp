@@ -77,7 +77,7 @@ public:
     void ensureLogDirectory() const;
 
 #ifdef _WIN32
-    static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS* ex_info);
+    static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS *);
 #endif
 };
 
