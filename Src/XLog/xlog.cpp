@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iomanip>
 #include <regex>
+#include <array>
 #ifdef _WIN32
 #include <windows.h>
 #include <dbghelp.h>
@@ -344,7 +345,7 @@ std::string XLog::getStackTrace(int const skip_frames) {
     stackFrame.AddrStack.Offset = context.Esp;
     stackFrame.AddrStack.Mode = AddrModeFlat;
 #elif _M_X64
-    auto const image {IMAGE_FILE_MACHINE_AMD64};
+    constexpr auto image {IMAGE_FILE_MACHINE_AMD64};
     STACKFRAME64 stackFrame{};
     stackFrame.AddrPC.Offset = context.Rip;
     stackFrame.AddrPC.Mode = AddrModeFlat;
@@ -368,8 +369,8 @@ std::string XLog::getStackTrace(int const skip_frames) {
            && frame_count < max_frames) {
 
         if (frame_count >= skip_frames) {
-            DWORD64 address = stackFrame.AddrPC.Offset;
-            if (SymFromAddr(process, address, nullptr, symbol)) {
+            if (auto const address{stackFrame.AddrPC.Offset}
+                ;SymFromAddr(process, address, nullptr, symbol)) {
                 std::ostringstream oss{};
                 oss << "  #" << (frame_count - skip_frames) << ": " << symbol->Name 
                     << " [0x" << std::hex << address << "]";
