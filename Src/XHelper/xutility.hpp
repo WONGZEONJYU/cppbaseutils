@@ -89,6 +89,21 @@ namespace reverse {
 #endif
 }
 
+// 计算多维数组中单个元素的总数
+template<typename T>
+constexpr size_t calculate_total_elements() {
+    if constexpr (std::is_array_v<T>) {
+        constexpr auto current_extent{std::extent_v<T, 0>};
+        if constexpr (current_extent == 0) {
+            return calculate_total_elements<std::remove_extent_t<T>>();
+        } else {
+            return current_extent * calculate_total_elements<std::remove_extent_t<T>>();
+        }
+    } else {
+        return 1;
+    }
+}
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
