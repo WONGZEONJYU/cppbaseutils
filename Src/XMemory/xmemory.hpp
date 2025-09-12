@@ -1,0 +1,25 @@
+#ifndef XUTILS_XMEMORY_HPP
+#define XUTILS_XMEMORY_HPP 1
+
+#include <XHelper/xhelper.hpp>
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
+#endif
