@@ -311,6 +311,17 @@ public:
     using Object = Object_t;
     using ObjectSPtr = std::shared_ptr< Object >;
     using ObjectUPtr = std::unique_ptr< Object , Deleter >;
+    
+    // 为裸指针提供专门的删除函数
+    static void Delete(Object * const pointer) noexcept {
+        if (pointer) {
+            // 先调用析构函数
+            pointer->~Object();
+            // 使用分配器释放内存
+            Allocator alloc{};
+            std::allocator_traits<Allocator>::deallocate(alloc, pointer, 1);
+        }
+    }
 
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]]
@@ -488,6 +499,9 @@ class XSingleton : protected XTwoPhaseConstruction<Tp_, Alloc_> {
 public:
     using Object = Base_::Object;
     using SingletonPtr = Base_::ObjectSPtr;
+    
+    // 继承基类的删除函数
+    using Base_::Delete;
 
     template<typename ...Args1,typename ...Args2>
     static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
