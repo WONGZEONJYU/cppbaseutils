@@ -323,6 +323,63 @@ public:
         }
     }
 
+#ifdef HAS_QT
+    // Qt对象树专用创建方法 - 返回裸指针供Qt对象树管理
+    template<typename ...Args1, typename ...Args2>
+    [[nodiscard]]
+    static constexpr auto CreateForQtObjectTree(QObject * const parent
+        ,Parameter<Args1...> && args1 = {}, Parameter<Args2...> && args2 = {})
+        noexcept -> Object*
+    {
+        static_assert(std::is_base_of_v<QObject, Object>, 
+                     "Object must inherit from QObject to be used in Qt object tree");
+
+        auto const obj { Create(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
+
+        if (obj && parent) {
+            // 设置父对象，让Qt对象树管理生命周期
+            obj->setParent(parent);
+        }
+        
+        return obj;
+    }
+
+    // 为Qt对象提供手动从对象树中移除并删除的方法
+    static void DeleteFromQtObjectTree(Object * const pointer) noexcept {
+        if (pointer) {
+            // 先从父对象中移除，避免Qt自动删除
+            if (pointer->parent()) {
+                pointer->setParent(nullptr);
+            }
+            // 然后使用我们的删除方法
+            Delete(pointer);
+        }
+    }
+
+    // Qt对象树兼容的内存释放器 - 只释放内存，不调用析构函数
+    // 注意：这个方法只能在对象已经被析构后调用
+    static void QtCompatibleDeallocate(Object * const pointer) noexcept {
+        if (pointer) {
+            // 只释放内存，不调用析构函数（析构函数已经被调用了）
+            Allocator alloc{};
+            std::allocator_traits<Allocator>::deallocate(alloc, pointer, 1);
+        }
+    }
+
+    // 重写operator delete以支持Qt对象树
+    // 这是更安全的方法，让Qt调用我们自定义的delete操作符
+    static void operator delete(void * const ptr) noexcept {
+        if (ptr) {
+            Allocator alloc{};
+            std::allocator_traits<Allocator>::deallocate(alloc, static_cast<Object*>(ptr), 1);
+        }
+    }
+
+    static void operator delete(void * const ptr, std::size_t) noexcept {
+        operator delete(ptr);
+    }
+#endif
+
     template<typename ...Args1,typename ...Args2>
     [[nodiscard]]
     static constexpr auto Create( Parameter< Args1... > && args1 = {},
@@ -496,12 +553,20 @@ template<typename Tp_, typename Alloc_ = XPrivate::Allocator_< std::decay_t< Rem
 class XSingleton : protected XTwoPhaseConstruction<Tp_, Alloc_> {
     using Base_ = XTwoPhaseConstruction<Tp_, Alloc_>;
     static_assert(std::is_object_v<typename Base_::Object>,"Tp_ must be a class or struct type!");
+
 public:
     using Object = Base_::Object;
     using SingletonPtr = Base_::ObjectSPtr;
-    
+
     // 继承基类的删除函数
     using Base_::Delete;
+
+#ifdef HAS_QT
+    // 继承基类的Qt对象树方法
+    using Base_::CreateForQtObjectTree;
+    using Base_::DeleteFromQtObjectTree;
+    using Base_::QtCompatibleDeallocate;
+#endif
 
     template<typename ...Args1,typename ...Args2>
     static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
