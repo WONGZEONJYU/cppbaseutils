@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <thread>
 #include <chrono>
+#include <ranges>
 #ifdef HAS_QT
     #include <QMetaEnum>
     #include <QString>
@@ -952,7 +953,7 @@ inline auto makeShared(Args && ...args) noexcept
     -> std::enable_if_t<std::negation_v<std::is_array<T>>,Ret>
 {
     try{
-        return std::make_shared<T>( std::forward<Args>(args)... );
+        return std::allocate_shared<T>(std::allocator<T>{} , std::forward<Args>(args)... );
     }catch (const std::exception &){
         return Ret {};
     }
@@ -964,7 +965,19 @@ inline auto makeShared(std::size_t const n) noexcept
     -> std::enable_if_t<std::is_unbounded_array_v<T>,Ret>
 {
     try{
-        return std::make_shared<T>(n);
+        return std::allocate_shared<T>(std::allocator<T>{},n);
+    }catch (const std::exception &){
+        return Ret {};
+    }
+}
+
+template<typename T ,typename Ret = std::shared_ptr<T>>
+[[maybe_unused]] [[nodiscard]]
+inline auto makeShared() noexcept
+    -> std::enable_if_t<std::is_bounded_array_v<T>,Ret>
+{
+    try{
+        return std::allocate_shared<T>(std::allocator<T>{});
     }catch (const std::exception &){
         return Ret {};
     }
@@ -976,7 +989,19 @@ inline auto makeShared(std::size_t const n,const std::remove_extent_t<T> & u ) n
     -> std::enable_if_t<std::is_unbounded_array_v<T>,Ret>
 {
     try{
-        return std::make_shared<T>(n,u);
+        return std::allocate_shared<T>(std::allocator<T>{},n,u);
+    }catch (const std::exception &){
+        return Ret {};
+    }
+}
+
+template<typename T ,typename Ret = std::shared_ptr<T>>
+[[maybe_unused]] [[nodiscard]]
+inline auto makeShared(std::remove_extent_t<T> const & u ) noexcept
+    -> std::enable_if_t<std::is_bounded_array_v<T>,Ret>
+{
+    try{
+        return std::allocate_shared<T>(std::allocator<T>{},u);
     }catch (const std::exception &){
         return Ret {};
     }
