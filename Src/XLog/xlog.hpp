@@ -1,7 +1,7 @@
 #ifndef XUTILS_XLOG_HPP
 #define XUTILS_XLOG_HPP 1
 
-#include <XHelper/xhelper.hpp>
+#include <XMemory/xmemory.hpp>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -88,9 +88,9 @@ struct LogMessage final {
  * @brief 崩溃处理器接口
  */
 class X_CLASS_EXPORT ICrashHandler : public std::enable_shared_from_this<ICrashHandler>
-        ,public XHelperClass<ICrashHandler>
+        ,public XTwoPhaseConstruction<ICrashHandler>
 {
-    X_HELPER_CLASS
+    X_TWO_PHASE_CONSTRUCTION_CLASS
 public:
     virtual ~ICrashHandler() = default;
     virtual void onCrash(std::string_view const & crash_info) = 0;
@@ -122,7 +122,7 @@ public:
  * - 现代C++特性优化
  */
 class X_CLASS_EXPORT XLog final : XSingleton<XLog> {
-    X_HELPER_CLASS
+    X_TWO_PHASE_CONSTRUCTION_CLASS
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
     std::unique_ptr<XLogData> m_d_ptr{};

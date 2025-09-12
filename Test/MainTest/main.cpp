@@ -10,6 +10,7 @@
 #include <XHelper/xtypetraits.hpp>
 #include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
+#include <XMemory/xmemory.hpp>
 #include <utility>
 #include <chrono>
 #include <XHelper/xtypetraits.hpp>
@@ -397,8 +398,8 @@ public:
     };
 };
 
-class CTest final : public XUtils::XHelperClass<CTest> {
-    X_HELPER_CLASS
+class CTest final : public XUtils::XTwoPhaseConstruction<CTest> {
+    X_TWO_PHASE_CONSTRUCTION_CLASS
 
     bool construct_(int const a){
         std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
@@ -435,7 +436,7 @@ public:
 };
 
 class AAA final : public XUtils::XSingleton<AAA> {
-    X_HELPER_CLASS
+    X_TWO_PHASE_CONSTRUCTION_CLASS
     int aa{100};
     void p(){
         using namespace std::chrono_literals;
@@ -647,19 +648,37 @@ struct A3 : public A1 , public A2 {
 [[maybe_unused]] static void test8() {
 
     auto p0 = XUtils::makeUnique<int[]>(10);
-
     auto p1 = XUtils::makeShared<int[][2]>(10,{545,14512});
     auto p2 = XUtils::makeShared<std::vector<char>[512]>({1,2,3,4,5});
     auto p3 = XUtils::makeShared<int[10]>();
     auto p4 = XUtils::makeShared<int[]>(5);
 
-    // std::cerr << std::boolalpha
-    //     << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
-    //     << std::endl;
+    std::cerr << std::boolalpha
+        << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
+        << std::endl;
 
     std::cerr << XUtils::typeName<std::decay_t<int[][1]>>() << std::endl;
-
     std::cerr << XUtils::calculate_total_elements<std::remove_extent_t<int[][2][10][3]> >() << std::endl;
+}
+
+struct Test {
+    friend void test9();
+private:
+    Test()
+    { std::cerr << FUNC_SIGNATURE << "\n"; }
+    ~Test()
+    { std::cerr << FUNC_SIGNATURE << "\n"; }
+};
+
+[[maybe_unused]] void test9()
+{
+    std::allocator<Test> alloc{};
+    auto p = alloc.allocate(1);
+    new(p) Test{};
+    p->~Test();
+    alloc.deallocate(p,1);
+    std::vector<int> v{1,2,3,4,5};
+    std::list<int> l{1,2,3,4,5};
 }
 
 int main(const int argc,const char **const argv){
@@ -671,6 +690,7 @@ int main(const int argc,const char **const argv){
     //test5();
     //test6();
     //test7();
-    test8();
+    //test8();
+    test9();
     return 0;
 }

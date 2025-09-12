@@ -2,7 +2,7 @@
 #define X_OBJECT_P_P_HPP 1
 
 #include <XObject/xobject_p.hpp>
-#include <XHelper/xhelper.hpp>
+#include <XMemory/xmemory.hpp>
 #include <list>
 #include <unordered_map>
 #include <iostream>
