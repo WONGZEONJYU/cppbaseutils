@@ -645,12 +645,14 @@ struct A3 : public A1 , public A2 {
 };
 
 [[maybe_unused]] static void test8() {
-    auto a1 = std::make_unique<int[][2]>(10);
-    auto a2 = XUtils::makeShared<int[][2]>(10,{545,14512});
-    auto a3 = std::make_shared<int[][2]>(10,{10,20});
-    auto a4 = std::make_shared<int[][2]>(10);
-    auto a6 = std::make_unique<int[][2]>(10);
-    auto a7 = XUtils::makeUnique<int[]>(10);
+
+    auto p0 = XUtils::makeUnique<int[]>(10);
+
+    auto p1 = XUtils::makeShared<int[][2]>(10,{545,14512});
+    auto p2 = XUtils::makeShared<std::vector<char>[512]>({1,2,3,4,5});
+    auto p3 = XUtils::makeShared<int[10]>();
+    auto p4 = XUtils::makeShared<int[]>(5);
+
 
     std::cerr << std::boolalpha
         << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
