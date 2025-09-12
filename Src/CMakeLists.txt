@@ -61,6 +61,7 @@ add_subdirectory(XHelper)
 add_subdirectory(XObject)
 add_subdirectory(XLog)
 add_subdirectory(XMath)
+add_subdirectory(XMemory)
 
 # 平台特定的模块
 if(APPLE OR UNIX)
