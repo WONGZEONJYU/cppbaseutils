@@ -76,14 +76,14 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename > class XSingleton;
-template<typename > class XTwoPhaseConstruction;
+template<typename T,typename = std::allocator<T>> class XTwoPhaseConstruction;
+template<typename T,typename = std::allocator<T>> class XSingleton;
 
 class X_CLASS_EXPORT XUtilsLibErrorLog final {
     XUtilsLibErrorLog() = default;
     static void log(std::string_view const & );
-    template<typename > friend class XSingleton;
-    template<typename > friend class XTwoPhaseConstruction;
+    template<typename ,typename > friend class XSingleton;
+    template<typename ,typename > friend class XTwoPhaseConstruction;
 };
 
 template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }

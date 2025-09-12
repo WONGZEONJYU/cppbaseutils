@@ -679,6 +679,7 @@ private:
     alloc.deallocate(p,1);
     std::vector<int> v{1,2,3,4,5};
     std::list<int> l{1,2,3,4,5};
+    l.get_allocator();
 }
 
 int main(const int argc,const char **const argv){

@@ -241,15 +241,14 @@ namespace XPrivate {
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
 
-
-template<typename Tp_>
+template<typename Tp_,typename Alloc_ /*= std::allocator<Tp_>*/ >
 class XTwoPhaseConstruction {
 
     using Object_t = std::decay_t< RemoveRef_T<Tp_> >;
 
     static_assert(std::negation_v< std::is_pointer< Object_t > >,"Tp_ Cannot be pointer type");
 
-#if __cplusplus < 202002L
+// #if __cplusplus < 202002L
     template< typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2 >
     inline static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2
             ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
@@ -262,7 +261,7 @@ class XTwoPhaseConstruction {
             return nullptr;
         }
     }
-#endif
+// #endif
 
     template<typename Tuple_>
     inline static constexpr auto indices(Tuple_ &&) noexcept
@@ -313,6 +312,7 @@ public:
             noexcept -> Object *
         {
             try{
+                auto const raw { Alloc_{}.allocate( sizeof(Object) ) };
                 ObjectUPtr obj { new Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... )
                     ,Deleter {} };
                 return obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
@@ -454,12 +454,12 @@ public:
 #endif
 protected:
     XTwoPhaseConstruction() = default;
-    template<typename> friend class XSingleton;
+    template<typename ,typename > friend class XSingleton;
 };
 
 using TwoPhaseConstruction [[maybe_unused]] = XTwoPhaseConstruction<void>;
 
-template<typename Tp_>
+template<typename Tp_,typename Alloc_ /* = std::allocator<Tp_> */ >
 class XSingleton : protected XTwoPhaseConstruction<Tp_> {
     using Base_ = XTwoPhaseConstruction<Tp_>;
     static_assert(std::is_object_v<typename Base_::Object>,"Tp_ must be a class or struct type!");
@@ -597,10 +597,10 @@ private: \
     inline void checkFriendXTwoPhaseConstruction_() { X_ASSERT_W( false ,FUNC_SIGNATURE \
         ,"This function is used for checking, please don't call it!"); \
     } \
-    template<typename> friend class XUtils::XTwoPhaseConstruction; \
+    template<typename,typename > friend class XUtils::XTwoPhaseConstruction; \
     template<typename> friend struct XUtils::XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro; \
     template<typename ,typename ...> friend struct XUtils::XPrivate::Has_construct_Func; \
-    template<typename> friend class XUtils::XSingleton;
+    template<typename,typename > friend class XUtils::XSingleton;
 
 #if __cplusplus >= 201402L
 
