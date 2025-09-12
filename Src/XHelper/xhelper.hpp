@@ -76,8 +76,8 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename T,typename = std::allocator<T>> class XTwoPhaseConstruction;
-template<typename T,typename = std::allocator<T>> class XSingleton;
+template<typename T,typename > class XTwoPhaseConstruction;
+template<typename T,typename > class XSingleton;
 
 class X_CLASS_EXPORT XUtilsLibErrorLog final {
     XUtilsLibErrorLog() = default;

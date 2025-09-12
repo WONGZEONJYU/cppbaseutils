@@ -466,7 +466,6 @@ struct BBB{
     }
 };
 
-
 [[maybe_unused]] static void test6(){
 
 #if 1
@@ -487,10 +486,7 @@ struct BBB{
     std::cerr << "\n\n";
 #endif
 
-    AAA::UniqueConstruction(XUtils::Parameter{1},{});
-
-
-    (void )XUtils::makeUnique<BBB>();
+    AAA::UniqueConstruction(XUtils::Parameter{1});
 
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
@@ -689,9 +685,9 @@ int main(const int argc,const char **const argv){
     //test3();
     //test4(123);
     //test5();
-    //test6();
+    test6();
     //test7();
     //test8();
-    test9();
+    //test9();
     return 0;
 }
