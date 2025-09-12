@@ -653,10 +653,13 @@ struct A3 : public A1 , public A2 {
     auto p3 = XUtils::makeShared<int[10]>();
     auto p4 = XUtils::makeShared<int[]>(5);
 
+    // std::cerr << std::boolalpha
+    //     << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
+    //     << std::endl;
 
-    std::cerr << std::boolalpha
-        << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
-        << std::endl;
+    std::cerr << XUtils::typeName<std::decay_t<int[][1]>>() << std::endl;
+
+    std::cerr << XUtils::calculate_total_elements<std::remove_extent_t<int[][2][10][3]> >() << std::endl;
 }
 
 int main(const int argc,const char **const argv){
