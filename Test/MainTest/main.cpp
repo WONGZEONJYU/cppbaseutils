@@ -435,7 +435,7 @@ public:
     }
 };
 
-class AAA final : public XUtils::XSingleton<AAA> {
+class AAA final : public XUtils::XTwoPhaseConstruction<AAA> {
     X_TWO_PHASE_CONSTRUCTION_CLASS
     int aa{100};
     void p(){
@@ -472,21 +472,24 @@ struct BBB{
     {
         int a1{1}, a2{2};
         std::string aa{"2"};
-        auto p1 = CTest::CreateUniquePtr(XUtils::Parameter{std::ref(a1)}, XUtils::Parameter{100});
-        auto p2 = CTest::CreateSharedPtr(XUtils::Parameter{std::ref(a2)}, XUtils::Parameter{std::move(aa), 2});
-        delete CTest::Create({}, {});
+        //auto p1 = CTest::CreateUniquePtr(XUtils::Parameter{std::ref(a1)}, XUtils::Parameter{100});
+        //auto p2 = CTest::CreateSharedPtr(XUtils::Parameter{std::ref(a2)}, XUtils::Parameter{std::move(aa), 2});
 
-        std::unique_ptr<CTest> a{CTest::Create({}, XUtils::Parameter{})};
+        //delete CTest::Create({}, {});
 
-        delete CTest::Create({}, XUtils::Parameter{200});
+        std::unique_ptr<CTest> a{CTest::Create({}, XUtils::Parameter{}) };
+
+        //delete CTest::Create({}, XUtils::Parameter{200});
 
         int a3{300};
-        delete CTest::Create(XUtils::Parameter{std::ref(a3)}, {});
+        //delete CTest::Create(XUtils::Parameter{std::ref(a3)}, {});
+
+        return;
     }
     std::cerr << "\n\n";
 #endif
 
-    AAA::UniqueConstruction(XUtils::Parameter{1});
+    //AAA::UniqueConstruction(XUtils::Parameter{1});
 
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
