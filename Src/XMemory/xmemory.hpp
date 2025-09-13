@@ -4,7 +4,6 @@
 #include <XHelper/xhelper.hpp>
 #include <XHelper/xqt_detection.hpp>
 #include <XAtomic/xatomic.hpp>
-#include <unordered_map>
 #ifdef HAS_QT
     #include <QMetaEnum>
     #include <QString>
@@ -189,40 +188,61 @@ namespace XPrivate {
     private:
         template<typename >
         friend struct Allocator_;
-
         static constexpr auto DEFAULT_WAIT_TIME { 100000ULL };
         static constexpr auto DEFAULT_RETRY_COUNT { 5UL };
 
-        mutable std::chrono::nanoseconds m_waitTime_ {DEFAULT_WAIT_TIME};
+        mutable std::atomic<std::chrono::nanoseconds> m_waitTime_ {
+            std::chrono::nanoseconds {DEFAULT_WAIT_TIME}
+        };
 
-        mutable XAtomicInteger<std::size_t> m_retryCount_{};
+        mutable XAtomicInteger<std::size_t> m_retryCount_{DEFAULT_RETRY_COUNT};
 
     public:
         using value_type = Tp_;
 
         constexpr Allocator_() = default;
 
-        template<typename  U>
+        template<typename U>
         [[maybe_unused]] explicit Allocator_(Allocator_<U> const & o) noexcept {
-            m_waitTime_ = o.m_waitTime_;
-            m_retryCount_ = o.m_retryCount_;
+            m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
+            m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
+        }
+
+        template<typename U>
+        Allocator_ & operator=(Allocator_<U> const & o) noexcept {
+            m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
+            m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
+            return *this;
+        }
+
+        Allocator_(Allocator_ const & o) noexcept {
+            m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
+            m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
+        }
+
+        Allocator_ & operator=(Allocator_ const & o) noexcept {
+            m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
+            m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
+            return *this;
         }
 
         template<typename Rep_,typename Period_>
         void setWaitTime(std::chrono::duration<Rep_,Period_> const & waitTime) const noexcept
-        { m_waitTime_ = std::chrono::duration_cast<std::chrono::nanoseconds>(waitTime); }
+        { m_waitTime_.store(std::chrono::duration_cast<std::chrono::nanoseconds>(waitTime),std::memory_order_release) ; }
 
         void setRetryCount(std::size_t const retryCount) const noexcept
         { m_retryCount_.storeRelaxed(retryCount); }
 
-        [[nodiscard]] auto allocate(std::size_t const n) const noexcept -> value_type* {
-            for (std::size_t i {}; i < 5 ; ++i) {
+        auto allocate(std::size_t const n) const noexcept -> value_type * {
+            auto const retryCount{ m_retryCount_.loadAcquire() };
+            auto const waitTime{ m_waitTime_.load(std::memory_order_acquire) };
+            for (std::size_t i {}; i < retryCount ; ++i) {
                 try {
                     if (auto const ptr{ operator new (sizeof(value_type) * n) }) {
                         return static_cast< value_type * >(ptr);
                     }
-                }catch (std::exception const &){}
-                std::this_thread::sleep_for(m_waitTime_);
+                } catch (std::exception const &) {}
+                std::this_thread::sleep_for(waitTime);
             }
             return nullptr;
         }
