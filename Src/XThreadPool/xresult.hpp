@@ -49,19 +49,16 @@ public:
     return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{}
 
     template<typename Ty>
-    Ty get() const noexcept(false) {
-        RETURN_VALUE(get_());
-    }
+    Ty get() const noexcept(false)
+    { RETURN_VALUE(get_()); }
 
     template<typename Ty>
-    Ty try_get() const noexcept(false) {
-        RETURN_VALUE(try_get_());
-    }
+    Ty try_get() const noexcept(false)
+    { RETURN_VALUE(try_get_()); }
 
     template<typename Ty,typename Rep_,typename Period_>
-    Ty get_for(std::chrono::duration<Rep_,Period_> const & rel_time) const noexcept(false) {
-        RETURN_VALUE(std::move(get_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))));
-    }
+    Ty get_for(std::chrono::duration<Rep_,Period_> const & rel_time) const noexcept(false)
+    { RETURN_VALUE(std::move(get_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time)))); }
 
     template<typename Ty,typename Clock_,typename Duration_>
     Ty get_until(std::chrono::time_point<Clock_,Duration_> const & abs_time_) const noexcept(false) {
