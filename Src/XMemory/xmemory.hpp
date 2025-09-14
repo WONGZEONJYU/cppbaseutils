@@ -4,6 +4,7 @@
 #include <XHelper/xhelper.hpp>
 #include <XHelper/xqt_detection.hpp>
 #include <XAtomic/xatomic.hpp>
+#include <thread>
 #ifdef HAS_QT
     #include <QMetaEnum>
     #include <QString>

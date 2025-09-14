@@ -9,7 +9,6 @@
 #include <functional>
 #include <iostream>
 #include <type_traits>
-#include <thread>
 #include <chrono>
 #include <ranges>
 #ifdef HAS_QT
@@ -287,6 +286,9 @@ template<const std::size_t N,typename Tuple>
 
 enum class ConnectionType {
     AutoConnection,
+    DirectConnection,
+    QueuedConnection,
+    BlockingQueuedConnection,
     UniqueConnection
 };
 
