@@ -4,6 +4,23 @@
 #include <memory>
 #include <XObject/xsignalslot.hpp>
 
+// 类似Qt的信号槽宏定义
+#define signals public
+#define slots
+#define emit
+
+// 便于使用的连接宏
+#define X_SIGNAL(sender, signal) sender, &std::remove_pointer_t<decltype(sender)>::signal
+#define X_SLOT(receiver, slot) receiver, &std::remove_pointer_t<decltype(receiver)>::slot
+
+// 发射信号的宏
+#define X_EMIT(sender, signal, ...) \
+    do { \
+        using SignalType = XPrivate::FunctionPointer<decltype(&std::remove_pointer_t<decltype(sender)>::signal)>; \
+        typename SignalType::ReturnType *ret_ptr {}; \
+        XObject::emitSignal(sender, &std::remove_pointer_t<decltype(sender)>::signal, ret_ptr, ##__VA_ARGS__); \
+    } while(false)
+
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 

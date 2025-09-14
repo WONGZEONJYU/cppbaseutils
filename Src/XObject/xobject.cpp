@@ -114,13 +114,13 @@ std::size_t XObject::senderSignalIndex() const {
 }
 
 void XObject::doActivate(XObject * const sender,std::size_t const signal_index,void ** args) {
-    (void )signal_index;
     if (!sender){
         X_ASSERT_W(sender,FUNC_SIGNATURE,"sender is empty!");
         return;
     }
 
-    if (const auto sp{XObjectPrivate::get(sender)}; !sp){
+    const auto sp{XObjectPrivate::get(sender)};
+    if (!sp){
         X_ASSERT_W(sp,FUNC_SIGNATURE,"sp is empty!");
         return;
     }
@@ -130,7 +130,73 @@ void XObject::doActivate(XObject * const sender,std::size_t const signal_index,v
         args = empty_args;
     }
 
+    // 检查信号是否被阻塞
+    if (sender->signalsBlocked()) {
+        return;
+    }
 
+    std::unique_lock locker(*signalSlotLock(sender));
+    
+    const auto cd{ sp->m_connections.loadAcquire() };
+    if (!cd) {
+        return;
+    }
+
+    const auto signalVector{cd->m_signalVector.loadAcquire()};
+    if (!signalVector) {
+        return;
+    }
+
+    // 查找该信号的连接列表
+    const auto connectionsIt {signalVector->find(signal_index) };
+    if (connectionsIt == signalVector->end()) {
+        return;
+    }
+
+    const auto &connections{connectionsIt->second};
+    if (connections.empty()) {
+        return;
+    }
+
+    // 创建连接的副本以避免在调用过程中连接被修改
+    XConnectionList connectionsCopy{connections};
+    
+    locker.unlock();
+
+    // 遍历所有连接并调用槽函数
+    for (const auto &connection : connectionsCopy) {
+        if (!connection || connection->m_receiver.loadAcquire() == nullptr) {
+            continue;
+        }
+
+        const auto receiver{connection->m_receiver.loadAcquire()};
+        if (!receiver) {
+            continue;
+        }
+
+        // 检查接收者是否仍然有效
+        if (receiver->signalsBlocked()) {
+            continue;
+        }
+
+        try {
+            // 设置当前发送者信息
+            const auto receiverPrivate{XObjectPrivate::get(receiver)};
+            const auto receiverCd{receiverPrivate->m_connections.loadAcquire()};
+            if (receiverCd) {
+                XObjectPrivate::XSender currentSender(receiver, sender, signal_index, receiverCd);
+                
+                // 调用槽函数
+                if (connection->m_slot_raw && connection->m_isSlotObject) {
+                    connection->m_slot_raw->call(receiver, args);
+                }
+            }
+        } catch (const std::exception &e) {
+            std::cerr << "Exception in slot call: " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "Unknown exception in slot call" << std::endl;
+        }
+    }
 }
 
 bool XObject::connectImpl(const XObject * const sender, void ** const signal,
@@ -316,9 +382,9 @@ bool XObjectPrivate::disconnectImpl(const XObject* const sender,std::size_t cons
 inline static int DIRECT_CONNECTION_ONLY {};
 inline XObjectPrivate::Connection::~Connection() {
     if (ownArgumentTypes) {
-        const int *v = argumentTypes.loadRelaxed();
-        if (v != &DIRECT_CONNECTION_ONLY)
-            delete[] v;
+        if (const int *v = argumentTypes.loadRelaxed();
+            v != &DIRECT_CONNECTION_ONLY)
+            { delete[] v; }
     }
     if (isSlotObject){
         slotObj->destroyIfLastRef();

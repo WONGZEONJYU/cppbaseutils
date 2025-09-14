@@ -249,8 +249,11 @@ public:
     {}
 
     ~XConnection() {
-        std::cerr << FUNC_SIGNATURE << "\n";
-        XPrivate::SlotObjUniquePtr slotObj{m_slot_raw};
+        if (m_slot_raw && m_isSlotObject) {
+            XPrivate::SlotObjUniquePtr slotObj{m_slot_raw};
+            // slotObj 析构时会自动调用 destroyIfLastRef()
+        }
+        m_slot_raw = nullptr;
     }
 };
 
@@ -281,7 +284,7 @@ public:
     XSendersList m_senders{};
     XSender * m_currentSender{};
 
-    inline void resizeSignalVector(std::size_t const signal_index) {
+    void resizeSignalVector(std::size_t const signal_index) {
 
         auto v{m_signalVector.loadRelaxed()};
         if(!v){
