@@ -186,8 +186,8 @@ namespace XPrivate {
     template<typename Tp_>
     struct Allocator_ {
     private:
-        template<typename >
-        friend struct Allocator_;
+        template<typename > friend struct Allocator_;
+
         static constexpr auto DEFAULT_WAIT_TIME { 100000ULL };
         static constexpr auto DEFAULT_RETRY_COUNT { 5UL };
 
@@ -203,7 +203,7 @@ namespace XPrivate {
         constexpr Allocator_() = default;
 
         template<typename U>
-        [[maybe_unused]] explicit Allocator_(Allocator_<U> const & o) noexcept {
+        explicit Allocator_(Allocator_<U> const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
         }
