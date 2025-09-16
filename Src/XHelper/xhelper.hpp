@@ -8,7 +8,6 @@
 #include <utility>
 #include <functional>
 #include <iostream>
-#include <type_traits>
 #include <chrono>
 #include <ranges>
 #ifdef HAS_QT
@@ -92,58 +91,43 @@ template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> de
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 template<typename F>
-class [[maybe_unused]] Destroyer final {
+class Destroyer final {
     X_DISABLE_COPY_MOVE(Destroyer)
     mutable F m_fn_{};
     mutable uint32_t m_is_destroy:1;
+
 public:
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-    inline explicit Destroyer(F &&f):
+    constexpr explicit Destroyer(F &&f):
     m_fn_(std::move(f)),m_is_destroy{}{}
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-    inline void destroy() const {
+
+    constexpr void destroy() const {
         if (!m_is_destroy) {
             m_is_destroy = true;
             m_fn_();
         }
     }
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-    inline ~Destroyer() { destroy();}
+    constexpr ~Destroyer() { destroy();}
 };
 
 template<typename F2>
-class [[maybe_unused]] X_RAII final {
+class X_RAII final {
     X_DISABLE_COPY_MOVE(X_RAII)
     mutable F2 m_f2_{};
     mutable uint32_t m_is_destroy_:1;
 public:
     template<typename F>
-#if __cplusplus >= 202002L
-     constexpr
-#endif
-    inline explicit X_RAII(F &&f1,F2 &&f2):
+    constexpr explicit X_RAII(F &&f1,F2 &&f2):
     m_f2_(std::move(f2)),m_is_destroy_(){f1();}
 
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-    inline void destroy() const {
+    constexpr void destroy() const {
         if (!m_is_destroy_){
             m_is_destroy_ = true;
             m_f2_();
         }
     }
 
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-    inline ~X_RAII() { destroy();}
+    constexpr ~X_RAII()
+    { destroy();}
 };
 
 /**
@@ -169,96 +153,6 @@ X_API void x_assert_what(const std::string &where, const std::string &what,
     const std::string &file,const int &line) noexcept;
 X_API void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
-
-/**
- * 遍历tuple所有元素
- * Pred参数为一个函数,
- * Pred参数有(parm1:std::size & index,
- *  parm2:遍历的元素类型,一般用auto)
- * @tparam Tuple
- * @tparam Pred
- * @param tuple_
- * @param pred_
- */
-template<typename Tuple, typename Pred>
-[[maybe_unused]] inline void for_each_tuple(Tuple && tuple_, Pred && pred_) {
-    (void)std::apply([&pred_]<typename... Args>(Args &&... args) {
-        std::size_t index{};
-        (std::forward<Pred>(pred_)(std::ref(index),std::forward<Args>(args)), ...);
-    },std::forward<Tuple>(tuple_));
-}
-
-namespace TuplePrivate {
-    template<const std::size_t N,typename... Args>
-    inline auto Left_Tuple_n_(const std::tuple<Args...> & tuple_) {
-        static_assert(N <= sizeof...(Args), "N must be <= tuple size");
-        static_assert(N <= std::tuple_size_v<std::decay_t<decltype(tuple_)>>, "N must be <= tuple size");
-        return [&]<const std::size_t... I>(std::index_sequence<I...>)
-            ->decltype(std::make_tuple(std::get<I>(tuple_)...)) {
-            return std::make_tuple(std::get<I>(tuple_)...);
-        }(std::make_index_sequence<N>{});
-    }
-
-    // 方法1: 获取后N个元素的通用模板
-    template<const std::size_t N, typename... Args>
-    inline auto Last_Tuple_n_(const std::tuple<Args...> & tuple_) {
-        static_assert(N <= sizeof...(Args), "N must be <= tuple size");
-        static_assert(N <= std::tuple_size_v<std::decay_t<decltype(tuple_)>>,"N must be <= tuple size");
-        constexpr auto S{sizeof...(Args)  - N};
-        return [&]<const std::size_t... I>(std::index_sequence<I...>)
-            ->decltype(std::make_tuple(std::get<S + I>(tuple_)...)) {
-            return std::make_tuple(std::get<S + I>(tuple_)...);
-        }(std::make_index_sequence<N>{});
-    }
-
-    // 方法3: 跳过前面元素,取剩余的
-    template<std::size_t Skip, typename... Args>
-    inline auto skip_front_n_(const std::tuple<Args...>& tuple_) {
-        static_assert(Skip <= sizeof...(Args), "Skip count exceeds tuple size");
-        constexpr auto Offset{Skip},ReCount{sizeof...(Args) - Skip};
-        static_assert(Offset + ReCount <= sizeof...(Args), "Range out of bounds");
-        return [&]<const std::size_t ...I>(std::index_sequence<I...>)
-        -> decltype(std::make_tuple(std::get<Offset + I>(tuple_)...)){
-            return std::make_tuple(std::get<Offset + I>(tuple_)...);
-        }(std::make_index_sequence<ReCount>{});
-    }
-}
-
-/**
- * 获取tuple前N个元素
- * @tparam N
- * @tparam Tuple
- * @param tuple_
- * @return
- */
-template<const std::size_t N,typename Tuple>
-[[maybe_unused]] inline auto Left_Tuple(const Tuple & tuple_) {
-    return TuplePrivate::Left_Tuple_n_<N>(tuple_);
-}
-
-/**
- * 获取tuple后N个元素
- * @tparam N
- * @tparam Tuple
- * @param tuple_
- * @return decltype(TuplePrivate::Last_Tuple_n_<N,Tuple>(tuple_))
- */
-template<const std::size_t N,typename Tuple>
-[[maybe_unused]] inline auto Last_Tuple(const Tuple & tuple_) {
-    return TuplePrivate::Last_Tuple_n_<N>(tuple_);
-}
-
-/**
- * 获取tuple跳过N个元素后面的所有元素
- * @tparam N
- * @tparam Tuple
- * @param tuple_
- * @return decltype(TuplePrivate::skip_front_n_<Skip>(tuple_))
- */
-template<const std::size_t N,typename Tuple>
-[[maybe_unused]] inline auto SkipFront_Tuple(const Tuple &tuple_) {
-    return TuplePrivate::skip_front_n_<N>(tuple_);
-}
 
 [[maybe_unused]] X_API std::string toLower(std::string &);
 
@@ -291,7 +185,6 @@ enum class ConnectionType {
     BlockingQueuedConnection,
     UniqueConnection
 };
-
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
