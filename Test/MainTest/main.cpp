@@ -657,10 +657,13 @@ struct A3 : public A1 , public A2 {
 
     std::cerr << XUtils::typeName<std::decay_t<int[][1]>>() << std::endl;
     std::cerr << XUtils::calculate_total_elements<std::remove_extent_t<int[][2][10][3]> >() << std::endl;
+
+    std::cerr << XUtils::typeName<std::vector<int>::const_pointer const >() << std::endl;
 }
 
 struct Test {
     friend void test9();
+private:
     Test()
     { std::cerr << FUNC_SIGNATURE << "\n"; }
     ~Test()
@@ -674,9 +677,6 @@ struct Test {
     new(p) Test{};
     p->~Test();
     alloc.deallocate(p,1);
-    std::vector<int> v{1,2,3,4,5};
-    std::list<int> l{1,2,3,4,5};
-    l.get_allocator();
 }
 
 int main(const int argc,const char **const argv){
@@ -686,9 +686,9 @@ int main(const int argc,const char **const argv){
     //test3();
     //test4(123);
     //test5();
-    test6();
+    //test6();
     //test7();
-    //test8();
+    test8();
     //test9();
     return 0;
 }
