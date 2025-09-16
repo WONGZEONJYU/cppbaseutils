@@ -14,21 +14,17 @@ auto sliced(Con_ const & c,std::size_t const s,std::size_t const e) noexcept -> 
     return { subRang.cbegin() , subRang.cend() };
 }
 
-template<typename Con_>
-auto append(Con_ & c,typename Con_::value_type const & v) noexcept -> Con_ &
-{ c.push_back(std::forward<decltype(v)>(v)); return c; }
-
-template<typename Con_>
-auto append(Con_ & c,typename Con_::value_type && v) noexcept ->Con_ &
-{ c.push_back(std::forward<decltype(v)>(v)); return c; }
+template<typename Con_,typename ...Args>
+auto append(Con_ & c,Args && ...args) noexcept ->Con_ &
+{ c.emplace_back(std::forward<decltype(args)>(args)...); return c; }
 
 template<typename Con_,typename Con_R >
 auto append(Con_ & fst ,Con_R const & snd) noexcept -> Con_ &
 { fst.insert(fst.cend(),snd.cbegin(),snd.cend()); return fst; }
 
 template<typename Con_>
-auto append(Con_ & c ,const typename Con_::value_type * const d,std::size_t const length) noexcept ->Con_ &
-{ return append(c,std::ranges::subrange{d, d + length } ); }
+auto append(Con_ & c ,typename Con_::const_pointer const d,std::size_t const length) noexcept ->Con_ &
+{ return append(c,std::ranges::subrange {d, d + length }); }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
