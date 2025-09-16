@@ -723,8 +723,7 @@ private: \
 #if __cplusplus >= 201402L
 
 template< typename T,typename ...Args,typename Ret = std::shared_ptr<T>>
-[[maybe_unused]] [[nodiscard]]
-auto makeShared(Args && ...args) noexcept
+constexpr auto makeShared(Args && ...args) noexcept
     -> std::enable_if_t<std::negation_v<std::is_array<T>>,Ret>
 {
     try{
@@ -735,8 +734,7 @@ auto makeShared(Args && ...args) noexcept
 }
 
 template<typename T ,typename Ret = std::shared_ptr<T>>
-[[maybe_unused]] [[nodiscard]]
-auto makeShared(std::size_t const n) noexcept
+constexpr auto makeShared(std::size_t const n) noexcept
     -> std::enable_if_t<std::is_unbounded_array_v<T>,Ret>
 {
     try{
@@ -747,8 +745,7 @@ auto makeShared(std::size_t const n) noexcept
 }
 
 template<typename T ,typename Ret = std::shared_ptr<T>>
-[[maybe_unused]] [[nodiscard]]
-auto makeShared() noexcept
+constexpr auto makeShared() noexcept
     -> std::enable_if_t<std::is_bounded_array_v<T>,Ret>
 {
     try{
@@ -759,8 +756,7 @@ auto makeShared() noexcept
 }
 
 template<typename T ,typename Ret = std::shared_ptr<T>>
-[[maybe_unused]] [[nodiscard]]
-auto makeShared(std::size_t const n,const std::remove_extent_t<T> & u ) noexcept
+constexpr auto makeShared(std::size_t const n,const std::remove_extent_t<T> & u ) noexcept
     -> std::enable_if_t<std::is_unbounded_array_v<T>,Ret>
 {
     try{
@@ -771,8 +767,7 @@ auto makeShared(std::size_t const n,const std::remove_extent_t<T> & u ) noexcept
 }
 
 template<typename T ,typename Ret = std::shared_ptr<T>>
-[[maybe_unused]] [[nodiscard]]
-auto makeShared(std::remove_extent_t<T> const & u ) noexcept
+constexpr auto makeShared(std::remove_extent_t<T> const & u ) noexcept
     -> std::enable_if_t<std::is_bounded_array_v<T>,Ret>
 {
     try{
@@ -783,8 +778,7 @@ auto makeShared(std::remove_extent_t<T> const & u ) noexcept
 }
 
 template<typename T,typename Ret = std::unique_ptr<T> >
-[[maybe_unused]] [[nodiscard]]
-auto makeUnique(std::size_t const n) noexcept
+constexpr auto makeUnique(std::size_t const n) noexcept
     -> std::enable_if_t<std::is_array_v<T> && !std::extent_v<T>, Ret>
 {
     try {
@@ -794,15 +788,14 @@ auto makeUnique(std::size_t const n) noexcept
     }
 }
 
-template<typename T,typename ...Args,std::enable_if_t<std::extent_v<T> != 0,int> = 0>
-void makeUnique(Args && ...) noexcept = delete;
+template<typename T,typename ...Args>
+constexpr auto makeUnique(Args && ...) noexcept -> std::enable_if_t<std::extent_v<T> != 0> = delete;
 
 #endif
 
 #define MAKE_POINTER_FUNC(funcName,type) \
     template<typename T,typename ...Args,typename Ret = type<T> > \
-    [[maybe_unused]] [[nodiscard]] \
-    inline constexpr auto funcName (Args && ...args) noexcept \
+    constexpr auto funcName (Args && ...args) noexcept \
         -> std::enable_if_t< !std::is_array_v<T> , Ret> { \
         try{ return Ret { new T( std::forward<Args>(args)... ) };} \
         catch (const std::exception &) {return Ret {};}  \
