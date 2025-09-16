@@ -15,7 +15,6 @@
 #include <XTupleHelper/xtuplehelper.hpp>
 #include <XMath/xmath.hpp>
 
-
 static std::mutex mtx{};
 
 static constexpr auto wait_time{2};
@@ -662,7 +661,6 @@ struct A3 : public A1 , public A2 {
 
 struct Test {
     friend void test9();
-private:
     Test()
     { std::cerr << FUNC_SIGNATURE << "\n"; }
     ~Test()
