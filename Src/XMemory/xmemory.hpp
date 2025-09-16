@@ -204,7 +204,7 @@ namespace XPrivate {
         constexpr Allocator_() = default;
 
         template<typename U>
-        explicit Allocator_(Allocator_<U> const & o) noexcept {
+        constexpr Allocator_(Allocator_<U> const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
         }
@@ -228,13 +228,13 @@ namespace XPrivate {
         }
 
         template<typename Rep_,typename Period_>
-        void setWaitTime(std::chrono::duration<Rep_,Period_> const & waitTime) const noexcept
+        constexpr void setWaitTime(std::chrono::duration<Rep_,Period_> const & waitTime) const noexcept
         { m_waitTime_.store(std::chrono::duration_cast<std::chrono::nanoseconds>(waitTime),std::memory_order_release) ; }
 
-        void setRetryCount(std::size_t const retryCount) const noexcept
+        constexpr void setRetryCount(std::size_t const retryCount) const noexcept
         { m_retryCount_.storeRelaxed(retryCount); }
 
-        auto allocate(std::size_t const n) const noexcept -> value_type * {
+        constexpr auto allocate(std::size_t const n) const noexcept -> value_type * {
             auto const retryCount{ m_retryCount_.loadAcquire() };
             auto const waitTime{ m_waitTime_.load(std::memory_order_acquire) };
             for (std::size_t i {}; i < retryCount ; ++i) {
@@ -248,19 +248,19 @@ namespace XPrivate {
             return nullptr;
         }
 
-        static void deallocate(value_type * const ptr, std::size_t const length) noexcept
+        static constexpr void deallocate(value_type * const ptr, std::size_t const length) noexcept
         { ::operator delete(ptr,length); }
 
-        static void deallocate(value_type * const ptr) noexcept
+        static constexpr void deallocate(value_type * const ptr) noexcept
         { ::operator delete(ptr); }
     };
 
     template<typename T, typename U>
-    bool operator==(const Allocator_ <T>&, const Allocator_ <U>&)
+    constexpr bool operator==(const Allocator_ <T>&, const Allocator_ <U>&)
     { return true; }
 
     template<typename T, typename U>
-    bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&)
+    constexpr bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&)
     { return false; }
 
 #define STATIC_ASSERT_P \
@@ -306,12 +306,10 @@ class XTwoPhaseConstruction {
             ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
     {
         try{
-            Allocator alloc{};
-            auto const raw_ptr { std::allocator_traits<Allocator>::allocate(alloc, 1) };
-            // 使用placement new构造对象
-            auto const obj_ptr { new(raw_ptr) Object_t( std::get< I1 >( std::forward< Tuple1_ >( args1 ) )... ) };
-            ObjectUPtr obj { obj_ptr, Deleter{alloc} };
-            return obj->construct_( std::get< I2 >( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
+            auto const raw_ptr { std::allocator_traits<Allocator>::allocate(sm_allocator_, 1) };
+            auto const obj_ptr { new (raw_ptr) Object_t( std::get< I1 >( std::forward< Tuple1_ >( args1 ) )... ) };
+            ObjectUPtr obj { obj_ptr, Deleter {} };
+            return obj_ptr && obj->construct_( std::get< I2 >( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
         } catch (const std::exception &) {
             return nullptr;
         }
@@ -331,22 +329,21 @@ protected:
 
         constexpr Destructor_() = default;
 
-        template<typename U>
-        [[maybe_unused]] constexpr explicit Destructor_(Destructor_<U> const &) {}
+        template<typename U,std::enable_if_t<std::is_constructible_v<U*,value_type *> ,int> = 0 >
+        constexpr Destructor_(Destructor_<U> const &) {}
 
-        static void cleanup(value_type * const pointer) noexcept {
+        static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)
                     ,"Object must be a complete type!");
             if (pointer) {
                 // 先调用析构函数
                 pointer->~value_type();
                 // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
-                allocator_type alloc{};
-                std::allocator_traits<allocator_type>::deallocate(alloc, pointer, 1);
+                std::allocator_traits<allocator_type>::deallocate(sm_allocator_, pointer, 1);
             }
         }
 
-        void operator()(value_type * const pointer) const noexcept
+        constexpr void operator()(value_type * const pointer) const noexcept
         { cleanup(pointer); }
     };
 
@@ -357,21 +354,19 @@ public:
     using ObjectSPtr = std::shared_ptr< Object >;
     using ObjectUPtr = std::unique_ptr< Object , Deleter >;
 
-    static auto & getAllocator() noexcept
+    static constexpr auto & getAllocator() noexcept
     { return sm_allocator_; }
 
     // 为裸指针提供专门的删除函数
-    static void Delete(Object * const pointer) noexcept {
+    static constexpr void Delete(Object * const pointer) noexcept {
         if (pointer) {
-            // 先调用析构函数
             pointer->~Object();
-            // 使用分配器释放内存
             std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
         }
     }
     // 重写operator delete以支持Qt对象树
     // 这是更安全的方法，让Qt调用我们自定义的delete操作符
-    void operator delete(void * const ptr, std::size_t const length = 1) noexcept {
+    constexpr void operator delete(void * const ptr, std::size_t const length = 1) noexcept {
         if (ptr) {
             std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
         }
@@ -399,7 +394,7 @@ public:
     }
 
     // 为Qt对象提供手动从对象树中移除并删除的方法
-    static void DeleteFromQtObjectTree(Object * const pointer) noexcept {
+    static constexpr void DeleteFromQtObjectTree(Object * const pointer) noexcept {
         if (pointer) {
             // 先从父对象中移除，避免Qt自动删除
             if (pointer->parent()) {
@@ -412,19 +407,16 @@ public:
 
     // Qt对象树兼容的内存释放器 - 只释放内存，不调用析构函数
     // 注意：这个方法只能在对象已经被析构后调用
-    static void QtCompatibleDeallocate(Object * const pointer) noexcept {
+    static constexpr void QtCompatibleDeallocate(Object * const pointer) noexcept {
         if (pointer) {
             // 只释放内存，不调用析构函数（析构函数已经被调用了）
-            Allocator alloc{};
-            std::allocator_traits<Allocator>::deallocate(alloc, pointer, 1);
+            std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
         }
     }
-
 
 #endif
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]]
     static constexpr auto Create( Parameter< Args1... > && args1 = {},
           Parameter< Args2...> && args2 = {} ) noexcept -> Object *
     {
@@ -439,11 +431,10 @@ public:
             noexcept -> Object *
         {
             try{
-                auto const raw_ptr { std::allocator_traits<Allocator>::allocate(sm_allocator_, 1) };
+                auto const raw_ptr { std::allocator_traits<Allocator>::allocate( sm_allocator_, 1) };
                 auto const obj_ptr { new (raw_ptr) Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... ) };
                 ObjectUPtr obj { obj_ptr, Deleter {} };
-
-                return obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
+                return obj_ptr && obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
             } catch (const std::exception &) {
                 return nullptr;
             }
@@ -454,7 +445,6 @@ public:
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] [[maybe_unused]]
     static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
         ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr
     {
@@ -463,12 +453,11 @@ public:
     }
 
     template<typename ...Args1,typename ...Args2>
-    [[nodiscard]] [[maybe_unused]]
     static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
         ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr
     {
         return { Create( std::forward< decltype( args1 ) >( args1 )
-            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
+            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter {} };
     }
 
 #ifdef HAS_QT
@@ -581,7 +570,7 @@ public:
 #endif
 
 protected:
-    XTwoPhaseConstruction() = default;
+    constexpr XTwoPhaseConstruction() = default;
     template<typename ,typename > friend class XSingleton;
 };
 
@@ -657,14 +646,14 @@ public:
 #endif
 
 private:
-    static auto initFlag() noexcept -> std::once_flag &
+    static constexpr auto initFlag() noexcept -> std::once_flag &
     { static std::once_flag flag{};return flag; }
 
-    static auto data() noexcept -> SingletonPtr &
+    static constexpr auto data() noexcept -> SingletonPtr &
     { static SingletonPtr d{}; return d; }
 
 #ifdef HAS_QT
-    static auto qdata() noexcept -> QSingletonPtr &
+    static constexpr auto qdata() noexcept -> QSingletonPtr &
     { static QSingletonPtr d{}; return d; }
 #endif
 
@@ -715,7 +704,7 @@ private:
     }
 
 protected:
-    XSingleton() = default;
+    constexpr XSingleton() = default;
     X_DISABLE_COPY_MOVE(XSingleton)
 };
 
@@ -813,7 +802,7 @@ void makeUnique(Args && ...) noexcept = delete;
 #define MAKE_POINTER_FUNC(funcName,type) \
     template<typename T,typename ...Args,typename Ret = type<T> > \
     [[maybe_unused]] [[nodiscard]] \
-    inline auto funcName (Args && ...args) noexcept \
+    inline constexpr auto funcName (Args && ...args) noexcept \
         -> std::enable_if_t< !std::is_array_v<T> , Ret> { \
         try{ return Ret { new T( std::forward<Args>(args)... ) };} \
         catch (const std::exception &) {return Ret {};}  \
