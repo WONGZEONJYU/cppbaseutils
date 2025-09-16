@@ -7,14 +7,14 @@
 #include <list>
 #include <deque>
 #include <XHelper/xutility.hpp>
-#include <XHelper/xtypetraits.hpp>
 #include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
 #include <XMemory/xmemory.hpp>
 #include <utility>
 #include <chrono>
-#include <XHelper/xtypetraits.hpp>
+#include <XTupleHelper/xtuplehelper.hpp>
 #include <XMath/xmath.hpp>
+
 
 static std::mutex mtx{};
 
