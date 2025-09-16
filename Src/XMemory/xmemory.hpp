@@ -301,20 +301,6 @@ class XTwoPhaseConstruction {
 
     inline static Allocator sm_allocator_{};
 
-    template< typename Tuple1_ ,typename Tuple2_ ,std::size_t...I1 ,std::size_t...I2 >
-    static constexpr auto CreateHelper(Tuple1_ && args1,Tuple2_ && args2
-            ,std::index_sequence< I1... >,std::index_sequence< I2... >) noexcept -> Object_t *
-    {
-        try{
-            auto const raw_ptr { std::allocator_traits<Allocator>::allocate(sm_allocator_, 1) };
-            auto const obj_ptr { new (raw_ptr) Object_t( std::get< I1 >( std::forward< Tuple1_ >( args1 ) )... ) };
-            ObjectUPtr obj { obj_ptr, Deleter {} };
-            return obj_ptr && obj->construct_( std::get< I2 >( std::forward< Tuple2_ >( args2 ) )... ) ? obj.release() : nullptr;
-        } catch (const std::exception &) {
-            return nullptr;
-        }
-    }
-
     template<typename Tuple_>
     static constexpr auto indices(Tuple_ &&) noexcept
         -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
