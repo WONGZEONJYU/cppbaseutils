@@ -679,8 +679,35 @@ private:
     alloc.deallocate(p,1);
 }
 
-int main(const int argc,const char **const argv){
-    (void )argc,(void )argv;
+void test10()
+{
+    constexpr std::string_view pattern { "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "abcdefghijklmnopqrstuvwxyz"
+                                        "0123456789" };
+
+    std::string data {"1) %FIX, 2) %HACK, 3) %TODO"};
+
+    std::cout << "替换前：" << data << '\n';
+
+    constexpr std::string_view replacement = "%DONE%";
+
+    for (std::string::size_type first{}, last{};
+        (first = data.find('%', first)) != std::string::npos;
+        first += replacement.size())
+    {
+        last = data.find_first_not_of(pattern, first + 1);
+        if (last == std::string::npos)
+            last = data.length();
+
+        // 现在 first 位于 '%'，而 last 位于找到的子串的尾后位置
+        data.replace(first, last - first, replacement);
+    }
+
+    std::cout << "替换后：" << data << '\n';
+}
+
+
+int main(){
     //test1();
     //test2();
     //test3();
@@ -688,7 +715,8 @@ int main(const int argc,const char **const argv){
     //test5();
     //test6();
     //test7();
-    test8();
+    //test8();
     //test9();
+    test10();
     return 0;
 }
