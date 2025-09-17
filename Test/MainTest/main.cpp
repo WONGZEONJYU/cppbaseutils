@@ -706,6 +706,9 @@ void test10()
     std::cout << "替换后：" << data << '\n';
 }
 
+void test11()
+{
+}
 
 int main(){
     //test1();
@@ -717,6 +720,7 @@ int main(){
     //test7();
     //test8();
     //test9();
-    test10();
+    //test10();
+    test11();
     return 0;
 }
