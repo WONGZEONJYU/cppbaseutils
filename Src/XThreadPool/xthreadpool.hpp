@@ -67,7 +67,7 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
                 call(indices{});
                 return {};
             }else{
-                return (std::move(call(indices{})));
+                return call(indices{});
             }
         }
 
