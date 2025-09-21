@@ -1,9 +1,10 @@
-#include "atparser.hpp"
+#include <atparser.hpp>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 #include <ranges>
 #include <utility>
+#include <XHelper/xhelper.hpp>
 
 // 构造函数
 ATParser::ATParser() {
@@ -78,10 +79,7 @@ bool ATParser::isValidATCommand(const std::string& input) {
         return false;
     }
 
-    auto prefix{trimmed.substr(0, 2)};
-    std::ranges::transform(prefix, prefix.begin(), ::toupper);
-
-    return prefix == "AT";
+    return XUtils::toUpper(trimmed.substr(0, 2)) == "AT";
 }
 
 // 解析AT指令
@@ -89,8 +87,7 @@ ATCommand ATParser::parseCommand(const std::string& input) {
     ATCommand cmd{};
     cmd.raw_command = input;
 
-    auto trimmed{ trim(input) };
-    std::ranges::transform(trimmed, trimmed.begin(), toupper);
+    auto const trimmed{ XUtils::toUpper(trim(input)) };
 
     // 确定指令类型
     cmd.type = determineCommandType(trimmed);
@@ -121,8 +118,9 @@ ATCommand ATParser::parseCommand(const std::string& input) {
 
 // 执行AT指令
 ATResponse ATParser::executeCommand(const ATCommand& command) {
-    auto it = command_handlers.find(command.command);
-    if (it != command_handlers.end()) {
+    if (auto const it { command_handlers.find(command.command)}
+        ; it != command_handlers.end())
+    {
         return it->second(command);
     }
 
@@ -140,17 +138,13 @@ ATResponse ATParser::processInput(const std::string& input) {
 }
 
 // 注册指令处理器
-void ATParser::registerHandler(const std::string& command, ATCommandHandler handler) {
-    std::string upper_command = command;
-    std::ranges::transform(upper_command, upper_command.begin(), ::toupper);
-    command_handlers[upper_command] = std::move(handler);
+void ATParser::registerHandler(std::string const & command, ATCommandHandler handler) {
+    command_handlers[XUtils::toUpper(command)] = std::move(handler);
 }
 
 // 移除指令处理器
-void ATParser::unregisterHandler(const std::string& command) {
-    std::string upper_command = command;
-    std::ranges::transform(upper_command, upper_command.begin(), ::toupper);
-    command_handlers.erase(upper_command);
+void ATParser::unregisterHandler(std::string const & command) {
+    command_handlers.erase(XUtils::toUpper(command));
 }
 
 // 获取支持的指令列表
@@ -164,7 +158,7 @@ std::vector<std::string> ATParser::getSupportedCommands() const {
 }
 
 // 打印指令信息（调试用）
-void ATParser::printCommand(const ATCommand& command) {
+void ATParser::printCommand(ATCommand const & command) {
     std::cout << "=== AT指令解析结果 ===" << std::endl;
     std::cout << "原始指令: " << command.raw_command << std::endl;
     std::cout << "指令名称: " << command.command << std::endl;
@@ -187,7 +181,7 @@ void ATParser::printCommand(const ATCommand& command) {
 
     if (!command.parameters.empty()) {
         std::cout << "参数列表: ";
-        for (size_t i = 0; i < command.parameters.size(); ++i) {
+        for (size_t i {}; i < command.parameters.size(); ++i) {
             std::cout << command.parameters[i];
             if (i < command.parameters.size() - 1) {
                 std::cout << ", ";
