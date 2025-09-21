@@ -352,11 +352,14 @@ public:
     }
     // 重写operator delete以支持Qt对象树
     // 这是更安全的方法，让Qt调用我们自定义的delete操作符
-    constexpr void operator delete(void * const ptr, std::size_t const length = 1) noexcept {
+    constexpr void operator delete(void * const ptr, std::size_t const length) noexcept {
         if (ptr) {
             std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
         }
     }
+
+    constexpr void operator delete(void * const ptr) noexcept
+    { operator delete(ptr,1); }
 
 #ifdef HAS_QT
     // Qt对象树专用创建方法 - 返回裸指针供Qt对象树管理
@@ -412,7 +415,6 @@ public:
 
         STATIC_ASSERT_P
 
-#if __cplusplus >= 202002L
         return [&]< std::size_t ...I1 ,std::size_t...I2 >( std::index_sequence< I1... > ,std::index_sequence< I2... > )
             noexcept -> Object *
         {
@@ -425,9 +427,6 @@ public:
                 return nullptr;
             }
         }( indices( args1 ) ,indices( args2 ) );
-#else
-        return CreateHelper(args1,args2,indices(args1),indices(args2));
-#endif
     }
 
     template<typename ...Args1,typename ...Args2>
