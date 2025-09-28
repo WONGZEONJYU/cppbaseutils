@@ -64,6 +64,7 @@ add_subdirectory(XMath)
 add_subdirectory(XMemory)
 add_subdirectory(XContainerHelper)
 add_subdirectory(XTupleHelper)
+add_subdirectory(XDesignPattern)
 
 # 平台特定的模块
 if(APPLE OR UNIX)

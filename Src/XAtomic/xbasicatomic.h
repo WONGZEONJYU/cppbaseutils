@@ -141,7 +141,8 @@ public:
     T operator^=(const T &v) noexcept
     { return fetchAndXorOrdered(v) ^ v; }
 
-    explicit constexpr XBasicAtomicInteger(T const & value = T{}) noexcept : Base_(value) {}
+    constexpr XBasicAtomicInteger() = default;
+    explicit constexpr XBasicAtomicInteger(T const & value ) noexcept : Base_(value) {}
     XBasicAtomicInteger(const XBasicAtomicInteger &) = delete;
     XBasicAtomicInteger &operator=(const XBasicAtomicInteger &) = delete;
     XBasicAtomicInteger &operator=(const XBasicAtomicInteger &) volatile = delete;
@@ -234,7 +235,7 @@ public:
     Type operator-=(const xptrdiff &valueToSub) noexcept
     { return fetchAndSubOrdered(valueToSub) - valueToSub; }
 
-    XBasicAtomicPointer() = default;
+    constexpr XBasicAtomicPointer() = default;
     explicit constexpr XBasicAtomicPointer(Type const & value) noexcept : m_x_value(value) {}
     XBasicAtomicPointer(XBasicAtomicPointer const &) = delete;
     XBasicAtomicPointer &operator=(XBasicAtomicPointer const &) = delete;

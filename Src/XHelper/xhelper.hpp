@@ -186,6 +186,9 @@ enum class ConnectionType {
     UniqueConnection
 };
 
+enum class NonConst{};
+enum class Const{};
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 

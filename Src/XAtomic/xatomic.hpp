@@ -24,13 +24,14 @@ class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    constexpr explicit XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
+    explicit XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
 
     XAtomicInteger(XAtomicInteger const & other) noexcept
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicInteger & operator=(XAtomicInteger const & other) noexcept
     { this->storeRelease(other.loadAcquire()); return *this; }
+
 #ifdef X_XDOC
     T loadRelaxed() const;
     T loadAcquire() const;
@@ -107,22 +108,23 @@ public:
 #endif
 };
 
-class [[maybe_unused]] XAtomicInt : public XAtomicInteger<int> {
+class XAtomicInt : public XAtomicInteger<int> {
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    explicit XAtomicInt(const int value = {}) noexcept : XAtomicInteger(value) {}
+    explicit constexpr XAtomicInt(const int value = {}) noexcept : XAtomicInteger(value) {}
 };
 
 // High-level atomic pointer operations
 template <typename T>
 class XAtomicPointer : public XBasicAtomicPointer<T> {
+    using Base = XBasicAtomicPointer<T>;
 public:
     constexpr explicit XAtomicPointer(T * value = {}) noexcept
     : XBasicAtomicPointer<T>(value) {}
 
-    XAtomicPointer(XAtomicPointer const & other) noexcept : XBasicAtomicPointer<T>()
+    XAtomicPointer(XAtomicPointer const & other) noexcept
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicPointer & operator=(XAtomicPointer const & other) noexcept

@@ -14,6 +14,7 @@
 #include <chrono>
 #include <XTupleHelper/xtuplehelper.hpp>
 #include <XMath/xmath.hpp>
+#include <XDesignPattern/xcor.hpp>
 
 static std::mutex mtx{};
 
@@ -706,8 +707,27 @@ void test10()
     std::cout << "替换后：" << data << '\n';
 }
 
+class A11 : public XUtils::XCOR<XUtils::Const,std::string>{
+public:
+    A11() = default;
+};
+
+class B11 : public XUtils::XCOR<XUtils::Const,std::string> {
+    public:
+    B11() = default;
+
+    void responseHandler(Base::ParameterList const &) const override {
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+
+};
+
 void test11()
 {
+    A11 a;
+    B11 b;
+    a.setNextResponse(&b);
+    a.request(std::string{"fuck"});
 }
 
 int main(){
