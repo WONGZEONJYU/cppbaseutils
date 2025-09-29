@@ -2,6 +2,7 @@
 #define XUTILS_X_CONTAINER_HELPER_HPP 1
 
 #include <XHelper/xhelper.hpp>
+#include <charconv>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -32,6 +33,29 @@ template<typename Con_>
 requires std::ranges::range<Con_>
 constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length) noexcept -> Con_ &
 { return append(c,std::ranges::subrange{d, d + length } ); }
+
+template<typename T,typename STR>
+std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
+    T value{};
+    return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
+    ? std::optional<T>{value} : std::nullopt;
+}
+
+template<typename T>
+std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
+    T value{};
+    return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
+    ? std::optional<T>{value} : std::nullopt;
+}
+
+template<typename StringStream,typename T>
+auto toString(T const v,auto const precision = StringStream{}.precision())
+    -> decltype(StringStream{}.str()) {
+    StringStream ss {};
+    ss.precision(precision);
+    ss << v;
+    return ss.str();
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
