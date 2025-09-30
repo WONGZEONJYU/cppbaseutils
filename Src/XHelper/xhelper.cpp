@@ -70,29 +70,24 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
     return str;
 }
 
-[[maybe_unused]]std::string toLower(std::string &&str) {
-    return toLower(str);
-}
+#if 0
+[[maybe_unused]]std::string toLower(std::string &&str)
+{ return toLower(str); }
 
-[[maybe_unused]]std::string toLower(const std::string &str) {
-    return toLower(std::string(str));
-}
+[[maybe_unused]]std::string toLower(const std::string &str)
+{ return toLower(std::string(str)); }
 
-[[maybe_unused]]std::string toLower(const std::string_view &str) {
-    return toLower(std::string(str));
-}
+[[maybe_unused]]std::string toLower(const std::string_view &str)
+{ return toLower(std::string(str)); }
 
-[[maybe_unused]]std::string toLower(std::string_view &str) {
-    return toLower(std::string(str));
-}
+[[maybe_unused]]std::string toLower(std::string_view &str)
+{ return toLower(std::string(str)); }
 
-[[maybe_unused]]std::string toLower(std::string_view &&str) {
-    return toLower(std::string(str));
-}
+[[maybe_unused]]std::string toLower(std::string_view &&str)
+{ return toLower(std::string(str)); }
 
-[[maybe_unused]] std::string toUpper(std::string &str) {
-    return toUpper(std::move(str));
-}
+[[maybe_unused]] std::string toUpper(std::string &str)
+{ return toUpper(std::move(str)); }
 
 [[maybe_unused]] std::string toUpper(std::string &&str) {
 #if __cplusplus >= 202002L
@@ -103,21 +98,20 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
     return str;
 }
 
-[[maybe_unused]] std::string toUpper(const std::string &str) {
-    return toUpper(std::string(str));
-}
+[[maybe_unused]] std::string toUpper(const std::string &str)
+{ return toUpper(std::string(str)); }
 
-[[maybe_unused]] std::string toUpper(std::string_view &str) {
-    return toUpper(std::string(str));
-}
+[[maybe_unused]] std::string toUpper(std::string_view &str)
+{ return toUpper(std::string(str)); }
 
-[[maybe_unused]] std::string toUpper(std::string_view &&str) {
-    return toUpper(std::string(str));
-}
+[[maybe_unused]] std::string toUpper(std::string_view &&str)
+{ return toUpper(std::string(str)); }
 
-[[maybe_unused]] std::string toUpper(const std::string_view &str) {
-    return toUpper(std::string(str));
-}
+[[maybe_unused]] std::string toUpper(const std::string_view &str)
+{ return toUpper(std::string(str)); }
+
+#endif
+
 
 void XUtilsLibErrorLog::log(std::string_view const & msg)
 {
