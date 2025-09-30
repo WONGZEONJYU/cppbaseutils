@@ -9,19 +9,21 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 template<typename ,typename...> class XCOR;
 
-template<typename T,typename ...Args>
+template<typename ...Args>
 class XCORAbstract {
     X_DISABLE_COPY(XCORAbstract)
     mutable XAtomicPointer<XCORAbstract> m_next_{};
 
 public:
-    using ParameterList = std::tuple<Args...>;
+    using Arguments = std::tuple<Args...>;
 
     void setNextResponse(XCORAbstract * const next) const noexcept
     { m_next_.storeRelease(next); }
 
-    virtual void request(ParameterList const & args) const {
-        if (auto const next { dynamic_cast<XCOR<T,Args...> * >(m_next_.loadAcquire()) })
+    virtual void request(Arguments const & args) const {
+        if (auto const next { dynamic_cast<XCOR<Const,Args...> * >(m_next_.loadAcquire()) })
+        { next->responseHandler(args); return ; }
+        if (auto const next { dynamic_cast<XCOR<NonConst,Args...> * >(m_next_.loadAcquire()) })
         { next->responseHandler(args); }
     }
 
@@ -47,30 +49,33 @@ private:
 };
 
 template<typename ... Args>
-class XCOR<Const,Args...> : public XCORAbstract<Const,Args...> {
-    template<typename ,typename ...> friend class XCORAbstract;
+class XCOR<Const,Args...> : public XCORAbstract<Args...> {
+    template<typename ...> friend class XCORAbstract;
 
 public:
+    using Arguments = XCORAbstract<Args...>::Arguments;
+    constexpr XCOR() = default;
     XCOR(XCOR && ) = default;
     XCOR & operator=(XCOR && ) = default;
     ~XCOR() override = default;
+
 protected:
-    using Base = XCORAbstract<Const,Args...>;
-    virtual void responseHandler(Base::ParameterList const &) const {}
-    XCOR() = default;
+    virtual void responseHandler(Arguments const &) const {}
 };
 
 template<typename ... Args>
-class XCOR<NonConst,Args...> : public XCORAbstract<NonConst,Args...> {
-    template<typename ,typename ...> friend class XCORAbstract;
+class XCOR<NonConst,Args...> : public XCORAbstract<Args...> {
+    template<typename ...> friend class XCORAbstract;
+
 public:
+    using Arguments = XCORAbstract<Args...>::Arguments;
+    constexpr XCOR() = default;
     XCOR(XCOR && ) = default;
     XCOR & operator=(XCOR && ) = default;
     ~XCOR() override = default;
+
 protected:
-    using Base = XCORAbstract<Const,Args...>;
-    virtual void responseHandler(Base::ParameterList const &) {}
-    XCOR() = default;
+    virtual void responseHandler(Arguments const &) {}
 };
 
 XTD_INLINE_NAMESPACE_END
