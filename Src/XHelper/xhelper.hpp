@@ -201,7 +201,7 @@ template<
     typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
 >
 requires StandardChar<std::ranges::range_value_t<Range>>
-auto toLower(Range && r, const Alloc & = Alloc{}) -> Range {
+auto toLower(Range && r, const Alloc & = Alloc{}){
     using CharT = std::ranges::range_value_t<Range>;
 
     if constexpr (WritableCharRange<Range>) {
@@ -226,7 +226,7 @@ template<
     typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
 >
 requires StandardChar<std::ranges::range_value_t<Range>>
-auto toUpper(Range && r, const Alloc & = Alloc{}) -> Range {
+auto toUpper(Range && r, const Alloc & = Alloc{}){
     using CharT = std::ranges::range_value_t<Range>;
 
     if constexpr (WritableCharRange<Range>) {
