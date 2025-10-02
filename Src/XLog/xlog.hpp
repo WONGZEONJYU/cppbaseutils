@@ -75,9 +75,9 @@ struct LogMessage final {
         , message{};
     std::uint32_t line{};
 
-    LogMessage() = default;
+    constexpr LogMessage() = default;
 
-    LogMessage(LogLevel const lv, std::string ts, std::string tid,
+    constexpr LogMessage(LogLevel const lv, std::string ts, std::string tid,
                std::string f, std::uint32_t const l, std::string func, std::string msg) noexcept
         : level(lv), timestamp(std::move(ts)), thread_id(std::move(tid))
         , file(std::move(f)), function(std::move(func))
@@ -100,9 +100,9 @@ class XLog;
 class XLogPrivate;
 class XLogData {
 protected:
-    XLogData() = default;
+    constexpr XLogData() = default;
 public:
-    virtual ~XLogData() = default;
+    constexpr virtual ~XLogData() = default;
     XLog * m_x_ptr_{};
 };
 
@@ -213,7 +213,7 @@ public:
      * @param args 格式参数
      */
     template<typename... Args>
-    inline void logFormat(LogLevel const & level, const char * const format_str,
+    constexpr void logFormat(LogLevel const & level, const char * const format_str,
               SourceLocation const & location, Args &&... args)
     {
         if (!shouldLog(level)) { return; }
@@ -261,7 +261,7 @@ public:
      * @param level 日志级别
      * @return 级别名称
      */
-    [[nodiscard]] inline static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
+    [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
         switch (level) {
             case LogLevel::TRACE_LEVEL: return "TRACE";
             case LogLevel::DEBUG_LEVEL: return "DEBUG";
@@ -298,7 +298,7 @@ public:
             ,bool = false);
 
     template<typename ...Args>
-    inline static void xlogFormatHelper(LogLevel const & level
+    static constexpr void xlogFormatHelper(LogLevel const & level
                                         ,const char * const format
                                         ,SourceLocation const & location
                                         ,bool const b
@@ -318,13 +318,13 @@ private:
     static auto instance() noexcept -> XLog *;
     // 格式化辅助函数 - 使用标准printf风格格式化
     template<typename... Args>
-    inline static void formatImpl(std::ostringstream & , const char* , Args &&...);
+    static constexpr void formatImpl(std::ostringstream & , const char* , Args &&...);
     X_DISABLE_COPY_MOVE(XLog)
     friend X_API XLog * XlogHandle() noexcept;
 };
 
 template<typename... Args>
-inline void XLog::formatImpl(std::ostringstream & oss
+constexpr void XLog::formatImpl(std::ostringstream & oss
                             , const char * const format
                             , Args &&... args)
 {

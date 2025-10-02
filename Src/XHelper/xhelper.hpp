@@ -79,26 +79,26 @@ template<typename T,typename > class XTwoPhaseConstruction;
 template<typename T,typename > class XSingleton;
 
 class X_CLASS_EXPORT XUtilsLibErrorLog final {
-    XUtilsLibErrorLog() = default;
+    constexpr XUtilsLibErrorLog() = default;
     static void log(std::string_view const & );
     template<typename ,typename > friend class XSingleton;
     template<typename ,typename > friend class XTwoPhaseConstruction;
 };
 
-template <typename T> inline T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
-template <typename Ptr> inline auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
+template <typename T> constexpr T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
+template <typename Ptr> constexpr auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
-template <typename Ptr> inline auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
+template <typename Ptr> constexpr auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
 { static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 template<typename F>
-class Destroyer final {
+class Destroyer {
     X_DISABLE_COPY_MOVE(Destroyer)
     mutable F m_fn_{};
     mutable uint32_t m_is_destroy:1;
 
 public:
-    constexpr explicit Destroyer(F &&f):
+    constexpr explicit Destroyer(F && f):
     m_fn_(std::move(f)),m_is_destroy{}{}
 
     constexpr void destroy() const {
@@ -107,28 +107,21 @@ public:
             m_fn_();
         }
     }
-    constexpr ~Destroyer() { destroy();}
+    constexpr virtual ~Destroyer() { destroy();}
 };
 
 template<typename F2>
-class X_RAII final {
+class X_RAII final : public Destroyer<F2> {
+    using Base = Destroyer<F2>;
     X_DISABLE_COPY_MOVE(X_RAII)
-    mutable F2 m_f2_{};
-    mutable uint32_t m_is_destroy_:1;
+
 public:
-    template<typename F>
-    constexpr explicit X_RAII(F &&f1,F2 &&f2):
-    m_f2_(std::move(f2)),m_is_destroy_(){f1();}
+    template<typename F1>
+    constexpr explicit X_RAII(F1 && f1,F2 && f2)
+    : Base { std::forward<F2>(f2) }
+    { f1(); }
 
-    constexpr void destroy() const {
-        if (!m_is_destroy_){
-            m_is_destroy_ = true;
-            m_f2_();
-        }
-    }
-
-    constexpr ~X_RAII()
-    { destroy();}
+    ~X_RAII() override = default;
 };
 
 /**
@@ -201,7 +194,7 @@ template<
     typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
 >
 requires StandardChar<std::ranges::range_value_t<Range>>
-auto toLower(Range && r, const Alloc & = Alloc{}){
+constexpr auto toLower(Range && r, const Alloc & = Alloc{}){
     using CharT = std::ranges::range_value_t<Range>;
 
     if constexpr (WritableCharRange<Range>) {
@@ -226,7 +219,7 @@ template<
     typename Alloc = std::allocator<std::ranges::range_value_t<Range>>
 >
 requires StandardChar<std::ranges::range_value_t<Range>>
-auto toUpper(Range && r, const Alloc & = Alloc{}){
+constexpr auto toUpper(Range && r, const Alloc & = Alloc{}){
     using CharT = std::ranges::range_value_t<Range>;
 
     if constexpr (WritableCharRange<Range>) {

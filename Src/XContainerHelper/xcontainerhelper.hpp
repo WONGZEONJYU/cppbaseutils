@@ -35,21 +35,21 @@ constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_
 { return append(c,std::ranges::subrange{d, d + length } ); }
 
 template<typename T,typename STR>
-std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
+constexpr std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
     T value{};
     return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
     ? std::optional<T>{value} : std::nullopt;
 }
 
 template<typename T>
-std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
+constexpr std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
     T value{};
     return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
     ? std::optional<T>{value} : std::nullopt;
 }
 
 template<typename StringStream,typename T>
-auto toString(T const v,auto const precision = StringStream{}.precision())
+constexpr auto toString(T const v,auto const precision = StringStream{}.precision())
     -> decltype(StringStream{}.str()) {
     StringStream ss {};
     ss.precision(precision);

@@ -24,9 +24,9 @@ namespace XPrivate {
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
         template<typename T>
-        static char test( void (T::*)() ){throw;}
+        static constexpr char test( void (T::*)() ){throw;}
 
-        static int test( void (Object::*)() ){throw;}
+        static constexpr int test( void (Object::*)() ){throw;}
     public:
         enum { value = sizeof(test(&Object::checkFriendXTwoPhaseConstruction_)) == sizeof(int) };
     };
@@ -40,21 +40,21 @@ namespace XPrivate {
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
     #if __cplusplus >= 202002L
         template<typename O,typename ...A>
-        static auto test(int) -> std::true_type
+        static constexpr auto test(int) -> std::true_type
             requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) )
                 > static_cast<std::size_t>(0) ) )
         {throw ;}
     #else
         #if 0 //只能二选一
             template<typename O,typename ...A>
-            static auto test(int)
+            static constexpr auto test(int)
                 -> std::enable_if_t< ( sizeof(std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
                     > static_cast<std::size_t>(0) )
                     ,std::true_type >
             {throw ;}
         #else
             template<typename O,typename ...A>
-            static auto test(int)
+            static constexpr auto test(int)
             -> decltype( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
                 > static_cast<std::size_t>(0)
                     , std::true_type{} )
@@ -62,7 +62,7 @@ namespace XPrivate {
         #endif
     #endif
         template<typename ...>
-        static auto test(...) -> std::false_type {throw ;}
+        static constexpr auto test(...) -> std::false_type {throw ;}
     public:
         enum { value = decltype(test<Object,Args...>(0))::value };
     };
@@ -76,7 +76,7 @@ namespace XPrivate {
     private:
     #if __cplusplus >= 202002L
         template<typename O,typename ...A>
-        static auto test(int) -> std::false_type
+        static constexpr auto test(int) -> std::false_type
             requires (
                 ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ) > static_cast<std::size_t>(0) )
                     || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ),void >
@@ -85,14 +85,14 @@ namespace XPrivate {
     #else
         #if 0 //只能二选一
             template<typename O,typename ...A>
-            static auto test(int)
+            static constexpr auto test(int)
                 -> std::enable_if_t< std::is_same_v< decltype( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) ,void >
                      || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) > static_cast<std::size_t>(0) )
                         ,std::false_type >
                 {throw ;}
         #else
             template<typename O,typename ...A>
-            static auto test(int)
+            static constexpr auto test(int)
                 -> decltype( std::is_same_v< decltype(std::declval<O>().construct_((std::declval< std::decay_t< A > >())...)), void >
                     || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())... ) ) > static_cast<std::size_t>(0) )
                         ,std::false_type {} )
@@ -101,7 +101,7 @@ namespace XPrivate {
     #endif
 
         template<typename ...>
-        static auto test(...) ->std::true_type {throw ;}
+        static constexpr auto test(...) ->std::true_type {throw ;}
     public:
         enum { value = decltype(test<Object,Args...>(0))::value };
     };
@@ -170,11 +170,11 @@ namespace XPrivate {
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
         template<typename O>
-        static auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
+        static constexpr auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
         { throw ; }
 
         template<typename >
-        static auto test(...) -> std::true_type
+        static constexpr auto test(...) -> std::true_type
         { throw ; }
 
     public:
@@ -210,18 +210,18 @@ namespace XPrivate {
         }
 
         template<typename U>
-        Allocator_ & operator=(Allocator_<U> const & o) noexcept {
+        constexpr Allocator_ & operator=(Allocator_<U> const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
             return *this;
         }
 
-        Allocator_(Allocator_ const & o) noexcept {
+        constexpr Allocator_(Allocator_ const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
         }
 
-        Allocator_ & operator=(Allocator_ const & o) noexcept {
+        constexpr Allocator_ & operator=(Allocator_ const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
             return *this;
@@ -476,7 +476,7 @@ public:
    #define LIKE_WHICH 1
    #if LIKE_WHICH == 1
        template<typename ENUM_> requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value))
-       static QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+       static constexpr QString getEnumTypeAndValueName(ENUM_ && enumValue) {
 
            if constexpr ( std::is_object_v<Object_t> ) {
                static_assert(XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro_v<Object_t>
@@ -485,17 +485,17 @@ public:
 
    #elif LIKE_WHICH == 2
        template<typename ENUM_>
-       static QString getEnumTypeAndValueName(ENUM_ && enumValue)
+       static constexpr QString getEnumTypeAndValueName(ENUM_ && enumValue)
        requires (static_cast<bool>(QtPrivate::IsQEnumHelper<ENUM_>::Value)) {
    #else
        template<typename T>
        concept ENUM_T = static_cast<bool>(QtPrivate::IsQEnumHelper<T>::Value);
        template<ENUM_T ENUM_>
-       static QString getEnumTypeAndValueName(ENUM_ && enumValue) {
+       static constexpr QString getEnumTypeAndValueName(ENUM_ && enumValue) {
    #endif
    #else
        template<typename ENUM_>
-       static std::enable_if_t<QtPrivate::IsQEnumHelper<ENUM_>::Value, QString>
+       static constexpr std::enable_if_t<QtPrivate::IsQEnumHelper<ENUM_>::Value, QString>
        getEnumTypeAndValueName(ENUM_ && enumValue) {
    #endif
    #undef LIKE_WHICH
@@ -514,7 +514,7 @@ public:
        */
    #if (LIKE_WHICH == 1)
        template<typename T> requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>)
-       static T * findChildByName(QObject* parent, const QString& objectname) {
+       static constexpr T * findChildByName(QObject* parent, const QString& objectname) {
 
            if constexpr ( std::is_object_v<Object_t> ) {
                static_assert(XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro_v<Object_t>
@@ -523,17 +523,17 @@ public:
 
    #elif (LIKE_WHICH == 2 )
        template<typename T>
-       static T * findChildByName(QObject* parent, const QString& objectname)
+       static constexpr T * findChildByName(QObject* parent, const QString& objectname)
        requires(std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>) {
    #else
        template<typename T>
        concept QObject_t = std::is_same_v<QObject,T> || std::is_base_of_v<QObject,T>;
        template<QObject_t T>
-       static T *findChildByName(QObject* parent, const QString& objectname) {
+       static constexpr T *findChildByName(QObject* parent, const QString& objectname) {
    #endif
    #else
        template <typename T>
-       static std::enable_if_t<std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T>>,T*>
+       static constexpr std::enable_if_t<std::disjunction_v<std::is_same<QObject,T>,std::is_base_of<QObject,T>>,T*>
        findChildByName(QObject* parent, const QString& objectname) {
    #endif
 
@@ -545,7 +545,7 @@ public:
            return nullptr;
        }
        template<typename ...Args>
-       static QMetaObject::Connection ConnectHelper(Args && ...args) {
+       static constexpr QMetaObject::Connection ConnectHelper(Args && ...args) {
            if constexpr ( std::is_object_v<Object_t> ) {
                static_assert(XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro_v<Object_t>
                        ,"No X_HELPER_CLASS in the class!");
