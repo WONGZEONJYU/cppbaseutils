@@ -22,7 +22,7 @@ using XThreadPool_Ptr = std::shared_ptr<XThreadPool>;
 class X_CLASS_EXPORT XThreadPoolData {
     X_DISABLE_COPY_MOVE(XThreadPoolData)
 protected:
-    XThreadPoolData() = default;
+    constexpr XThreadPoolData() = default;
 public:
     virtual ~XThreadPoolData() = default;
 };
@@ -61,7 +61,7 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
 
         using result_t = typename result<decayed_tuple_>::type;
 
-        std::any run() const override {
+        constexpr std::any run() const override {
             using indices = std::make_index_sequence<std::tuple_size_v<decayed_tuple_>>;
             if constexpr (std::is_void_v<result_t>){
                 call(indices{});
@@ -72,13 +72,12 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
         }
 
         template<size_t ...I>
-        result_t call(std::index_sequence<I...>) const {
-            return std::invoke(std::get<I>(std::forward<decayed_tuple_>(m_tuple_))...);
-        }
+        constexpr result_t call(std::index_sequence<I...>) const
+        { return std::invoke(std::get<I>(std::forward<decayed_tuple_>(m_tuple_))...); }
 
     public:
-        explicit XTemporaryTasksImpl(XTemporaryTasksBase::Private,Args && ...args):m_tuple_{std::forward<Args>(args)...}{}
-        ~XTemporaryTasksImpl() override = default;
+        explicit constexpr XTemporaryTasksImpl(XTemporaryTasksBase::Private,Args && ...args):m_tuple_{std::forward<Args>(args)...}{}
+        constexpr ~XTemporaryTasksImpl() override = default;
     };
 
     class XTemporaryTasksFactory final {
@@ -86,7 +85,7 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
         XTemporaryTasksFactory() = delete;
 
         template<typename ...Args>
-        static auto create(Args && ...args) {
+        static constexpr auto create(Args && ...args) {
             try{
                 return std::make_shared<XTemporaryTasksImpl<Args...>>(XTemporaryTasksBase::Private{},std::forward<Args>(args)...);
             }catch (const std::exception &){
@@ -122,7 +121,7 @@ public:
     /// @param args
     /// @return task对象
     template<typename... Args>
-    [[maybe_unused]] auto runnableJoin(Args && ...args) {
+    [[maybe_unused]] constexpr auto runnableJoin(Args && ...args) {
 
         using First_t [[maybe_unused]] = std::tuple_element_t<0,std::tuple<Args...>>;
 

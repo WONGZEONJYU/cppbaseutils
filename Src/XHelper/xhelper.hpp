@@ -99,7 +99,7 @@ class Destroyer {
 
 public:
     constexpr explicit Destroyer(F && f):
-    m_fn_(std::move(f)),m_is_destroy{}{}
+    m_fn_(std::forward<F>(f)),m_is_destroy{}{}
 
     constexpr void destroy() const {
         if (!m_is_destroy) {
@@ -107,7 +107,7 @@ public:
             m_fn_();
         }
     }
-    constexpr virtual ~Destroyer() { destroy();}
+    constexpr virtual ~Destroyer() { destroy(); }
 };
 
 template<typename F2>
