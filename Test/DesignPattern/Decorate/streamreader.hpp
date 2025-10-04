@@ -5,6 +5,8 @@
 #include <string>
 
 class StreamReader {
+protected:
+    constexpr StreamReader () = default;
 
 public:
     virtual ~StreamReader() = default;
