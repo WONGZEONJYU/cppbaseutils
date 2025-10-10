@@ -716,7 +716,7 @@ class B11 : public XUtils::XCOR<XUtils::Const,std::string> {
     public:
     B11() = default;
 
-    void responseHandler(Arguments const &) const override {
+    void responseHandler(Arguments &&) const override {
         std::cerr << FUNC_SIGNATURE << "\n";
     }
 
