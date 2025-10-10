@@ -35,7 +35,7 @@ constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_
 { return append(c,std::ranges::subrange{d, d + length } ); }
 
 template<typename T,typename STR>
-constexpr std::optional<T> toNum(STR const & s,int const base = 10) noexcept {
+constexpr std::optional<T> toNum(STR && s,int const base = 10) noexcept {
     T value{};
     return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
     ? std::optional<T>{value} : std::nullopt;
