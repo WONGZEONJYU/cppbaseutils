@@ -34,23 +34,34 @@ requires std::ranges::range<Con_>
 constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length) noexcept -> Con_ &
 { return append(c,std::ranges::subrange{d, d + length } ); }
 
+#if !defined(X_PLATFORM_MACOS)
+
 template<typename T,typename STR>
+requires std::is_arithmetic_v<T> && std::is_integral_v<T>
 constexpr std::optional<T> toNum(STR && s,int const base = 10) noexcept {
     T value{};
     return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
     ? std::optional<T>{value} : std::nullopt;
 }
 
-template<typename T>
-constexpr std::optional<T> toNum(std::string_view const & s,int const base = 10) noexcept {
+template<typename T,typename STR>
+requires std::is_arithmetic_v<T> && std::is_floating_point_v<T>
+constexpr std::optional<T> toNum(STR && s,std::chars_format const fmt = std::chars_format::general) noexcept {
     T value{};
-    return std::from_chars(s.data(),s.data() + s.size(),value,base).ec == std::errc{}
+    return std::from_chars(s.data(),s.data() + s.size(),value,fmt).ec == std::errc{}
     ? std::optional<T>{value} : std::nullopt;
 }
 
+#endif
+
+template<typename T,typename StringStream,typename STR>
+constexpr auto toNum(STR && s) noexcept -> std::optional<T>
+{ StringStream ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
+
 template<typename StringStream,typename T>
 constexpr auto toString(T const v,auto const precision = StringStream{}.precision())
-    -> decltype(StringStream{}.str()) {
+    -> decltype(StringStream{}.str())
+{
     StringStream ss {};
     ss.precision(precision);
     ss << v;
