@@ -55,7 +55,7 @@ constexpr std::optional<T> toNum(STR && s,std::chars_format const fmt = std::cha
 #endif
 
 template<typename T,typename StringStream,typename STR>
-constexpr auto toNum(STR && s) noexcept -> std::optional<T>
+constexpr auto toNum(STR && s) -> std::optional<T>
 { StringStream ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
 
 template<typename StringStream,typename T>
