@@ -27,7 +27,7 @@ public:
         { next->responseHandler(std::forward<Arguments>(args)); }
     }
 
-    virtual ~XCORAbstract()
+    constexpr virtual ~XCORAbstract()
     { m_next_.storeRelease({}); }
 
     constexpr XCORAbstract(XCORAbstract && o) noexcept
@@ -60,7 +60,7 @@ public:
     constexpr ~XCOR() override = default;
 
 protected:
-    virtual void responseHandler(Arguments &&) const {}
+    constexpr virtual void responseHandler(Arguments &&) const {}
 };
 
 template<typename ... Args>
@@ -75,7 +75,7 @@ public:
     constexpr ~XCOR() override = default;
 
 protected:
-    virtual void responseHandler(Arguments &&) {}
+    constexpr virtual void responseHandler(Arguments &&) {}
 };
 
 XTD_INLINE_NAMESPACE_END
