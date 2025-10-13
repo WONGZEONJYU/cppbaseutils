@@ -8,6 +8,7 @@
 #include <iostream>
 #include <type_traits>
 #include <XGlobal/xtypeinfo.hpp>
+#include <cstring>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -174,7 +175,7 @@ struct XObjectPrivate::ConnectionData {
             // not (yet) existing trait:
             // static_assert(std::is_relocatable_v<SignalVector>);
             // static_assert(std::is_relocatable_v<ConnectionList>);
-            memcpy(newVector, vector,
+            std::memcpy(newVector, vector,
                    sizeof(SignalVector) + (vector->allocated + 1) * sizeof(ConnectionList));
             start = vector->count();
         }
