@@ -3,6 +3,7 @@
 
 #include <XHelper/xversion.hpp>
 #include <utility>
+#include <type_traits>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

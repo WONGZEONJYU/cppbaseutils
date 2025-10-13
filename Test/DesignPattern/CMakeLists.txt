@@ -1,1 +1,8 @@
 add_subdirectory(Proxy)
+add_subdirectory(Decorate)
+add_subdirectory(Observer)
+add_subdirectory(Iterator)
+add_subdirectory(Builder)
+add_subdirectory(Adapter)
+add_subdirectory(Bridge)
+add_subdirectory(Facade)

@@ -2,12 +2,13 @@
 #define X_OBJECT_P_P_HPP 1
 
 #include <XObject/xobject_p.hpp>
-#include <XHelper/xhelper.hpp>
+#include <XMemory/xmemory.hpp>
 #include <list>
 #include <unordered_map>
 #include <iostream>
 #include <type_traits>
 #include <XGlobal/xtypeinfo.hpp>
+#include <cstring>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -174,7 +175,7 @@ struct XObjectPrivate::ConnectionData {
             // not (yet) existing trait:
             // static_assert(std::is_relocatable_v<SignalVector>);
             // static_assert(std::is_relocatable_v<ConnectionList>);
-            memcpy(newVector, vector,
+            std::memcpy(newVector, vector,
                    sizeof(SignalVector) + (vector->allocated + 1) * sizeof(ConnectionList));
             start = vector->count();
         }
@@ -249,8 +250,11 @@ public:
     {}
 
     ~XConnection() {
-        std::cerr << FUNC_SIGNATURE << "\n";
-        XPrivate::SlotObjUniquePtr slotObj{m_slot_raw};
+        if (m_slot_raw && m_isSlotObject) {
+            XPrivate::SlotObjUniquePtr slotObj{m_slot_raw};
+            // slotObj 析构时会自动调用 destroyIfLastRef()
+        }
+        m_slot_raw = nullptr;
     }
 };
 
@@ -281,7 +285,7 @@ public:
     XSendersList m_senders{};
     XSender * m_currentSender{};
 
-    inline void resizeSignalVector(std::size_t const signal_index) {
+    void resizeSignalVector(std::size_t const signal_index) {
 
         auto v{m_signalVector.loadRelaxed()};
         if(!v){

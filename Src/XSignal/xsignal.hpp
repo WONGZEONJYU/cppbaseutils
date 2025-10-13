@@ -16,11 +16,9 @@ protected:
     XSignal() = default;
 public:
     template<typename... Args>
-    inline static auto Register(const int &sig,const int &flags,Args&& ...args){
+    constexpr static auto Register(const int &sig,const int &flags,Args&& ...args){
         const auto obj{create(sig,flags)};
-        if (obj){
-            obj->Callable_join(std::forward<Args>(args)...);
-        }
+        if (obj) { obj->Callable_join(std::forward<Args>(args)...); }
         return obj;
     }
 
@@ -32,9 +30,8 @@ public:
 };
 
 template<typename... Args>
-[[maybe_unused]] inline auto Signal_Register(const int &sig,const int &flags,Args&& ...args){
-    return XSignal::Register(sig,flags,std::forward<Args>(args)...);
-}
+[[maybe_unused]] constexpr auto Signal_Register(const int &sig,const int &flags,Args&& ...args)
+{ return XSignal::Register(sig,flags,std::forward<Args>(args)...); }
 
 [[maybe_unused]] void Signal_Unregister(const int &sig);
 

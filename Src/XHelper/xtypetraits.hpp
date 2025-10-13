@@ -18,22 +18,22 @@ template <typename T> struct [[maybe_unused]] RemoveRef { using Type = T; };
     template <typename T> struct [[maybe_unused]] RemoveRef<T __VA_ARGS__> { using Type = T; };
 FOR_EACH_CVREF_D(REMOVEREF)
 #undef REMOVEREF
-template <typename T> using RemoveRef_T [[maybe_unused]] = typename RemoveRef<T>::Type;
+template <typename T> using RemoveRef_T [[maybe_unused]] = RemoveRef<T>::Type;
 
 template <typename T> struct [[maybe_unused]] RemoveConstRef { using Type = T; };
 template <typename T> struct [[maybe_unused]] RemoveConstRef<const T &> { using Type = T; };
 template <typename T> struct [[maybe_unused]] RemoveConstRef<const T &&> { using Type = T; };
-template <typename T> using RemoveConstRef_T [[maybe_unused]] = typename RemoveConstRef<T>::Type;
+template <typename T> using RemoveConstRef_T [[maybe_unused]] = RemoveConstRef<T>::Type;
 
 template<typename T> struct [[maybe_unused]] RemoveVolatileRef { using Type = T; };
 template<typename T> struct [[maybe_unused]] RemoveVolatileRef<volatile T &> { using Type = T; };
 template<typename T> struct [[maybe_unused]] RemoveVolatileRef<volatile T &&> { using Type = T; };
-template<typename T> using RemoveVolatileRef_T [[maybe_unused]] = typename RemoveVolatileRef<T>::Type;
+template<typename T> using RemoveVolatileRef_T [[maybe_unused]] = RemoveVolatileRef<T>::Type;
 
 template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef { using Type = T;};
 template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef<const volatile T &> { using Type = T; };
 template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef<const volatile T &&> { using Type = T; };
-template<typename T> using RemoveConstVolatileRef_T [[maybe_unused]] = typename RemoveConstVolatileRef<T>::Type;
+template<typename T> using RemoveConstVolatileRef_T [[maybe_unused]] = RemoveConstVolatileRef<T>::Type;
 
 template<typename>
 struct is_smart_pointer : std::false_type {};
@@ -85,7 +85,7 @@ struct smart_pointer_element_type<std::weak_ptr<T>> {
 };
 
 template<typename T>
-using smart_pointer_element_type_t [[maybe_unused]] = typename smart_pointer_element_type<T>::type;
+using smart_pointer_element_type_t [[maybe_unused]] = smart_pointer_element_type<T>::type;
 
 // 检查成员函数是否是const的辅助模板
 template<typename>

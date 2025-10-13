@@ -47,11 +47,9 @@ public:
     /// @tparam Ty
     /// @return T类型
     template<typename Ty>
-    [[maybe_unused]] [[nodiscard]] Ty result(const Model& model_ = Model::BLOCK) const noexcept(false) {
-        const auto &r{m_d_ptr_->m_result_};
-        return Model::BLOCK == model_ ?
-        std::move(r.get<Ty>()) :
-        std::move(r.try_get<Ty>());
+    [[maybe_unused]] [[nodiscard]] constexpr Ty result(const Model& model_ = Model::BLOCK) const noexcept(false) {
+        const auto & r{m_d_ptr_->m_result_};
+        return Model::BLOCK == model_ ? r.get<Ty>() : r.try_get<Ty>();
     }
 
     /// 带超时等待返回值
@@ -61,9 +59,8 @@ public:
     /// @param rel_time
     /// @return Ty类型数据
     template<typename Ty,typename Rep_,typename Period_>
-    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::duration<Rep_,Period_> &rel_time) const noexcept(false) {
-        return std::move(m_d_ptr_->m_result_.get_for<Ty>(rel_time));
-    }
+    [[maybe_unused]] [[nodiscard]] constexpr Ty result(const std::chrono::duration<Rep_,Period_> &rel_time) const noexcept(false)
+    { return m_d_ptr_->m_result_.get_for<Ty>(rel_time); }
 
     /// 带指定时间等候返回值
     /// @tparam Ty
@@ -71,9 +68,8 @@ public:
     /// @param abs_time_
     /// @return Ty类型
     template<typename Ty,typename Clock_,typename Duration_>
-    [[maybe_unused]] [[nodiscard]] Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false) {
-        return std::move(m_d_ptr_->m_result_.get_until<Ty>(abs_time_));
-    }
+    [[maybe_unused]] [[nodiscard]] constexpr Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false)
+    { return m_d_ptr_->m_result_.get_until<Ty>(abs_time_); }
 
     /// 设置责任链,开发者可以重写
     /// @param next_
@@ -109,9 +105,8 @@ private:
     void call() const;
     void set_exit_function_(std::function<bool()> &&) const;
     void resetRecall_() const;
-    void allow_get_() const {
-        m_d_ptr_->m_result_.allow_get();
-    }
+    constexpr void allow_get_() const
+    { m_d_ptr_->m_result_.allow_get(); }
     XAtomicPointer<const void> &Owner_() const;
 
     template<typename> friend class XRunnable;

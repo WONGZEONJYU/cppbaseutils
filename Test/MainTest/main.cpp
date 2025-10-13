@@ -7,13 +7,14 @@
 #include <list>
 #include <deque>
 #include <XHelper/xutility.hpp>
-#include <XHelper/xtypetraits.hpp>
 #include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
+#include <XMemory/xmemory.hpp>
 #include <utility>
 #include <chrono>
-#include <XHelper/xtypetraits.hpp>
+#include <XTupleHelper/xtuplehelper.hpp>
 #include <XMath/xmath.hpp>
+#include <XDesignPattern/xcor.hpp>
 
 static std::mutex mtx{};
 
@@ -397,8 +398,8 @@ public:
     };
 };
 
-class CTest final : public XUtils::XHelperClass<CTest> {
-    X_HELPER_CLASS
+class CTest final : public XUtils::XTwoPhaseConstruction<CTest> {
+    X_TWO_PHASE_CONSTRUCTION_CLASS
 
     bool construct_(int const a){
         std::cerr << FUNC_SIGNATURE << " a = " << a << std::endl;
@@ -434,8 +435,8 @@ public:
     }
 };
 
-class AAA final : public XUtils::XSingleton<AAA> {
-    X_HELPER_CLASS
+class AAA final : public XUtils::XTwoPhaseConstruction<AAA> {
+    X_TWO_PHASE_CONSTRUCTION_CLASS
     int aa{100};
     void p(){
         using namespace std::chrono_literals;
@@ -465,7 +466,6 @@ struct BBB{
     }
 };
 
-
 [[maybe_unused]] static void test6(){
 
 #if 1
@@ -474,22 +474,22 @@ struct BBB{
         std::string aa{"2"};
         auto p1 = CTest::CreateUniquePtr(XUtils::Parameter{std::ref(a1)}, XUtils::Parameter{100});
         auto p2 = CTest::CreateSharedPtr(XUtils::Parameter{std::ref(a2)}, XUtils::Parameter{std::move(aa), 2});
+
         delete CTest::Create({}, {});
 
-        std::unique_ptr<CTest> a{CTest::Create({}, XUtils::Parameter{})};
+        std::unique_ptr<CTest> a{CTest::Create({}, XUtils::Parameter{}) };
 
         delete CTest::Create({}, XUtils::Parameter{200});
 
         int a3{300};
         delete CTest::Create(XUtils::Parameter{std::ref(a3)}, {});
+
+        return;
     }
     std::cerr << "\n\n";
 #endif
 
-    AAA::UniqueConstruction(XUtils::Parameter{1},{});
-
-
-    (void )XUtils::makeUnique<BBB>();
+    //AAA::UniqueConstruction(XUtils::Parameter{1});
 
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
     // AAA::UniqueConstruction(XUtils::Parameter{1},{})->p();
@@ -647,23 +647,90 @@ struct A3 : public A1 , public A2 {
 [[maybe_unused]] static void test8() {
 
     auto p0 = XUtils::makeUnique<int[]>(10);
-
     auto p1 = XUtils::makeShared<int[][2]>(10,{545,14512});
     auto p2 = XUtils::makeShared<std::vector<char>[512]>({1,2,3,4,5});
     auto p3 = XUtils::makeShared<int[10]>();
     auto p4 = XUtils::makeShared<int[]>(5);
 
-    // std::cerr << std::boolalpha
-    //     << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
-    //     << std::endl;
+    std::cerr << std::boolalpha
+        << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
+        << std::endl;
 
     std::cerr << XUtils::typeName<std::decay_t<int[][1]>>() << std::endl;
-
     std::cerr << XUtils::calculate_total_elements<std::remove_extent_t<int[][2][10][3]> >() << std::endl;
+
+    std::cerr << XUtils::typeName<std::vector<int>::const_pointer const >() << std::endl;
 }
 
-int main(const int argc,const char **const argv){
-    (void )argc,(void )argv;
+struct Test {
+    friend void test9();
+private:
+    Test()
+    { std::cerr << FUNC_SIGNATURE << "\n"; }
+    ~Test()
+    { std::cerr << FUNC_SIGNATURE << "\n"; }
+};
+
+[[maybe_unused]] void test9()
+{
+    std::allocator<Test> alloc{};
+    auto p = alloc.allocate(1);
+    new(p) Test{};
+    p->~Test();
+    alloc.deallocate(p,1);
+}
+
+void test10()
+{
+    constexpr std::string_view pattern { "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "abcdefghijklmnopqrstuvwxyz"
+                                        "0123456789" };
+
+    std::string data {"1) %FIX, 2) %HACK, 3) %TODO"};
+
+    std::cout << "替换前：" << data << '\n';
+
+    constexpr std::string_view replacement = "%DONE%";
+
+    for (std::string::size_type first{}, last{};
+        (first = data.find('%', first)) != std::string::npos;
+        first += replacement.size())
+    {
+        last = data.find_first_not_of(pattern, first + 1);
+        if (last == std::string::npos)
+            last = data.length();
+
+        // 现在 first 位于 '%'，而 last 位于找到的子串的尾后位置
+        data.replace(first, last - first, replacement);
+    }
+
+    std::cout << "替换后：" << data << '\n';
+}
+
+class A11 : public XUtils::XCOR<XUtils::Const,std::string>{
+public:
+    A11() = default;
+};
+
+class B11 : public XUtils::XCOR<XUtils::Const,std::string> {
+    public:
+    B11() = default;
+
+    void responseHandler(Arguments &&) const override {
+        std::cerr << FUNC_SIGNATURE << "\n";
+    }
+
+};
+
+void test11()
+{
+    A11 a;
+    B11 b;
+    a.setNextResponse(&b);
+    a.request(std::string{"fuck"});
+}
+
+int main(){
     //test1();
     //test2();
     //test3();
@@ -671,6 +738,9 @@ int main(const int argc,const char **const argv){
     //test5();
     //test6();
     //test7();
-    test8();
+    //test8();
+    //test9();
+    //test10();
+    test11();
     return 0;
 }

@@ -4,6 +4,23 @@
 #include <memory>
 #include <XObject/xsignalslot.hpp>
 
+// 类似Qt的信号槽宏定义
+#define signals public
+#define slots
+#define emit
+
+// 便于使用的连接宏
+#define X_SIGNAL(sender, signal) sender, &std::remove_pointer_t<decltype(sender)>::signal
+#define X_SLOT(receiver, slot) receiver, &std::remove_pointer_t<decltype(receiver)>::slot
+
+// 发射信号的宏
+#define X_EMIT(sender, signal, ...) \
+    do { \
+        using SignalType = XPrivate::FunctionPointer<decltype(&std::remove_pointer_t<decltype(sender)>::signal)>; \
+        typename SignalType::ReturnType *ret_ptr {}; \
+        XObject::emitSignal(sender, &std::remove_pointer_t<decltype(sender)>::signal, ret_ptr, ##__VA_ARGS__); \
+    } while(false)
+
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
@@ -27,8 +44,8 @@ class X_CLASS_EXPORT XObject : public std::enable_shared_from_this<XObject> {
     std::unique_ptr<XObjectData> m_d_ptr_{};
 public:
     template<typename Func1,typename Func2>
-    static inline bool connect(const typename XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
-                        const typename XPrivate::ContextTypeForFunctor<Func2>::ContextType *context, Func2 &&slot,
+    static bool connect(const XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
+                        const XPrivate::ContextTypeForFunctor<Func2>::ContextType *context, Func2 &&slot,
                         ConnectionType type = ConnectionType::AutoConnection){
 
         using SignalType = XPrivate::FunctionPointer<Func1>;
@@ -66,13 +83,13 @@ public:
     }
 
     template <typename Func1, typename Func2>
-    static inline bool connect(const typename XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, Func2 &&slot) {
+    static bool connect(const XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal, Func2 &&slot) {
         return connect(sender, signal, sender, std::forward<Func2>(slot));
     }
 
     template <typename Func1, typename Func2>
-    inline static bool disconnect(const typename XPrivate::FunctionPointer<Func1>::Object * const sender, Func1 signal,
-                                  const typename XPrivate::FunctionPointer<Func2>::Object * const receiver, Func2 slot) {
+    static bool disconnect(const XPrivate::FunctionPointer<Func1>::Object * const sender, Func1 signal,
+                                  const XPrivate::FunctionPointer<Func2>::Object * const receiver, Func2 slot) {
         using SignalType = XPrivate::FunctionPointer<Func1>;
         using SlotType = XPrivate::FunctionPointer<Func2>;
 
@@ -84,7 +101,7 @@ public:
     }
 
     template <typename Func1>
-    inline static bool disconnect(const typename XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
+    static bool disconnect(const XPrivate::FunctionPointer<Func1>::Object *sender, Func1 signal,
                                   const XObject *receiver, void **zero) {
         // This is the overload for when one wish to disconnect a signal from any slot. (slot=nullptr)
         // Since the function template parameter cannot be deduced from '0', we use a
@@ -94,7 +111,7 @@ public:
         return disconnectImpl(sender, reinterpret_cast<void **>(&signal), receiver, zero);
     }
 
-    inline static bool disconnect(const XObject * sender,void **zero_signal,const XObject * receiver,void **zero_slot) {
+    static bool disconnect(const XObject * sender,void **zero_signal,const XObject * receiver,void **zero_slot) {
         X_ASSERT_W(!zero_signal,FUNC_SIGNATURE,"zero_signal must be nullptr");
         X_ASSERT_W(!zero_slot,FUNC_SIGNATURE,"zero_slot must be nullptr");
         return disconnectImpl(sender, zero_signal, receiver, zero_slot);
@@ -102,14 +119,14 @@ public:
 
     explicit XObject();
     virtual ~XObject();
-    inline bool signalsBlocked() const noexcept { return m_d_ptr_->m_blockSig; }
+    bool signalsBlocked() const noexcept { return m_d_ptr_->m_blockSig; }
     bool blockSignals(bool ) noexcept;
 protected:
     XObject *sender() const;
     std::size_t senderSignalIndex() const;
 
     template<typename Func,typename ...Args>
-    inline static void emitSignal(XPrivate::FunctionPointer<Func>::Object * const sender,
+    static void emitSignal(XPrivate::FunctionPointer<Func>::Object * const sender,
                                   Func signal,
                                   XPrivate::FunctionPointer<Func>::ReturnType * const ret,
                                   const Args & ...args) {
@@ -126,7 +143,7 @@ private:
     static bool disconnectImpl(const XObject *sender,void **signal, const XObject *receiver, void **slot);
 
     template <typename Ret, typename... Args>
-    inline static void activate(XObject *const sender, std::size_t const signal_index, Ret * const ret, const Args &... args) {
+    static void activate(XObject *const sender, std::size_t const signal_index, Ret * const ret, const Args &... args) {
         void* a_[] {
                 const_cast<void *>(reinterpret_cast<const volatile void *>(ret)),
                 const_cast<void *>(reinterpret_cast<const volatile void *>(std::addressof(args)))...

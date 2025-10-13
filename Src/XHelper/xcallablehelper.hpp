@@ -18,10 +18,10 @@ protected:
 
     class XAbstractCallable {
     public:
-        virtual void operator()() {}
-        virtual ~XAbstractCallable() = default;
+        constexpr virtual void operator()() {}
+        constexpr virtual ~XAbstractCallable() = default;
     protected:
-        XAbstractCallable() = default;
+        constexpr XAbstractCallable() = default;
         enum class Private{};
     };
 
@@ -31,18 +31,17 @@ protected:
     public:
         [[maybe_unused]] constexpr explicit XCallable(Callable_ &&call,Private):
                 m_callable_{std::forward<Callable_>(call)}{}
-        ~XCallable() override = default;
+        constexpr ~XCallable() override = default;
     private:
-        void operator()() override {
-            m_callable_();
-        }
+        constexpr void operator()() override
+        { m_callable_(); }
     };
 
     class XFactoryCallable final: XAbstractCallable {
     public:
         XFactoryCallable() = delete;
         template<typename Callable_>
-        inline static auto create(Callable_ && call) {
+        static constexpr auto create(Callable_ && call) {
             using XCallable_t = XCallable<Callable_>;
             return std::make_shared<XCallable_t>(std::forward<Callable_>(call),Private{});
         }
@@ -50,7 +49,7 @@ protected:
 
     class XAbstractInvoker {
     protected:
-        XAbstractInvoker() = default;
+        constexpr XAbstractInvoker() = default;
         enum class Private{};
     };
 
@@ -67,14 +66,13 @@ protected:
         using result_t = result_<Tuple_>::type;
 
         template<size_t... Ind_>
-        inline result_t M_invoke_(std::index_sequence<Ind_...>) const {
-            return std::invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...);
-        }
+        constexpr result_t M_invoke_(std::index_sequence<Ind_...>) const
+        { return std::invoke(std::get<Ind_>(std::forward<decltype(m_M_t)>(m_M_t))...); }
 
     public:
         [[maybe_unused]] constexpr explicit XInvoker(Tuple_ &&t,Private):m_M_t{std::forward<Tuple_>(t)}{}
 
-        inline result_t operator()() const {
+        constexpr result_t operator()() const {
             using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple_>>;
             return M_invoke_(Indices_{});
         }
@@ -86,16 +84,16 @@ protected:
 
         template<typename... Args_>
         using Invoker_ = XInvoker<decayed_tuple_<Args_...>>;
+
     public:
         XFactoryInvoker() = delete;
         template<typename... Args_>
-        static inline auto create(Args_&&... args_) {
-            return Invoker_<Args_...>{{std::forward<Args_>(args_)...} ,Private{}};
-        }
+        static constexpr auto create(Args_&&... args_)
+        { return Invoker_<Args_...>{{std::forward<Args_>(args_)...} ,Private{}}; }
     };
 
 public:
-    virtual ~XCallableHelper() = default;
+    constexpr virtual ~XCallableHelper() = default;
 };
 
 XTD_INLINE_NAMESPACE_END

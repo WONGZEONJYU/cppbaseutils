@@ -94,6 +94,42 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XMath/
         PATTERN "*_private.hpp" EXCLUDE
 )
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XMemory/
+        DESTINATION include/XMemory
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*_p.hpp" EXCLUDE
+        PATTERN "*_private.hpp" EXCLUDE
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XContainerHelper/
+        DESTINATION include/XContainerHelper
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*_p.hpp" EXCLUDE
+        PATTERN "*_private.hpp" EXCLUDE
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XTupleHelper/
+        DESTINATION include/XTupleHelper
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*_p.hpp" EXCLUDE
+        PATTERN "*_private.hpp" EXCLUDE
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XDesignPattern/
+        DESTINATION include/XDesignPattern
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*_p.hpp" EXCLUDE
+        PATTERN "*_private.hpp" EXCLUDE
+)
+
 # 导出库配置供其他项目使用
 install(EXPORT ${PROJECT_NAME}Targets
     FILE ${PROJECT_NAME}Targets.cmake

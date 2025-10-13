@@ -7,18 +7,15 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XAtomicBool : public XBasicAtomic<bool>{
-    using Base_ = XBasicAtomic<bool>;
+    using Base_ = XBasicAtomic;
 public:
-    constexpr explicit XAtomicBool(const bool & value = {}) noexcept : Base_(value){}
+    constexpr explicit XAtomicBool(bool const value = {}) noexcept : Base_(value){}
 
-    inline XAtomicBool(const XAtomicBool &other) noexcept {
-        this->storeRelease(other.loadAcquire());
-    }
+    XAtomicBool(XAtomicBool const & other) noexcept
+    { this->storeRelease(other.loadAcquire()); }
 
-    inline XAtomicBool &operator=(const XAtomicBool &other) noexcept {
-        this->storeRelease(other.loadAcquire());
-        return *this;
-    }
+    XAtomicBool & operator=(XAtomicBool const & other) noexcept
+    { this->storeRelease(other.loadAcquire()); return *this; }
 };
 
 // High-level atomic integer operations
@@ -27,16 +24,14 @@ class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    constexpr explicit XAtomicInteger(const T &value = {}) noexcept : Base_(value) {}
+    explicit XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
 
-    inline XAtomicInteger(const XAtomicInteger &other) noexcept {
-        this->storeRelease(other.loadAcquire());
-    }
+    XAtomicInteger(XAtomicInteger const & other) noexcept
+    { this->storeRelease(other.loadAcquire()); }
 
-    inline XAtomicInteger &operator=(const XAtomicInteger &other) noexcept {
-        this->storeRelease(other.loadAcquire());
-        return *this;
-    }
+    XAtomicInteger & operator=(XAtomicInteger const & other) noexcept
+    { this->storeRelease(other.loadAcquire()); return *this; }
+
 #ifdef X_XDOC
     T loadRelaxed() const;
     T loadAcquire() const;
@@ -113,29 +108,27 @@ public:
 #endif
 };
 
-class [[maybe_unused]] XAtomicInt : public XAtomicInteger<int> {
+class XAtomicInt : public XAtomicInteger<int> {
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    constexpr explicit XAtomicInt(const int &value = {}) noexcept : XAtomicInteger(value) {}
+    explicit constexpr XAtomicInt(const int value = {}) noexcept : XAtomicInteger(value) {}
 };
 
 // High-level atomic pointer operations
 template <typename T>
 class XAtomicPointer : public XBasicAtomicPointer<T> {
+    using Base = XBasicAtomicPointer<T>;
 public:
-    constexpr explicit XAtomicPointer(T *value = nullptr) noexcept : XBasicAtomicPointer<T>(value) {}
+    constexpr explicit XAtomicPointer(T * value = {}) noexcept
+    : XBasicAtomicPointer<T>(value) {}
 
-    inline XAtomicPointer(const XAtomicPointer &other) noexcept
-        : XBasicAtomicPointer<T>(){
-        this->storeRelease(other.loadAcquire());
-    }
+    XAtomicPointer(XAtomicPointer const & other) noexcept
+    { this->storeRelease(other.loadAcquire()); }
 
-    inline XAtomicPointer &operator=(const XAtomicPointer &other) noexcept{
-        this->storeRelease(other.loadAcquire());
-        return *this;
-    }
+    XAtomicPointer & operator=(XAtomicPointer const & other) noexcept
+    { this->storeRelease(other.loadAcquire()); return *this; }
 
 #ifdef X_XDOC
     T *loadAcquire() const;
@@ -169,21 +162,16 @@ public:
 #endif
 };
 
-
 /*!
     This is a helper for the assignment operators of implicitly
     shared classes. Your assignment operator should look like this:
 
 */
 template <typename T>
-[[maybe_unused]] inline void qAtomicAssign(T *&d,T *x) {
-    if (d == x){
-        return;
-    }
+[[maybe_unused]] void qAtomicAssign(T * &d,T *x) {
+    if (d == x){ return; }
     x->ref.ref();
-    if (!d->ref.deref()){
-        delete d;
-    }
+    if (!d->ref.deref()){ delete d; }
     d = x;
 }
 
@@ -195,16 +183,10 @@ template <typename T>
 */
 
 template <typename T>
-[[maybe_unused]] inline void qAtomicDetach(T *&d) {
-    if (d->ref.loadRelaxed() == 1){
-        return;
-    }
-
-    T *x {d};
-    d = new T(*d);
-    if (!x->ref.deref()){
-        delete x;
-    }
+[[maybe_unused]] void qAtomicDetach(T * &d) {
+    if (1 == d->ref.loadRelaxed()){ return;}
+    T * x {d}; d = new T(*d);
+    if (!x->ref.deref()){ delete x; }
 }
 
 XTD_INLINE_NAMESPACE_END

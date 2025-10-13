@@ -19,7 +19,3 @@ ServerInfo ServerInfoGetterProxy::getInfo() {
     sm_cache_ = m_getterBase_->getInfo();
     return sm_cache_;
 }
-
-
-
-

@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.20)
 
 # 设置项目名称、版本和描述
 project(XUtils 
-    VERSION 1.0.0
+    VERSION 2.0.0
     DESCRIPTION "C++ Base Utilities Library"
     LANGUAGES CXX
     HOMEPAGE_URL "https://github.com/yourusername/XUtils"
 )
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

@@ -30,7 +30,7 @@ public:
     m_bin_sem_{0};
     virtual std::any get_value() const = 0;
 protected:
-    XResultData() = default;
+    constexpr XResultData() = default;
 public:
     virtual ~XResultData() = default;
 };
@@ -46,28 +46,23 @@ class X_CLASS_EXPORT XResult final {
 public:
 #define RETURN_VALUE(...)\
     auto v{__VA_ARGS__};\
-    return v.has_value() ? std::move(std::any_cast<Ty>(v)) : Ty{}
+    return v.has_value() ? std::any_cast<Ty>(v) : Ty{}
 
     template<typename Ty>
-    Ty get() const noexcept(false) {
-        RETURN_VALUE(get_());
-    }
+    constexpr Ty get() const noexcept(false)
+    { RETURN_VALUE(get_()); }
 
     template<typename Ty>
-    Ty try_get() const noexcept(false) {
-        RETURN_VALUE(try_get_());
-    }
+    constexpr Ty try_get() const noexcept(false)
+    { RETURN_VALUE(try_get_()); }
 
     template<typename Ty,typename Rep_,typename Period_>
-    Ty get_for(std::chrono::duration<Rep_,Period_> const & rel_time) const noexcept(false) {
-        RETURN_VALUE(std::move(get_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))));
-    }
+    constexpr Ty get_for(std::chrono::duration<Rep_,Period_> const & rel_time) const noexcept(false)
+    { RETURN_VALUE(get_for_(std::chrono::duration_cast<std::chrono::nanoseconds>(rel_time))); }
 
     template<typename Ty,typename Clock_,typename Duration_>
-    Ty get_until(std::chrono::time_point<Clock_,Duration_> const & abs_time_) const noexcept(false) {
-        if (!m_d_ptr_->m_bin_sem_.try_acquire_until(abs_time_)){
-            return Ty{};
-        }
+    constexpr Ty get_until(std::chrono::time_point<Clock_,Duration_> const & abs_time_) const noexcept(false) {
+        if (!m_d_ptr_->m_bin_sem_.try_acquire_until(abs_time_)) { return Ty{}; }
         RETURN_VALUE(m_d_ptr_->get_value());
     }
 #undef RETURN_VALUE

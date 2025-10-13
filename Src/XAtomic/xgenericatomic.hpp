@@ -13,12 +13,13 @@ template<int Size> struct XAtomicOpsSupport {
 
 template <typename T> struct XAtomicAdditiveType {
     using AdditiveT = T;
-    [[maybe_unused]] inline static constexpr auto AddScale {1};
+    [[maybe_unused]] static constexpr auto AddScale {1};
 };
 
 template <typename T> struct XAtomicAdditiveType<T *> {
     using AdditiveT = xptrdiff;
-    [[maybe_unused]] inline static constexpr auto AddScale{sizeof(T)};
+    [[maybe_unused]] static constexpr auto AddScale
+    { sizeof(T) };
 };
 
 XTD_INLINE_NAMESPACE_END

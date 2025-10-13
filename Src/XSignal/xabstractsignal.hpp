@@ -12,14 +12,14 @@ class X_CLASS_EXPORT XAbstractSignal : public XCallableHelper {
     X_DISABLE_COPY_MOVE(XAbstractSignal)
 protected:
     template<typename... Args>
-    inline void Callable_join(Args&& ...args){
+    constexpr void Callable_join(Args&& ...args){
         auto invoker_{ XFactoryInvoker::create(std::forward<Args>(args)...) };
         set_call(XFactoryCallable::create(std::forward<decltype(invoker_)>(invoker_)));
     }
 
     using Callable_Ptr = std::shared_ptr<XAbstractCallable>;
     virtual void set_call(const Callable_Ptr &) = 0;
-    XAbstractSignal() = default;
+    constexpr XAbstractSignal() = default;
 
 public:
     [[nodiscard]] [[maybe_unused]] virtual int sig() const & = 0;

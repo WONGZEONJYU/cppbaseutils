@@ -15,15 +15,13 @@ class X_TEMPLATE_EXPORT XThreadLocal final {
     X_DISABLE_COPY_MOVE(XThreadLocal)
     mutable std::mutex m_mtx_{};
     mutable std::unordered_map<size_t,Ty> m_storage_{};
-    static auto Hash_id(){
-        using Hash = std::hash<std::thread::id>;
-        return Hash{}(std::this_thread::get_id());
-    }
-public:
-    explicit XThreadLocal() = default;
-    ~XThreadLocal() = default;
 
-    [[nodiscard]] std::optional<Ty> get() const {
+public:
+    constexpr explicit XThreadLocal() = default;
+
+    constexpr ~XThreadLocal() = default;
+
+    [[nodiscard]] constexpr std::optional<Ty> get() const {
         std::unique_lock lock{m_mtx_};
         if (const auto it{m_storage_.find(Hash_id())};it != m_storage_.end()){
             return it->second;
@@ -31,11 +29,10 @@ public:
         return {};
     }
 
-    std::optional<Ty> operator()() const {
-        return get();
-    }
+    constexpr std::optional<Ty> operator()() const
+    { return get(); }
 
-    void remove_value() const {
+    constexpr void remove_value() const {
         std::unique_lock lock{m_mtx_};
         if (const auto it{m_storage_.find(Hash_id())};it != m_storage_.end()){
             m_storage_.erase(it);
@@ -43,12 +40,13 @@ public:
     }
 
 private:
-    void set_val(const Ty &v) const {
-        std::unique_lock lock{m_mtx_};
-        m_storage_[Hash_id()] = v;
-    }
+    static constexpr auto Hash_id()
+    { using Hash = std::hash<std::thread::id>; return Hash{}(std::this_thread::get_id()); }
 
-    template<typename Ty_>
+    constexpr void set_val(const Ty &v) const
+    { std::unique_lock lock{m_mtx_}; m_storage_[Hash_id()] = v; }
+
+    template<typename>
     friend class XThreadLocalStorage;
 };
 
@@ -60,23 +58,17 @@ class X_TEMPLATE_EXPORT XThreadLocalStorage final {
     X_DISABLE_COPY_MOVE(XThreadLocalStorage)
     mutable XThreadLocal<Ty> * m_tls_{};
     uint32_t m_unfree_:1{};
+
 public:
     constexpr explicit XThreadLocalStorage(XThreadLocal<Ty> & tls,const Ty & v,const bool & is_Unfree = {}):
-    m_tls_(std::addressof(tls)){
-        m_unfree_ = is_Unfree;
-        tls.set_val(v);
-    }
+    m_tls_(std::addressof(tls)),m_unfree_(is_Unfree)
+    { tls.set_val(v); }
 
-    constexpr void remove_value() const {
-        if (m_unfree_){
-            return;
-        }
-        m_tls_->remove_value();
-    }
+    constexpr void remove_value() const
+    { if (m_unfree_){ return; } m_tls_->remove_value(); }
 
-    constexpr ~XThreadLocalStorage() {
-        remove_value();
-    }
+    constexpr ~XThreadLocalStorage()
+    { remove_value(); }
 };
 
 using XThreadLocalStorageVoid [[maybe_unused]] = XThreadLocalStorage<void*>;
