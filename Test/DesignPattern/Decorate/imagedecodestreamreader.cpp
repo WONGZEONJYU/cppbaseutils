@@ -13,7 +13,7 @@ int ImageDecodeStreamReader::close() {
     return m_reader_->close();
 }
 
-int ImageDecodeStreamReader::read(uint8_t * const buf, int const len) {
+int ImageDecodeStreamReader::read(void * const buf, int const len) {
     auto const result{ m_reader_->read(buf, len) };
     std::cerr << FUNC_SIGNATURE << '\n';
     return result ;

@@ -9,7 +9,7 @@ public:
     ~DecryptStreamReader() override  = default;
     int open(std::string const & url) override ;
     int close() override;
-    int read(uint8_t *, int ) override;
+    int read(void *, int ) override;
 };
 
 #endif

@@ -92,15 +92,15 @@ public:
 [[maybe_unused]] static void test1() {
     bool exit_{};
 #if !defined(_WIN32) && !defined(_WIN64)
-    const auto sigterm{XUtils::Signal_Register(SIGTERM,{},[&]{
+    const auto sigterm{XUtils::SignalRegister(SIGTERM,{},[&]{
         exit_ = true;
     })};
 
-    const auto sigint{XUtils::Signal_Register(SIGINT,{},[&]{
+    const auto sigint{XUtils::SignalRegister(SIGINT,{},[&]{
         exit_ = true;
     })};
 
-    const auto sigkill {XUtils::Signal_Register(SIGKILL,{},[&]{
+    const auto sigkill {XUtils::SignalRegister(SIGKILL,{},[&]{
         exit_ = true;
     })};
 #endif

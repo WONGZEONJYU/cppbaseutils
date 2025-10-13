@@ -13,8 +13,8 @@ int FileStreamReader::close() {
     return 0;
 }
 
-int FileStreamReader::read(uint8_t * const buf, int const wantLen) {
-    ifs_.read(reinterpret_cast<char * >(buf),wantLen);
+int FileStreamReader::read(void * const buf, int const wantLen) {
+    ifs_.read(static_cast<char*>(buf),wantLen);
     auto const readLen = ifs_.gcount();
     return static_cast<int>(readLen);
 }

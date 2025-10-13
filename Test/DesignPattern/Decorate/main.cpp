@@ -2,6 +2,7 @@
 #include <filestreamreader.hpp>
 #include <decryptstreamreader.hpp>
 #include <imagedecodestreamreader.hpp>
+#include <cstdint>
 
 int main() {
     FileStreamReader f;

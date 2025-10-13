@@ -11,9 +11,14 @@
 int main() {
     bool is_exit {};
 #if !defined(_WIN32) && !defined(_WIN64)
-    auto const sigterm { XUtils::Signal_Register(SIGTERM,0,[&is_exit]()noexcept{
+    auto const sigterm{ XUtils::SignalRegister(SIGTERM,0,[&is_exit]() noexcept{
         is_exit = true;
     })};
+
+    auto const sigint{ XUtils::SignalRegister(SIGINT,0,[&is_exit]() noexcept{
+    is_exit = true;
+})};
+
 #endif
     while (!is_exit) {
         ServerInfoGetterLinux linux{};
