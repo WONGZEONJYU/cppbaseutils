@@ -1,10 +1,12 @@
 #ifndef XUTILS_XMEMORY_HPP
 #define XUTILS_XMEMORY_HPP 1
 
+#include <thread>
+#include <mutex>
+#include <sstream>
 #include <XHelper/xhelper.hpp>
 #include <XHelper/xqt_detection.hpp>
 #include <XAtomic/xatomic.hpp>
-#include <thread>
 #ifdef HAS_QT
     #include <QMetaEnum>
     #include <QString>

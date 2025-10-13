@@ -86,7 +86,7 @@ struct XObjectPrivate::Connection : ConnectionOrSignalVector {
 
     ~Connection();
 
-    [[maybe_unused]] int method() const {
+    [[nodiscard]] [[maybe_unused]] int method() const {
         X_ASSERT(!isSlotObject);
         return method_offset + method_relative;
     }
@@ -157,7 +157,7 @@ struct XObjectPrivate::ConnectionData {
     }
     void cleanOrphanedConnectionsImpl(const XObject *sender, LockPolicy lockPolicy);
 
-    ConnectionList &connectionsForSignal(int const signal) const{
+    [[nodiscard]] ConnectionList &connectionsForSignal(int const signal) const{
         return signalVector.loadRelaxed()->at(signal);
     }
 
@@ -166,7 +166,7 @@ struct XObjectPrivate::ConnectionData {
         SignalVector *vector = this->signalVector.loadRelaxed();
         if (vector && vector->allocated > size)
             return;
-        size = size + 7 & ~7;
+        size = (size + 7) & ~7;
         void *ptr = malloc(sizeof(SignalVector) + (size + 1) * sizeof(ConnectionList));
         const auto newVector = new (ptr) SignalVector;
 
@@ -198,7 +198,7 @@ struct XObjectPrivate::ConnectionData {
         }
     }
 
-    [[maybe_unused]] int signalVectorCount() const {
+    [[nodiscard]] [[maybe_unused]] int signalVectorCount() const {
         return signalVector.loadAcquire() ? signalVector.loadRelaxed()->count() : -1;
     }
 
@@ -295,9 +295,8 @@ public:
         v->try_emplace(signal_index);
     }
 
-    inline XConnectionList& connectionsForSignal(size_t const signal_index) const {
-        return m_signalVector.loadRelaxed()->at(signal_index);
-    }
+    [[nodiscard]] XConnectionList& connectionsForSignal(size_t const signal_index) const
+    { return m_signalVector.loadRelaxed()->at(signal_index); }
 };
 
 class XObjectPrivate::XSender final {

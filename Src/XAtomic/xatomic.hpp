@@ -11,7 +11,7 @@ class XAtomicBool : public XBasicAtomic<bool>{
 public:
     constexpr explicit XAtomicBool(bool const value = {}) noexcept : Base_(value){}
 
-    XAtomicBool(XAtomicBool const & other) noexcept
+    constexpr XAtomicBool(XAtomicBool const & other) noexcept : Base_()
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicBool & operator=(XAtomicBool const & other) noexcept
@@ -24,9 +24,9 @@ class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    explicit XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
+    constexpr explicit XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
 
-    XAtomicInteger(XAtomicInteger const & other) noexcept
+    constexpr XAtomicInteger(XAtomicInteger const & other) noexcept
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicInteger & operator=(XAtomicInteger const & other) noexcept
@@ -124,7 +124,7 @@ public:
     constexpr explicit XAtomicPointer(T * value = {}) noexcept
     : XBasicAtomicPointer<T>(value) {}
 
-    XAtomicPointer(XAtomicPointer const & other) noexcept
+    constexpr XAtomicPointer(XAtomicPointer const & other) noexcept
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicPointer & operator=(XAtomicPointer const & other) noexcept
