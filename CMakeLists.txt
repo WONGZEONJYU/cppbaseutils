@@ -5,7 +5,7 @@ project(XUtils
     VERSION 2.0.0
     DESCRIPTION "C++ Base Utilities Library"
     LANGUAGES CXX
-    HOMEPAGE_URL "https://github.com/yourusername/XUtils"
+    HOMEPAGE_URL "https://github.com/WONGZEONJYU/cppbaseutils"
 )
 
 # 设置C++标准

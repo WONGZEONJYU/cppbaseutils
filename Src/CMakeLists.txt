@@ -69,6 +69,7 @@ add_subdirectory(XDesignPattern)
 # 平台特定的模块
 if(APPLE OR UNIX)
     add_subdirectory(XSignal)
+    add_subdirectory(Unix)
 endif()
 
 add_subdirectory(XThreadPool)
