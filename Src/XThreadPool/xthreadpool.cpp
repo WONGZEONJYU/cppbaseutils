@@ -407,7 +407,7 @@ void XThreadPool::stop() const{
     return d->m_tasksSizeThreshold.loadAcquire();
 }
 
-XAbstractRunnable_Ptr XThreadPool::runnableJoin_(const XAbstractRunnable_Ptr& task) {
+XAbstractRunnable_Ptr XThreadPool::runnableJoin_(XAbstractRunnable_Ptr const & task) {
     X_D(const XThreadPool);
     const auto retTask{d->runnableJoin(task)};
     start();

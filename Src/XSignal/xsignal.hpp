@@ -58,7 +58,7 @@ constexpr auto XSignal::Register(int const sig,int const flags,Fn && fn,Args && 
     auto obj{ CreateSharedPtr({},Parameter{sig,flags}) };
     if (!obj) { return {}; }
     auto const d { obj->m_d_ptr_.get() };
-    auto callPtr { XCallableHelper::XFactoryInvokerPtr::create(std::forward<Fn>(fn)
+    auto callPtr { XCallableHelper::createCallable(std::forward<Fn>(fn)
         ,std::cref(d->m_sig)
         ,std::cref(d->m_info)
         ,std::cref(d->m_context)

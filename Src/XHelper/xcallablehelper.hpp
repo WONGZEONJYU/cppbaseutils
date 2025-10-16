@@ -9,19 +9,29 @@
 #include <functional>
 #include <memory>
 
+#include "xcallablehelper.hpp"
+
 XTD_NAMESPACE_BEGIN
-XTD_INLINE_NAMESPACE_BEGIN(v1)
+    XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class X_CLASS_EXPORT XCallableHelper {
 
-    class XAbstractCallable {
-    public:
-        constexpr virtual void operator()() {}
-        constexpr virtual ~XAbstractCallable() = default;
+    struct XFactoryCallable;
 
-    protected:
-        constexpr XAbstractCallable() = default;
+    template<typename > class XCallable;
+
+    class XAbstractCallable {
+        friend struct XFactoryCallable;
+
+        template<typename > friend class XCallable;
+
         enum class Private{};
+
+        constexpr XAbstractCallable() = default;
+
+    public:
+        constexpr virtual void operator()() const = 0;
+        constexpr virtual ~XAbstractCallable() = default;
     };
 
     template<typename Callable>
@@ -34,30 +44,28 @@ class X_CLASS_EXPORT XCallableHelper {
 
         constexpr ~XCallable() override = default;
 
-        constexpr void operator()() override
-        { m_callable_(); }
+        constexpr void operator()() const override { m_callable_(); }
     };
 
     using CallablePtr_ = std::shared_ptr<XAbstractCallable>;
 
-    class XFactoryCallable final: XAbstractCallable {
-    public:
+    struct XFactoryCallable{
         XFactoryCallable() = delete;
         template<typename Callable_>
-        static constexpr auto create(Callable_ && call) -> CallablePtr_ {
+        static constexpr auto create(Callable_ && call) noexcept -> CallablePtr_ {
             using XCallable_t = XCallable<Callable_>;
-            return makeShared<XCallable_t>(std::forward<Callable_>(call),Private{});
+            return makeShared<XCallable_t>(std::forward<Callable_>(call),XAbstractCallable::Private{});
         }
     };
 
-    class XAbstractInvoker {
-    protected:
-        constexpr XAbstractInvoker() = default;
-        enum class Private{};
-    };
+    struct Factory;
 
     template<typename Tuple>
-    class XInvoker final : XAbstractInvoker {
+    class XInvoker final {
+
+        friend struct Factory;
+
+        enum class Private_{};
 
         mutable Tuple m_fnAndArgs_{};
 
@@ -73,7 +81,7 @@ class X_CLASS_EXPORT XCallableHelper {
     public:
         using result_t = result_<Tuple>::type;
 
-        [[maybe_unused]] constexpr explicit XInvoker(Tuple && t,Private) noexcept
+        constexpr XInvoker(Tuple && t,Private_) noexcept
         :m_fnAndArgs_{std::forward<Tuple>(t)}{}
 
         constexpr result_t operator()() const {
@@ -82,34 +90,43 @@ class X_CLASS_EXPORT XCallableHelper {
         }
     };
 
-public:
-    explicit XCallableHelper() = default;
-    constexpr virtual ~XCallableHelper() = default;
+    template<typename... Tp>
+    using decayedTuple_ = std::tuple<std::decay_t<Tp>...>;
 
-    using CallablePtr = CallablePtr_;
+    struct Factory final {
+        Factory() = delete;
 
-    class XFactoryInvoker final : XAbstractInvoker {
-        template<typename... Tp>
-        using decayed_tuple_ = std::tuple<std::decay_t<Tp>...>;
-
-    public:
         template<typename... Args>
-        using Invoker_ = XInvoker<decayed_tuple_<Args...>>;
+        static constexpr auto createInvoker(Args && ...args) noexcept {
+            using invoker_t = Invoker<Args...>;
+            return invoker_t { {std::forward<Args>(args)...},typename invoker_t::Private_{} };
+        }
 
-        XFactoryInvoker() = delete;
         template<typename... Args>
-        static constexpr auto create(Args && ...args_) noexcept
-        { return Invoker_<Args...>{{std::forward<Args>(args_)...},Private{}}; }
-    };
-
-    class XFactoryInvokerPtr final : XAbstractInvoker {
-    public:
-        template<typename... Args>
-        static constexpr auto create(Args && ...args) noexcept {
-            auto invoker { XFactoryInvoker::create(std::forward<Args>(args)...) };
+        static constexpr auto createCallable(Args && ...args) noexcept -> CallablePtr_ {
+            auto invoker { createInvoker(std::forward<Args>(args)...) };
             return XFactoryCallable::create(std::forward<decltype(invoker)>(invoker));
         }
     };
+
+protected:
+    explicit XCallableHelper() = default;
+
+public:
+    using CallablePtr = CallablePtr_;
+
+    template<typename... Args>
+    using Invoker = XInvoker<decayedTuple_<Args...>>;
+
+    constexpr virtual ~XCallableHelper() = default;
+
+    template<typename... Args>
+    static constexpr auto createInvoker(Args && ...args) noexcept
+    { return Factory::createInvoker(std::forward<Args>(args)...); }
+
+    template<typename... Args>
+    static constexpr auto createCallable(Args && ...args) noexcept -> CallablePtr
+    { return Factory::createCallable(std::forward<Args>(args)...); }
 };
 
 XTD_INLINE_NAMESPACE_END
