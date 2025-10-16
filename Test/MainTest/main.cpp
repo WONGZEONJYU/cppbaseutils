@@ -121,7 +121,7 @@ public:
 
     const auto p1{pool2->runnableJoin(&Functor3::func, std::addressof(f3), "34")} ,
             p2{pool2->runnableJoin(Double,35.0)};
-    int const aaa { 31 };
+    constexpr int aaa { 31 };
     XUtils::XAbstractRunnable_Ptr lambda{};
     lambda = pool2->runnableJoin([&](const int& id){
         pool2->stop();
@@ -731,7 +731,7 @@ void test11()
 }
 
 int main(){
-    //test1();
+    test1();
     //test2();
     //test3();
     //test4(123);
@@ -741,6 +741,6 @@ int main(){
     //test8();
     //test9();
     //test10();
-    test11();
+    //test11();
     return 0;
 }
