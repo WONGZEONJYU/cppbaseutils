@@ -24,9 +24,9 @@ void XSignalPrivate::signal_handler(int const sig, siginfo_t * const info, void*
     { noSig(sig); return; }
 
     auto const d{ it->second->d_func() };
-    d->d.m_context_ = ctx;
-    d->d.m_sig_ = sig;
-    d->d.m_info_ = *info;
+    d->m_context = ctx;
+    d->m_sig = sig;
+    d->m_info = info;
     std::invoke(*d->d.m_callable_);
 }
 
@@ -34,29 +34,32 @@ XSignalPrivate::~XSignalPrivate()
 { unregisterHelper(); }
 
 void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
-    d.m_sig_ = sig;
+    m_sig = sig;
     d.m_act_.sa_sigaction = signal_handler;
     d.m_act_.sa_flags = SA_SIGINFO | flags;
     sigaction(sig, &d.m_act_,{});
 }
 
 void XSignalPrivate::unregisterHelper() noexcept {
-    if (d.m_sig_ > 0) {
+    if (m_sig > 0) {
         d.m_act_.sa_handler = SIG_DFL;
         d.m_act_.sa_flags = 0;
-        sigaction(d.m_sig_, &d.m_act_,{});
-        d.m_sig_ = -1;
+        sigaction(m_sig, &d.m_act_,{});
+        m_sig = -1;
     }
 }
 
 XSignal::XSignal() = default;
 
-SignalPtr XSignal::createXSignal(int const sig, int const flags) noexcept {
-    auto obj{ CreateSharedPtr({},Parameter{sig,flags}) };
-    if (!obj) { return {}; }
-    XSignalPrivate::sm_signalMap_[sig] = obj;
-    return obj;
-}
+// SignalPtr XSignal::createXSignal(int const sig, int const flags) noexcept {
+//     auto obj{ CreateSharedPtr({},Parameter{sig,flags}) };
+//     if (!obj) { return {}; }
+//     XSignalPrivate::sm_signalMap_[sig] = obj;
+//     return obj;
+// }
+
+void XSignal::registerHelper( SignalPtr const & p)
+{ XSignalPrivate::sm_signalMap_[p->sig()] = p; }
 
 XSignal::~XSignal() = default;
 
@@ -69,17 +72,19 @@ bool XSignal::construct_(int const sig, int const flags) noexcept {
     return true;
 }
 
-void XSignal::setCall_(CallablePtr && f) noexcept
+void XSignal::setCall_(XCallableHelper::CallablePtr && f) noexcept
 { X_D(XSignal); d->d.m_callable_.swap(f); }
 
+#if 0
 int XSignal::sig() const noexcept
-{ X_D(const XSignal); return d->d.m_sig_; }
+{ X_D(const XSignal); return d->m_sig_; }
 
 siginfo_t const & XSignal::siginfo() const & noexcept
 { X_D(const XSignal); return d->d.m_info_; }
 
 ucontext_t * XSignal::context() const noexcept
 { X_D(const XSignal); return static_cast<ucontext_t*>(d->d.m_context_); }
+#endif
 
 void XSignal::unregister()
 { X_D(XSignal); d->unregisterHelper();}
@@ -87,8 +92,8 @@ void XSignal::unregister()
 siginfo_t XSignal::siginfo(int const sig) {
     const auto it { XSignalPrivate::sm_signalMap_.find(sig)} ;
     return XSignalPrivate::sm_signalMap_.end() != it
-        ? it->second->d_func()->d.m_info_
-        : siginfo_t{};
+        ? *it->second->d_func()->m_info
+        : siginfo_t {};
 }
 
 void XSignal::unregister(int const sig) {

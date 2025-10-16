@@ -7,7 +7,7 @@
 #include <XMemory/xmemory.hpp>
 
 XTD_NAMESPACE_BEGIN
-XTD_INLINE_NAMESPACE_BEGIN(v1)
+    XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XSignal;
 class XSignalPrivate;
@@ -19,10 +19,13 @@ protected:
 public:
     virtual ~XSignalData() = default;
     XSignal * m_x_ptr_{};
+    int m_sig {-1};
+    siginfo_t * m_info{};
+    void * m_context{};
 };
 
-class X_CLASS_EXPORT XSignal final : public XCallableHelper
-    ,XTwoPhaseConstruction<XSignal>
+class X_CLASS_EXPORT XSignal final :
+    public XTwoPhaseConstruction<XSignal>
 {
     X_DISABLE_COPY_MOVE(XSignal)
     X_DECLARE_PRIVATE(XSignal)
@@ -30,37 +33,46 @@ class X_CLASS_EXPORT XSignal final : public XCallableHelper
     std::unique_ptr<XSignalData> m_d_ptr_{};
 
 public:
-    template<typename... Args>
-    constexpr static auto Register(int sig,int flags,Args && ...args) noexcept -> SignalPtr;
-    [[nodiscard]] [[maybe_unused]] int sig() const noexcept;
-    [[nodiscard]] [[maybe_unused]] siginfo_t const & siginfo() const & noexcept;
-    [[nodiscard]] [[maybe_unused]] ucontext_t * context() const noexcept;
+    template<typename Fn,typename... Args>
+    constexpr static auto Register(int sig,int flags,Fn &&,Args && ...args) noexcept -> SignalPtr;
+    [[nodiscard]] [[maybe_unused]] constexpr int sig() const noexcept
+    { return m_d_ptr_->m_sig;  }
+    [[nodiscard]] [[maybe_unused]] siginfo_t const & siginfo() const & noexcept
+    { return *m_d_ptr_->m_info; }
+    [[nodiscard]] [[maybe_unused]] ucontext_t * context() const noexcept
+    { return static_cast<ucontext_t *>(m_d_ptr_->m_context); }
     [[maybe_unused]] void unregister();
     [[maybe_unused]] static siginfo_t siginfo(int sig);
     static void unregister(int sig);
-    ~XSignal() override;
+    ~XSignal();
 
 private:
     XSignal();
-    static SignalPtr createXSignal(int sig, int flags) noexcept;
+    static void registerHelper(SignalPtr const & );
     bool construct_(int,int) noexcept;
-    void setCall_(CallablePtr &&) noexcept;
+    void setCall_(XCallableHelper::CallablePtr &&) noexcept;
 };
 
-template<typename... Args>
-constexpr auto XSignal::Register(int const sig,int const flags,Args && ...args) noexcept ->SignalPtr {
-    auto call { XFactoryInvoker::create(std::forward<Args>(args)...) };
-    auto callPtr { XFactoryCallable::create(std::forward<decltype(call)>(call)) };
+template<typename Fn,typename... Args>
+constexpr auto XSignal::Register(int const sig,int const flags,Fn && fn,Args && ...args) noexcept ->SignalPtr {
+    auto obj{ CreateSharedPtr({},Parameter{sig,flags}) };
+    if (!obj) { return {}; }
+    auto const d { obj->m_d_ptr_.get() };
+    auto callPtr { XCallableHelper::XFactoryInvokerPtr::create(std::forward<Fn>(fn)
+        ,std::cref(d->m_sig)
+        ,std::cref(d->m_info)
+        ,std::cref(d->m_context)
+        ,std::forward<Args>(args)...) };
     if (!callPtr) { return {}; }
-    auto ptr { createXSignal(sig,flags) };
-    if (!ptr) { return {}; }
-    ptr->setCall_(std::forward<decltype(callPtr)>(callPtr));
-    return ptr;
+
+    obj->setCall_(std::move(callPtr));
+    registerHelper(obj);
+    return obj;
 }
 
-template<typename... Args>
-[[maybe_unused]] constexpr auto SignalRegister(int const sig,int const flags,Args && ...args)
-{ return XSignal::Register(sig,flags,std::forward<Args>(args)...); }
+template<typename Fn,typename... Args>
+[[maybe_unused]] constexpr auto SignalRegister(int const sig,int const flags,Fn && fn,Args && ...args)
+{ return XSignal::Register(sig,flags,std::forward<Fn>(fn),std::forward<Args>(args)...); }
 
 [[maybe_unused]] X_API void SignalUnregister(int sig);
 

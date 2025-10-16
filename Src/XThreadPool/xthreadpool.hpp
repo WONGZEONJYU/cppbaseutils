@@ -56,10 +56,10 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
         template<typename>
         struct result;
 
-        template<typename Fn_,typename ...Args_>
-        struct result<std::tuple<Fn_,Args_...>> : std::invoke_result<Fn_,Args_...> {};
+        template<typename Fn,typename ...Args_>
+        struct result<std::tuple<Fn,Args_...>> : std::invoke_result<Fn,Args_...> {};
 
-        using result_t = typename result<decayed_tuple_>::type;
+        using result_t = result<decayed_tuple_>::type;
 
         constexpr std::any run() const override {
             using indices = std::make_index_sequence<std::tuple_size_v<decayed_tuple_>>;
@@ -76,7 +76,8 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
         { return std::invoke(std::get<I>(std::forward<decayed_tuple_>(m_tuple_))...); }
 
     public:
-        explicit constexpr XTemporaryTasksImpl(XTemporaryTasksBase::Private,Args && ...args):m_tuple_{std::forward<Args>(args)...}{}
+        explicit constexpr XTemporaryTasksImpl(XTemporaryTasksBase::Private,Args && ...args)
+        :m_tuple_{std::forward<Args>(args)...} {}
         constexpr ~XTemporaryTasksImpl() override = default;
     };
 

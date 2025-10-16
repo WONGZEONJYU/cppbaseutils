@@ -14,10 +14,7 @@ class X_CLASS_EXPORT XSignalPrivate final : public XSignalData {
 
     struct {
         struct sigaction m_act_{};
-        siginfo_t m_info_{};
-        int m_sig_{-1};
-        XSignal::CallablePtr m_callable_{};
-        void * m_context_{};
+        XCallableHelper::CallablePtr m_callable_{};
     }d{};
 
 public:

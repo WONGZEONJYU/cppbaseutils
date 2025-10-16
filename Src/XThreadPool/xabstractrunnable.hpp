@@ -95,8 +95,8 @@ protected:
     ///给开发者制作私有构造函数
     enum class PrivateConstruct{};
     ///响应责任链的请求,需开发者自行重写
-    /// @param arg
-    [[maybe_unused]] virtual void responseHandler(const std::any &arg) {(void)arg;}
+    /// @param
+    [[maybe_unused]] constexpr virtual void responseHandler(std::any const & ) {}
 
 private:
     virtual std::any run();

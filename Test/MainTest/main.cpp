@@ -92,15 +92,15 @@ public:
 [[maybe_unused]] static void test1() {
     bool exit_{};
 #if !defined(_WIN32) && !defined(_WIN64)
-    const auto sigterm{XUtils::SignalRegister(SIGTERM,{},[&]{
+    const auto sigterm{XUtils::SignalRegister(SIGTERM,{},[&](int ,siginfo_t *,void * const){
         exit_ = true;
     })};
 
-    const auto sigint{XUtils::SignalRegister(SIGINT,{},[&]{
+    const auto sigint{XUtils::SignalRegister(SIGINT,{},[&](int,siginfo_t *,void *){
         exit_ = true;
     })};
 
-    const auto sigkill {XUtils::SignalRegister(SIGKILL,{},[&]{
+    const auto sigkill {XUtils::SignalRegister(SIGKILL,{},[&](int,siginfo_t * ,void *){
         exit_ = true;
     })};
 #endif
@@ -121,7 +121,7 @@ public:
 
     const auto p1{pool2->runnableJoin(&Functor3::func, std::addressof(f3), "34")} ,
             p2{pool2->runnableJoin(Double,35.0)};
-
+    int const aaa { 31 };
     XUtils::XAbstractRunnable_Ptr lambda{};
     lambda = pool2->runnableJoin([&](const int& id){
         pool2->stop();
@@ -136,7 +136,7 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(wait_time));
         }
         return id + 10;
-    },31);
+    },std::cref(aaa));
 
     pool3->runnableJoin(lambda);
     pool2->runnableJoin(Functor(),32);
