@@ -222,7 +222,7 @@ XAbstractRunnable_Ptr acquireTask() const {
             thSize = m_threadsSizeThreshold.loadAcquire();
         }
 
-        if (XThreadPool::Mode::CACHE == m_mode){
+        if (Mode::CACHE == m_mode){
             std::unique_lock lock(m_mtx_);
             if (const auto tasksSize{static_cast<decltype(thSize)>(m_tasksQueue_.size())};
                 tasksSize > m_tasksSizeThreshold.loadAcquire()){

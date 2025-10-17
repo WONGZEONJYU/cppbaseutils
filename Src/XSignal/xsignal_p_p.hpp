@@ -4,7 +4,7 @@
 #include <XSignal/xsignal_p.hpp>
 #include <map>
 #include <thread>
-#include <mutex>
+#include <shared_mutex>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/event.h>
@@ -18,7 +18,7 @@ using SignalArgs = std::tuple<int,siginfo_t * ,void*>;
 class XSignalPrivate::SignalAsynchronously final {
     std::map<int,SignalPtr> m_signalHandlerMap_{};
     std::thread m_threadHandle_{};
-    std::mutex m_mtx_{};
+    std::shared_mutex m_mtx_{};
     XAtomicBool m_isExit_{};
 #ifdef X_PLATFORM_MACOS
     struct macosPlatform {
@@ -79,12 +79,29 @@ inline void XSignalPrivate::SignalAsynchronously::signalHandler() {
             continue;
         }
 
-        if (EVFILT_READ == event.filter && static_cast<int>(event.ident) == m_mac_.m_pipeFd_[0]) {
-            if (SignalArgs args{}
-                ;read(m_mac_.m_pipeFd_[0],std::addressof(args),sizeof(SignalArgs)) >= static_cast<ssize_t>(sizeof(SignalArgs)) ) {
-                auto const & [ sig,info,ctx ] { args };
+        if (EVFILT_READ != event.filter || static_cast<int>(event.ident) != m_mac_.m_pipeFd_[0])
+            {continue;}
 
+        SignalArgs args{};
+
+        if (read(m_mac_.m_pipeFd_[0],std::addressof(args),sizeof(SignalArgs)) < static_cast<ssize_t>(sizeof(SignalArgs)) )
+            { continue;}
+
+        auto const & [ sig,info,ctx ] { args };
+        SignalPtr ptr{};
+        {
+            std::shared_lock lock(m_mtx_);
+            if (auto const it { m_signalHandlerMap_.find(sig)} ;m_signalHandlerMap_.end() != it ) {
+                ptr = it->second;
             }
+        }
+
+        if (ptr) {
+            auto const pd{ ptr->d_func() };
+            pd->m_sig = sig;
+            pd->m_info = info;
+            pd->m_context = ctx;
+            std::invoke(*pd->d.m_callable_);
         }
 
 #endif

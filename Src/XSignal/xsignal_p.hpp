@@ -19,7 +19,6 @@ class X_CLASS_EXPORT XSignalPrivate final : public XSignalData {
     }d{};
 
     class SignalAsynchronously;
-    friend class SignalAsynchronously;
     static inline XAtomicPointer<SignalAsynchronously> m_async_{};
 
 public:
