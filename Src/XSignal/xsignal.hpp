@@ -3,7 +3,7 @@
 
 #include <csignal>
 #include <XHelper/xcallablehelper.hpp>
-#include <XHelper/xclasshelpermacros.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
 #include <XMemory/xmemory.hpp>
 
 XTD_NAMESPACE_BEGIN
@@ -17,16 +17,14 @@ class XSignalData {
 protected:
     constexpr XSignalData() = default;
 public:
-    virtual ~XSignalData() = default;
+    constexpr virtual ~XSignalData() = default;
     XSignal * m_x_ptr_{};
     int m_sig {-1};
     siginfo_t * m_info{};
     void * m_context{};
 };
 
-class X_CLASS_EXPORT XSignal final :
-    public XTwoPhaseConstruction<XSignal>
-{
+class X_CLASS_EXPORT XSignal final : public XTwoPhaseConstruction<XSignal> {
     X_DISABLE_COPY_MOVE(XSignal)
     X_DECLARE_PRIVATE(XSignal)
     X_TWO_PHASE_CONSTRUCTION_CLASS
@@ -57,7 +55,7 @@ template<typename Fn,typename... Args>
 constexpr auto XSignal::Register(int const sig,int const flags,Fn && fn,Args && ...args) noexcept ->SignalPtr {
     auto obj{ CreateSharedPtr({},Parameter{sig,flags}) };
     if (!obj) { return {}; }
-    auto const d { obj->m_d_ptr_.get() };
+    auto const d{ obj->m_d_ptr_.get() };
     auto callPtr { XCallableHelper::createCallable(std::forward<Fn>(fn)
         ,std::cref(d->m_sig)
         ,std::cref(d->m_info)

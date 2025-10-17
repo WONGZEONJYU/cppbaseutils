@@ -1,6 +1,12 @@
 #ifndef X_CLASS_HELPER_MACROS_HPP
 #define X_CLASS_HELPER_MACROS_HPP 1
 
+template <typename T> constexpr T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
+template <typename Ptr> constexpr auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
+{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
+template <typename Ptr> constexpr auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
+{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
+
 #define X_DISABLE_COPY(...) \
     __VA_ARGS__ (const __VA_ARGS__ &) = delete; \
     __VA_ARGS__ &operator=(const __VA_ARGS__ &) = delete;

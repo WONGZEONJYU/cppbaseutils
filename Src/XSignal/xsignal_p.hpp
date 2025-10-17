@@ -3,6 +3,7 @@
 
 #include <XSignal/xsignal.hpp>
 #include <unordered_map>
+#include <XAtomic/xatomic.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -17,9 +18,13 @@ class X_CLASS_EXPORT XSignalPrivate final : public XSignalData {
         XCallableHelper::CallablePtr m_callable_{};
     }d{};
 
+    class SignalAsynchronously;
+    friend class SignalAsynchronously;
+    static inline XAtomicPointer<SignalAsynchronously> m_async_{};
+
 public:
     static void noSig(int sig);
-    static void signal_handler(int sig,siginfo_t * info,void * ctx);
+    static void signalHandler(int sig,siginfo_t * info,void * ctx);
     explicit XSignalPrivate(XSignal * const o) { m_x_ptr_ = o; }
     ~XSignalPrivate() override;
     void registerHelper(int,int) noexcept;

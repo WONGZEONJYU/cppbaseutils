@@ -1,4 +1,4 @@
-#include <xsignal_p.hpp>
+#include <xsignal_p_p.hpp>
 #include <unistd.h>
 #include <sstream>
 #include <functional>
@@ -15,7 +15,7 @@ void XSignalPrivate::noSig(int const sig) {
     (void)len;
 }
 
-void XSignalPrivate::signal_handler(int const sig, siginfo_t * const info, void* const ctx) {
+void XSignalPrivate::signalHandler(int const sig, siginfo_t * const info, void * const ctx) {
     const auto & it{ sm_signalMap_.find(sig) };
 
     if (sm_signalMap_.end() == it
@@ -35,7 +35,7 @@ XSignalPrivate::~XSignalPrivate()
 
 void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
     m_sig = sig;
-    d.m_act_.sa_sigaction = signal_handler;
+    d.m_act_.sa_sigaction = signalHandler;
     d.m_act_.sa_flags = SA_SIGINFO | flags;
     sigaction(sig, &d.m_act_,{});
 }
@@ -50,13 +50,6 @@ void XSignalPrivate::unregisterHelper() noexcept {
 }
 
 XSignal::XSignal() = default;
-
-// SignalPtr XSignal::createXSignal(int const sig, int const flags) noexcept {
-//     auto obj{ CreateSharedPtr({},Parameter{sig,flags}) };
-//     if (!obj) { return {}; }
-//     XSignalPrivate::sm_signalMap_[sig] = obj;
-//     return obj;
-// }
 
 void XSignal::registerHelper( SignalPtr const & p)
 { XSignalPrivate::sm_signalMap_[p->sig()] = p; }
@@ -74,17 +67,6 @@ bool XSignal::construct_(int const sig, int const flags) noexcept {
 
 void XSignal::setCall_(XCallableHelper::CallablePtr && f) noexcept
 { X_D(XSignal); d->d.m_callable_.swap(f); }
-
-#if 0
-int XSignal::sig() const noexcept
-{ X_D(const XSignal); return d->m_sig_; }
-
-siginfo_t const & XSignal::siginfo() const & noexcept
-{ X_D(const XSignal); return d->d.m_info_; }
-
-ucontext_t * XSignal::context() const noexcept
-{ X_D(const XSignal); return static_cast<ucontext_t*>(d->d.m_context_); }
-#endif
 
 void XSignal::unregister()
 { X_D(XSignal); d->unregisterHelper();}

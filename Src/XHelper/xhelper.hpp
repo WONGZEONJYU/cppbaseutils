@@ -3,7 +3,7 @@
 
 #include <XHelper/xversion.hpp>
 #include <XHelper/xtypetraits.hpp>
-#include <XHelper/xclasshelpermacros.hpp>
+#include <XGlobal//xclasshelpermacros.hpp>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -32,12 +32,6 @@ class X_CLASS_EXPORT XUtilsLibErrorLog final {
     template<typename ,typename > friend class XSingleton;
     template<typename ,typename > friend class XTwoPhaseConstruction;
 };
-
-template <typename T> constexpr T *xGetPtrHelper(T *ptr) noexcept { return ptr; }
-template <typename Ptr> constexpr auto xGetPtrHelper(Ptr &ptr) noexcept -> decltype(ptr.get())
-{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
-template <typename Ptr> constexpr auto xGetPtrHelper(Ptr const &ptr) noexcept -> decltype(ptr.get())
-{ static_assert(noexcept(ptr.get()), "Smart d pointers for X_DECLARE_PRIVATE must have noexcept get()"); return ptr.get(); }
 
 template<typename F>
 class Destroyer {
