@@ -16,18 +16,11 @@ void XSignalPrivate::noSig(int const sig) {
 }
 
 void XSignalPrivate::signalHandler(int const sig, siginfo_t * const info, void * const ctx) {
-    const auto & it{ sm_signalMap_.find(sig) };
-
-    if (sm_signalMap_.end() == it
-        || !it->second
-        || !it->second->d_func()->d.m_callable_)
-    { noSig(sig); return; }
-
-    auto const d{ it->second->d_func() };
-    d->m_context = ctx;
-    d->m_sig = sig;
-    d->m_info = info;
-    std::invoke(*d->d.m_callable_);
+    auto const async{ m_async_.loadAcquire() };
+    if (!async) { return; }
+    X_RAII r{ [&async]() noexcept{ async->ref(); }
+        ,[&async]() noexcept{ async->deref(); } };
+    async->emitSignal(sig,info,ctx);
 }
 
 XSignalPrivate::~XSignalPrivate()
@@ -35,24 +28,26 @@ XSignalPrivate::~XSignalPrivate()
 
 void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
     m_sig = sig;
-    d.m_act_.sa_sigaction = signalHandler;
-    d.m_act_.sa_flags = SA_SIGINFO | flags;
-    sigaction(sig, &d.m_act_,{});
+    m_act_.sa_sigaction = signalHandler;
+    m_act_.sa_flags = SA_SIGINFO | flags;
+    sigaction(sig, &m_act_,{});
 }
 
 void XSignalPrivate::unregisterHelper() noexcept {
     if (m_sig > 0) {
-        d.m_act_.sa_handler = SIG_DFL;
-        d.m_act_.sa_flags = 0;
-        sigaction(m_sig, &d.m_act_,{});
+        m_act_.sa_handler = SIG_DFL;
+        m_act_.sa_flags = 0;
+        sigaction(m_sig, std::addressof(m_act_),{});
         m_sig = -1;
     }
 }
 
 XSignal::XSignal() = default;
 
-void XSignal::registerHelper( SignalPtr const & p)
-{ XSignalPrivate::sm_signalMap_[p->sig()] = p; }
+void XSignal::registerHelper(SignalPtr const & p)
+{
+
+}
 
 XSignal::~XSignal() = default;
 
@@ -66,24 +61,24 @@ bool XSignal::construct_(int const sig, int const flags) noexcept {
 }
 
 void XSignal::setCall_(XCallableHelper::CallablePtr && f) noexcept
-{ X_D(XSignal); d->d.m_callable_.swap(f); }
+{ X_D(XSignal); d->m_callable_.swap(f); }
 
 void XSignal::unregister()
 { X_D(XSignal); d->unregisterHelper();}
 
-siginfo_t XSignal::siginfo(int const sig) {
-    const auto it { XSignalPrivate::sm_signalMap_.find(sig)} ;
-    return XSignalPrivate::sm_signalMap_.end() != it
-        ? *it->second->d_func()->m_info
-        : siginfo_t {};
-}
+// siginfo_t XSignal::siginfo(int const sig) {
+//     const auto it { XSignalPrivate::sm_signalMap_.find(sig)} ;
+//     return XSignalPrivate::sm_signalMap_.end() != it
+//         ? *it->second->d_func()->m_info
+//         : siginfo_t {};
+// }
 
 void XSignal::unregister(int const sig) {
-    if (auto const it { XSignalPrivate::sm_signalMap_.find(sig) }
-        ;XSignalPrivate::sm_signalMap_.end() != it) {
-        it->second->unregister();
-        XSignalPrivate::sm_signalMap_.erase(it);
-    }
+    // if (auto const it { XSignalPrivate::sm_signalMap_.find(sig) }
+    //     ;XSignalPrivate::sm_signalMap_.end() != it) {
+    //     it->second->unregister();
+    //     XSignalPrivate::sm_signalMap_.erase(it);
+    // }
 }
 
 void SignalUnregister(int const sig)

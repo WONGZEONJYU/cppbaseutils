@@ -40,7 +40,7 @@ public:
     [[nodiscard]] [[maybe_unused]] ucontext_t * context() const noexcept
     { return static_cast<ucontext_t *>(m_d_ptr_->m_context); }
     [[maybe_unused]] void unregister();
-    [[maybe_unused]] static siginfo_t siginfo(int sig);
+    //[[maybe_unused]] static siginfo_t siginfo(int sig);
     static void unregister(int sig);
     ~XSignal();
 

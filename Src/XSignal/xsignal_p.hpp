@@ -10,16 +10,12 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class X_CLASS_EXPORT XSignalPrivate final : public XSignalData {
     X_DECLARE_PUBLIC(XSignal)
-    using XSignalMap = std::unordered_map<int,SignalPtr>;
-    inline static XSignalMap sm_signalMap_{};
-
-    struct {
-        struct sigaction m_act_{};
-        XCallableHelper::CallablePtr m_callable_{};
-    }d{};
 
     class SignalAsynchronously;
     static inline XAtomicPointer<SignalAsynchronously> m_async_{};
+
+    struct sigaction m_act_{};
+    XCallableHelper::CallablePtr m_callable_{};
 
 public:
     static void noSig(int sig);
