@@ -24,7 +24,9 @@ public:
     void * m_context{};
 };
 
-class X_CLASS_EXPORT XSignal final : public XTwoPhaseConstruction<XSignal> {
+class X_CLASS_EXPORT XSignal final :public std::enable_shared_from_this<XSignal>
+    , public XTwoPhaseConstruction<XSignal>
+{
     X_DISABLE_COPY_MOVE(XSignal)
     X_DECLARE_PRIVATE(XSignal)
     X_TWO_PHASE_CONSTRUCTION_CLASS
@@ -35,18 +37,20 @@ public:
     constexpr static auto Register(int sig,int flags,Fn &&,Args && ...args) noexcept -> SignalPtr;
     [[nodiscard]] [[maybe_unused]] constexpr int sig() const noexcept
     { return m_d_ptr_->m_sig;  }
+
+#if 0
     [[nodiscard]] [[maybe_unused]] siginfo_t const & siginfo() const & noexcept
     { return *m_d_ptr_->m_info; }
     [[nodiscard]] [[maybe_unused]] ucontext_t * context() const noexcept
     { return static_cast<ucontext_t *>(m_d_ptr_->m_context); }
+#endif
+
     [[maybe_unused]] void unregister();
-    //[[maybe_unused]] static siginfo_t siginfo(int sig);
-    static void unregister(int sig);
     ~XSignal();
 
 private:
     XSignal();
-    static void registerHelper(SignalPtr const & );
+    static bool registerHelper(SignalPtr const & );
     bool construct_(int,int) noexcept;
     void setCall_(XCallableHelper::CallablePtr &&) noexcept;
 };
@@ -71,8 +75,6 @@ constexpr auto XSignal::Register(int const sig,int const flags,Fn && fn,Args && 
 template<typename Fn,typename... Args>
 [[maybe_unused]] constexpr auto SignalRegister(int const sig,int const flags,Fn && fn,Args && ...args)
 { return XSignal::Register(sig,flags,std::forward<Fn>(fn),std::forward<Args>(args)...); }
-
-[[maybe_unused]] X_API void SignalUnregister(int sig);
 
 [[maybe_unused]] X_API bool emitSignal(int pid_,int sig_,sigval const &val_) noexcept;
 
