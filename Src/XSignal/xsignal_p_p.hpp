@@ -26,9 +26,11 @@ struct XSignalPrivate::SignalArgs final {
 static_assert(std::is_trivially_copyable_v<XSignalPrivate::SignalArgs>,"SignalArgs must be trivially copyable");
 
 class XSignalPrivate::SignalAsynchronously final
-    : public XTwoPhaseConstruction<SignalAsynchronously>
+    : XSingleton<SignalAsynchronously>
 {
     X_TWO_PHASE_CONSTRUCTION_CLASS
+    friend class XSignal;
+
     std::map<int,SignalPtr> m_signalHandlerMap_{};
     std::list<SignalPtr> m_orphanSignals_{};
     std::thread m_threadHandle_{};
@@ -47,7 +49,6 @@ class XSignalPrivate::SignalAsynchronously final
     }
 #endif
 public:
-    ~SignalAsynchronously();
     void addHandler(int, SignalPtr);
     void removeHandler(int);
     void ref() noexcept { m_ref_.ref(); }
@@ -58,6 +59,7 @@ public:
 
 private:
     explicit constexpr SignalAsynchronously() = default;
+    ~SignalAsynchronously();
     bool construct_() noexcept;
     void signalHandler();
     void readAndCall();

@@ -24,9 +24,7 @@ public:
     void * m_context{};
 };
 
-class X_CLASS_EXPORT XSignal final :public std::enable_shared_from_this<XSignal>
-    , public XTwoPhaseConstruction<XSignal>
-{
+class X_CLASS_EXPORT XSignal final : public XTwoPhaseConstruction<XSignal> {
     X_DISABLE_COPY_MOVE(XSignal)
     X_DECLARE_PRIVATE(XSignal)
     X_TWO_PHASE_CONSTRUCTION_CLASS
@@ -37,14 +35,6 @@ public:
     constexpr static auto Register(int sig,int flags,Fn &&,Args && ...args) noexcept -> SignalPtr;
     [[nodiscard]] [[maybe_unused]] constexpr int sig() const noexcept
     { return m_d_ptr_->m_sig;  }
-
-#if 0
-    [[nodiscard]] [[maybe_unused]] siginfo_t const & siginfo() const & noexcept
-    { return *m_d_ptr_->m_info; }
-    [[nodiscard]] [[maybe_unused]] ucontext_t * context() const noexcept
-    { return static_cast<ucontext_t *>(m_d_ptr_->m_context); }
-#endif
-
     [[maybe_unused]] void unregister();
     ~XSignal();
 

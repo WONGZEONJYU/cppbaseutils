@@ -47,7 +47,7 @@ int XSignalPrivate::unregisterHelper() noexcept {
 
 void XSignalPrivate::callHandler(SignalArgs const & args) noexcept {
     auto const & [sig,info,ctx]{ args };
-    m_sig = sig;
+    m_sig = static_cast<int>(sig);
     m_info = info;
     m_context = ctx;
     std::invoke(*m_callable_);
@@ -57,25 +57,20 @@ XSignal::XSignal() = default;
 
 bool XSignal::registerHelper(SignalPtr const & p) {
 
-    static X_RAII const r {[]() noexcept{
-        auto async{ XSignalPrivate::SignalAsynchronously::Create() };
-        while (!async) {
-            async = XSignalPrivate::SignalAsynchronously::Create();
-            std::cerr << "SignalAsynchronously created retry!" << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+    static X_RAII const r { []() noexcept{
+        auto const async{ XSignalPrivate::SignalAsynchronously::UniqueConstruction() };
         async->ref();
         async->startHandler();
         {
             std::unique_lock lock(sm_mtx_);
-            XSignalPrivate::m_async_.storeRelease(async);
+            XSignalPrivate::m_async_.storeRelease(async.get());
         }
     },[]() noexcept{
         if (auto const async{XSignalPrivate::m_async_.loadAcquire()}
             ; async && !async->deref())
         {
+            std::unique_lock lock(sm_mtx_);
             XSignalPrivate::m_async_.storeRelease({});
-            delete async;
         }
     }};
 

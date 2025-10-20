@@ -33,6 +33,11 @@ int main() {
 
 #endif
 
+    std::thread th{[] {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+    }};
+    th.detach();
+
     std::cout << "current pid:" << getpid() << std::endl;
 #if 1
     while (!is_exit) {
@@ -42,7 +47,7 @@ int main() {
         ServerInfoGetterProxy getter(&win);
         const auto info{getter.getInfo()};
         std::cout << info.m_cpu << std::flush;
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 #endif
     std::cout << "main() returning now\n";
