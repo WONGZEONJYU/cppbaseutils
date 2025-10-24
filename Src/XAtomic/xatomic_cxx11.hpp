@@ -273,6 +273,22 @@ public:
 
     static bool isFetchAndStoreNative() noexcept { return isTestAndSetNative(); }
     static constexpr bool isFetchAndStoreWaitFree() noexcept { return false; }
+
+    template <typename T>
+    static T fetchAndStoreRelaxed(std::atomic<T> & _x_value,T const & newValue) noexcept
+    { return _x_value.exchange(newValue,std::memory_order_relaxed); }
+
+    template <typename T>
+    static T fetchAndStoreAcquire(std::atomic<T> & _x_value,T const & newValue) noexcept
+    { return _x_value.exchange(newValue, std::memory_order_acquire); }
+
+    template <typename T>
+    static T fetchAndStoreRelease(std::atomic<T> & _x_value,T const & newValue) noexcept
+    { return _x_value.exchange(newValue,std::memory_order_release); }
+
+    template <typename T>
+    static T fetchAndStoreOrdered(std::atomic<T> & _x_value,T const & newValue) noexcept
+    { return _x_value.exchange(newValue, std::memory_order_acq_rel); }
 };
 
 template <typename X> class XAtomicOps final : public XAtomicOpsBase<X> {
@@ -299,22 +315,6 @@ public:
     template <typename T>
     static bool deref(std::atomic<T> &_x_value) noexcept // compare with ref
     { return _x_value.fetch_sub(1, std::memory_order_acq_rel) != T(1); }
-
-    template <typename T>
-    static T fetchAndStoreRelaxed(std::atomic<T> & _x_value,T const & newValue) noexcept
-    { return _x_value.exchange(newValue,std::memory_order_relaxed); }
-
-    template <typename T>
-    static T fetchAndStoreAcquire(std::atomic<T> & _x_value,T const & newValue) noexcept
-    { return _x_value.exchange(newValue, std::memory_order_acquire); }
-
-    template <typename T>
-    static T fetchAndStoreRelease(std::atomic<T> & _x_value,T const & newValue) noexcept
-    { return _x_value.exchange(newValue,std::memory_order_release); }
-
-    template <typename T>
-    static T fetchAndStoreOrdered(std::atomic<T> & _x_value,T const & newValue) noexcept
-    { return _x_value.exchange(newValue, std::memory_order_acq_rel); }
 
     static constexpr bool isFetchAndAddNative() noexcept
     { return Base_::isTestAndSetNative(); }
