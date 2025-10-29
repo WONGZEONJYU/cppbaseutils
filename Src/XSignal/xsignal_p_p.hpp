@@ -106,7 +106,6 @@ inline bool XSignalPrivate::SignalAsynchronously::construct_() noexcept {
             ,m_pipeFd_[0],std::addressof(ev)) < 0)
         { return {}; }
     }
-
 #endif
     return true;
 }
@@ -172,7 +171,6 @@ inline bool XSignalPrivate::SignalAsynchronously::wait() noexcept {
     if (EVFILT_READ != event.filter || static_cast<int>(event.ident) != m_pipeFd_[0])
     { return {}; }
 
-    return true;
 #endif
 
 #ifdef X_PLATFORM_LINUX
@@ -190,8 +188,8 @@ inline bool XSignalPrivate::SignalAsynchronously::wait() noexcept {
     if (m_pipeFd_[0] != ev.data.fd)
     { return {}; }
 
-    return true;
 #endif
+    return true;
 }
 
 inline void XSignalPrivate::SignalAsynchronously::readAndCall() {
