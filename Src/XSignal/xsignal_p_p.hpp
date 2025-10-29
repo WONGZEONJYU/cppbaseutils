@@ -6,10 +6,18 @@
 #include <list>
 #include <thread>
 #include <shared_mutex>
+
+extern "C" {
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/event.h>
+#ifdef X_PLATFORM_MACOS
 #include <sys/time.h>
+#include <sys/event.h>
+#endif
+#ifdef X_PLATFORM_LINUX
+#include <sys/epoll.h>
+#endif
+}
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -37,17 +45,19 @@ class XSignalPrivate::SignalAsynchronously final
     std::shared_mutex m_mtx_{};
     XAtomicBool m_isExit_{};
     XAtomicInt m_ref_{};
+    int m_pipeFd_[2]{-1,-1};
 #ifdef X_PLATFORM_MACOS
     struct macosPlatform {
-        int m_kqueue_{-1},m_pipeFd_[2]{-1,-1};
+        int m_kqueue_{-1};
         kevent64_s m_pipeEvent_{};
     }m_mac_{};
 #endif
 #ifdef X_PLATFORM_LINUX
     struct linuxPlatform {
         int m_epollFd{};
-    }
+    }m_linux_{};
 #endif
+
 public:
     void addHandler(int, SignalPtr);
     void removeHandler(int);
@@ -60,36 +70,67 @@ public:
 private:
     explicit constexpr SignalAsynchronously() = default;
     ~SignalAsynchronously();
+    void deConstruct() noexcept;
     bool construct_() noexcept;
     void signalHandler();
+    bool wait() noexcept;
     void readAndCall();
 };
 
 inline bool XSignalPrivate::SignalAsynchronously::construct_() noexcept {
+    if ( pipe(m_pipeFd_) < 0 ) { return {}; }
+#ifdef X_PLATFORM_MACOS
+    {
+        auto const fd{ kqueue() };
+        if (fd < 0) { return {}; }
+        m_mac_.m_kqueue_ = fd;
+        EV_SET64(std::addressof(m_mac_.m_pipeEvent_)
+            ,m_pipeFd_[0]
+            ,EVFILT_READ
+            ,EV_ADD | EV_ENABLE
+            ,0,0,0,0,0);
+    }
+#endif
 
-    if (m_mac_.m_kqueue_ = kqueue();m_mac_.m_kqueue_ < 0) { return {}; }
+#ifdef X_PLATFORM_LINUX
+    {
+        auto const epollFd{ epoll_create1(0) };
+        if (epollFd < 0) { return {}; }
+        m_linux_.m_epollFd = epollFd;
 
-    if ( pipe(m_mac_.m_pipeFd_) < 0 ) { return {}; }
+        epoll_event ev{};
+        ev.data.fd = m_pipeFd_[0];
+        ev.events = EPOLLIN;
 
-    EV_SET64(std::addressof(m_mac_.m_pipeEvent_)
-        ,m_mac_.m_pipeFd_[0]
-        ,EVFILT_READ
-        ,EV_ADD | EV_ENABLE
-        ,0,0,0,0,0);
+        if (epoll_ctl(epollFd,EPOLL_CTL_ADD
+            ,m_pipeFd_[0],std::addressof(ev)) < 0)
+        { return {}; }
+    }
 
+#endif
     return true;
 }
 
-inline XSignalPrivate::SignalAsynchronously::~SignalAsynchronously() {
+inline XSignalPrivate::SignalAsynchronously::~SignalAsynchronously()
+{ deConstruct(); }
+
+inline void XSignalPrivate::SignalAsynchronously::deConstruct() noexcept {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
     stopHandler();
-    if (m_threadHandle_.joinable()) { m_threadHandle_.join(); }
-    for (auto const & item: m_mac_.m_pipeFd_) { if (item > 0) { close(item); } }
-    if (m_mac_.m_kqueue_ > 0) { close(m_mac_.m_kqueue_); }
+    for (auto & item: m_pipeFd_)
+    { if (item > 0) { close(item); item = -1; } }
+#ifdef X_PLATFORM_MACOS
+    if (m_mac_.m_kqueue_ > 0)
+    { close(m_mac_.m_kqueue_); m_mac_.m_kqueue_ = -1; }
+#endif
+#ifdef X_PLATFORM_LINUX
+    if (m_linux_.m_epollFd > 0)
+    { close(m_linux_.m_epollFd); m_linux_.m_epollFd = -1; }
+#endif
 }
 
 inline void XSignalPrivate::SignalAsynchronously::emitSignal(SignalArgs const & args) const noexcept
-{ write(m_mac_.m_pipeFd_[1],std::addressof(args),sizeof(args)); }
+{ write(m_pipeFd_[1],std::addressof(args),sizeof(args)); }
 
 inline void XSignalPrivate::SignalAsynchronously::startHandler() {
     if (!m_isExit_.loadAcquire()) {
@@ -98,50 +139,72 @@ inline void XSignalPrivate::SignalAsynchronously::startHandler() {
     }
 }
 
-inline void XSignalPrivate::SignalAsynchronously::stopHandler()
-{ m_isExit_.storeRelaxed(true); }
+inline void XSignalPrivate::SignalAsynchronously::stopHandler() {
+    m_isExit_.storeRelaxed(true);
+    if (m_threadHandle_.joinable()) { m_threadHandle_.join(); }
+}
 
 inline void XSignalPrivate::SignalAsynchronously::signalHandler() {
-    while (!m_isExit_.loadAcquire()) {
+    while (!m_isExit_.loadAcquire())
+    { if (wait()) { readAndCall(); } }
+}
 
-        timespec constexpr ts {1,0};
+inline bool XSignalPrivate::SignalAsynchronously::wait() noexcept {
 
 #ifdef X_PLATFORM_MACOS
-        kevent64_s event{};
-        if (auto const ret{ kevent64(m_mac_.m_kqueue_
-            ,std::addressof(m_mac_.m_pipeEvent_),1
-            ,std::addressof(event),1
-            ,0,std::addressof(ts)) };ret < 0)
-        {
-            std::perror("signalKevent err");
-            //std::strerror()
-            if (EINTR != errno) { m_isExit_.storeRelease(true); }
-            continue;
-        }else if (!ret){
-            continue;
-        }
-        if (EVFILT_READ != event.filter
-            || static_cast<int>(event.ident) != m_mac_.m_pipeFd_[0])
-        { continue; }
+    timespec constexpr ts {1,0};
+    kevent64_s event{};
+    auto const ret{ kevent64(m_mac_.m_kqueue_
+        ,std::addressof(m_mac_.m_pipeEvent_),1
+        ,std::addressof(event),1
+        ,0,std::addressof(ts)) };
+
+    if (ret < 0) {
+        std::perror("signalKevent err");
+        //std::strerror()
+        if (EINTR != errno)
+        { m_isExit_.storeRelease(true); }
+        return {};
+    }
+
+    if (!ret ) { return {}; }
+
+    if (EVFILT_READ != event.filter || static_cast<int>(event.ident) != m_pipeFd_[0])
+    { return {}; }
+
+    return true;
 #endif
 
 #ifdef X_PLATFORM_LINUX
-
-
-
-#endif
-        readAndCall();
+    epoll_event ev{};
+    auto const ret{ epoll_wait(m_linux_.m_epollFd,std::addressof(ev),1,1000) };
+    if (ret < 0) {
+        std::perror("epoll_wait");
+        if (EINTR != errno)
+        { m_isExit_.storeRelease(true); }
+        return {};
     }
+
+    if (!ret){ return {}; }
+
+    if (m_pipeFd_[0] != ev.data.fd)
+    { return {}; }
+
+    return true;
+#endif
 }
 
 inline void XSignalPrivate::SignalAsynchronously::readAndCall() {
     SignalArgs args{};
 
-    if (read(m_mac_.m_pipeFd_[0],std::addressof(args),sizeof(SignalArgs))
-        < static_cast<ssize_t>(sizeof(SignalArgs)) )
     {
-        std::perror("read SignalArgs error");
-        return;
+        decltype(read({},{},{})) ret {};
+        do {
+            errno = 0;
+            ret = read(m_pipeFd_[0],std::addressof(args),sizeof(args)) ;
+        } while (!m_isExit_.loadAcquire() && ret < 0 && EINTR == errno);
+
+        if ( ret < static_cast<decltype(ret)>(sizeof(args)) ) { return; }
     }
 
     SignalPtr ptr{};
