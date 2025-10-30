@@ -19,7 +19,7 @@ protected:
 public:
     constexpr virtual ~XSignalData() = default;
     XSignal * m_x_ptr_{};
-    int m_sig {-1};
+    int64_t m_sig {-1};
     siginfo_t * m_info{};
     void * m_context{};
 };
@@ -33,7 +33,7 @@ class X_CLASS_EXPORT XSignal final : public XTwoPhaseConstruction<XSignal> {
 public:
     template<typename Fn,typename... Args>
     constexpr static auto Register(int sig,int flags,Fn &&,Args && ...args) noexcept -> SignalPtr;
-    [[nodiscard]] [[maybe_unused]] constexpr int sig() const noexcept
+    [[nodiscard]] [[maybe_unused]] constexpr int64_t sig() const noexcept
     { return m_d_ptr_->m_sig;  }
     [[maybe_unused]] void unregister();
     ~XSignal();

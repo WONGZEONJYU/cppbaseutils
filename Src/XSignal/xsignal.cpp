@@ -1,4 +1,3 @@
-#include <future>
 #include <xsignal_p_p.hpp>
 #include <unistd.h>
 #include <sstream>
@@ -34,12 +33,12 @@ void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
     sigaction(sig, &m_act_,{});
 }
 
-int XSignalPrivate::unregisterHelper() noexcept {
+int64_t XSignalPrivate::unregisterHelper() noexcept {
     auto const sig{ m_sig };
     if (m_sig > 0) {
         m_act_.sa_handler = SIG_DFL;
         m_act_.sa_flags = 0;
-        sigaction(m_sig, std::addressof(m_act_),{});
+        sigaction(static_cast<int>(m_sig), std::addressof(m_act_),{});
         m_sig = -1;
     }
     return sig;
@@ -50,7 +49,15 @@ void XSignalPrivate::callHandler(SignalArgs const & args) noexcept {
     m_sig = static_cast<int>(sig);
     m_info = info;
     m_context = ctx;
-    std::invoke(*m_callable_);
+    try {
+        std::invoke(*m_callable_);
+    } catch (std::exception const & e) {
+        std::cerr << "sig : " << sig << " callback err : "
+            << e.what() << std::endl << std::flush;
+    } catch (...) {
+        std::cerr << "sig : " << sig
+            << " callback err : unknown error!" << std::endl << std::flush;
+    }
 }
 
 XSignal::XSignal() = default;
@@ -76,7 +83,7 @@ bool XSignal::registerHelper(SignalPtr const & p) {
 
     std::unique_lock lock(sm_mtx_);
     auto const async{ XSignalPrivate::m_async_.loadAcquire() };
-    if (!async) {return {};}
+    if (!async) { return {}; }
     async->addHandler(p->sig(),p);
     return true;
 }
@@ -94,11 +101,10 @@ bool XSignal::construct_(int const sig, int const flags) noexcept {
 }
 
 void XSignal::setCall_(XCallableHelper::CallablePtr && f) noexcept
-{ X_D(XSignal); d->m_callable_.swap(f); }
+{ d_func()->m_callable_.swap(f); }
 
 void XSignal::unregister() {
-    X_D(XSignal);
-    auto const sig{ d->unregisterHelper() };
+    auto const sig{ d_func()->unregisterHelper() };
     std::unique_lock lock(sm_mtx_);
     auto const async{ XSignalPrivate::m_async_.loadAcquire() };
     if (!async) { return; }
@@ -107,11 +113,13 @@ void XSignal::unregister() {
     async->deref();
 }
 
-bool emitSignal(int const pid_, int const sig_, sigval const & val_) noexcept{
-#if defined(__APPLE__) || defined(__MACH__)
+bool emitSignal(int const pid_, int const sig_, sigval const & val_) noexcept {
+#ifdef X_PLATFORM_MACOS
     (void)val_;
     return !kill(pid_,sig_);
-#else
+#endif
+
+#ifdef X_PLATFORM_LINUX
     return !sigqueue(pid_,sig_,val_);
 #endif
 }

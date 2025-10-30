@@ -10,6 +10,7 @@
 extern "C" {
 #include <unistd.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #ifdef X_PLATFORM_MACOS
 #include <sys/time.h>
 #include <sys/event.h>
@@ -39,7 +40,7 @@ class XSignalPrivate::SignalAsynchronously final
     X_TWO_PHASE_CONSTRUCTION_CLASS
     friend class XSignal;
 
-    std::map<int,SignalPtr> m_signalHandlerMap_{};
+    std::map<int64_t,SignalPtr> m_signalHandlerMap_{};
     std::list<SignalPtr> m_orphanSignals_{};
     std::thread m_threadHandle_{};
     std::shared_mutex m_mtx_{};
@@ -59,8 +60,8 @@ class XSignalPrivate::SignalAsynchronously final
 #endif
 
 public:
-    void addHandler(int, SignalPtr);
-    void removeHandler(int);
+    void addHandler(int64_t, SignalPtr);
+    void removeHandler(int64_t);
     void ref() noexcept { m_ref_.ref(); }
     bool deref() noexcept { return m_ref_.deref(); }
     void emitSignal(SignalArgs const &) const noexcept;
@@ -72,13 +73,21 @@ private:
     ~SignalAsynchronously();
     void deConstruct() noexcept;
     bool construct_() noexcept;
-    void signalHandler();
+    void signalHandler() noexcept;
     bool wait() noexcept;
-    void readAndCall();
+    void readAndCall() noexcept;
 };
 
 inline bool XSignalPrivate::SignalAsynchronously::construct_() noexcept {
     if ( pipe(m_pipeFd_) < 0 ) { return {}; }
+
+    {
+        auto flags{ fcntl(m_pipeFd_[0],F_GETFL) };
+        if (flags < 0) { return {}; }
+        flags |= O_NONBLOCK;
+        if (fcntl(m_pipeFd_[0],F_SETFL,flags) < 0) { return {}; }
+    }
+
 #ifdef X_PLATFORM_MACOS
     {
         auto const fd{ kqueue() };
@@ -129,7 +138,7 @@ inline void XSignalPrivate::SignalAsynchronously::deConstruct() noexcept {
 }
 
 inline void XSignalPrivate::SignalAsynchronously::emitSignal(SignalArgs const & args) const noexcept
-{ write(m_pipeFd_[1],std::addressof(args),sizeof(args)); }
+{ [[maybe_unused]] auto const ret{ write(m_pipeFd_[1],std::addressof(args),sizeof(args)) }; }
 
 inline void XSignalPrivate::SignalAsynchronously::startHandler() {
     if (!m_isExit_.loadAcquire()) {
@@ -143,7 +152,7 @@ inline void XSignalPrivate::SignalAsynchronously::stopHandler() {
     if (m_threadHandle_.joinable()) { m_threadHandle_.join(); }
 }
 
-inline void XSignalPrivate::SignalAsynchronously::signalHandler() {
+inline void XSignalPrivate::SignalAsynchronously::signalHandler() noexcept {
     while (!m_isExit_.loadAcquire())
     { if (wait()) { readAndCall(); } }
 }
@@ -151,64 +160,66 @@ inline void XSignalPrivate::SignalAsynchronously::signalHandler() {
 inline bool XSignalPrivate::SignalAsynchronously::wait() noexcept {
 
 #ifdef X_PLATFORM_MACOS
-    timespec constexpr ts {1,0};
-    kevent64_s event{};
-    auto const ret{ kevent64(m_mac_.m_kqueue_
-        ,std::addressof(m_mac_.m_pipeEvent_),1
-        ,std::addressof(event),1
-        ,0,std::addressof(ts)) };
 
-    if (ret < 0) {
-        std::perror("signalKevent err");
-        //std::strerror()
-        if (EINTR != errno)
-        { m_isExit_.storeRelease(true); }
-        return {};
+    {
+        using RetType = decltype(kevent64({},{},{},{},{},{},{}));
+        RetType ret {};
+        kevent64_s event{};
+        do {
+            errno = 0;
+            timespec constexpr ts {1,0};
+            ret = kevent64(m_mac_.m_kqueue_
+                            ,std::addressof(m_mac_.m_pipeEvent_),1
+                            ,std::addressof(event),1
+                            ,{},std::addressof(ts));
+        } while (!m_isExit_.loadAcquire() && ((ret < 0 && EINTR == errno) || !ret));
+
+        if (ret < 0) { perror("kevent64"); return {}; }
+
+        if (!ret || EVFILT_READ != event.filter || static_cast<int>(event.ident) != m_pipeFd_[0])
+        { return {}; }
     }
-
-    if (!ret ) { return {}; }
-
-    if (EVFILT_READ != event.filter || static_cast<int>(event.ident) != m_pipeFd_[0])
-    { return {}; }
 
 #endif
 
 #ifdef X_PLATFORM_LINUX
-    epoll_event ev{};
-    auto const ret{ epoll_wait(m_linux_.m_epollFd,std::addressof(ev),1,1000) };
-    if (ret < 0) {
-        std::perror("epoll_wait");
-        if (EINTR != errno)
-        { m_isExit_.storeRelease(true); }
-        return {};
+
+    {
+        using RetType = decltype(epoll_wait({},{},{},{}));
+        epoll_event ev{};
+        RetType ret {};
+        do{
+            errno = 0;
+            ret = epoll_wait(m_linux_.m_epollFd,std::addressof(ev),1,1000);
+        } while (!m_isExit_.loadAcquire() && ((ret < 0 && EINTR == errno) || !ret));
+
+        if (ret < 0) { perror("epoll_wait"); return {}; }
+
+        if (!ret || m_pipeFd_[0] != ev.data.fd) { return {}; }
     }
-
-    if (!ret){ return {}; }
-
-    if (m_pipeFd_[0] != ev.data.fd)
-    { return {}; }
 
 #endif
     return true;
 }
 
-inline void XSignalPrivate::SignalAsynchronously::readAndCall() {
+inline void XSignalPrivate::SignalAsynchronously::readAndCall() noexcept{
     SignalArgs args{};
 
     {
-        decltype(read({},{},{})) ret {};
+        using RetType = decltype(read({},{},{}));
+        RetType ret {};
         do {
             errno = 0;
             ret = read(m_pipeFd_[0],std::addressof(args),sizeof(args)) ;
         } while (!m_isExit_.loadAcquire() && ret < 0 && EINTR == errno);
 
-        if ( ret < static_cast<decltype(ret)>(sizeof(args)) ) { return; }
+        if ( ret < static_cast<RetType>(sizeof(args)) ) { return; }
     }
 
     SignalPtr ptr{};
     {
         std::shared_lock lock(m_mtx_);
-        if (auto const it { m_signalHandlerMap_.find(static_cast<int>(args.m_sig))}
+        if (auto const it { m_signalHandlerMap_.find(args.m_sig)}
             ;m_signalHandlerMap_.end() != it )
         { ptr = it->second; }
     }
@@ -216,14 +227,14 @@ inline void XSignalPrivate::SignalAsynchronously::readAndCall() {
     if (ptr) { ptr->d_func()->callHandler(args); }
 }
 
-inline void XSignalPrivate::SignalAsynchronously::addHandler(int const sig,SignalPtr p)
+inline void XSignalPrivate::SignalAsynchronously::addHandler(int64_t const sig,SignalPtr p)
 { std::unique_lock lock(m_mtx_); m_signalHandlerMap_.insert({sig,std::move(p)}); }
 
-inline void XSignalPrivate::SignalAsynchronously::removeHandler(int const sig) {
-    SignalPtr ptr { };
+inline void XSignalPrivate::SignalAsynchronously::removeHandler(int64_t const sig) {
     std::unique_lock lock(m_mtx_);
-    auto const it = m_signalHandlerMap_.find(sig);
+    auto const it { m_signalHandlerMap_.find(sig) };
     if (it != m_signalHandlerMap_.end()) { return; }
+    SignalPtr ptr { };
     ptr.swap(it->second);
     m_signalHandlerMap_.erase(sig);
     m_orphanSignals_.push_back(std::move(ptr));

@@ -37,3 +37,8 @@ include(cmake/Dependencies.cmake)
 # 添加测试子目录
 add_subdirectory(Src)
 add_subdirectory(Test)
+
+#install path
+#macos install
+#   -DCMAKE_INSTALL_PREFIX=/Users/apple/Library/XCppBaseUtils
+#   -DCMAKE_INSTALL_PREFIX=/Users/wong/Library/XCppBaseUtils

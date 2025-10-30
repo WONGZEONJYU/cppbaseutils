@@ -19,10 +19,11 @@ class X_CLASS_EXPORT XSignalPrivate final : public XSignalData {
 
 public:
     struct SignalArgs;
-    explicit constexpr XSignalPrivate(XSignal * const o) { m_x_ptr_ = o; }
+    explicit constexpr XSignalPrivate(XSignal * const o)
+    { m_x_ptr_ = o; }
     ~XSignalPrivate() override;
     void registerHelper(int,int) noexcept;
-    int unregisterHelper() noexcept;
+    int64_t unregisterHelper() noexcept;
     void callHandler(SignalArgs const &) noexcept;
 
 private:

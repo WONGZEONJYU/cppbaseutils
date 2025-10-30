@@ -12,9 +12,9 @@ int main() {
     bool is_exit {};
 #if !defined(_WIN32) && !defined(_WIN64)
     auto const sigterm{ XUtils::SignalRegister(SIGTERM,0,
-        [&is_exit](int const ,siginfo_t * const ,void * const &) noexcept ->void {
+        [&is_exit](int const ,siginfo_t * const ,void * const &) noexcept -> void {
             is_exit = true;
-        })} ;
+    })} ;
 
     auto const sigint{ XUtils::SignalRegister(SIGINT,0,
         [&is_exit](int const ,siginfo_t * ,void * ) noexcept ->void {
@@ -27,16 +27,11 @@ int main() {
     })};
 
     auto const sigusr1{ XUtils::SignalRegister(SIGUSR1,0,
-        [](int const ,siginfo_t * const info,void * ) noexcept ->void {
+        [](int const ,const siginfo_t * const info,void * ) noexcept ->void {
             std::cerr << info->si_code << std::endl;
     })};
 
 #endif
-
-    std::thread th{[] {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-    }};
-    th.detach();
 
     std::cout << "current pid:" << getpid() << std::endl;
 #if 1
