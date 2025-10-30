@@ -2,14 +2,13 @@
 #define X_SIGNAL_P_P_HPP 1
 
 #include <XSignal/xsignal_p.hpp>
-#include <map>
+#include <unordered_map>
 #include <list>
 #include <thread>
 #include <shared_mutex>
 
 extern "C" {
 #include <unistd.h>
-#include <sys/types.h>
 #include <fcntl.h>
 #ifdef X_PLATFORM_MACOS
 #include <sys/time.h>
@@ -40,7 +39,7 @@ class XSignalPrivate::SignalAsynchronously final
     X_TWO_PHASE_CONSTRUCTION_CLASS
     friend class XSignal;
 
-    std::map<int64_t,SignalPtr> m_signalHandlerMap_{};
+    std::unordered_map<int64_t,SignalPtr> m_signalHandlerMap_{};
     std::list<SignalPtr> m_orphanSignals_{};
     std::thread m_threadHandle_{};
     std::shared_mutex m_mtx_{};
