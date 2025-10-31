@@ -91,6 +91,7 @@ class X_CLASS_EXPORT ICrashHandler : public std::enable_shared_from_this<ICrashH
         ,public XTwoPhaseConstruction<ICrashHandler>
 {
     X_TWO_PHASE_CONSTRUCTION_CLASS
+
 public:
     virtual ~ICrashHandler() = default;
     virtual void onCrash(std::string_view const & crash_info) = 0;
@@ -126,6 +127,7 @@ class X_CLASS_EXPORT XLog final : XSingleton<XLog> {
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
     std::unique_ptr<XLogData> m_d_ptr{};
+
 public:
     using CrashHandlerPtr = CrashHandlerPtr_;
     using TimePoint [[maybe_unused]] = std::chrono::system_clock::time_point;

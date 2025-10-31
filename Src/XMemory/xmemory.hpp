@@ -323,12 +323,11 @@ protected:
         static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)
                     ,"Object must be a complete type!");
-            if (pointer) {
-                // 先调用析构函数
-                pointer->~value_type();
-                // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
-                std::allocator_traits<allocator_type>::deallocate(sm_allocator_, pointer, 1);
-            }
+            if (!pointer) { return; }
+            // 先调用析构函数
+            pointer->~value_type();
+            // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
+            std::allocator_traits<allocator_type>::deallocate(sm_allocator_, pointer, 1);
         }
 
         constexpr void operator()(value_type * const pointer) const noexcept
@@ -364,26 +363,47 @@ public:
 #ifdef HAS_QT
 
     // Qt对象树专用创建方法 - 返回裸指针供Qt对象树管理
-    template<typename QtObjectPointer,typename ...Args1, typename ...Args2>
+    // 如果父指针为null,即使创建成功也会马上销毁并返回null,请确保父指针不能为null
+    template<typename QtObjectPointer,typename ...Args1, typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...> , typename ArgsList2 = Parameter<Args2...> >
     [[nodiscard]]
-    static constexpr auto CreateForQtObjectTree(QtObjectPointer && parent
-        ,Parameter<Args1...> && args1 = {}, Parameter<Args2...> && args2 = {})
+    static constexpr auto CreateForQtObjectTree(QtObjectPointer * const parent,ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
         noexcept -> Object *
     {
         static_assert(std::is_base_of_v<QObject, Object> ,
                      "Object must inherit from QObject to be used in Qt Object tree");
 
-        auto const obj { Create(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
+        auto obj { CreateUniquePtr(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
 
         // 设置父对象,让Qt对象树管理生命周期
-        if (obj && parent) { obj->setParent(parent); }
+        return obj && parent ? obj->setParent(parent),obj.release() : nullptr;
+    }
 
-        return obj;
+    template<typename QtObjectPointer,typename ...Args1, typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...> , typename ArgsList2 = Parameter<Args2...> >
+    [[nodiscard]]
+    static constexpr auto CreateForQtObjectTree(QtObjectPointer && parent,ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> Object *
+    {
+        return CreateForQtObjectTree(parent.get()
+            ,std::forward<decltype(args1)>(args1)
+            ,std::forward<decltype(args2)>(args2));
+    }
+
+    template<typename QtObject,typename ...Args1, typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...> , typename ArgsList2 = Parameter<Args2...> >
+    [[nodiscard]]
+    static constexpr auto CreateForQtObjectTree(QtObject & parent,ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> Object *
+    {
+        return CreateForQtObjectTree(std::addressof(parent)
+            ,std::forward<decltype(args1)>(args1)
+            ,std::forward<decltype(args2)>(args2));
     }
 
     // 为Qt对象提供手动从对象树中移除并删除的方法
-    template<typename QtObjectPointer> requires (std::is_pointer_v < std::decay_t< QtObjectPointer > >)
-    static constexpr void DeleteFromQtObjectTree(QtObjectPointer && pointer) noexcept {
+    template<typename QtObjectPointer>
+    static constexpr void DeleteFromQtObjectTree(QtObjectPointer * const pointer) noexcept {
         if (!pointer) { return; }
         // 先从父对象中移除，避免Qt自动删除
         if (pointer->parent()) { pointer->setParent(nullptr); }
@@ -393,8 +413,8 @@ public:
 
     // Qt对象树兼容的内存释放器 - 只释放内存,不调用析构函数
     // 注意:这个方法只能在对象已经被析构后调用
-    template<typename QtObjectPointer> requires (std::is_pointer_v < std::decay_t< QtObjectPointer > >)
-    static constexpr void QtCompatibleDeallocate(QtObjectPointer && pointer) noexcept {
+    template<typename QtObjectPointer>
+    static constexpr void QtCompatibleDeallocate(QtObjectPointer * const pointer) noexcept {
         if (!pointer) { return; }
         // 只释放内存,不调用析构函数(析构函数已经被调用了)
         std::allocator_traits<Allocator>::deallocate(sm_allocator_, reinterpret_cast<Object *>(pointer), 1);
@@ -402,9 +422,9 @@ public:
 
 #endif
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto Create( Parameter< Args1... > && args1 = {},
-          Parameter< Args2...> && args2 = {} ) noexcept -> Object *
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
+    static constexpr auto Create( ArgsList1 && args1 = {},ArgsList2 && args2 = {} ) noexcept -> Object *
     {
         static_assert( std::disjunction_v< std::is_base_of< XTwoPhaseConstruction ,Object >
             ,std::is_convertible<Object,XTwoPhaseConstruction >
@@ -426,17 +446,19 @@ public:
         }( indices( args1 ) ,indices( args2 ) );
     }
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
-        ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
+    static constexpr auto CreateSharedPtr ( ArgsList1 && args1 = {} ,ArgsList2 && args2 = {} )
+        noexcept -> ObjectSPtr
     {
         return ObjectSPtr { Create( std::forward< decltype( args1 ) >( args1 )
             ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} , sm_allocator_ };
     }
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
-        ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
+    static constexpr auto CreateUniquePtr ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> ObjectUPtr
     {
         return { Create( std::forward< decltype( args1 ) >( args1 )
             ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter {} };
@@ -447,19 +469,21 @@ public:
     using ObjectQUPtr = QScopedPointer<Object,Deleter>;
     using ObjectQSPtr = QSharedPointer<Object>;
 
-    template<typename ...Args1,typename ...Args2>
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
     [[nodiscard]] [[maybe_unused]]
-    static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
-            ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectQUPtr
+    static constexpr auto CreateQScopedPointer ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> ObjectQUPtr
     {
         return ObjectQUPtr{ Create( std::forward< decltype( args1 ) >( args1 )
                 ,std::forward< decltype( args2 ) >( args2 ) ) };
     }
 
-    template<typename ...Args1,typename ...Args2>
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
     [[nodiscard]] [[maybe_unused]]
-    static constexpr auto CreateQSharedPointer ( Parameter< Args1...> && args1 = {}
-            ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectQSPtr
+    static constexpr auto CreateQSharedPointer ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> ObjectQSPtr
     {
         try{
             return ObjectQSPtr { Create( std::forward< decltype( args1 ) >( args1 )
@@ -541,6 +565,7 @@ public:
            }
            return nullptr;
        }
+
        template<typename ...Args>
        static constexpr QMetaObject::Connection ConnectHelper(Args && ...args) {
            if constexpr ( std::is_object_v<Object_t> ) {
@@ -567,9 +592,10 @@ public:
     using Object = Base_::Object;
     using SingletonPtr = Base_::ObjectSPtr;
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
-        , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> SingletonPtr
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
+    static constexpr auto UniqueConstruction(ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> SingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
                 , "destructor( ~Object() ) must be private!" );
@@ -597,10 +623,11 @@ public:
 #ifdef HAS_QT
     using QSingletonPtr = Base_::ObjectQSPtr;
 
-    template<typename ...Args1,typename ...Args2>
+    template< typename ...Args1,typename ...Args2
+        ,typename ArgsList1 = Parameter<Args1...>,typename ArgsList2 = Parameter<Args2...> >
     [[maybe_unused]] [[nodiscard]]
-    static constexpr auto QUniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
-            , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> QSingletonPtr
+    static constexpr auto QUniqueConstruction(ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> QSingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
                 , "destructor( ~Object() ) must be private or protected!" );
