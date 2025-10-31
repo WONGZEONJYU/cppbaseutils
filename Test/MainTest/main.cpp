@@ -415,7 +415,7 @@ class CTest final : public XUtils::XTwoPhaseConstruction<CTest> {
         std::cerr << FUNC_SIGNATURE << std::endl;
         return true;
     }
-
+private:
     explicit CTest(int &a) noexcept{
         std::cerr << FUNC_SIGNATURE << "a = " << a << std::endl;
     }
@@ -425,9 +425,9 @@ protected:
     }
 
 public:
-//     CTest() noexcept {
-//         std::cerr << FUNC_SIGNATURE << std::endl;
-//     }
+     // CTest() noexcept {
+     //     std::cerr << FUNC_SIGNATURE << std::endl;
+     // }
 
     ~CTest(){
         delete new int[10];
@@ -475,7 +475,7 @@ struct BBB{
         auto p1 = CTest::CreateUniquePtr(XUtils::Parameter{std::ref(a1)}, XUtils::Parameter{100});
         auto p2 = CTest::CreateSharedPtr(XUtils::Parameter{std::ref(a2)}, XUtils::Parameter{std::move(aa), 2});
 
-        delete CTest::Create({}, {});
+        delete CTest::Create();
 
         std::unique_ptr<CTest> a{CTest::Create({}, XUtils::Parameter{}) };
 
