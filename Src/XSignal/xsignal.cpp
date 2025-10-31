@@ -1,140 +1,127 @@
-#include "xsignal.hpp"
+#include <xsignal_p_p.hpp>
 #include <unistd.h>
 #include <sstream>
-#include <unordered_map>
+#include <XHelper/xhelper.hpp>
+#include <XLog/xlog.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XSignal_Impl final: public XSignal {
+static std::mutex sm_mtx_{};
 
-    X_DISABLE_COPY_MOVE(XSignal_Impl)
-
-    enum class Private{};
-
-    static inline void no_sig_(const int &sig){
-        std::stringstream msg{};
-        msg << "This signal(id: " << sig << ")" << "is not registered\n";
-        write(STDERR_FILENO,msg.str().c_str(),msg.str().length());
-    }
-
-    static void signal_handler(const int sig,siginfo_t* const info,void* const ctx) {
-
-        const auto &it{sm_callable_map_.find(sig)};
-        if (sm_callable_map_.end() == it || !it->second || !it->second->m_call_){
-            no_sig_(sig);
-            return;
-        }
-
-        const auto &this_{it->second};
-        this_->m_context_ = ctx;
-        this_->m_sig_ = sig;
-        this_->m_info_ = *info;
-        (*this_->m_call_)();
-    }
-
-    void Unregister_helper() {
-        if (m_sig_ > 0) {
-            m_act_.sa_handler = SIG_DFL;
-            m_act_.sa_flags = 0;
-            sigaction(m_sig_, &m_act_,{});
-            m_sig_ = -1;
-        }
-    }
-
-    void set_call(const Callable_Ptr &p) override{
-        m_call_ = std::forward<decltype(p)>(p);
-    }
-
-public:
-    [[nodiscard]] [[maybe_unused]] int sig() const & override {
-        return m_sig_;
-    }
-
-    [[nodiscard]] [[maybe_unused]] const siginfo_t &siginfo() const & override {
-        return m_info_;
-    }
-
-    [[nodiscard]] [[maybe_unused]] ucontext_t* context() const & override {
-        return static_cast<ucontext_t*>(m_context_);
-    }
-
-    [[maybe_unused]] void Unregister() override {
-        Unregister_helper();
-        sm_callable_map_.erase(m_sig_);
-    }
-
-    static void Unregister(const int &sig){
-        if (const auto &it{sm_callable_map_.find(sig)};sm_callable_map_.end() != it){
-            it->second->Unregister();
-        }
-    }
-
-    static auto siginfo(const int &sig) {
-        const auto &it{sm_callable_map_.find(sig)};
-        return  sm_callable_map_.end() != it ? it->second->m_info_ : siginfo_t{};
-    }
-
-    using XSignal_Impl_Ptr = std::shared_ptr<XSignal_Impl>;
-
-private:
-    using call_map_t = std::unordered_map<int,XSignal_Impl_Ptr>;
-    static inline call_map_t sm_callable_map_{};
-    int m_sig_{-1};
-    struct sigaction m_act_{};
-    siginfo_t m_info_{};
-    void *m_context_{};
-    Callable_Ptr m_call_{};
-
-public:
-    explicit XSignal_Impl(const int &sig,const int &flags,Private):m_sig_(sig){
-        m_act_.sa_sigaction = signal_handler;
-        m_act_.sa_flags = SA_SIGINFO | flags;
-        sigaction(sig, &m_act_,{});
-    }
-
-    static XSignal_Impl_Ptr create(const int &sig,const int &flags){
-        if (sig <= 0 || flags < 0){
-            return {};
-        }
-
-        try{
-            const auto obj{std::make_shared<XSignal_Impl>(sig,flags,Private{})};
-            sm_callable_map_[sig] = obj;
-            return obj;
-        }catch (const std::exception &){
-            return {};
-        }
-    }
-
-    ~XSignal_Impl() override {
-        Unregister_helper();
-    }
-};
-
-[[maybe_unused]] siginfo_t XSignal::siginfo(const int &sig){
-    return XSignal_Impl::siginfo(sig);
+void XSignalPrivate::noSig(int const sig) {
+    std::stringstream msg {};
+    msg << "This signal(id: " << sig << ")" << "is not registered\n";
+    auto const len{ write(STDERR_FILENO,msg.str().c_str(),msg.str().length()) };
+    (void)len;
 }
 
-void XSignal::Unregister(const int &sig){
-    XSignal_Impl::Unregister(sig);
+void XSignalPrivate::signalHandler(int const sig, siginfo_t * const info, void * const ctx) {
+    auto const async{ m_async_.loadAcquire() };
+    if (!async) { return; }
+    SignalArgs const args { sig,info,ctx };
+    async->emitSignal(args);
 }
 
-[[maybe_unused]] bool XSignal::Send_signal(const int &pid_,const int &sig_,const sigval &val_){
-#if defined(__APPLE__) || defined(__MACH__)
+XSignalPrivate::~XSignalPrivate()
+{ unregisterHelper(); }
+
+void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
+    m_sig = sig;
+    m_act_.sa_sigaction = signalHandler;
+    m_act_.sa_flags = SA_SIGINFO | SA_RESTART | flags;
+    sigaction(sig, &m_act_,{});
+}
+
+int64_t XSignalPrivate::unregisterHelper() noexcept {
+    auto const sig{ m_sig };
+    if (m_sig > 0) {
+        m_act_.sa_handler = SIG_DFL;
+        m_act_.sa_flags = 0;
+        sigaction(static_cast<int>(m_sig), std::addressof(m_act_),{});
+        m_sig = -1;
+    }
+    return sig;
+}
+
+void XSignalPrivate::callHandler(SignalArgs const & args) noexcept {
+    auto const & [sig,info,ctx]{ args };
+    m_sig = static_cast<int>(sig);
+    m_info = info;
+    m_context = ctx;
+    try {
+        std::invoke(*m_callable_);
+    } catch (std::exception const & e) {
+        std::cerr << "sig : " << sig << " callback err : "
+            << e.what() << std::endl << std::flush;
+    } catch (...) {
+        std::cerr << "sig : " << sig
+            << " callback err : unknown error!" << std::endl << std::flush;
+    }
+}
+
+XSignal::XSignal() = default;
+
+bool XSignal::registerHelper(SignalPtr const & p) {
+
+    static X_RAII const r { []() noexcept{
+        auto const async{ XSignalPrivate::SignalAsynchronously::UniqueConstruction() };
+        async->ref();
+        async->startHandler();
+        {
+            std::unique_lock lock(sm_mtx_);
+            XSignalPrivate::m_async_.storeRelease(async.get());
+        }
+    },[]() noexcept{
+        if (auto const async{XSignalPrivate::m_async_.loadAcquire()}
+            ; async && !async->deref())
+        {
+            std::unique_lock lock(sm_mtx_);
+            XSignalPrivate::m_async_.storeRelease({});
+        }
+    }};
+
+    std::unique_lock lock(sm_mtx_);
+    auto const async{ XSignalPrivate::m_async_.loadAcquire() };
+    if (!async) { return {}; }
+    async->addHandler(p->sig(),p);
+    return true;
+}
+
+XSignal::~XSignal()
+{ std::cerr << "sig : " << m_d_ptr_->m_sig << " destroy " << std::endl; }
+
+bool XSignal::construct_(int const sig, int const flags) noexcept {
+    if (sig <= 0 || flags < 0)
+    { return {}; }
+    if (m_d_ptr_ = makeUnique<XSignalPrivate>(this);!m_d_ptr_)
+    { return {}; }
+    d_func()->registerHelper(sig,flags);
+    return true;
+}
+
+void XSignal::setCall_(XCallableHelper::CallablePtr && f) noexcept
+{ d_func()->m_callable_.swap(f); }
+
+void XSignal::unregister() {
+    auto const sig{ d_func()->unregisterHelper() };
+    std::unique_lock lock(sm_mtx_);
+    auto const async{ XSignalPrivate::m_async_.loadAcquire() };
+    if (!async) { return; }
+    async->ref();
+    async->removeHandler(sig);
+    async->deref();
+}
+
+bool emitSignal(int const pid_, int const sig_, sigval const & val_) noexcept {
+#ifdef X_PLATFORM_MACOS
     (void)val_;
     return !kill(pid_,sig_);
-#else
+#endif
+
+#ifdef X_PLATFORM_LINUX
     return !sigqueue(pid_,sig_,val_);
 #endif
-}
-
-Signal_Ptr XSignal::create(const int &sig,const int &flags){
-    return XSignal_Impl::create(sig,flags);
-}
-
-[[maybe_unused]] void Signal_Unregister(const int &sig){
-    XSignal::Unregister(sig);
 }
 
 XTD_INLINE_NAMESPACE_END

@@ -3,6 +3,7 @@
 
 #include <XThreadPool/xrunnable.hpp>
 #include <XHelper/xtypetraits.hpp>
+#include <XHelper/xcallablehelper.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -34,67 +35,39 @@ class X_CLASS_EXPORT XThreadPool final : public std::enable_shared_from_this<XTh
     using XThreadPoolData_Ptr = std::unique_ptr<XThreadPoolData>;
     mutable XThreadPoolData_Ptr m_d_ptr_{};
 
-    template<typename ...Args>
-    class XTemporaryTasksImpl;
-    class XTemporaryTasksFactory;
-
-    class XTemporaryTasksBase final {
-        enum class Private{};
-        template<typename... >
-        friend class XTemporaryTasksImpl;
-        friend class XTemporaryTasksFactory;
-    public:
-        XTemporaryTasksBase() = delete;
-    };
+    struct XTemporaryTasksFactory;
 
     template<typename ...Args>
-    class XTemporaryTasksImpl final: public XRunnable<Const> {
-
-        using decayed_tuple_ = std::tuple<std::decay_t<Args>...>;
-        mutable decayed_tuple_ m_tuple_{};
-
-        template<typename>
-        struct result;
-
-        template<typename Fn_,typename ...Args_>
-        struct result<std::tuple<Fn_,Args_...>> : std::invoke_result<Fn_,Args_...> {};
-
-        using result_t = typename result<decayed_tuple_>::type;
-
+    class XTemporaryTasks final: public XRunnable<Const> {
+        enum class Private_{};
+        friend struct XTemporaryTasksFactory;
+        using invoker_t = XCallableHelper::Invoker<Args...>;
+        mutable invoker_t m_invoker_{};
         constexpr std::any run() const override {
-            using indices = std::make_index_sequence<std::tuple_size_v<decayed_tuple_>>;
-            if constexpr (std::is_void_v<result_t>){
-                call(indices{});
+            if constexpr (std::is_void_v<typename invoker_t::result_t>) {
+                m_invoker_();
                 return {};
-            }else{
-                return call(indices{});
+            }else {
+                return m_invoker_();
             }
         }
 
-        template<size_t ...I>
-        constexpr result_t call(std::index_sequence<I...>) const
-        { return std::invoke(std::get<I>(std::forward<decayed_tuple_>(m_tuple_))...); }
-
     public:
-        explicit constexpr XTemporaryTasksImpl(XTemporaryTasksBase::Private,Args && ...args):m_tuple_{std::forward<Args>(args)...}{}
-        constexpr ~XTemporaryTasksImpl() override = default;
+        explicit constexpr XTemporaryTasks(Private_,Args && ...args)
+        :m_invoker_{ XCallableHelper::createInvoker(std::forward<Args>(args)...)  } {}
+        constexpr ~XTemporaryTasks() override = default;
     };
 
-    class XTemporaryTasksFactory final {
-    public:
+    struct XTemporaryTasksFactory final {
         XTemporaryTasksFactory() = delete;
-
         template<typename ...Args>
-        static constexpr auto create(Args && ...args) {
-            try{
-                return std::make_shared<XTemporaryTasksImpl<Args...>>(XTemporaryTasksBase::Private{},std::forward<Args>(args)...);
-            }catch (const std::exception &){
-                return std::shared_ptr<XTemporaryTasksImpl<Args...>>{};
-            }
+        static constexpr auto create(Args && ...args) noexcept {
+            using TemporaryTasks = XTemporaryTasks<Args...>;
+            return makeShared<TemporaryTasks>(typename TemporaryTasks::Private_{},std::forward<Args>(args)...);
         }
     };
 
-    XAbstractRunnable_Ptr runnableJoin_(const XAbstractRunnable_Ptr &task);
+    XAbstractRunnable_Ptr runnableJoin_( XAbstractRunnable_Ptr const & );
 
 public:
     enum class Mode {FIXED,/*固定线程数模式*/CACHE /*动态线程数*/};

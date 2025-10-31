@@ -11,18 +11,40 @@
 int main() {
     bool is_exit {};
 #if !defined(_WIN32) && !defined(_WIN64)
-    auto const sigterm { XUtils::Signal_Register(SIGTERM,0,[&is_exit]()noexcept{
+    auto const sigterm{ XUtils::SignalRegister(SIGTERM,0,
+        [&is_exit](int const ,siginfo_t * const ,void * const &) noexcept -> void {
+            is_exit = true;
+    })} ;
+
+    auto const sigint{ XUtils::SignalRegister(SIGINT,0,
+        [&is_exit](int const ,siginfo_t * ,void * ) noexcept ->void {
         is_exit = true;
     })};
+
+    auto const sigkill{ XUtils::SignalRegister(SIGKILL,0,
+        [&is_exit](int const &,siginfo_t * const ,void * ) noexcept ->void {
+        is_exit = true;
+    })};
+
+    auto const sigusr1{ XUtils::SignalRegister(SIGUSR1,0,
+        [](int const ,const siginfo_t * const info,void * ) noexcept ->void {
+            std::cerr << info->si_code << std::endl;
+    })};
+
 #endif
+
+    std::cout << "current pid:" << getpid() << std::endl;
+#if 1
     while (!is_exit) {
         ServerInfoGetterLinux linux{};
         ServerInfoGetterWin win{};
 
         ServerInfoGetterProxy getter(&win);
         const auto info{getter.getInfo()};
-        std::cerr << info.m_cpu << '\n';
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::cout << info.m_cpu << std::flush;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
+#endif
+    std::cout << "main() returning now\n";
     return 0;
 }

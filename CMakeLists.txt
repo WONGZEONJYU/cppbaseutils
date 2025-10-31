@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 
 # 设置项目名称、版本和描述
-project(XUtils 
+project(XUtils2
     VERSION 2.0.0
     DESCRIPTION "C++ Base Utilities Library"
     LANGUAGES CXX
-    HOMEPAGE_URL "https://github.com/yourusername/XUtils"
+    HOMEPAGE_URL "https://github.com/WONGZEONJYU/cppbaseutils"
 )
 
 # 设置C++标准
@@ -37,3 +37,8 @@ include(cmake/Dependencies.cmake)
 # 添加测试子目录
 add_subdirectory(Src)
 add_subdirectory(Test)
+
+#install path
+#macos install
+#   -DCMAKE_INSTALL_PREFIX=/Users/apple/Library/XCppBaseUtils
+#   -DCMAKE_INSTALL_PREFIX=/Users/wong/Library/XCppBaseUtils

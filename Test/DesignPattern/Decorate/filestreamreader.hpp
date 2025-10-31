@@ -9,7 +9,7 @@ class FileStreamReader final: public StreamReader {
 public:
     int open(std::string const & url) override;
     int close() override;
-    int read(uint8_t *, int wantLen) override;
+    int read(void *, int wantLen) override;
 };
 
 #endif
