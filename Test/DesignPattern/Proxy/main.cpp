@@ -31,9 +31,9 @@ int main() {
             std::cerr << info->si_code << std::endl;
     })};
 
+    std::cout << "current pid:" << getpid() << std::endl;
 #endif
 
-    std::cout << "current pid:" << getpid() << std::endl;
 #if 1
     while (!is_exit) {
         ServerInfoGetterLinux linux{};

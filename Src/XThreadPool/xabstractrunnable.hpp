@@ -105,7 +105,7 @@ private:
     void call() const;
     void set_exit_function_(std::function<bool()> &&) const;
     void resetRecall_() const;
-    constexpr void allow_get_() const
+    void allow_get_() const
     { m_d_ptr_->m_result_.allow_get(); }
     XAtomicPointer<const void> &Owner_() const;
 
