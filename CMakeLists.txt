@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 # 设置项目名称、版本和描述
-project(XUtils 
+project(XUtils2
     VERSION 2.0.0
     DESCRIPTION "C++ Base Utilities Library"
     LANGUAGES CXX
