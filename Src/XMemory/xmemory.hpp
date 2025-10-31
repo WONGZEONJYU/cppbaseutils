@@ -347,62 +347,57 @@ public:
 
     // 为裸指针提供专门的删除函数
     static constexpr void Delete(Object * const pointer) noexcept {
-        if (pointer) {
-            pointer->~Object();
-            std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
-        }
+        if (!pointer) { return; }
+        pointer->~Object();
+        std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
     }
     // 重写operator delete以支持Qt对象树
     // 这是更安全的方法，让Qt调用我们自定义的delete操作符
     constexpr void operator delete(void * const ptr, std::size_t const length) noexcept {
-        if (ptr) {
-            std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
-        }
+        if (!ptr || !length) { return; }
+        std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
     }
 
     constexpr void operator delete(void * const ptr) noexcept
     { operator delete(ptr,1); }
 
 #ifdef HAS_QT
+
     // Qt对象树专用创建方法 - 返回裸指针供Qt对象树管理
-    template<typename ...Args1, typename ...Args2>
+    template<typename QtObjectPointer,typename ...Args1, typename ...Args2>
     [[nodiscard]]
-    static constexpr auto CreateForQtObjectTree(QObject * const parent
+    static constexpr auto CreateForQtObjectTree(QtObjectPointer && parent
         ,Parameter<Args1...> && args1 = {}, Parameter<Args2...> && args2 = {})
-        noexcept -> Object*
+        noexcept -> Object *
     {
-        static_assert(std::is_base_of_v<QObject, Object>, 
-                     "Object must inherit from QObject to be used in Qt object tree");
+        static_assert(std::is_base_of_v<QObject, Object> ,
+                     "Object must inherit from QObject to be used in Qt Object tree");
 
         auto const obj { Create(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
 
-        if (obj && parent) {
-            // 设置父对象，让Qt对象树管理生命周期
-            obj->setParent(parent);
-        }
-        
+        // 设置父对象,让Qt对象树管理生命周期
+        if (obj && parent) { obj->setParent(parent); }
+
         return obj;
     }
 
     // 为Qt对象提供手动从对象树中移除并删除的方法
-    static constexpr void DeleteFromQtObjectTree(Object * const pointer) noexcept {
-        if (pointer) {
-            // 先从父对象中移除，避免Qt自动删除
-            if (pointer->parent()) {
-                pointer->setParent(nullptr);
-            }
-            // 然后使用我们的删除方法
-            Delete(pointer);
-        }
+    template<typename QtObjectPointer> requires (std::is_pointer_v < std::decay_t< QtObjectPointer > >)
+    static constexpr void DeleteFromQtObjectTree(QtObjectPointer && pointer) noexcept {
+        if (!pointer) { return; }
+        // 先从父对象中移除，避免Qt自动删除
+        if (pointer->parent()) { pointer->setParent(nullptr); }
+        // 然后使用我们的删除方法
+        Delete(reinterpret_cast<Object*>(pointer));
     }
 
-    // Qt对象树兼容的内存释放器 - 只释放内存，不调用析构函数
-    // 注意：这个方法只能在对象已经被析构后调用
-    static constexpr void QtCompatibleDeallocate(Object * const pointer) noexcept {
-        if (pointer) {
-            // 只释放内存，不调用析构函数（析构函数已经被调用了）
-            std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
-        }
+    // Qt对象树兼容的内存释放器 - 只释放内存,不调用析构函数
+    // 注意:这个方法只能在对象已经被析构后调用
+    template<typename QtObjectPointer> requires (std::is_pointer_v < std::decay_t< QtObjectPointer > >)
+    static constexpr void QtCompatibleDeallocate(QtObjectPointer && pointer) noexcept {
+        if (!pointer) { return; }
+        // 只释放内存,不调用析构函数(析构函数已经被调用了)
+        std::allocator_traits<Allocator>::deallocate(sm_allocator_, reinterpret_cast<Object *>(pointer), 1);
     }
 
 #endif
@@ -413,7 +408,7 @@ public:
     {
         static_assert( std::disjunction_v< std::is_base_of< XTwoPhaseConstruction ,Object >
             ,std::is_convertible<Object,XTwoPhaseConstruction >
-        > ,"Object must inherit from Class XHelperClass" );
+        > ,"Object must inherit from Class XTwoPhaseConstruction" );
 
         STATIC_ASSERT_P
 

@@ -35,6 +35,14 @@ template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef<const volati
 template<typename T> struct [[maybe_unused]] RemoveConstVolatileRef<const volatile T &&> { using Type = T; };
 template<typename T> using RemoveConstVolatileRef_T [[maybe_unused]] = RemoveConstVolatileRef<T>::Type;
 
+template<typename T>
+struct remove_all_pointers final { using type = T; };
+
+template<typename T>
+struct remove_all_pointers<T*> final { using type = remove_all_pointers<T>::type; };
+
+template<typename T> using remove_all_pointers_t [[maybe_unused]] = remove_all_pointers<T>::type;
+
 template<typename>
 struct is_smart_pointer : std::false_type {};
 
