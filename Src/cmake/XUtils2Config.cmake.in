@@ -1,0 +1,66 @@
+@PACKAGE_INIT@
+
+# 寻找依赖项
+include(CMakeFindDependencyMacro)
+
+# 寻找线程库
+find_dependency(Threads REQUIRED)
+
+# 寻找 Boost (如果构建时使用了 Boost)
+set(_XUtils_Boost_FOUND "@XUtils_Boost_FOUND@")
+if(_XUtils_Boost_FOUND STREQUAL "TRUE" OR _XUtils_Boost_FOUND STREQUAL "ON")
+    find_dependency(Boost)
+    if(NOT Boost_FOUND)
+        message(WARNING "XUtils was built with Boost, but Boost was not found in this environment")
+    endif()
+endif()
+
+# 寻找 Qt (如果构建时使用了 Qt)
+set(_XUtils_Qt6_FOUND "@XUtils_Qt6_FOUND@")
+set(_XUtils_Qt5_FOUND "@XUtils_Qt5_FOUND@")
+if(_XUtils_Qt6_FOUND STREQUAL "TRUE" OR _XUtils_Qt6_FOUND STREQUAL "ON")
+    find_package(Qt6 COMPONENTS Core QUIET)
+    if(NOT Qt6_FOUND)
+        message(WARNING "XUtils was built with Qt6, but Qt6 was not found in this environment. Qt-dependent features may not work.")
+    endif()
+elseif(_XUtils_Qt5_FOUND STREQUAL "TRUE" OR _XUtils_Qt5_FOUND STREQUAL "ON")
+    find_package(Qt5 COMPONENTS Core QUIET)
+    if(NOT Qt5_FOUND)
+        message(WARNING "XUtils was built with Qt5, but Qt5 was not found in this environment. Qt-dependent features may not work.")
+    endif()
+endif()
+
+# 包含导出的目标
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+
+# 设置变量以便其他项目使用
+set(@PROJECT_NAME@_FOUND TRUE)
+set(@PROJECT_NAME@_VERSION @PROJECT_VERSION@)
+set(@PROJECT_NAME@_LIBRARIES @PROJECT_NAME@::@PROJECT_NAME@)
+
+# 传递符号导出相关的配置选项
+set(@PROJECT_NAME@_EXPORT_ALL_SYMBOLS @EXPORT_ALL_SYMBOLS@)
+set(@PROJECT_NAME@_USE_SYMBOL_VISIBILITY @USE_SYMBOL_VISIBILITY@)
+set(@PROJECT_NAME@_AUTO_EXPORT_IMPORT @AUTO_EXPORT_IMPORT@)
+
+# 为使用该库的项目提供符号导出宏
+if(@PROJECT_NAME@_USE_SYMBOL_VISIBILITY)
+    # 设置符号可见性宏
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(-fvisibility=hidden)
+        add_compile_options(-fvisibility-inlines-hidden)
+    endif()
+
+    add_compile_definitions(USE_SYMBOL_VISIBILITY)
+endif()
+
+if(WIN32 AND @PROJECT_NAME@_EXPORT_ALL_SYMBOLS)
+    add_compile_definitions(EXPORT_ALL_SYMBOLS)
+endif()
+
+if(@PROJECT_NAME@_AUTO_EXPORT_IMPORT)
+    add_compile_definitions(AUTO_EXPORT_IMPORT)
+endif()
+
+# 检查所有必要的组件是否都已找到
+check_required_components(@PROJECT_NAME@)
