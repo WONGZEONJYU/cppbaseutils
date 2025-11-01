@@ -36,9 +36,10 @@ namespace XPrivate {
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
         template<typename T>
-        static constexpr char test( void (T::*)() ) {throw;}
+        static constexpr char test( void (T::*)() ) noexcept { return {}; }
 
-        static constexpr int test( void (Object::*)() ){throw;}
+        static constexpr int test( void (Object::*)() ) noexcept { return {}; }
+
     public:
         enum { value = sizeof(test(&Object::checkFriendXTwoPhaseConstruction_)) == sizeof(int) };
     };
@@ -53,13 +54,15 @@ namespace XPrivate {
         static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
 
         template<typename O,typename Tuple_,std::size_t ...I>
-        static constexpr auto test(std::index_sequence<I...> ) -> std::true_type
+        static constexpr auto test(std::index_sequence<I...> ) noexcept -> std::true_type
             requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >() )... ) )
                 > static_cast<std::size_t>(0) ) )
-        {throw ;}
+        { return {};}
 
         template<typename ...>
-        static constexpr auto test(...) -> std::false_type {throw ;}
+        static constexpr auto test(...) noexcept -> std::false_type
+        { return {}; }
+
     public:
         enum { value = decltype(test<Object,Tuple>(indices<Tuple>()))::value };
     };
@@ -74,15 +77,16 @@ namespace XPrivate {
         static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
 
         template<typename O,typename Tuple_,std::size_t ...I>
-        static constexpr auto test(std::index_sequence<I...>) -> std::false_type
+        static constexpr auto test(std::index_sequence<I...>) noexcept -> std::false_type
             requires (
                 ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >()...) ) > static_cast<std::size_t>(0) )
                     || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >()...) ),void >
             )
-        {throw ;}
+        { return {}; }
 
         template<typename ...>
-        static constexpr auto test(...) ->std::true_type {throw ;}
+        static constexpr auto test(...) noexcept -> std::true_type
+        { return {}; }
 
     public:
         enum { value = decltype(test<Object,Tuple>(indices<Tuple>()))::value };
@@ -134,12 +138,12 @@ namespace XPrivate {
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
         template<typename O>
-        static constexpr auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
-        { throw ; }
+        static constexpr auto test(int) noexcept -> decltype(std::declval<O>().~O(),std::false_type{})
+        { return {}; }
 
         template<typename >
-        static constexpr auto test(...) -> std::true_type
-        { throw ; }
+        static constexpr auto test(...) noexcept -> std::true_type
+        { return {}; }
 
     public:
         enum {value = decltype(test<Object>(0))::value };
@@ -220,11 +224,11 @@ namespace XPrivate {
     };
 
     template<typename T, typename U>
-    constexpr bool operator==(const Allocator_ <T>&, const Allocator_ <U>&)
+    constexpr bool operator==(const Allocator_ <T>&, const Allocator_ <U>&) noexcept
     { return true; }
 
     template<typename T, typename U>
-    constexpr bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&)
+    constexpr bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&) noexcept
     { return false; }
 
 #define STATIC_ASSERT_P \
@@ -274,7 +278,7 @@ protected:
 
         constexpr Destructor_() = default;
 
-        template<typename U,std::enable_if_t<std::is_constructible_v<U*,value_type *> ,int> = 0 >
+        template<typename U > requires (std::is_constructible_v<U*,value_type *>)
         constexpr Destructor_(Destructor_<U> const &) {}
 
         static constexpr void cleanup(value_type * const pointer) noexcept {
@@ -564,7 +568,7 @@ public:
 
         STATIC_ASSERT_P
 
-        allocate_([&args1,&args2] {
+        allocate_([&args1,&args2]()noexcept {
             return Base_::CreateSharedPtr(std::forward< decltype(args1) >(args1)
                     ,std::forward<decltype(args2) >(args2));
         });
@@ -598,7 +602,7 @@ public:
 
         STATIC_ASSERT_P
 
-        allocate_([&args1,&args2]{
+        allocate_([&args1,&args2]()noexcept{
             return Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
                     ,std::forward< decltype( args2 ) >( args2 ) );
         });
