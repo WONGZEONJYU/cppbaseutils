@@ -6,7 +6,7 @@ file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
 list(FILTER SRC_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
 list(FILTER HEADER_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
 
-set(targetName Facade)
+set(targetName Strategy)
 
 # 创建主测试可执行文件
 add_executable(${targetName})
