@@ -552,7 +552,8 @@ protected:
     template<typename ,typename > friend class XSingleton;
 };
 
-using TwoPhaseConstruction [[maybe_unused]] = XTwoPhaseConstruction<void>;
+using TwoPhaseConstruction = XTwoPhaseConstruction<void>;
+using TPC = TwoPhaseConstruction;
 
 template<typename Tp_, typename Alloc_ >
 class XSingleton : protected XTwoPhaseConstruction<Tp_, Alloc_> {
