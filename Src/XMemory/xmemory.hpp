@@ -259,6 +259,9 @@ class XSingleton;
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
 
+template<typename ...Args>
+using XArgs = std::tuple<Args...>;
+
 template<typename Tp_, typename Alloc_>
 class XTwoPhaseConstruction {
 
