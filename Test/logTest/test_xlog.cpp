@@ -159,6 +159,8 @@ void testPerformance() {
 }
 
 int main() {
+
+#if 1
     std::cout << "Starting comprehensive XLog test...\n";
 
     try {
@@ -200,6 +202,7 @@ int main() {
         std::cout << "Exception: " << e.what() << '\n';
         return 1;
     }
+#endif
 
     return 0;
 } 

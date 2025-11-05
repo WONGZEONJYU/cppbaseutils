@@ -42,7 +42,7 @@ class XSignalPrivate::SignalAsynchronously final
     std::unordered_map<int64_t,SignalPtr> m_signalHandlerMap_{};
     std::list<SignalPtr> m_orphanSignals_{};
     std::thread m_threadHandle_{};
-    std::shared_mutex m_mtx_{};
+    mutable std::shared_mutex m_mtx_{};
     XAtomicBool m_isExit_{};
     XAtomicInt m_ref_{};
     int m_pipeFd_[2]{-1,-1};
@@ -61,6 +61,7 @@ class XSignalPrivate::SignalAsynchronously final
 public:
     void addHandler(int64_t, SignalPtr);
     void removeHandler(int64_t);
+    SignalPtr findHandler(int64_t) const;
     void ref() noexcept { m_ref_.ref(); }
     bool deref() noexcept { return m_ref_.deref(); }
     void emitSignal(SignalArgs const &) const noexcept;
@@ -74,7 +75,7 @@ private:
     bool construct_() noexcept;
     void signalHandler() noexcept;
     bool wait() noexcept;
-    void readAndCall() noexcept;
+    void readAndCall() const noexcept;
 };
 
 inline bool XSignalPrivate::SignalAsynchronously::construct_() noexcept {
@@ -122,7 +123,7 @@ inline XSignalPrivate::SignalAsynchronously::~SignalAsynchronously()
 { deConstruct(); }
 
 inline void XSignalPrivate::SignalAsynchronously::deConstruct() noexcept {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cerr << __PRETTY_FUNCTION__ << std::endl << std::flush;
     stopHandler();
     for (auto & item: m_pipeFd_)
     { if (item > 0) { close(item); item = -1; } }
@@ -201,7 +202,7 @@ inline bool XSignalPrivate::SignalAsynchronously::wait() noexcept {
     return true;
 }
 
-inline void XSignalPrivate::SignalAsynchronously::readAndCall() noexcept{
+inline void XSignalPrivate::SignalAsynchronously::readAndCall() const noexcept {
     SignalArgs args{};
 
     {
@@ -215,26 +216,24 @@ inline void XSignalPrivate::SignalAsynchronously::readAndCall() noexcept{
         if ( ret < static_cast<RetType>(sizeof(args)) ) { return; }
     }
 
-    SignalPtr ptr{};
-    {
-        std::shared_lock lock(m_mtx_);
-        if (auto const it { m_signalHandlerMap_.find(args.m_sig)}
-            ;m_signalHandlerMap_.end() != it )
-        { ptr = it->second; }
-    }
-
-    if (ptr) { ptr->d_func()->callHandler(args); }
+    if (auto const ptr { findHandler(args.m_sig)} )
+    { ptr->d_func()->callHandler(args); }
 }
 
 inline void XSignalPrivate::SignalAsynchronously::addHandler(int64_t const sig,SignalPtr p)
 { std::unique_lock lock(m_mtx_); m_signalHandlerMap_.insert({sig,std::move(p)}); }
 
-inline void XSignalPrivate::SignalAsynchronously::removeHandler(int64_t const sig) {
-    std::unique_lock lock(m_mtx_);
+inline SignalPtr XSignalPrivate::SignalAsynchronously::findHandler(int64_t const sig ) const {
+    std::shared_lock lock(m_mtx_);
     auto const it { m_signalHandlerMap_.find(sig) };
-    if (it != m_signalHandlerMap_.end()) { return; }
-    SignalPtr ptr { };
-    ptr.swap(it->second);
+    if (m_signalHandlerMap_.end() == it) { return {}; }
+    return it->second;
+}
+
+inline void XSignalPrivate::SignalAsynchronously::removeHandler(int64_t const sig) {
+    auto ptr { findHandler(sig) };
+    if (!ptr) { return; }
+    std::unique_lock lock(m_mtx_);
     m_signalHandlerMap_.erase(sig);
     m_orphanSignals_.push_back(std::move(ptr));
 }

@@ -3,7 +3,8 @@
 
 #include <XHelper/xversion.hpp>
 #include <XHelper/xtypetraits.hpp>
-#include <XGlobal//xclasshelpermacros.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
+#include <XHelper/xqt_detection.hpp>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -22,6 +23,8 @@
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+#define TO_STRING(x) #x
 
 template<typename T,typename > class XTwoPhaseConstruction;
 template<typename T,typename > class XSingleton;
@@ -90,6 +93,8 @@ X_API void x_assert_what(const std::string &where, const std::string &what,
     const std::string &file,const int &line) noexcept;
 X_API void x_assert_what(const std::string_view &, const std::string_view &what,
     const std::string_view &file,const int &line) noexcept;
+
+X_API void consoleOut(std::string const &) noexcept;
 
 #if 0
 [[maybe_unused]] X_API std::string toLower(std::string &);
@@ -192,6 +197,37 @@ enum class ConnectionType {
 
 enum class NonConst{};
 enum class Const{};
+
+#ifdef HAS_QT
+
+#define QTR(x) QObject::tr(x)
+
+#define CHECK_BASE(cond,x) do { \
+    if((cond)) {break;} \
+    auto _msg_{ QTR("file: ") }; \
+    _msg_+= QTR(__FILE__) + QTR(" , ") + QTR("line: ") \
+    + QString::number(__LINE__) + QTR(" , ") + QTR(FUNC_SIGNATURE) + QTR(" ")  \
+    + QTR(#cond) + QTR(" ") + QTR((x)); \
+    consoleOut(_msg_.toStdString()); \
+    return {};\
+}while(false)
+
+#else
+
+#define CHECK_BASE(cond,x) do { \
+    if((cond)) {break;} \
+    std::ostringstream _msg_{}; \
+    _msg_ << "file: " << __FILE__ << " , " \
+        << "line: " << __LINE__ << " , " << FUNC_SIGNATURE << " " \
+        << #cond << " " << (x); \
+    consoleOut(_msg_.str()); \
+    return {}; \
+}while(false)
+
+#endif
+
+#define CHECK_EMPTY(cond) CHECK_BASE(cond,TO_STRING(is empty!))
+#define CHECK_ERR(cond) CHECK_BASE(cond,TO_STRING(is error!))
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

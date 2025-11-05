@@ -2,13 +2,16 @@
 #define XUTILS_XLOG_P_HPP
 
 #include <XLog/xlog.hpp>
-#include <atomic>
+#include <XAtomic/xatomic.hpp>
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
 #include <deque>
 #include <condition_variable>
+#ifdef X_PLATFORM_WINDOWS
+#include <windows.h>
+#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -19,18 +22,17 @@ public:
     // 配置参数
     std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
     std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
-    std::atomic_bool m_color_output_{true}
-                    ,m_crash_diagnostics_{true};
-    std::atomic_size_t m_max_queue_size_ {10000};
+    XAtomicBool m_color_output_{true},m_crash_diagnostics_{true};
+    XAtomicInteger<std::size_t> m_max_queue_size_ { 10000 };
 
     // 文件相关
     std::string m_log_file_path_{}
                 ,m_log_base_name_{"application"} // 基础文件名
                 ,m_log_directory_{"logs"}      // 日志目录
                 ,m_current_log_file_{}; // 当前正在使用的日志文件名
-    std::atomic_size_t m_max_file_size_{5 * 1024 * 1024} // 默认5MB
+    XAtomicInteger<std::size_t> m_max_file_size_{5 * 1024 * 1024} // 默认5MB
                         ,m_current_file_size_{};
-    std::atomic_int m_retention_days_{7}; // 默认保存7天
+    XAtomicInt m_retention_days_{7}; // 默认保存7天
     std::unique_ptr<std::ofstream> m_file_stream_{};
 
     // 异步处理
@@ -38,8 +40,7 @@ public:
     mutable std::shared_mutex m_queue_mutex_{};
     std::condition_variable_any m_queue_cv_{};
     std::thread m_worker_thread_{};
-    std::atomic_bool m_running_{}
-                    ,m_shutdown_requested_{};
+    XAtomicBool m_running_{},m_shutdown_requested_{};
 
     // 崩溃处理
     using CrashHandlerPtr = std::shared_ptr<ICrashHandler>;
@@ -53,9 +54,9 @@ public:
     ~XLogPrivate() override = default;
     // 异步日志处理
     void processLogQueue();
-    void writeToConsole(const LogMessage& ) const;
-    void writeToFile(const LogMessage& );
-    [[nodiscard]] static std::string formatLogMessage(const LogMessage& ) ;
+    void writeToConsole(LogMessage const & ) const;
+    void writeToFile(LogMessage const & );
+    [[nodiscard]] static std::string formatLogMessage(LogMessage const & ) ;
 
     // 文件轮转
     void rotateLogFile();
@@ -76,7 +77,7 @@ public:
     [[nodiscard]] std::string getLogFilePattern() const;
     void ensureLogDirectory() const;
 
-#ifdef _WIN32
+#ifdef X_PLATFORM_WINDOWS
     static LONG WINAPI handleWindowsException(EXCEPTION_POINTERS *);
 #endif
 };

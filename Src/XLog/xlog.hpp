@@ -2,9 +2,6 @@
 #define XUTILS_XLOG_HPP 1
 
 #include <XMemory/xmemory.hpp>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -33,18 +30,17 @@ enum class LogOutput : uint8_t {
 
 // 启用位运算操作符
 constexpr LogOutput operator| (LogOutput const & lhs, LogOutput const & rhs) noexcept
-{return static_cast<LogOutput>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));}
+{ return static_cast<LogOutput>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs)); }
 
 constexpr LogOutput operator& (LogOutput const & lhs, LogOutput const & rhs) noexcept
-{return static_cast<LogOutput>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));}
+{ return static_cast<LogOutput>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs)); }
 
 /**
  * @brief 源代码位置信息（C++17兼容版本）
  */
 struct SourceLocation final {
 
-    const char* m_fileName{},
-            * m_functionName{};
+    const char * m_fileName{},* m_functionName{};
     std::uint32_t m_line{};
 
     SourceLocation() = default;
@@ -57,9 +53,8 @@ struct SourceLocation final {
     // 创建当前位置的便利函数
     static constexpr SourceLocation current(const char* const file = {},
                                           const char * const function = {},
-                                          std::uint32_t const line_num = {}) noexcept {
-        return{file,function, line_num};
-    }
+                                          std::uint32_t const line_num = {}) noexcept
+    { return{file,function, line_num}; }
 };
 
 /**
@@ -136,20 +131,20 @@ public:
      * @brief 设置日志级别
      * @param level 最低日志级别
      */
-    void setLogLevel(LogLevel const& level) noexcept;
+    void setLogLevel(LogLevel const & level) noexcept;
 
     /**
      * @brief 获取当前日志级别
      * @return 当前日志级别
      */
     [[nodiscard]] LogLevel getLogLevel() const noexcept;
-    
+
     /**
      * @brief 设置日志输出方式
      * @param output 输出方式（控制台、文件或两者）
      */
     void setOutput(LogOutput const & output) noexcept;
-    
+
     /**
      * @brief 设置日志文件配置
      * @param base_name 基础文件名（不包含扩展名和时间戳）
@@ -205,7 +200,7 @@ public:
      */
     void log(LogLevel const & level, std::string_view const & message,
              SourceLocation const & location = {});
-    
+
     /**
      * @brief 格式化记录日志
      * @tparam Args 参数类型
@@ -225,7 +220,7 @@ public:
             std::ostringstream oss{};
             formatImpl(oss, format_str, std::forward<Args>(args)...);
             log(level, oss.str(), location);
-        } catch (const std::exception& e) {
+        } catch (std::exception const & e) {
             // 格式化失败时记录错误
             log(LogLevel::ERROR_LEVEL
                 , (std::ostringstream{} << "Log format error: " << e.what()).str()
@@ -237,20 +232,20 @@ public:
      * @brief 刷新所有待处理的日志
      */
     void flush();
-    
+
     /**
      * @brief 等待所有日志处理完成
      * @param timeout 超时时间（毫秒），0表示无限等待
      * @return 是否在超时前完成
      */
     [[maybe_unused]] [[nodiscard]] bool waitForCompletion(std::chrono::milliseconds const & timeout = std::chrono::milliseconds::zero());
-    
+
     /**
      * @brief 获取当前队列大小
      * @return 队列中待处理的日志数量
      */
     [[maybe_unused]] [[nodiscard]] std::size_t getQueueSize() const;
-    
+
     /**
      * @brief 检查是否应该记录指定级别的日志
      * @param level 日志级别
@@ -280,13 +275,13 @@ public:
      * @return 时间戳字符串
      */
     [[nodiscard]] static std::string getCurrentTimestamp();
-    
+
     /**
      * @brief 获取当前线程ID字符串
      * @return 线程ID字符串
      */
     [[nodiscard]] static std::string getCurrentThreadId();
-    
+
     /**
      * @brief 获取堆栈跟踪信息
      * @param skip_frames 跳过的栈帧数量
@@ -294,10 +289,7 @@ public:
      */
     [[nodiscard]] static std::string getStackTrace(int skip_frames = 1);
 
-    static void xlogHelper(LogLevel const &
-            ,std::string_view const &
-            ,SourceLocation const &
-            ,bool = false);
+    static void xlogHelper(LogLevel const &,std::string_view const &,SourceLocation const &,bool = false);
 
     template<typename ...Args>
     static constexpr void xlogFormatHelper(LogLevel const & level
@@ -312,6 +304,8 @@ public:
             if (b){logger->flush();}
         }
     }
+
+    static void consoleOut(std::string const & ) noexcept;
 
 private:
     XLog();

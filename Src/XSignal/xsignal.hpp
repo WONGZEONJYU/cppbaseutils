@@ -33,9 +33,14 @@ class X_CLASS_EXPORT XSignal final : public XTwoPhaseConstruction<XSignal> {
 public:
     template<typename Fn,typename... Args>
     constexpr static auto Register(int sig,int flags,Fn &&,Args && ...args) noexcept -> SignalPtr;
-    [[nodiscard]] [[maybe_unused]] constexpr int64_t sig() const noexcept
+
+    [[nodiscard]] [[maybe_unused]] constexpr auto sig() const noexcept
     { return m_d_ptr_->m_sig;  }
+
     [[maybe_unused]] void unregister();
+
+    static void SignalUnRegister(int sig) noexcept;
+
     ~XSignal();
 
 private:
@@ -66,7 +71,11 @@ template<typename Fn,typename... Args>
 [[maybe_unused]] constexpr auto SignalRegister(int const sig,int const flags,Fn && fn,Args && ...args)
 { return XSignal::Register(sig,flags,std::forward<Fn>(fn),std::forward<Args>(args)...); }
 
+[[maybe_unused]] X_API void SignalUnRegister(int sig) noexcept;
+
 [[maybe_unused]] X_API bool emitSignal(int pid_,int sig_,sigval const &val_) noexcept;
+
+[[maybe_unused]] X_API bool emitSignal(int sig) noexcept;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

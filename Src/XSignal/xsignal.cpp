@@ -7,7 +7,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-static std::mutex sm_mtx_{};
+static std::recursive_mutex sm_mtx_{};
 
 void XSignalPrivate::noSig(int const sig) {
     std::stringstream msg {};
@@ -27,19 +27,31 @@ XSignalPrivate::~XSignalPrivate()
 { unregisterHelper(); }
 
 void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
-    m_sig = sig;
-    m_act_.sa_sigaction = signalHandler;
-    m_act_.sa_flags = SA_SIGINFO | SA_RESTART | flags;
-    sigaction(sig, &m_act_,{});
+    auto const sigaction_{ [sig,flags,this]()noexcept{
+        m_sig = sig;
+        m_act_.sa_sigaction = signalHandler;
+        m_act_.sa_flags = SA_SIGINFO | SA_RESTART | flags;
+        sigaction(sig, &m_act_,{});
+    } };
+
+    std::unique_lock lock(sm_mtx_);
+    if (auto const async{ m_async_.loadAcquire() }) {
+        async->ref();
+        if (!async->findHandler(sig)) { sigaction_(); }
+        async->deref();
+    }else {
+        sigaction_();
+    }
 }
 
 int64_t XSignalPrivate::unregisterHelper() noexcept {
     auto const sig{ m_sig };
-    if (m_sig > 0) {
+    if (sig > 0) {
         m_act_.sa_handler = SIG_DFL;
         m_act_.sa_flags = 0;
-        sigaction(static_cast<int>(m_sig), std::addressof(m_act_),{});
+        sigaction(static_cast<int>(sig), std::addressof(m_act_),{});
         m_sig = -1;
+        std::cerr << "sig : " << sig << " destroy " << std::endl << std::flush;
     }
     return sig;
 }
@@ -88,8 +100,7 @@ bool XSignal::registerHelper(SignalPtr const & p) {
     return true;
 }
 
-XSignal::~XSignal()
-{ std::cerr << "sig : " << m_d_ptr_->m_sig << " destroy " << std::endl; }
+XSignal::~XSignal() = default;
 
 bool XSignal::construct_(int const sig, int const flags) noexcept {
     if (sig <= 0 || flags < 0)
@@ -113,6 +124,19 @@ void XSignal::unregister() {
     async->deref();
 }
 
+void XSignal::SignalUnRegister(int const sig) noexcept {
+    std::unique_lock lock(sm_mtx_);
+    auto const async{ XSignalPrivate::m_async_.loadAcquire() };
+    if (!async) { return; }
+    async->ref();
+    auto const item{ async->findHandler(sig) };
+    item->unregister();
+    async->deref();
+}
+
+void SignalUnRegister(int const sig) noexcept
+{ XSignal::SignalUnRegister(sig); }
+
 bool emitSignal(int const pid_, int const sig_, sigval const & val_) noexcept {
 #ifdef X_PLATFORM_MACOS
     (void)val_;
@@ -123,6 +147,9 @@ bool emitSignal(int const pid_, int const sig_, sigval const & val_) noexcept {
     return !sigqueue(pid_,sig_,val_);
 #endif
 }
+
+bool emitSignal(int const sig) noexcept
+{ return !std::raise(sig); }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

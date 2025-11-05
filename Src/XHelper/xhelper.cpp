@@ -61,6 +61,9 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
     std::abort();
 }
 
+void consoleOut(std::string const & s) noexcept
+{ XLog::consoleOut(s); XLOG_FATAL(s); }
+
 [[maybe_unused]] std::string toLower(std::string &str) {
 #if __cplusplus >= 202002L
     std::ranges::transform(str,str.begin(),[](uint8_t const ch){return static_cast<char>(std::tolower(ch));});
@@ -115,24 +118,25 @@ void x_assert_what(const std::string_view &where, const std::string_view &what,
 
 void XUtilsLibErrorLog::log(std::string_view const & msg)
 {
-    constexpr auto logName{"XUtilsLib.log"};
-    constexpr auto fileMaxSize {1024 * 1024 * 1024};
+    constexpr std::string_view logName {"XUtils2Lib.log"};
+
+    constexpr auto fileMaxSize{1024 * 1024 * 1024};
+
     using namespace std::filesystem;
+
     try {
         if (exists(logName)) {
             if (auto const fileSize{file_size(logName)}
             ;fileSize >= fileMaxSize)
-            {
-                remove(logName);
-            }
+            { remove(logName); }
         }
-    } catch (const filesystem_error &e) {
+    } catch (filesystem_error const & e) {
         std::cerr << FUNC_SIGNATURE << " " << e.what() << "\n";
         return;
     }
 
     try {
-        std::ofstream logFs {logName,std::ios::app};
+        std::ofstream logFs {logName.data(),std::ios::app};
 
         if (!logFs) {
             std::cerr << FUNC_SIGNATURE << " : " << logName << " open failed!\n";
@@ -143,6 +147,7 @@ void XUtilsLibErrorLog::log(std::string_view const & msg)
             << " XUtilsLib error message: " << msg ).str() << "\n";
 
         logFs.flush();
+
     } catch (std::exception const &e) {
         std::cerr <<  logName << " Write err! " << e.what() << '\n';
     }
