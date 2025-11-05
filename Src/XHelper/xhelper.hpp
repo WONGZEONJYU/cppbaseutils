@@ -208,7 +208,7 @@ enum class Const{};
     _msg_+= QTR(__FILE__) + QTR(" , ") + QTR("line: ") \
     + QString::number(__LINE__) + QTR(" , ") + QTR(FUNC_SIGNATURE) + QTR(" ")  \
     + QTR(#cond) + QTR(" ") + QTR((x)); \
-    consoleOut(_msg_.toStdString()); \
+    XUtils::consoleOut(_msg_.toStdString()); \
     return {};\
 }while(false)
 
@@ -220,7 +220,7 @@ enum class Const{};
     _msg_ << "file: " << __FILE__ << " , " \
         << "line: " << __LINE__ << " , " << FUNC_SIGNATURE << " " \
         << #cond << " " << (x); \
-    consoleOut(_msg_.str()); \
+    XUtils::consoleOut(_msg_.str()); \
     return {}; \
 }while(false)
 
