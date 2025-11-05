@@ -26,22 +26,27 @@ void XSignalPrivate::signalHandler(int const sig, siginfo_t * const info, void *
 XSignalPrivate::~XSignalPrivate()
 { unregisterHelper(); }
 
-void XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
+bool XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
     auto const sigaction_{ [sig,flags,this]()noexcept{
         m_sig = sig;
         m_act_.sa_sigaction = signalHandler;
         m_act_.sa_flags = SA_SIGINFO | SA_RESTART | flags;
-        sigaction(sig, &m_act_,{});
+        errno = 0;
+        auto const ret{ sigaction(sig, &m_act_,{}) };
+        if (ret < 0) { std::perror("registerHelper sigaction"); }
+        return !ret;
     } };
 
     std::unique_lock lock(sm_mtx_);
     if (auto const async{ m_async_.loadAcquire() }) {
         async->ref();
-        if (!async->findHandler(sig)) { sigaction_(); }
+        bool ret {};
+        if (!async->findHandler(sig)) { ret = sigaction_(); }
         async->deref();
-    }else {
-        sigaction_();
+        return ret;
     }
+    lock.unlock();
+    return sigaction_();
 }
 
 int64_t XSignalPrivate::unregisterHelper() noexcept {
@@ -49,9 +54,11 @@ int64_t XSignalPrivate::unregisterHelper() noexcept {
     if (sig > 0) {
         m_act_.sa_handler = SIG_DFL;
         m_act_.sa_flags = 0;
-        sigaction(static_cast<int>(sig), std::addressof(m_act_),{});
+        if (auto const ret{ sigaction(static_cast<int>(sig), std::addressof(m_act_),{}) }
+            ; ret < 0)
+        { std::perror("unregisterHelper sigaction"); }
         m_sig = -1;
-        std::cerr << "sig : " << sig << " destroy " << std::endl << std::flush;
+        std::cerr << "sig : " << sig << " unregister " << std::endl << std::flush;
     }
     return sig;
 }
@@ -103,12 +110,9 @@ bool XSignal::registerHelper(SignalPtr const & p) {
 XSignal::~XSignal() = default;
 
 bool XSignal::construct_(int const sig, int const flags) noexcept {
-    if (sig <= 0 || flags < 0)
-    { return {}; }
-    if (m_d_ptr_ = makeUnique<XSignalPrivate>(this);!m_d_ptr_)
-    { return {}; }
-    d_func()->registerHelper(sig,flags);
-    return true;
+    if (sig <= 0 || flags < 0) { return {}; }
+    if (m_d_ptr_ = makeUnique<XSignalPrivate>(this);!m_d_ptr_) { return {}; }
+    return d_func()->registerHelper(sig,flags);
 }
 
 void XSignal::setCall_(XCallableHelper::CallablePtr && f) noexcept
@@ -129,8 +133,7 @@ void XSignal::SignalUnRegister(int const sig) noexcept {
     auto const async{ XSignalPrivate::m_async_.loadAcquire() };
     if (!async) { return; }
     async->ref();
-    auto const item{ async->findHandler(sig) };
-    item->unregister();
+    if (auto const item{ async->findHandler(sig) }) { item->unregister(); }
     async->deref();
 }
 
