@@ -704,12 +704,12 @@ void test10()
     std::cout << "替换后：" << data << '\n';
 }
 
-class A11 : public XUtils::XCOR<XUtils::Const,std::string>{
+class A11 : public XUtils::XCOR<XUtils::Const,XUtils::XCORArgs<std::string>> {
 public:
     A11() = default;
 };
 
-class B11 : public XUtils::XCOR<XUtils::Const,std::string> {
+class B11 : public XUtils::XCOR<XUtils::Const,XUtils::XCORArgs<std::string>> {
     public:
     B11() = default;
 
