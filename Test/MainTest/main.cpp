@@ -100,9 +100,6 @@ public:
         exit_ = true;
     })};
 
-    const auto sigkill {XUtils::SignalRegister(SIGKILL,{},[&](int,siginfo_t * ,void *){
-        exit_ = true;
-    })};
 #endif
     const auto pool2{XUtils::XThreadPool::create(XUtils::XThreadPool::Mode::CACHE)},
                 pool3{XUtils::XThreadPool::create(XUtils::XThreadPool::Mode::CACHE)};

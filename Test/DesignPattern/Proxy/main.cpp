@@ -21,11 +21,6 @@ int main() {
         is_exit = true;
     })};
 
-    auto const sigkill{ XUtils::SignalRegister(SIGKILL,0,
-        [&is_exit](int const &,siginfo_t * const ,void * ) noexcept ->void {
-        is_exit = true;
-    })};
-
     auto const sigusr1{ XUtils::SignalRegister(SIGUSR1,0,
         [](int const ,const siginfo_t * const info,void * ) noexcept ->void {
             std::cerr << info->si_code << std::endl;
