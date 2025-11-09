@@ -33,7 +33,10 @@ bool XSignalPrivate::registerHelper(int const sig, int const flags) noexcept {
         m_act_.sa_flags = SA_SIGINFO | SA_RESTART | flags;
         errno = 0;
         auto const ret{ sigaction(sig, &m_act_,{}) };
-        if (ret < 0) { std::perror("registerHelper sigaction"); }
+        if (ret < 0)
+        { std::perror((std::ostringstream{} << "Sig : " <<  sig << '\t' << "registerHelper sigaction").str().c_str()); }
+        else
+        { std::cout << "sig : " << sig << " register success" << std::endl << std::flush; }
         return !ret;
     } };
 
@@ -54,11 +57,13 @@ int64_t XSignalPrivate::unregisterHelper() noexcept {
     if (sig > 0) {
         m_act_.sa_handler = SIG_DFL;
         m_act_.sa_flags = 0;
-        if (auto const ret{ sigaction(static_cast<int>(sig), std::addressof(m_act_),{}) }
-            ; ret < 0)
-        { std::perror("unregisterHelper sigaction"); }
+        m_act_.sa_mask = {};
+        errno = 0;
+        if (auto const ret { sigaction(static_cast<int>(sig), std::addressof(m_act_),{}) }; ret < 0)
+        { std::perror((std::ostringstream{} << "Sig : " << sig << '\t' << "unregisterHelper sigaction").str().c_str()); }
+        else
+        { std::cerr << "sig : " << sig << " unregister success" << std::endl << std::flush; }
         m_sig = -1;
-        std::cerr << "sig : " << sig << " unregister " << std::endl << std::flush;
     }
     return sig;
 }
