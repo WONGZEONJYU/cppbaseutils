@@ -1,8 +1,9 @@
 #include <lineshape.hpp>
 #include <iostream>
 #include <color.hpp>
+#include <XHelper/xhelper.hpp>
 
 void LineShape::draw() noexcept {
-    // std::cout << __PRETTY_FUNCTION__ << "\t"
-    //     << (this->color() ? this->color()->color() : "") << "\n";
+    std::cout << FUNC_SIGNATURE << "\t"
+        << (this->color() ? this->color()->color() : "") << "\n";
 }
