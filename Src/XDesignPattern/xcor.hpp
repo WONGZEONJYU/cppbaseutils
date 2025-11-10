@@ -10,9 +10,9 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 template<typename ...Args>
 using XCORArgs = std::tuple<Args...>;
 
-template<typename ,typename> class XCOR;
+template<typename ,typename = XCORArgs<>> class XCOR;
 
-template<typename Args>
+template<typename Args = XCORArgs<>>
 class XCORAbstract {
     X_DISABLE_COPY(XCORAbstract)
     mutable XAtomicPointer<XCORAbstract> m_next_{};
