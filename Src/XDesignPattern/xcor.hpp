@@ -24,6 +24,9 @@ public:
     constexpr void setNextResponse(XCORAbstract * const next) const noexcept
     { m_next_.storeRelease(next); }
 
+    constexpr bool hasNext() const noexcept
+    { return m_next_.loadRelaxed(); }
+
     virtual void request(Arguments && args) const {
         if (auto const next { dynamic_cast<XCOR<Const,Arguments> * >(m_next_.loadAcquire()) })
         { next->responseHandler(std::forward<Arguments>(args)); return ; }
