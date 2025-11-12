@@ -1,5 +1,14 @@
-//
-// Created by apple on 2025/11/11.
-//
+#include <listview.hpp>
+#include <XHelper/xhelper.hpp>
+#include <medium.hpp>
 
-#include "listview.hpp"
+ListView::ListView()
+{ m_type_ = LISTVIEW; }
+
+void ListView::action() {
+    std::cout << FUNC_SIGNATURE << std::endl;
+    m_medium_->action(this);
+}
+
+void ListView::update()
+{ std::cout << FUNC_SIGNATURE << std::endl; }

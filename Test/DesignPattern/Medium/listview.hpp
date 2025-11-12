@@ -3,8 +3,7 @@
 
 #include <view.hpp>
 
-class ListView final : public View
-{
+class ListView final : public View {
 public:
     explicit ListView();
     void action() override;
