@@ -11,7 +11,7 @@ class AddExpression : public ExpressionConstInt {
      ExpressionConstIntPtr m_left_{},m_right_{};
 
 public:
-     constexpr explicit AddExpression(std::shared_ptr<ExpressionConstInt> const & left
+     explicit AddExpression(std::shared_ptr<ExpressionConstInt> const & left
           ,std::shared_ptr<ExpressionConstInt> const & right )
      : m_left_ {left},m_right_{right} {}
 

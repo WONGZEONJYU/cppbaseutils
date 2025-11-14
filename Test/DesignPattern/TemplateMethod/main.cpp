@@ -3,7 +3,10 @@
 #include <thread>
 #include <chrono>
 #include <XMemory/xmemory.hpp>
+
+#ifndef X_PLATFORM_WINDOWS
 #include <XSignal/xsignal.hpp>
+#endif
 
 int main() {
     bool is_exit {};
@@ -12,7 +15,6 @@ int main() {
     { is_exit = true; }};
     XUtils::SignalRegister(SIGINT,0,SigHandler);
     XUtils::SignalRegister(SIGTERM,0,SigHandler);
-
 #endif
     auto const watcher{ XUtils::makeUnique<MemWatcherMacos>() };
     for (int i {}; i < 1000 ; i++) {
