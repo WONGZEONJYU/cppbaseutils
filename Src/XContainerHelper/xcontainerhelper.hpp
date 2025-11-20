@@ -54,19 +54,13 @@ constexpr std::optional<T> toNum(STR && s,std::chars_format const fmt = std::cha
 
 #endif
 
-template<typename T,typename StringStream,typename STR>
+template<typename T,typename SS = std::stringstream,typename STR>
 constexpr auto toNum(STR && s) -> std::optional<T>
-{ StringStream ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
+{ SS ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
 
-template<typename StringStream,typename T>
-constexpr auto toString(T const v,auto const precision = StringStream{}.precision())
-    -> decltype(StringStream{}.str())
-{
-    StringStream ss {};
-    ss.precision(precision);
-    ss << v;
-    return ss.str();
-}
+template<typename SS = std::stringstream,typename T>
+constexpr auto toString(T && v,decltype(SS{}.precision()) const precision = SS{}.precision()) -> decltype(SS{}.str())
+{ SS ss {};ss.precision(precision);ss << v;return ss.str(); }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
