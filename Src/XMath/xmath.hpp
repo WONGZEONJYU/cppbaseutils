@@ -33,8 +33,20 @@ struct Range final {
                 ,T const eps = 1e-9)
     :m_range_{range},m_eps_(eps),m_left(left),m_right(right) {}
 
-    [[nodiscard]] constexpr bool contains(T const value) const noexcept {
+    constexpr bool leftCmp(T const value) const noexcept {
+        return BoundType::Closed == m_left
+                     ? value >= m_range_.first - m_eps_
+                     : value >  m_range_.first + m_eps_;
+    }
 
+    constexpr bool rightCmp(T const value) const noexcept {
+        return BoundType::Closed == m_right
+                     ? value <= m_range_.second + m_eps_
+                     : value <  m_range_.second - m_eps_;
+    }
+
+    [[nodiscard]] constexpr bool contains(T const value) const noexcept {
+#if 0
         auto const leftOk{ BoundType::Closed == m_left
                      ? value >= m_range_.first - m_eps_
                      : value >  m_range_.first + m_eps_ };
@@ -42,7 +54,9 @@ struct Range final {
         auto const rightOk{ BoundType::Closed == m_right
                      ? value <= m_range_.second + m_eps_
                      : value <  m_range_.second - m_eps_ };
-
+#else
+        auto const leftOk { leftCmp(value) }, rightOk{ rightCmp(value) };
+#endif
         return leftOk && rightOk;
     }
 
