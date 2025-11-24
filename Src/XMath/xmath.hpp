@@ -55,11 +55,9 @@ private:
     BoundType const m_left{},m_right{};
 };
 
-template<typename T>
-Range(T, T) -> Range<T>;
+template<typename T> Range(T, T) -> Range<T>;
 
-template<typename T>
-Range(std::pair<T, T>) -> Range<T>;
+template<typename T> Range(std::pair<T, T>) -> Range<T>;
 
 using RangeDouble = Range<>;
 using RangeFloat = Range<float>;
