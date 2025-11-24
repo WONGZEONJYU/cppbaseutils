@@ -650,7 +650,7 @@ struct A3 : public A1 , public A2 {
     auto p4 = XUtils::makeShared<int[]>(5);
 
     std::cerr << std::boolalpha
-        << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
+        << XUtils::Range(std::pair{1.0,3.0},XUtils::BoundType::Open,XUtils::BoundType::Open)(3.0)
         << std::endl;
 
     std::cerr << XUtils::typeName<std::decay_t<int[][1]>>() << std::endl;
