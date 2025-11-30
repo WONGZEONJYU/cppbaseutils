@@ -16,6 +16,8 @@
 #include <XMath/xmath.hpp>
 #include <XDesignPattern/xcor.hpp>
 
+#include "XContainerHelper/xcontainerhelper.hpp"
+
 static std::mutex mtx{};
 
 static constexpr auto wait_time{2};
@@ -727,8 +729,12 @@ void test11()
     a.request(std::string{"fuck"});
 }
 
+void test12() {
+
+}
+
 int main(){
-    test1();
+    //test1();
     //test2();
     //test3();
     //test4(123);
@@ -739,5 +745,6 @@ int main(){
     //test9();
     //test10();
     //test11();
+    test12();
     return 0;
 }

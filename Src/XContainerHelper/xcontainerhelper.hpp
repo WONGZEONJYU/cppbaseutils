@@ -34,6 +34,10 @@ requires std::ranges::range<Con_>
 constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length) noexcept -> Con_ &
 { return append(c,std::ranges::subrange{d, d + length } ); }
 
+template<typename Con_,typename ...Args> requires std::is_constructible_v<Con_,Args...>
+constexpr auto append(Con_ & c,Args && ...args) noexcept -> Con_ &
+{ (c.push_back(std::forward<Args>(args)),...); return c; }
+
 #if !defined(X_PLATFORM_MACOS)
 
 template<typename T,typename STR>
