@@ -16,16 +16,6 @@ constexpr auto sliced(Con_ const & c,std::size_t const s,std::size_t const e) no
     return { subRang.cbegin() , subRang.cend() };
 }
 
-#if 0
-template<typename Con_>
-constexpr auto append(Con_ & c,typename Con_::const_reference v) noexcept -> Con_ &
-{ c.push_back(v); return c; }
-
-template<typename Con_>
-constexpr auto append(Con_ & c,typename Con_::value_type && v) noexcept -> Con_ &
-{ c.push_back(std::forward<decltype(v)>(v)); return c; }
-#endif
-
 template<typename Con_,typename Con_R >
 requires std::ranges::range<Con_> && std::ranges::input_range<Con_R>
 constexpr auto append(Con_ & c ,Con_R const & snd) noexcept -> Con_ &
