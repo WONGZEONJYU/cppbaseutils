@@ -178,6 +178,13 @@ struct [[maybe_unused]] is_tuple<volatile Tuple_ &&> : is_tuple<Tuple_> {};
 template<typename Tuple_>
 [[maybe_unused]] inline constexpr auto is_tuple_v {is_tuple<Tuple_>::value};
 
+template<typename> struct is_initializer_list : std::false_type {};
+
+template<typename T> struct is_initializer_list<std::initializer_list<T>> : std::true_type {};
+
+template<typename T>
+inline constexpr auto is_initializer_list_v {is_initializer_list<T>::value};
+
 template<typename Ty>
 [[maybe_unused]] inline auto typeName(Ty &&) {
 #ifdef HAS_BOOST
