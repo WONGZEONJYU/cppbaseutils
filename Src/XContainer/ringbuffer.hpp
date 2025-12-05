@@ -164,8 +164,7 @@ public:
         :m_ref_ { other.m_ref_ },m_index_ { other.m_index_ } {}
 
     constexpr self_type & operator++() {
-        if (m_index_ >= m_ref_->size())
-            { throw std::out_of_range("Iterator cannot be incremented past the end of the range");}
+        if (m_index_ >= m_ref_->size()) { throw std::out_of_range("Iterator cannot be incremented past the end of the range");}
         ++m_index_;
         return *this;
     }
@@ -174,41 +173,38 @@ public:
     { auto temp{*this}; ++*this; /*operator++();*/ return temp; }
 
     constexpr self_type & operator--() {
-        if(m_index_ <= 0)
-            { throw std::out_of_range("Iterator cannot be decremented before the beginning of the range");}
+        if (m_index_ <= 0) { throw std::out_of_range("Iterator cannot be decremented before the beginning of the range");}
         --m_index_;
         return *this;
     }
 
     constexpr self_type operator--(int)
-    { auto temp {*this}; --*this; /*operator--(); */ return temp; }
+    { auto temp{*this}; --*this; /*operator--(); */ return temp; }
 
     constexpr self_type operator+(difference_type const offset) const
-    { auto temp {*this}; return temp += offset ; /* return temp.operator+=(offset); */ }
+    { auto temp{*this}; return temp += offset ; /* return temp.operator+=(offset); */ }
 
     constexpr self_type operator-(difference_type const offset) const
-    { auto temp { *this }; return temp -= offset; /*return temp.operator-=(offset);*/ }
+    { auto temp{ *this }; return temp -= offset; /*return temp.operator-=(offset);*/ }
 
     constexpr difference_type operator-(self_type const & other) const
     { return m_index_ - other.m_index_; }
 
     constexpr self_type & operator+=(difference_type const offset) {
         auto const next { (m_index_ + offset) % ringBuffer_type::capacity() };
-        if (next >= m_ref_->size())
-            { throw std::out_of_range("Iterator cannot be incremented past the bounds of the range"); }
+        if (next >= m_ref_->size()) { throw std::out_of_range("Iterator cannot be incremented past the bounds of the range"); }
         m_index_ = next;
         return *this;
     }
 
     constexpr self_type & operator-=(difference_type const offset)
-    { return *this += -offset;  /* return operator+=(-offset); */ }
+    { return *this += -offset; /* return operator+=(-offset); */ }
 
     constexpr reference operator[](difference_type const offset) const
-    {  return *(*this + offset); /* return operator+(offset).operator*(); */ }
+    { return *(*this + offset); /* return operator+(offset).operator*(); */ }
 
     constexpr reference operator*() const {
-        if(m_ref_->empty() || !inBounds())
-            { throw std::logic_error("Cannot differentiate the iterator"); }
+        if (m_ref_->empty() || !inBounds()) { throw std::logic_error("Cannot differentiate the iterator"); }
         return m_ref_->m_buffer_[(m_ref_->m_head_.loadAcquire() + m_index_) % RingBufferType::capacity()];
     }
 
@@ -216,12 +212,12 @@ public:
     { return std::addressof(operator*()); }
 
     constexpr bool compatible(self_type const & other) const noexcept
-    { return data() == other.data(); }
+    { return dPtr() == other.dPtr(); }
 
     [[nodiscard]] constexpr bool inBounds() const noexcept {
         return !m_ref_->empty()
-        && (m_ref_->m_head_.loadAcquire() + m_index_) % RingBufferType::capacity()
-        <= m_ref_->m_tail_.loadAcquire();
+            && (m_ref_->m_head_.loadAcquire() + m_index_) % RingBufferType::capacity()
+            <= m_ref_->m_tail_.loadAcquire();
     }
 
     bool operator<(self_type const & other) const noexcept
@@ -243,7 +239,7 @@ public:
     friend constexpr bool operator!=(RingBufferIterator<L> const & ,RingBufferIterator<R> const & ) noexcept;
 
 private:
-    auto data() const noexcept
+    auto dPtr() const noexcept
     { return m_ref_->m_buffer_.data(); }
 
     RingBufferIterator(RefRingBuffer const rb, size_type const index)
@@ -252,7 +248,7 @@ private:
 
 template<typename L,typename R>
 constexpr bool operator==(RingBufferIterator<L> const & lhs,RingBufferIterator<R> const& rhs) noexcept
-{ return lhs.data() == rhs.data() && lhs.m_index_ == rhs.m_index_; }
+{ return lhs.dPtr() == rhs.dPtr() && lhs.m_index_ == rhs.m_index_; }
 
 template<typename L,typename R>
 constexpr bool operator!=(RingBufferIterator<L> const & lhs,RingBufferIterator<R> const& rhs) noexcept
