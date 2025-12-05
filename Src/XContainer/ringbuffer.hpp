@@ -16,7 +16,6 @@ template<typename T,std::size_t N> requires(N > 0)
 class RingBuffer {
     static_assert(N > 0,"RingBuffer Size must be greater than 0");
     static_assert(!std::is_const_v<T>, "RingBuffer does not support const types");
-
     template<typename> friend class RingBufferIterator;
 
     std::array<T,N> m_buffer_{};
