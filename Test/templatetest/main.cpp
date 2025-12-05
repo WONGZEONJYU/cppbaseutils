@@ -3,6 +3,7 @@
 #include <iostream>
 #include <list>
 
+#if 0
 template<typename T, std::size_t N>
 requires(N > 0)
 class circular_buffer_iterator;
@@ -19,9 +20,10 @@ public:
     using pointer = value_type*;
     using const_pointer = const value_type*;
     using iterator = circular_buffer_iterator<T, N>;
-    using const_iterator = circular_buffer_iterator<const T, N>;
+    using const_iterator = const circular_buffer_iterator<const T, N>;
 
     constexpr circular_buffer() = default;
+
     constexpr circular_buffer(const value_type(&values)[N])
         : size_(N), tail_(N - 1) {
         std::copy(std::begin(values), std::end(values), data_.begin());
@@ -30,6 +32,7 @@ public:
         : size_(N), tail_(N - 1) {
         std::fill(data_.begin(), data_.end(), v);
     }
+
     constexpr size_type size() const noexcept { return size_; }
     constexpr size_type capacity() const noexcept { return N; }
     constexpr bool empty() const noexcept { return size_ == 0; }
@@ -106,25 +109,24 @@ public:
     }
 
     const_iterator begin() const
-    { return const_iterator(*this, 0); }
+    { return const_iterator{*this, 0}; }
 
     const_iterator end() const
     { return const_iterator(*this, size_); }
 
 private:
-    friend circular_buffer_iterator<T, N>;
+    friend class circular_buffer_iterator<T, N>;
     std::array<value_type, N> data_;
     size_type head_ = 0;
     size_type tail_ = 0;
     size_type size_ = 0;
 };
 
-template<typename T, std::size_t N>
-requires(N > 0)
+template<typename T, std::size_t N> requires(N > 0)
 class circular_buffer_iterator {
 
 public:
-    using self_type = circular_buffer_iterator<T, N>;
+    using self_type = circular_buffer_iterator;
     using value_type = T;
     using reference = value_type&;
     using const_reference = const value_type&;
@@ -134,12 +136,15 @@ public:
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
 
-    explicit circular_buffer_iterator(circular_buffer<T, N>& buffer, const size_type index)
+    // explicit circular_buffer_iterator(circular_buffer<T, N> & buffer, const size_type index)
+    //     : buffer_(buffer), index_(index) {}
+
+    circular_buffer_iterator(circular_buffer<const T, N> const & buffer, const size_type index)
         : buffer_(buffer), index_(index) {}
 
-
-    explicit circular_buffer_iterator(circular_buffer<T, N> const & buffer, const size_type index)
-    : buffer_(buffer), index_(index) {}
+    // template<typename Tp,std::size_t S>
+    // circular_buffer_iterator(circular_buffer_iterator<Tp,S> const & other)
+    //     :buffer_(other.buffer_),index_(other.index_) {}
 
     self_type& operator++() {
         if(index_ >= buffer_.get().size())
@@ -226,42 +231,29 @@ public:
         return !(*this < other);
     }
     value_type& operator[](const difference_type offset) {
-        return *((*this + offset));
+        return *(*this + offset);
     }
     const value_type& operator[](const difference_type offset) const {
-        return *((*this + offset));
+        return *(*this + offset);
     }
 private:
     std::reference_wrapper<circular_buffer<T, N>> buffer_;
     size_type index_ = 0;
 };
+#endif
 
 int main()
 {
+    std::vector<int > v;
+    std::list<int > l;
 
-    circular_buffer<int,10> const rb{};
+    XUtils::RingBuffer<std::size_t> const rb{};
+
     for (int i{}; i < 10;++i)
-    {
-        const_cast<circular_buffer<int,10>&>(rb).push_back(i+1);
-    }
+    { const_cast<XUtils::RingBuffer<std::size_t>&>(rb).push_back(i + 1); }
 
-    for (auto && item : rb) {
-        std::cout << item << "\t";
-    }
-
-    // XUtils::RingBuffer<std::size_t,10> const rb{};
-    //
-    // for (int i{}; i < 10;++i)
-    // { const_cast<XUtils::RingBuffer<std::size_t,10>&>(rb).push_back(i + 1); }
-    //
-    // for (auto && item : rb) {
-    //     std::cout << item << "\t";
-    // }
-
-    // std::cout << std::boolalpha << rb.full() << std::endl;
-    // std::cout << rb.back() << std::endl;
-    // std::cout << rb.front() << std::endl;
-    // std::cout << rb[13] << std::endl;
+    for (auto it { rb.begin() };it != rb.cEnd() ;++it)
+    { std::cout << *it << "\t"; }
 
     return 0;
 }
