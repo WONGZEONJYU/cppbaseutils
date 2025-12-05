@@ -50,8 +50,8 @@ public:
 
     constexpr auto size() const noexcept{ return m_size_.loadRelaxed(); }
     static constexpr auto capacity() noexcept{ return N; }
-    constexpr auto empty() const noexcept{ return !m_size_.loadAcquire(); }
-    constexpr auto full() const noexcept{ return N == m_size_.loadAcquire(); }
+    constexpr auto empty() const noexcept{ return !size(); }
+    constexpr auto full() const noexcept{ return N == size(); }
 
     constexpr void clear() noexcept {
         m_size_.storeRelease({});
