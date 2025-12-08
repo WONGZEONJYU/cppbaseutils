@@ -106,7 +106,7 @@ public:
     }
 
     iterator begin() { return iterator(this, 0); }
-    iterator end() { return iterator(this, m_size_.loadAcquire()); }
+    iterator end() { return iterator(this, size()); }
 
     const_iterator begin() const { return const_iterator(this, 0); }
     const_iterator end() const { return const_iterator(this, size()); }
