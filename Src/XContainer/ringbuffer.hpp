@@ -146,7 +146,7 @@ public:
     using self_type = RingBufferIterator;
     using value_type = RingBufferType::value_type;
     using size_type = RingBufferType::size_type;
-    using difference_type = std::ptrdiff_t;
+    using difference_type = RingBufferType::difference_type;
     using reference = std::conditional_t< std::is_const_v<ringBuffer_type>
             ,typename RingBufferType::const_reference
             ,typename RingBufferType::reference
