@@ -4,6 +4,7 @@
 #include <array>
 #include <XAtomic/xatomic.hpp>
 #include <algorithm>
+#include <compare>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -237,21 +238,30 @@ public:
     template<typename L,typename R>
     friend constexpr bool operator!=(RingBufferIterator<L> const & ,RingBufferIterator<R> const & ) noexcept;
 
+    template<typename L,typename R>
+    friend constexpr std::strong_ordering operator<=> (RingBufferIterator<L> const & ,RingBufferIterator<R> const & ) noexcept;
+
 private:
     auto dPtr() const noexcept
     { return m_ref_->m_buffer_.data(); }
 
-    RingBufferIterator(RefRingBuffer const rb, size_type const index)
+    RingBufferIterator(ringBuffer_type * const rb, size_type const index)
     : m_ref_{rb}, m_index_{index} {}
 };
 
 template<typename L,typename R>
-constexpr bool operator==(RingBufferIterator<L> const & lhs,RingBufferIterator<R> const& rhs) noexcept
-{ return lhs.dPtr() == rhs.dPtr() && lhs.m_index_ == rhs.m_index_; }
+constexpr bool operator==(RingBufferIterator<L> const & x,RingBufferIterator<R> const& y) noexcept
+{ return x.dPtr() == y.dPtr() && x.m_index_ == y.m_index_; }
 
 template<typename L,typename R>
-constexpr bool operator!=(RingBufferIterator<L> const & lhs,RingBufferIterator<R> const& rhs) noexcept
-{ return !(lhs == rhs); }
+constexpr bool operator!=(RingBufferIterator<L> const & x,RingBufferIterator<R> const& y) noexcept
+{ return !(x == y); }
+
+template<typename L,typename R>
+constexpr std::strong_ordering operator<=> (RingBufferIterator<L> const & x,RingBufferIterator<R> const & y) noexcept {
+    if (auto const cmp {x.dPtr() <=> y.dPtr()}; 0 != cmp) { return cmp; }
+    return x.m_index_ <=> y.m_index_;
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

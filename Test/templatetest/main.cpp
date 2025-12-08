@@ -252,6 +252,8 @@ int main()
     for (int i{}; i < 10;++i)
     { const_cast<XUtils::RingBuffer<std::size_t>&>(rb).push_back(i + 1); }
 
+    std::cout << std::boolalpha << ( rb.cEnd()  ==  rb.begin() ) << std::endl;
+
     for (auto it { rb.begin() };it != rb.cEnd() ;++it)
     { std::cout << *it << "\t"; }
 
