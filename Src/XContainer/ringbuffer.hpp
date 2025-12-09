@@ -5,6 +5,7 @@
 #include <XAtomic/xatomic.hpp>
 #include <algorithm>
 #include <compare>
+#include <stdexcept>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
