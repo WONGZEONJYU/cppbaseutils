@@ -19,6 +19,7 @@ class X_CLASS_EXPORT XCallableHelper {
     template<typename > class XCallable;
 
     class XAbstractCallable {
+
         friend struct XFactoryCallable;
 
         template<typename > friend class XCallable;
@@ -33,7 +34,9 @@ class X_CLASS_EXPORT XCallableHelper {
     };
 
     template<typename Callable>
-    class XCallable final: public XAbstractCallable {
+    class XCallable final
+        : public XAbstractCallable
+    {
         mutable Callable m_callable_{};
 
     public:
@@ -47,7 +50,7 @@ class X_CLASS_EXPORT XCallableHelper {
 
     using CallablePtr_ = std::shared_ptr<XAbstractCallable>;
 
-    struct XFactoryCallable{
+    struct XFactoryCallable {
         XFactoryCallable() = delete;
         template<typename Callable_>
         static constexpr auto create(Callable_ && call) noexcept -> CallablePtr_ {
@@ -67,14 +70,10 @@ class X_CLASS_EXPORT XCallableHelper {
 
         mutable Tuple m_fnAndArgs_{};
 
-        template<typename> struct result_{};
+        template<typename> struct result_ {};
 
         template<typename Fn, typename... Args>
-        struct result_<std::tuple<Fn, Args...>> : std::invoke_result<Fn, Args...>{};
-
-        template<size_t... Ind>
-        constexpr result_<Tuple>::type M_invoke_(std::index_sequence<Ind...>) const
-        { return std::invoke(std::get<Ind>(std::forward<decltype(m_fnAndArgs_)>(m_fnAndArgs_))...); }
+        struct result_<std::tuple<Fn, Args...>> : std::invoke_result<Fn, Args...> {};
 
     public:
         using result_t = result_<Tuple>::type;
@@ -86,6 +85,11 @@ class X_CLASS_EXPORT XCallableHelper {
             using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple>>;
             return M_invoke_(Indices_{});
         }
+
+    private:
+        template<std::size_t... Ind>
+        constexpr result_<Tuple>::type M_invoke_(std::index_sequence<Ind...>) const
+        { return std::invoke(std::get<Ind>(std::forward<decltype(m_fnAndArgs_)>(m_fnAndArgs_))...); }
     };
 
     template<typename... Tp>
