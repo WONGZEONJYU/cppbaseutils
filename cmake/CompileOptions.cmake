@@ -11,8 +11,10 @@ if(MSVC)
         /wd4251                  # 禁用dll-interface警告
         /wd4275                  # 禁用dll-interface警告
         /Zc:preprocessor         # 启用__VA_OPT__
+        $<$<CONFIG:Release>:/Zi> # Release配置启用PDB编译
     )
-    
+    # 仅在 Release 配置下添加 /DEBUG（生成 PDB 链接信息）
+    add_link_options($<$<CONFIG:Release>:/DEBUG>)
     # 根据构建类型设置优化选项
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(/Od /Zi /RTC1)
