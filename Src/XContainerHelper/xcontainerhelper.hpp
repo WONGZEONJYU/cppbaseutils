@@ -16,23 +16,30 @@ constexpr auto sliced(Con_ const & c,std::size_t const s,std::size_t const e) no
     return { subRang.cbegin() , subRang.cend() };
 }
 
-template<typename Con_>
-constexpr auto append(Con_ & c,typename Con_::const_reference v) noexcept -> Con_ &
-{ c.push_back(v); return c; }
-
-template<typename Con_>
-constexpr auto append(Con_ & c,typename Con_::value_type && v) noexcept -> Con_ &
-{ c.push_back(std::forward<decltype(v)>(v)); return c; }
-
 template<typename Con_,typename Con_R >
 requires std::ranges::range<Con_> && std::ranges::input_range<Con_R>
-constexpr auto append(Con_ & fst ,Con_R const & snd) noexcept -> Con_ &
-{ fst.insert(fst.cend(),snd.cbegin(),snd.cend()); return fst; }
+constexpr auto append(Con_ & c ,Con_R const & snd) noexcept -> Con_ &
+{ c.insert(c.cend(), snd.begin(), snd.end());return c; }
 
 template<typename Con_>
 requires std::ranges::range<Con_>
-constexpr auto append(Con_ & c , typename Con_::const_pointer const d,std::size_t const length) noexcept -> Con_ &
-{ return append(c,std::ranges::subrange{d, d + length } ); }
+constexpr auto append(Con_ & c , typename Con_::const_pointer d, std::size_t const length)
+noexcept -> Con_ & { return append(c,std::ranges::subrange{d, d + length}); }
+
+template<typename Con_, typename ...Args>
+requires (
+    std::ranges::range<Con_>
+    // 禁止 append(c, il) 落入 Args... 重载
+    && !(sizeof...(Args) == 1 && is_initializer_list_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<Args...>>>>)
+    && (std::is_constructible_v<typename Con_::value_type, Args&&> && ...)
+)
+constexpr auto append(Con_ & c, Args && ...args) noexcept -> Con_ &
+{ (c.push_back(std::forward<Args>(args)), ...); return c; }
+
+template<typename Con_>
+requires std::ranges::range<Con_>
+constexpr auto append(Con_ & c, std::initializer_list<typename Con_::value_type> il)
+noexcept -> Con_ & { return append(c,std::ranges::subrange{il.begin(), il.end()}); }
 
 #if !defined(X_PLATFORM_MACOS)
 
@@ -54,19 +61,13 @@ constexpr std::optional<T> toNum(STR && s,std::chars_format const fmt = std::cha
 
 #endif
 
-template<typename T,typename StringStream,typename STR>
+template<typename T,typename SS = std::stringstream,typename STR>
 constexpr auto toNum(STR && s) -> std::optional<T>
-{ StringStream ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
+{ SS ss {}; ss << s; T value{}; return ss >> value ? std::optional<T>{value} : std::nullopt; }
 
-template<typename StringStream,typename T>
-constexpr auto toString(T const v,auto const precision = StringStream{}.precision())
-    -> decltype(StringStream{}.str())
-{
-    StringStream ss {};
-    ss.precision(precision);
-    ss << v;
-    return ss.str();
-}
+template<typename SS = std::stringstream,typename T>
+constexpr auto toString(T && v,decltype(SS{}.precision()) const precision = SS{}.precision()) -> decltype(SS{}.str())
+{ SS ss {};ss.precision(precision);ss << v;return ss.str(); }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

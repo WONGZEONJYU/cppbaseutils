@@ -16,6 +16,8 @@
 #include <XMath/xmath.hpp>
 #include <XDesignPattern/xcor.hpp>
 
+#include "XContainerHelper/xcontainerhelper.hpp"
+
 static std::mutex mtx{};
 
 static constexpr auto wait_time{2};
@@ -100,9 +102,6 @@ public:
         exit_ = true;
     })};
 
-    const auto sigkill {XUtils::SignalRegister(SIGKILL,{},[&](int,siginfo_t * ,void *){
-        exit_ = true;
-    })};
 #endif
     const auto pool2{XUtils::XThreadPool::create(XUtils::XThreadPool::Mode::CACHE)},
                 pool3{XUtils::XThreadPool::create(XUtils::XThreadPool::Mode::CACHE)};
@@ -415,7 +414,7 @@ class CTest final : public XUtils::XTwoPhaseConstruction<CTest> {
         std::cerr << FUNC_SIGNATURE << std::endl;
         return true;
     }
-
+private:
     explicit CTest(int &a) noexcept{
         std::cerr << FUNC_SIGNATURE << "a = " << a << std::endl;
     }
@@ -425,9 +424,9 @@ protected:
     }
 
 public:
-//     CTest() noexcept {
-//         std::cerr << FUNC_SIGNATURE << std::endl;
-//     }
+     // CTest() noexcept {
+     //     std::cerr << FUNC_SIGNATURE << std::endl;
+     // }
 
     ~CTest(){
         delete new int[10];
@@ -475,7 +474,7 @@ struct BBB{
         auto p1 = CTest::CreateUniquePtr(XUtils::Parameter{std::ref(a1)}, XUtils::Parameter{100});
         auto p2 = CTest::CreateSharedPtr(XUtils::Parameter{std::ref(a2)}, XUtils::Parameter{std::move(aa), 2});
 
-        delete CTest::Create({}, {});
+        delete CTest::Create();
 
         std::unique_ptr<CTest> a{CTest::Create({}, XUtils::Parameter{}) };
 
@@ -653,7 +652,7 @@ struct A3 : public A1 , public A2 {
     auto p4 = XUtils::makeShared<int[]>(5);
 
     std::cerr << std::boolalpha
-        << XUtils::Range(std::pair{1.0,3.0},XUtils::Range::Open,XUtils::Range::Open)(3.0)
+        << XUtils::Range(std::pair{1.0,3.0},XUtils::BoundType::Open,XUtils::BoundType::Open)(3.0)
         << std::endl;
 
     std::cerr << XUtils::typeName<std::decay_t<int[][1]>>() << std::endl;
@@ -707,12 +706,12 @@ void test10()
     std::cout << "替换后：" << data << '\n';
 }
 
-class A11 : public XUtils::XCOR<XUtils::Const,std::string>{
+class A11 : public XUtils::XCOR<XUtils::Const,XUtils::XCORArgs<std::string>> {
 public:
     A11() = default;
 };
 
-class B11 : public XUtils::XCOR<XUtils::Const,std::string> {
+class B11 : public XUtils::XCOR<XUtils::Const,XUtils::XCORArgs<std::string>> {
     public:
     B11() = default;
 
@@ -730,8 +729,12 @@ void test11()
     a.request(std::string{"fuck"});
 }
 
+void test12() {
+
+}
+
 int main(){
-    test1();
+    //test1();
     //test2();
     //test3();
     //test4(123);
@@ -742,5 +745,6 @@ int main(){
     //test9();
     //test10();
     //test11();
+    test12();
     return 0;
 }

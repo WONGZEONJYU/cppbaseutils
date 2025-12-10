@@ -20,15 +20,26 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace XPrivate {
 
+    template<typename Tuple_> requires (is_tuple_v<Tuple_>)
+    static constexpr auto indices(Tuple_ &&) noexcept
+        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+    { return {}; }
+
+    template<typename Tuple_> requires (is_tuple_v<Tuple_>)
+    static constexpr auto indices() noexcept
+        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
+    { return {}; }
+
     template<typename Object>
     struct Has_X_TwoPhaseConstruction_CLASS_Macro {
     private:
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
         template<typename T>
-        static constexpr char test( void (T::*)() ){throw;}
+        static constexpr char test( void (T::*)() ) noexcept { return {}; }
 
-        static constexpr int test( void (Object::*)() ){throw;}
+        static constexpr int test( void (Object::*)() ) noexcept { return {}; }
+
     public:
         enum { value = sizeof(test(&Object::checkFriendXTwoPhaseConstruction_)) == sizeof(int) };
     };
@@ -36,131 +47,92 @@ namespace XPrivate {
     template<typename Object>
     inline constexpr bool Has_X_TwoPhaseConstruction_CLASS_Macro_v { Has_X_TwoPhaseConstruction_CLASS_Macro<Object>::value };
 
-    template<typename Object,typename ...Args>
+    template<typename Object,typename Tuple>
     struct Has_construct_Func {
     private:
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
-    #if __cplusplus >= 202002L
-        template<typename O,typename ...A>
-        static constexpr auto test(int) -> std::true_type
-            requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< A > >() )... ) )
+        static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
+
+        template<typename O,typename Tuple_,std::size_t ...I>
+        static constexpr auto test(std::index_sequence<I...> ) noexcept -> std::true_type
+            requires ( ( sizeof( std::declval<O>().construct_( ( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >() )... ) )
                 > static_cast<std::size_t>(0) ) )
-        {throw ;}
-    #else
-        #if 0 //只能二选一
-            template<typename O,typename ...A>
-            static constexpr auto test(int)
-                -> std::enable_if_t< ( sizeof(std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
-                    > static_cast<std::size_t>(0) )
-                    ,std::true_type >
-            {throw ;}
-        #else
-            template<typename O,typename ...A>
-            static constexpr auto test(int)
-            -> decltype( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) )
-                > static_cast<std::size_t>(0)
-                    , std::true_type{} )
-            {throw;}
-        #endif
-    #endif
+        { return {};}
+
         template<typename ...>
-        static constexpr auto test(...) -> std::false_type {throw ;}
+        static constexpr auto test(...) noexcept -> std::false_type
+        { return {}; }
+
+        using decayedTuple_ = std::decay_t< Tuple >;
+
     public:
-        enum { value = decltype(test<Object,Args...>(0))::value };
+        enum { value = decltype(test<Object,decayedTuple_>(indices<Tuple>()))::value };
     };
 
     template<typename ...Args>
     inline constexpr bool Has_construct_Func_v {Has_construct_Func<Args...>::value};
 
-    template<typename Object,typename ...Args>
+    template<typename Object,typename Tuple>
     struct is_private_mem_func {
-        static_assert(std::is_object_v<Object>,"typename Object don't Object type");
     private:
-    #if __cplusplus >= 202002L
-        template<typename O,typename ...A>
-        static constexpr auto test(int) -> std::false_type
+        static_assert(std::is_object_v<Object>,"typename Object don't Object type");
+        static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
+
+        template<typename O,typename Tuple_,std::size_t ...I>
+        static constexpr auto test(std::index_sequence<I...>) noexcept -> std::false_type
             requires (
-                ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ) > static_cast<std::size_t>(0) )
-                    || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< A > >()...) ),void >
+                ( sizeof( std::declval<O>().construct_( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >()...) ) > static_cast<std::size_t>(0) )
+                    || std::is_same_v< decltype( std::declval<O>().construct_( std::declval< std::decay_t< std::tuple_element_t<I,Tuple_> > >()...) ),void >
             )
-        {throw ;}
-    #else
-        #if 0 //只能二选一
-            template<typename O,typename ...A>
-            static constexpr auto test(int)
-                -> std::enable_if_t< std::is_same_v< decltype( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) ,void >
-                     || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())...) ) > static_cast<std::size_t>(0) )
-                        ,std::false_type >
-                {throw ;}
-        #else
-            template<typename O,typename ...A>
-            static constexpr auto test(int)
-                -> decltype( std::is_same_v< decltype(std::declval<O>().construct_((std::declval< std::decay_t< A > >())...)), void >
-                    || ( sizeof( std::declval<O>().construct_( (std::declval< std::decay_t< A > >())... ) ) > static_cast<std::size_t>(0) )
-                        ,std::false_type {} )
-                { throw ; }
-        #endif
-    #endif
+        { return {}; }
 
         template<typename ...>
-        static constexpr auto test(...) ->std::true_type {throw ;}
+        static constexpr auto test(...) noexcept -> std::true_type
+        { return {}; }
+
+        using decayedTuple_ = std::decay_t< Tuple >;
+
     public:
-        enum { value = decltype(test<Object,Args...>(0))::value };
+        enum { value = decltype(test<Object,decayedTuple_>(indices<Tuple>()))::value };
     };
 
     template<typename ...Args>
     inline constexpr bool is_private_mem_func_v{ is_private_mem_func<Args...>::value };
 
-    template<typename T, typename... Args>
+    template<typename Object, typename Tuple>
     struct is_default_constructor_accessible {
     private:
-        enum {
-            result = std::disjunction_v< std::is_constructible< T, std::decay_t< Args >... >
-                    ,std::is_nothrow_constructible< T ,std::decay_t<Args>... >
-                    ,std::is_trivially_constructible< T ,std::decay_t<Args>... >
-            >
-        };
+        static_assert(std::is_object_v<Object>,"typename Object don't Object type");
+        static_assert(is_tuple_v<Tuple>,"typename Tuple don't std::tuple type");
 
-        template<typename > struct is_copy_move_constructor {
-            enum { value = false };
-        };
+        template<typename O,typename Tuple_,std::size_t ...I>
+        static constexpr auto result(std::index_sequence<I...>) noexcept {
+            return std::disjunction_v< std::is_constructible< O, std::decay_t< std::tuple_element_t<I,Tuple_> >... >
+                    ,std::is_nothrow_constructible< O ,std::decay_t< std::tuple_element_t<I,Tuple_> >... >
+                    ,std::is_trivially_constructible< O ,std::decay_t< std::tuple_element_t<I,Tuple_> >... >
+            >;
+        }
 
-    #if __cplusplus >= 202002L
-        template<typename ...AS> requires(sizeof...(AS) == 1)
-        struct is_copy_move_constructor<std::tuple<AS...>> {
-            using Tuple_ = std::tuple<AS...>;
+        template<typename > struct is_copy_move_constructor
+        { enum { value = false }; };
+
+        template<typename Tuple_> requires(std::tuple_size_v<Tuple_> == 1)
+        struct is_copy_move_constructor<Tuple_> {
             using First_ = std::tuple_element_t<0, Tuple_>;
             enum {
                 value = std::disjunction_v<
-                    std::is_same<First_, T &>,
-                    std::is_same<First_, const T &>,
-                    std::is_same<First_, T &&>,
-                    std::is_same<First_, const T &&>
+                    std::is_same<First_, Object &>,
+                    std::is_same<First_, const Object &>,
+                    std::is_same<First_, Object &&>,
+                    std::is_same<First_, const Object &&>
                 >
             };
         };
-    #else
-        template<> struct is_copy_move_constructor<std::tuple<>> {
-            enum { value = false };
-        };
-        template<typename ...AS>
-        struct is_copy_move_constructor<std::tuple<AS...>> {
-        private:
-            using Tuple_ = std::tuple<AS...>;
-            using First_ = std::tuple_element_t<0, Tuple_>;
-        public:
-            enum {
-                value = std::disjunction_v<
-                    std::is_same<First_, T &>,
-                    std::is_same<First_, const T &>,
-                    std::is_same<First_, T &&>,
-                    std::is_same<First_, const T &&>>
-            };
-        };
-    #endif
+
+        using decayedTuple_ = std::decay_t< Tuple >;
 
     public:
-        enum {value = result && !is_copy_move_constructor<std::tuple<Args...>>::value};
+        enum {value = result<Object,decayedTuple_>(indices<Tuple>()) && !is_copy_move_constructor<Tuple>::value};
     };
 
     template<typename ...Args>
@@ -172,12 +144,12 @@ namespace XPrivate {
         static_assert(std::is_object_v<Object>,"typename Object don't Object type");
 
         template<typename O>
-        static constexpr auto test(int) -> decltype(std::declval<O>().~O(),std::false_type{})
-        { throw ; }
+        static constexpr auto test(int) noexcept -> decltype(std::declval<O>().~O(),std::false_type{})
+        { return {}; }
 
         template<typename >
-        static constexpr auto test(...) -> std::true_type
-        { throw ; }
+        static constexpr auto test(...) noexcept -> std::true_type
+        { return {}; }
 
     public:
         enum {value = decltype(test<Object>(0))::value };
@@ -258,11 +230,11 @@ namespace XPrivate {
     };
 
     template<typename T, typename U>
-    constexpr bool operator==(const Allocator_ <T>&, const Allocator_ <U>&)
+    constexpr bool operator==(const Allocator_ <T>&, const Allocator_ <U>&) noexcept
     { return true; }
 
     template<typename T, typename U>
-    constexpr bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&)
+    constexpr bool operator!=(const Allocator_ <T>&, const Allocator_ <U>&) noexcept
     { return false; }
 
 #define STATIC_ASSERT_P \
@@ -273,13 +245,13 @@ namespace XPrivate {
     static_assert( XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro_v< Object > \
             ,"No X_HELPER_CLASS in the class!" ); \
                         \
-    static_assert( XPrivate::Has_construct_Func_v< Object ,std::decay_t<Args2>... > \
+    static_assert( XPrivate::Has_construct_Func_v< Object ,ArgsList2 > \
             ,"bool Object::construct_(...) non static member function absent!" ); \
                         \
-    static_assert( XPrivate::is_private_mem_func_v< Object ,std::decay_t<Args2>... > \
+    static_assert( XPrivate::is_private_mem_func_v< Object ,ArgsList2 > \
             ,"bool Object::construct_(...) must be a private non static member function!" ); \
                         \
-    static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,std::decay_t< Args1 >... > \
+    static_assert( !XPrivate::is_default_constructor_accessible_v< Object ,ArgsList1 > \
             ,"The Object (...) constructor (non copy and non move) must be a private member function!" );
 
 } //namespace XPrivate;
@@ -293,6 +265,9 @@ class XSingleton;
 template<typename ...Args>
 using Parameter = std::tuple<Args...>;
 
+template<typename ...Args>
+using XArgs = std::tuple<Args...>;
+
 template<typename Tp_, typename Alloc_>
 class XTwoPhaseConstruction {
 
@@ -303,11 +278,6 @@ class XTwoPhaseConstruction {
 
     inline static Allocator sm_allocator_{};
 
-    template<typename Tuple_>
-    static constexpr auto indices(Tuple_ &&) noexcept
-        -> std::make_index_sequence< std::tuple_size_v< std::decay_t< Tuple_ > > >
-    { return {}; }
-
 protected:
     template<typename Type> struct Destructor_ {
 
@@ -317,18 +287,17 @@ protected:
 
         constexpr Destructor_() = default;
 
-        template<typename U,std::enable_if_t<std::is_constructible_v<U*,value_type *> ,int> = 0 >
+        template<typename U > requires (std::is_constructible_v<U*,value_type *>)
         constexpr Destructor_(Destructor_<U> const &) {}
 
         static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)
                     ,"Object must be a complete type!");
-            if (pointer) {
-                // 先调用析构函数
-                pointer->~value_type();
-                // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
-                std::allocator_traits<allocator_type>::deallocate(sm_allocator_, pointer, 1);
-            }
+            if (!pointer) { return; }
+            // 先调用析构函数
+            pointer->~value_type();
+            // 然后使用默认分配器释放内存 (静态函数无法访问成员分配器)
+            std::allocator_traits<allocator_type>::deallocate(sm_allocator_, pointer, 1);
         }
 
         constexpr void operator()(value_type * const pointer) const noexcept
@@ -347,73 +316,90 @@ public:
 
     // 为裸指针提供专门的删除函数
     static constexpr void Delete(Object * const pointer) noexcept {
-        if (pointer) {
-            pointer->~Object();
-            std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
-        }
+        if (!pointer) { return; }
+        pointer->~Object();
+        std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
     }
     // 重写operator delete以支持Qt对象树
     // 这是更安全的方法，让Qt调用我们自定义的delete操作符
     constexpr void operator delete(void * const ptr, std::size_t const length) noexcept {
-        if (ptr) {
-            std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
-        }
+        if (!ptr || !length) { return; }
+        std::allocator_traits<Allocator>::deallocate(sm_allocator_,static_cast<Object *>(ptr),length);
     }
 
     constexpr void operator delete(void * const ptr) noexcept
     { operator delete(ptr,1); }
 
 #ifdef HAS_QT
+
     // Qt对象树专用创建方法 - 返回裸指针供Qt对象树管理
-    template<typename ...Args1, typename ...Args2>
+    // 如果父指针为null,即使创建成功也会马上销毁并返回null,请确保父指针不能为null
+    template<typename QtObjectPointer,typename ArgsList1 = Parameter<> , typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
     [[nodiscard]]
-    static constexpr auto CreateForQtObjectTree(QObject * const parent
-        ,Parameter<Args1...> && args1 = {}, Parameter<Args2...> && args2 = {})
-        noexcept -> Object*
+    static constexpr auto CreateForQtObjectTree(QtObjectPointer * const parent,ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> Object *
     {
-        static_assert(std::is_base_of_v<QObject, Object>, 
-                     "Object must inherit from QObject to be used in Qt object tree");
+        static_assert(std::is_base_of_v<QObject, Object> ,
+                     "Object must inherit from QObject to be used in Qt Object tree");
 
-        auto const obj { Create(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
+        auto obj { CreateUniquePtr(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
 
-        if (obj && parent) {
-            // 设置父对象，让Qt对象树管理生命周期
-            obj->setParent(parent);
-        }
-        
-        return obj;
+        // 设置父对象,让Qt对象树管理生命周期
+        return obj && parent ? obj->setParent(parent),obj.release() : nullptr;
+    }
+
+    template<typename QtObjectPointer,typename ArgsList1 = Parameter<> , typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+    [[nodiscard]]
+    static constexpr auto CreateForQtObjectTree(QtObjectPointer && parent,ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> Object *
+    {
+        return CreateForQtObjectTree(parent.get()
+            ,std::forward<decltype(args1)>(args1)
+            ,std::forward<decltype(args2)>(args2));
+    }
+
+    template<typename QtObject,typename ArgsList1 = Parameter<> , typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+    [[nodiscard]]
+    static constexpr auto CreateForQtObjectTree(QtObject & parent,ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> Object *
+    {
+        return CreateForQtObjectTree(std::addressof(parent)
+            ,std::forward<decltype(args1)>(args1)
+            ,std::forward<decltype(args2)>(args2));
     }
 
     // 为Qt对象提供手动从对象树中移除并删除的方法
-    static constexpr void DeleteFromQtObjectTree(Object * const pointer) noexcept {
-        if (pointer) {
-            // 先从父对象中移除，避免Qt自动删除
-            if (pointer->parent()) {
-                pointer->setParent(nullptr);
-            }
-            // 然后使用我们的删除方法
-            Delete(pointer);
-        }
+    template<typename QtObjectPointer>
+    static constexpr void DeleteFromQtObjectTree(QtObjectPointer * const pointer) noexcept {
+        if (!pointer) { return; }
+        // 先从父对象中移除，避免Qt自动删除
+        if (pointer->parent()) { pointer->setParent(nullptr); }
+        // 然后使用我们的删除方法
+        Delete(reinterpret_cast<Object*>(pointer));
     }
 
-    // Qt对象树兼容的内存释放器 - 只释放内存，不调用析构函数
-    // 注意：这个方法只能在对象已经被析构后调用
-    static constexpr void QtCompatibleDeallocate(Object * const pointer) noexcept {
-        if (pointer) {
-            // 只释放内存，不调用析构函数（析构函数已经被调用了）
-            std::allocator_traits<Allocator>::deallocate(sm_allocator_, pointer, 1);
-        }
+    // Qt对象树兼容的内存释放器 - 只释放内存,不调用析构函数
+    // 注意:这个方法只能在对象已经被析构后调用
+    template<typename QtObjectPointer>
+    static constexpr void QtCompatibleDeallocate(QtObjectPointer * const pointer) noexcept {
+        if (!pointer) { return; }
+        // 只释放内存,不调用析构函数(析构函数已经被调用了)
+        std::allocator_traits<Allocator>::deallocate(sm_allocator_, reinterpret_cast<Object *>(pointer), 1);
     }
 
 #endif
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto Create( Parameter< Args1... > && args1 = {},
-          Parameter< Args2...> && args2 = {} ) noexcept -> Object *
+    template< typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+    static constexpr auto Create( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> Object *
     {
         static_assert( std::disjunction_v< std::is_base_of< XTwoPhaseConstruction ,Object >
             ,std::is_convertible<Object,XTwoPhaseConstruction >
-        > ,"Object must inherit from Class XHelperClass" );
+        > ,"Object must inherit from Class XTwoPhaseConstruction" );
 
         STATIC_ASSERT_P
 
@@ -428,23 +414,25 @@ public:
             } catch (const std::exception &) {
                 return nullptr;
             }
-        }( indices( args1 ) ,indices( args2 ) );
+        }( XPrivate::indices( args1 ) ,XPrivate::indices( args2 ) );
     }
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto CreateSharedPtr ( Parameter< Args1...> && args1 = {}
-        ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectSPtr
-    {
-        return ObjectSPtr { Create( std::forward< decltype( args1 ) >( args1 )
-            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} , sm_allocator_ };
-    }
-
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto CreateUniquePtr ( Parameter< Args1... > && args1 = {}
-        ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectUPtr
+    template< typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+    static constexpr auto CreateUniquePtr ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> ObjectUPtr
     {
         return { Create( std::forward< decltype( args1 ) >( args1 )
             ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter {} };
+    }
+
+    template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+    static constexpr auto CreateSharedPtr ( ArgsList1 && args1 = {} ,ArgsList2 && args2 = {} )
+        noexcept -> ObjectSPtr
+    {
+        return ObjectSPtr { Create( std::forward< decltype( args1 ) >( args1 )
+            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} , sm_allocator_ };
     }
 
 #ifdef HAS_QT
@@ -452,19 +440,21 @@ public:
     using ObjectQUPtr = QScopedPointer<Object,Deleter>;
     using ObjectQSPtr = QSharedPointer<Object>;
 
-    template<typename ...Args1,typename ...Args2>
+    template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
     [[nodiscard]] [[maybe_unused]]
-    static constexpr auto CreateQScopedPointer ( Parameter< Args1... > && args1 = {}
-            ,Parameter< Args2... > && args2 = {} ) noexcept -> ObjectQUPtr
+    static constexpr auto CreateQScopedPointer ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> ObjectQUPtr
     {
         return ObjectQUPtr{ Create( std::forward< decltype( args1 ) >( args1 )
                 ,std::forward< decltype( args2 ) >( args2 ) ) };
     }
 
-    template<typename ...Args1,typename ...Args2>
+    template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
     [[nodiscard]] [[maybe_unused]]
-    static constexpr auto CreateQSharedPointer ( Parameter< Args1...> && args1 = {}
-            ,Parameter< Args2...> && args2 = {} ) noexcept -> ObjectQSPtr
+    static constexpr auto CreateQSharedPointer ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
+        noexcept -> ObjectQSPtr
     {
         try{
             return ObjectQSPtr { Create( std::forward< decltype( args1 ) >( args1 )
@@ -546,6 +536,7 @@ public:
            }
            return nullptr;
        }
+
        template<typename ...Args>
        static constexpr QMetaObject::Connection ConnectHelper(Args && ...args) {
            if constexpr ( std::is_object_v<Object_t> ) {
@@ -561,7 +552,8 @@ protected:
     template<typename ,typename > friend class XSingleton;
 };
 
-using TwoPhaseConstruction [[maybe_unused]] = XTwoPhaseConstruction<void>;
+using TwoPhaseConstruction = XTwoPhaseConstruction<void>;
+using TPC = TwoPhaseConstruction;
 
 template<typename Tp_, typename Alloc_ >
 class XSingleton : protected XTwoPhaseConstruction<Tp_, Alloc_> {
@@ -572,9 +564,10 @@ public:
     using Object = Base_::Object;
     using SingletonPtr = Base_::ObjectSPtr;
 
-    template<typename ...Args1,typename ...Args2>
-    static constexpr auto UniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
-        , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> SingletonPtr
+    template< typename ArgsList1 = Parameter<>,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
+    static constexpr auto UniqueConstruction(ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> SingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
                 , "destructor( ~Object() ) must be private!" );
@@ -585,7 +578,7 @@ public:
 
         STATIC_ASSERT_P
 
-        allocate_([&args1,&args2] {
+        allocate_([&args1,&args2]()noexcept {
             return Base_::CreateSharedPtr(std::forward< decltype(args1) >(args1)
                     ,std::forward<decltype(args2) >(args2));
         });
@@ -602,10 +595,11 @@ public:
 #ifdef HAS_QT
     using QSingletonPtr = Base_::ObjectQSPtr;
 
-    template<typename ...Args1,typename ...Args2>
+    template< typename ArgsList1 = Parameter<>,typename ArgsList2 = Parameter<> >
+        requires(std::conjunction_v<is_tuple<ArgsList1> , is_tuple<ArgsList2>>)
     [[maybe_unused]] [[nodiscard]]
-    static constexpr auto QUniqueConstruction([[maybe_unused]] Parameter<Args1...> && args1 = {}
-            , [[maybe_unused]] Parameter<Args2...> && args2 = {}) noexcept -> QSingletonPtr
+    static constexpr auto QUniqueConstruction(ArgsList1 && args1 = {}, ArgsList2 && args2 = {})
+        noexcept -> QSingletonPtr
     {
         static_assert( XPrivate::is_destructor_private_v< Object >
                 , "destructor( ~Object() ) must be private or protected!" );
@@ -618,7 +612,7 @@ public:
 
         STATIC_ASSERT_P
 
-        allocate_([&args1,&args2]{
+        allocate_([&args1,&args2]()noexcept{
             return Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
                     ,std::forward< decltype( args2 ) >( args2 ) );
         });
@@ -704,7 +698,7 @@ private: \
     } \
     template<typename,typename > friend class XUtils::XTwoPhaseConstruction; \
     template<typename> friend struct XUtils::XPrivate::Has_X_TwoPhaseConstruction_CLASS_Macro; \
-    template<typename ,typename ...> friend struct XUtils::XPrivate::Has_construct_Func; \
+    template<typename ,typename > friend struct XUtils::XPrivate::Has_construct_Func; \
     template<typename,typename > friend class XUtils::XSingleton;
 
 #if __cplusplus >= 201402L

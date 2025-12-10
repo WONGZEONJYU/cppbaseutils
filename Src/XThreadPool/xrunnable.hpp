@@ -17,7 +17,7 @@ template<typename> class XRunnable;
 template<> class X_TEMPLATE_EXPORT XRunnable<NonConst> : public XAbstractRunnable {
     std::any run() override = 0;
 protected:
-    explicit constexpr XRunnable():XAbstractRunnable(FuncVer::NON_CONST){}
+    explicit XRunnable():XAbstractRunnable(FuncVer::NON_CONST){}
 public:
     ~XRunnable() override = default;
 };
@@ -25,7 +25,7 @@ public:
 template<> class X_TEMPLATE_EXPORT XRunnable<Const> : public XAbstractRunnable {
     std::any run() const override = 0;
 protected:
-    explicit constexpr XRunnable():XAbstractRunnable(FuncVer::CONST){}
+    explicit XRunnable():XAbstractRunnable(FuncVer::CONST){}
 public:
     ~XRunnable() override = default;
 };

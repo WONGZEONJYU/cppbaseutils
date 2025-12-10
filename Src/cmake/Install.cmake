@@ -121,6 +121,15 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XContainerHelper/
         PATTERN "*_private.hpp" EXCLUDE
 )
 
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XContainer/
+        DESTINATION include/XContainer
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+        PATTERN "*_p.hpp" EXCLUDE
+        PATTERN "*_private.hpp" EXCLUDE
+)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XTupleHelper/
         DESTINATION include/XTupleHelper
         FILES_MATCHING
