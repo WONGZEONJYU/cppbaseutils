@@ -79,18 +79,18 @@ class X_CLASS_EXPORT XCallableHelper {
         using result_t = result_<Tuple>::type;
 
         constexpr XInvoker(Tuple && t,Private_) noexcept
-        :m_fnAndArgs_{std::forward<Tuple>(t)}{}
+        :m_fnAndArgs_{std::forward<Tuple>(t)} {}
 
-        constexpr result_t operator()() const {
-            using Indices_ = std::make_index_sequence<std::tuple_size_v<Tuple>>;
-            return M_invoke_(Indices_{});
-        }
+        constexpr result_t operator()() const
+        { return M_invoke_(std::make_index_sequence<std::tuple_size_v<Tuple>>{}); }
 
     private:
         template<std::size_t... Ind>
         constexpr result_t M_invoke_(std::index_sequence<Ind...>) const
         { return std::invoke(std::get<Ind>(std::forward<decltype(m_fnAndArgs_)>(m_fnAndArgs_))...); }
     };
+
+    template<typename Tuple> XInvoker(Tuple) -> XInvoker<Tuple>;
 
     template<typename... Tp>
     using decayedTuple_ = std::tuple<std::decay_t<Tp>...>;
