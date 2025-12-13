@@ -46,6 +46,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XLog/
     PATTERN "*_private.hpp" EXCLUDE
 )
 
+#[[
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
     DESTINATION include/XObject
     FILES_MATCHING
@@ -54,6 +55,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
     PATTERN "*_p.hpp" EXCLUDE
     PATTERN "*_private.hpp" EXCLUDE
 )
+]]
 
 # 平台特定的模块
 if(APPLE OR UNIX)
