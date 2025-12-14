@@ -1,5 +1,4 @@
 #include <XQtHelper/xqthread.hpp>
-#include <XMemory/xmemory.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
