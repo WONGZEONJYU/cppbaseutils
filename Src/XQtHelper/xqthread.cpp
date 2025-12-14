@@ -1,5 +1,9 @@
-//
-// Created by wong on 2025/12/14.
-//
+#include <XQtHelper/xqthread.hpp>
+#include <XMemory/xmemory.hpp>
 
-#include "xqthread.hpp"
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
