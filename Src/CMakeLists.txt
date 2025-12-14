@@ -66,6 +66,7 @@ add_subdirectory(XContainer)
 add_subdirectory(XContainerHelper)
 add_subdirectory(XTupleHelper)
 add_subdirectory(XDesignPattern)
+add_subdirectory(XQtHelper)
 
 # 平台特定的模块
 if(APPLE OR UNIX)

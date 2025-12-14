@@ -136,6 +136,8 @@ public:
     { return Factory::createCallable(std::forward<Args>(args)...); }
 };
 
+using CallablePtr = XCallableHelper::CallablePtr;
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
