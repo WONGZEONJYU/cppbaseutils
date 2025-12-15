@@ -14,14 +14,17 @@ class XSignalPrivate;
 using SignalPtr = std::shared_ptr<XSignal>;
 
 class XSignalData {
+
+public:
+    XSignal * m_x_ptr{};
+    int64_t m_sig {-1};
+    siginfo_t * m_info{};
+    void * m_context{};
+
 protected:
     constexpr XSignalData() = default;
 public:
     constexpr virtual ~XSignalData() = default;
-    XSignal * m_x_ptr_{};
-    int64_t m_sig {-1};
-    siginfo_t * m_info{};
-    void * m_context{};
 };
 
 class X_CLASS_EXPORT XSignal final : public XTwoPhaseConstruction<XSignal> {

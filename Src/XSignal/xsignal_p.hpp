@@ -20,7 +20,7 @@ class X_CLASS_EXPORT XSignalPrivate final : public XSignalData {
 public:
     struct SignalArgs;
     explicit constexpr XSignalPrivate(XSignal * const o)
-    { m_x_ptr_ = o; }
+    { m_x_ptr = o; }
     ~XSignalPrivate() override;
     bool registerHelper(int,int) noexcept;
     int64_t unregisterHelper() noexcept;
