@@ -11,7 +11,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XQThreadHelper final : public QThread {
+class XQThreadHelper : public QThread {
 
     Q_DISABLE_COPY(XQThreadHelper)
 
@@ -35,7 +35,7 @@ public:
         m_callable_ = XCallableHelper::createCallable(std::forward<Args>(args)...);
     }
 
-private:
+protected:
     template<typename T>
     static void terminate_on_exception(T && t) {
         try {
