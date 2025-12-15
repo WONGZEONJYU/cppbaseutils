@@ -95,11 +95,12 @@ public:
 class XLog;
 class XLogPrivate;
 class XLogData {
+public:
+    XLog * m_x_ptr{};
 protected:
     constexpr XLogData() = default;
 public:
     constexpr virtual ~XLogData() = default;
-    XLog * m_x_ptr_{};
 };
 
 [[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;

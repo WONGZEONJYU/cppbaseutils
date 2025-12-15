@@ -4,19 +4,17 @@
 #if !defined(_WIN64) && !defined(_WIN32)
 #include <XSignal/xsignal.hpp>
 #endif
+#include <utility>
+#include <chrono>
 #include <list>
 #include <deque>
 #include <XHelper/xutility.hpp>
-#include <XObject/xobject.hpp>
 #include <XHelper/xoverload.hpp>
 #include <XMemory/xmemory.hpp>
-#include <utility>
-#include <chrono>
 #include <XTupleHelper/xtuplehelper.hpp>
 #include <XMath/xmath.hpp>
 #include <XDesignPattern/xcor.hpp>
-
-#include "XContainerHelper/xcontainerhelper.hpp"
+#include <XThreadPool/xrunnable.hpp>
 
 static std::mutex mtx{};
 
@@ -121,7 +119,7 @@ public:
     const auto p1{pool2->runnableJoin(&Functor3::func, std::addressof(f3), "34")} ,
             p2{pool2->runnableJoin(Double,35.0)};
     constexpr int aaa { 31 };
-    XUtils::XAbstractRunnable_Ptr lambda{};
+    XUtils::XAbstractRunnablePtr lambda{};
     lambda = pool2->runnableJoin([&](const int& id){
         pool2->stop();
         pool2->start();
@@ -239,7 +237,7 @@ public:
 
     using namespace std::chrono;
 
-    std::deque<XUtils::XAbstractRunnable_Ptr> tasks1,task2s{};
+    std::deque<XUtils::XAbstractRunnablePtr> tasks1,task2s{};
     for (int i{};i < 1000000;++i){
         tasks1.push_back(std::make_shared<A>(10));
     }
@@ -251,7 +249,7 @@ public:
     auto runtime{duration_cast<milliseconds>(system_clock::now() - last_time).count()};
     std::cerr <<  "deque w:" << runtime << std::endl;
 
-    std::unordered_map<void*,XUtils::XAbstractRunnable_Ptr> tasks2{};
+    std::unordered_map<void*,XUtils::XAbstractRunnablePtr> tasks2{};
     last_time = system_clock::now();
 
     for (const auto &task : tasks1){
@@ -281,14 +279,7 @@ void call(const int a){
 
 [[maybe_unused]] static void test4(int)
 {
-    using namespace XUtils;
-    using List_t = XPrivate::List<int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t>;
-    using Value = XPrivate::List_Left<List_t,6>::Value;
-    std::cout << XUtils::typeName<Value>() << std::endl;
-    std::string filename{"IMAGE01.PNG"};
-    filename = XUtils::toLower(std::move(filename));
-    std::cerr << filename << std::endl;
-    std::cerr << filename.substr(filename.find('.')) << std::endl;
+
 }
 
 [[maybe_unused]]
@@ -318,30 +309,6 @@ static void test5(){
         std::cerr << i << std::endl;
     });
 }
-
-class ATest:public XUtils::XObject {
-public:
-    void send(int ) && noexcept {
-
-    }
-
-    void slot(int) const volatile & noexcept {
-
-    }
-};
-
-class BTest:public XUtils::XObject {
-
-public:
-    void send(int d)  noexcept {
-        emitSignal(this,&BTest::send, nullptr,d);
-    }
-
-    void slot(int) const volatile & noexcept {
-
-    }
-
-};
 
 template<typename T, typename... Args>
 class is_default_constructor_accessible {
@@ -731,10 +698,15 @@ void test11()
 
 void test12() {
 
+    auto thread_pool{XUtils::XThreadPool::create()};
+
+    thread_pool->runnableJoin([] {
+        std::cerr << FUNC_SIGNATURE << "\n";
+    });
 }
 
 int main(){
-    //test1();
+    test1();
     //test2();
     //test3();
     //test4(123);

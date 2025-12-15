@@ -1,5 +1,5 @@
 #ifndef X_RESULT_HPP
-#define X_RESULT_HPP
+#define X_RESULT_HPP 1
 
 #include <XHelper/xhelper.hpp>
 #include <future>
@@ -18,9 +18,11 @@ class XResultPrivate;
 class XResult;
 
 class X_CLASS_EXPORT XResultData {
+
     X_DISABLE_COPY_MOVE(XResultData)
+
 public:
-    XResult * m_x_ptr_{};
+    XResult * m_x_ptr{};
     mutable
 #if __cplusplus >= 202002L
     std::binary_semaphore
@@ -29,6 +31,7 @@ public:
 #endif
     m_bin_sem_{0};
     virtual std::any get_value() const = 0;
+
 protected:
     constexpr XResultData() = default;
 public:
@@ -39,10 +42,7 @@ class X_CLASS_EXPORT XResult final {
     X_DISABLE_COPY_MOVE(XResult)
     X_DECLARE_PRIVATE(XResult)
     mutable std::unique_ptr<XResultData> m_d_ptr_{};
-    std::any get_() const;
-    std::any try_get_() const;
-    std::any get_for_(std::chrono::nanoseconds const &) const;
-    void set(std::any&& ) const;
+
 public:
 #define RETURN_VALUE(...)\
     auto v{__VA_ARGS__};\
@@ -67,25 +67,32 @@ public:
     }
 #undef RETURN_VALUE
     ///复位允许重复使用
-    void reset() const;
+    void reset() const noexcept;
 
     ///get函数受此影响,其他函数不受此函数影响
     ///此函数没被调用,get函数会直接返回值空值(Ty{})
-    void allow_get() const;
+    void allow_get() const noexcept;
 
     explicit XResult();
     ~XResult() = default;
+
+private:
+    std::any get_() const noexcept;
+    std::any try_get_() const noexcept;
+    std::any get_for_(std::chrono::nanoseconds const &) const noexcept;
+    void set(std::any&& ) const noexcept;
     friend class XResultStorage;
 };
 
 class XResultStorage final {
     X_DISABLE_COPY_MOVE(XResultStorage)
     mutable XResult * m_XResult_{};
+
 public:
     explicit XResultStorage(XResult &);
-    [[maybe_unused]] explicit XResultStorage(const XResult &);
-    void set(std::any &&) const;
-    void release() const;
+    [[maybe_unused]] explicit XResultStorage(XResult const &);
+    void set(std::any &&) const noexcept;
+    void release() const noexcept;
     ~XResultStorage();
 };
 

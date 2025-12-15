@@ -87,6 +87,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
     PATTERN "*_private.hpp" EXCLUDE
 )
 
+#[[
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XTools/
     DESTINATION include/XTools
     FILES_MATCHING
@@ -95,6 +96,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XTools/
     PATTERN "*_p.hpp" EXCLUDE
     PATTERN "*_private.hpp" EXCLUDE
 )
+]]
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XMath/
         DESTINATION include/XMath

@@ -137,6 +137,7 @@ public:
 };
 
 using CallablePtr = XCallableHelper::CallablePtr;
+template<typename... Args> using Invoker = XCallableHelper::Invoker<Args...>;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

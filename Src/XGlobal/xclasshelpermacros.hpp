@@ -43,8 +43,8 @@ template <typename Ptr> constexpr auto xGetPtrHelper(Ptr const &ptr) noexcept ->
     friend class Class##Private;
 
 #define X_DECLARE_PUBLIC(...) \
-    inline __VA_ARGS__ * x_func() noexcept { return static_cast<__VA_ARGS__ *>(m_x_ptr_); } \
-    inline const __VA_ARGS__ * x_func() const noexcept { return static_cast<const __VA_ARGS__ *>(m_x_ptr_); } \
+    inline __VA_ARGS__ * x_func() noexcept { return static_cast<__VA_ARGS__ *>(m_x_ptr); } \
+    inline const __VA_ARGS__ * x_func() const noexcept { return static_cast<const __VA_ARGS__ *>(m_x_ptr); } \
     friend class __VA_ARGS__;
 
 #define X_D(Class) Class##Private * const d{d_func()}
