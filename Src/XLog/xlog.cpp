@@ -44,7 +44,7 @@ bool XLog::construct_() {
         return {};
     }
 
-    m_d_ptr->m_x_ptr_ = this;
+    m_d_ptr->m_x_ptr = this;
 
     try {
         X_D(XLog);

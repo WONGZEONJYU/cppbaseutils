@@ -59,6 +59,7 @@ add_subdirectory(XAtomic)
 add_subdirectory(XGlobal)
 add_subdirectory(XHelper)
 #add_subdirectory(XObject)
+#add_subdirectory(XTools)
 add_subdirectory(XLog)
 add_subdirectory(XMath)
 add_subdirectory(XMemory)
@@ -67,15 +68,12 @@ add_subdirectory(XContainerHelper)
 add_subdirectory(XTupleHelper)
 add_subdirectory(XDesignPattern)
 add_subdirectory(XQtHelper)
-
+add_subdirectory(XThreadPool)
 # 平台特定的模块
 if(APPLE OR UNIX)
     add_subdirectory(XSignal)
     add_subdirectory(Unix)
 endif()
-
-add_subdirectory(XThreadPool)
-add_subdirectory(XTools)
 
 # 包含库配置
 include(cmake/LibraryConfig.cmake)

@@ -1,5 +1,5 @@
-#ifndef X_ABSTRACT_TASK2_HPP
-#define X_ABSTRACT_TASK2_HPP
+#ifndef XUTILS2_X_ABSTRACT_RUNNABLE_HPP
+#define XUTILS2_X_ABSTRACT_RUNNABLE_HPP 1
 
 #include <XHelper/xhelper.hpp>
 #include <any>
@@ -14,15 +14,17 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XAbstractRunnablePrivate;
 class XThreadPool;
 class XAbstractRunnable;
-using XAbstractRunnable_Ptr = std::shared_ptr<XAbstractRunnable>;
+using XAbstractRunnablePtr = std::shared_ptr<XAbstractRunnable>;
 
 class X_CLASS_EXPORT XAbstractRunnableData {
     X_DISABLE_COPY_MOVE(XAbstractRunnableData)
     friend class XAbstractRunnable;
     XResult m_result_{};
+
+public:
+    XAbstractRunnable * m_x_ptr{};
 protected:
-    XAbstractRunnable * m_x_ptr_{};
-    XAbstractRunnableData() = default;
+    constexpr XAbstractRunnableData() = default;
 public:
     virtual ~XAbstractRunnableData() = default;
 };
@@ -71,23 +73,15 @@ public:
     [[maybe_unused]] [[nodiscard]] constexpr Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false)
     { return m_d_ptr_->m_result_.get_until<Ty>(abs_time_); }
 
-    /// 设置责任链,开发者可以重写
-    /// @param next_
-    [[maybe_unused]] virtual void set_nextHandler(const std::weak_ptr<XAbstractRunnable> &next_);
-
-    /// 责任链请求处理
-    /// @param arg 任意类型,开发者可重写
-    [[maybe_unused]] virtual void requestHandler(const std::any &arg);
-
     /// 加入线程池,会按照默认线程数量启动线程池
     /// 如果需要调整数量(需在FIXED模式才有意义),请自行调用线程池start函数输入线程数量
     /// @param pool
     /// @return 任务对象
-    [[maybe_unused]] XAbstractRunnable_Ptr joinThreadPool(const std::shared_ptr<XThreadPool> &pool) ;
+    [[maybe_unused]] XAbstractRunnablePtr joinThreadPool(std::shared_ptr<XThreadPool> const & pool) noexcept;
 
     /// 检查线程池是否运行
     /// @return  ture or false
-    [[maybe_unused]] [[maybe_unused]] [[nodiscard]] bool is_Running() const;
+    [[maybe_unused]] [[maybe_unused]] [[nodiscard]] bool is_Running() const noexcept;
 
     virtual ~XAbstractRunnable() = default;
 
@@ -101,13 +95,12 @@ protected:
 private:
     virtual std::any run();
     virtual std::any run() const;
-    explicit XAbstractRunnable(const FuncVer &);
+    explicit XAbstractRunnable(FuncVer );
     void call() const;
-    void set_exit_function_(std::function<bool()> &&) const;
-    void resetRecall_() const;
-    void allow_get_() const
-    { m_d_ptr_->m_result_.allow_get(); }
-    XAtomicPointer<const void> &Owner_() const;
+    void set_exit_function_(std::function<bool()> &&) const noexcept;
+    void resetRecall_() const noexcept;
+    void allow_get_() const noexcept;
+    XAtomicPointer<const void> &Owner_() const noexcept;
 
     template<typename> friend class XRunnable;
     friend class XThreadPool;
