@@ -247,10 +247,10 @@ int main()
     std::vector<int > v;
     std::list<int > l;
 
-    XUtils::RingBuffer<std::size_t> const rb{};
+    XUtils::XRingBuffer<std::size_t> const rb{};
 
     for (int i{}; i < 10;++i)
-    { const_cast<XUtils::RingBuffer<std::size_t>&>(rb).push_back(i + 1); }
+    { const_cast<XUtils::XRingBuffer<std::size_t>&>(rb).push_back(i + 1); }
 
     std::cout << std::boolalpha << ( rb.cEnd()  ==  rb.begin() ) << std::endl;
 
