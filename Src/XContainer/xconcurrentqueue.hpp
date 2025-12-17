@@ -109,9 +109,9 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 namespace moodycamel::details {
 	static_assert(sizeof(unsigned long) == sizeof(std::uint32_t), "Expected size of unsigned long to be 32 bits on Windows");
 	using thread_id_t = std::uint32_t ;
-	inline constexpr thread_id_t invalid_thread_id { 0 },			// See http://blogs.msdn.com/b/oldnewthing/archive/2004/02/23/78395.aspx
-					thread_id_t invalid_thread_id2 { 0xFFFFFFFFU };	// Not technically guaranteed to be invalid, but is never used in practice. Note that all Win32 thread IDs are presently multiples of 4.
-	static constexpr thread_id_t thread_id() noexcept { return static_cast<thread_id_t>(::GetCurrentThreadId()); }
+	inline constexpr thread_id_t invalid_thread_id { 0u },			// See http://blogs.msdn.com/b/oldnewthing/archive/2004/02/23/78395.aspx
+								invalid_thread_id2 { 0xFFFFFFFFU };	// Not technically guaranteed to be invalid, but is never used in practice. Note that all Win32 thread IDs are presently multiples of 4.
+	static thread_id_t thread_id() noexcept { return static_cast<thread_id_t>( GetCurrentThreadId()); }
 }
 #elif defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || (defined(__APPLE__) && TARGET_OS_IPHONE) || defined(__MVS__) || defined(MOODYCAMEL_NO_THREAD_LOCAL)
 namespace moodycamel::details {
@@ -422,8 +422,8 @@ struct ConcurrentQueueDefaultTraits {
 	static constexpr void * (malloc)(size_t const size) { return WORKAROUND_malloc(size); }
 	static constexpr void (free)(void * const ptr) { return WORKAROUND_free(ptr); }
 #else
-	static constexpr void * malloc(size_t const size) { return std::malloc(size); }
-	static constexpr void free(void * const ptr) { return std::free(ptr); }
+	static void * malloc(size_t const size) { return std::malloc(size); }
+	static void free(void * const ptr) { return std::free(ptr); }
 #endif
 #else
 	// Debug versions when running under the Relacy race detector (ignore
@@ -491,7 +491,10 @@ namespace details {
 	template<typename T>
 	static constexpr bool circular_less_than(T a, T b) noexcept {
 		static_assert(std::is_integral_v<T> && !std::numeric_limits<T>::is_signed, "circular_less_than is intended to be used only with unsigned integer types");
-		return static_cast<T>(a - b) > static_cast<T>(static_cast<T>(1) << static_cast<T>(sizeof(T) * CHAR_BIT - 1));
+		auto constexpr bits { static_cast<T>(sizeof(T) * CHAR_BIT - 1) };
+		auto const left { static_cast<T>(a - b) };
+		auto const right { static_cast<T>( static_cast<T>(1) << bits ) };
+		return left > right;
 		// Note: extra parens around rhs of operator<< is MSVC bug: https://developercommunity2.visualstudio.com/t/C4554-triggers-when-both-lhs-and-rhs-is/10034931
 		//       silencing the bug requires #pragma warning(disable: 4554) around the calling code and has no effect when done here.
 	}
@@ -596,6 +599,7 @@ namespace details {
 
 	private:
 		constexpr ThreadExitNotifier() = default;
+
 		X_DISABLE_COPY(ThreadExitNotifier)
 
 		~ThreadExitNotifier() {
@@ -610,18 +614,17 @@ namespace details {
 		}
 
 		// Thread-local
-		static constexpr ThreadExitNotifier & instance() noexcept {
-			static thread_local ThreadExitNotifier notifier;
+		static ThreadExitNotifier & instance() noexcept {
+			thread_local ThreadExitNotifier notifier;
 			return notifier;
 		}
 
-		static constexpr std::mutex & mutex() noexcept {
+		static std::mutex & mutex() noexcept {
 			// Must be static because the ThreadExitNotifier could be destroyed while unsubscribe is called
 			static std::mutex mutex{};
 			return mutex;
 		}
 
-	private:
 		ThreadExitListener * tail{};
 	};
 #endif
@@ -1580,7 +1583,7 @@ private:
 		constexpr ProducerBase * next_prod() const noexcept { return static_cast<ProducerBase*>(next); }
 
 		constexpr size_t size_approx() const noexcept {
-			auto const head { headIndex.load(std::memory_order_relaxed) }
+			auto const head{ headIndex.load(std::memory_order_relaxed) }
 						,tail{ tailIndex.load(std::memory_order_relaxed) };
 			return details::circular_less_than(head, tail) ? static_cast<size_t>(tail - head) : 0;
 		}
