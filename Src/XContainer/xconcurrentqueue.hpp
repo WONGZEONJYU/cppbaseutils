@@ -575,25 +575,22 @@ namespace details {
 	class ThreadExitNotifier {
 	public:
 		static void subscribe(ThreadExitListener * const listener) {
-			auto && tlsInst { instance() };
+			auto && tlsInst{ instance() };
 			std::unique_lock lk { mutex() };
 			listener->next = tlsInst.tail;
-			listener->chain = &tlsInst;
+			listener->chain = std::addressof(tlsInst);
 			tlsInst.tail = listener;
 		}
 
 		static void unsubscribe(ThreadExitListener * const listener) {
 			std::unique_lock lk { mutex() };
 			if (!listener->chain) { return; } // race with ~ThreadExitNotifier
-			auto && tlsInst { *listener->chain };
+			auto && tlsInst{ *listener->chain };
 			listener->chain = {};
-			auto prev { &tlsInst.tail };
-			for (auto ptr { tlsInst.tail }; ptr; ptr = ptr->next) {
-				if (listener == ptr) {
-					*prev = ptr->next;
-					break;
-				}
-				prev = &ptr->next;
+			auto prev{ std::addressof(tlsInst.tail) };
+			for (auto ptr{ tlsInst.tail }; ptr; ptr = ptr->next) {
+				if (listener == ptr) { *prev = ptr->next; break; }
+				prev = std::addressof(ptr->next);
 			}
 		}
 
@@ -604,10 +601,10 @@ namespace details {
 
 		~ThreadExitNotifier() {
 			// This thread is about to exit, let everyone know!
-			assert(this == &instance()
+			assert(this == std::addressof(instance())
 				&& "If this assert fails, you likely have a buggy compiler! Change the preprocessor conditions such that MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED is no longer defined.");
-			std::unique_lock lk { mutex() };
-			for (auto ptr {tail}; ptr; ptr = ptr->next) {
+			std::unique_lock lk {mutex()};
+			for (auto ptr{tail}; ptr; ptr = ptr->next) {
 				ptr->chain = {};
 				ptr->callback(ptr->userData);
 			}
@@ -630,7 +627,7 @@ namespace details {
 #endif
 #endif
 
-	template<typename> struct static_is_lock_free_num { enum { value = 0 }; };
+	template<typename> struct static_is_lock_free_num { enum { value }; };
 	template<> struct static_is_lock_free_num<signed char> { enum { value = ATOMIC_CHAR_LOCK_FREE }; };
 	template<> struct static_is_lock_free_num<short> { enum { value = ATOMIC_SHORT_LOCK_FREE }; };
 	template<> struct static_is_lock_free_num<int> { enum { value = ATOMIC_INT_LOCK_FREE }; };
@@ -732,7 +729,8 @@ private:
 // Need to forward-declare this swap because it's in a namespace.
 // See http://stackoverflow.com/questions/4492062/why-does-a-c-friend-class-need-a-forward-declaration-only-in-other-namespaces
 template<typename T, typename Traits>
-constexpr void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP & a, typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT;
+constexpr void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP & a
+	, typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT;
 
 template<typename,typename = ConcurrentQueueDefaultTraits>
 class ConcurrentQueue;
@@ -1901,6 +1899,7 @@ private:
 					currentTailIndex += static_cast<index_t>(BLOCK_SIZE);
 
 					this->tailBlock = this->tailBlock->next;
+					//if (!firstAllocatedBlock) { firstAllocatedBlock = this->tailBlock; }
 					firstAllocatedBlock = firstAllocatedBlock ? firstAllocatedBlock : this->tailBlock ;
 
 					auto && entry { blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront] };
@@ -2504,7 +2503,7 @@ private:
 
 					// Store the chain of blocks so that we can undo if later allocations fail,
 					// and so that we can find the blocks when we do the actual enqueueing
-					if ((startTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) || firstAllocatedBlock) {
+					if (startTailIndex & static_cast<index_t>(BLOCK_SIZE - 1) || firstAllocatedBlock) {
 						assert(this->tailBlock);
 						this->tailBlock->next = newBlock;
 					}
