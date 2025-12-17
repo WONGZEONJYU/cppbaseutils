@@ -69,19 +69,7 @@
 #else
 #include <cassert>
 #endif
-#include <cstddef>              // for max_align_t
-#include <cstdlib>
-#include <type_traits>
-#include <algorithm>
-#include <utility>
-#include <limits>
-#include <climits>		// for CHAR_BIT
-#include <array>
-#include <thread>		// partly for __WINPTHREADS_VERSION if on MinGW-w64 w/ POSIX threading
-#include <mutex>        // used for thread exit synchronization
-#include <XHelper/xversion.hpp>
-#include <XGlobal/xclasshelpermacros.hpp>
-#include <XAtomic/xatomic.hpp>
+#include <XContainer/xconcurrentqueueabstract.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -413,7 +401,6 @@ struct ConcurrentQueueDefaultTraits {
 	// Note that blocks consumed by explicit producers are only freed on destruction
 	// of the queue (not following destruction of the token) regardless of this trait.
 	static constexpr auto RECYCLE_ALLOCATED_BLOCKS { false };
-
 
 #ifndef MCDBGQ_USE_RELACY
 	// Memory allocation can be customized if needed.
