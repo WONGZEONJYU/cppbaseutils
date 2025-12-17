@@ -455,7 +455,7 @@ namespace details {
 
 	struct ConcurrentQueueProducerTypelessBase {
 		ConcurrentQueueProducerTypelessBase * next{};
-		std::atomic<bool> inactive {};
+		XAtomicBool inactive{};
 		ProducerToken * token {};
 		constexpr ConcurrentQueueProducerTypelessBase() = default;
 	};
@@ -677,7 +677,7 @@ struct ProducerToken {
 	~ProducerToken() {
 		if (producer) {
 			producer->token = {};
-			producer->inactive.store(true, std::memory_order_release);
+			producer->inactive.storeRelease(true);
 		}
 	}
 
@@ -804,8 +804,8 @@ public:
 		// each kind; this makes it possible to debug them starting from
 		// the root queue object (otherwise wacky casts are needed that
 		// don't compile in the debugger's expression evaluator).
-		explicitProducers.store({}, std::memory_order_relaxed);
-		implicitProducers.store({}, std::memory_order_relaxed);
+		explicitProducers.storeRelaxed({});
+		implicitProducers.storeRelaxed({});
 #endif
 	}
 
@@ -819,8 +819,8 @@ public:
 		populate_initial_block_list(blocks);
 
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		explicitProducers.store({}, std::memory_order_relaxed);
-		implicitProducers.store({}, std::memory_order_relaxed);
+		explicitProducers.storeRelaxed({});
+		implicitProducers.storeRelaxed({});
 #endif
 	}
 
@@ -839,7 +839,7 @@ public:
 
 		// Destroy implicit producer hash tables
 		MOODYCAMEL_CONSTEXPR_IF (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE) {
-			auto hash { implicitProducerHash.load(std::memory_order_relaxed) };
+			auto hash { implicitProducerHash.loadRelaxed() };
 			while (hash) {
 				auto prev{hash->prev};
 				if (prev) {		// The last hash is part of this object and was not allocated dynamically
@@ -855,7 +855,7 @@ public:
 		// Destroy global free list
 		auto block {freeList.head_unsafe()};
 		while (block) {
-			auto next{ block->freeListNext.load(std::memory_order_relaxed) };
+			auto next{ block->freeListNext.loadRelaxed() };
 			if (block->dynamicallyAllocated) { destroy(block); }
 			block = next;
 		}
@@ -875,13 +875,13 @@ public:
 	// with the queue itself).
 	ConcurrentQueue(ConcurrentQueue && other) MOODYCAMEL_NOEXCEPT
 		: producerListTail(other.producerListTail.loadRelaxed()),
-		producerCount(other.producerCount.load(std::memory_order_relaxed)),
-		initialBlockPoolIndex(other.initialBlockPoolIndex.load(std::memory_order_relaxed)),
+		producerCount(other.producerCount.loadRelaxed()),
+		initialBlockPoolIndex(other.initialBlockPoolIndex.loadRelaxed()),
 		initialBlockPool(other.initialBlockPool),
 		initialBlockPoolSize(other.initialBlockPoolSize),
 		freeList(std::move(other.freeList)),
-		nextExplicitConsumerId(other.nextExplicitConsumerId.load(std::memory_order_relaxed)),
-		globalExplicitConsumerOffset(other.globalExplicitConsumerOffset.load(std::memory_order_relaxed))
+		nextExplicitConsumerId(other.nextExplicitConsumerId.loadRelaxed()),
+		globalExplicitConsumerOffset(other.globalExplicitConsumerOffset.loadRelaxed())
 	{
 		// Move the other one into this, and leave the other one as an empty queue
 		implicitProducerHashResizeInProgress.clear(std::memory_order_relaxed);
@@ -889,18 +889,19 @@ public:
 		swap_implicit_producer_hashes(other);
 
 		other.producerListTail.storeRelaxed({});
-		other.producerCount.store({}, std::memory_order_relaxed);
-		other.nextExplicitConsumerId.store({}, std::memory_order_relaxed);
-		other.globalExplicitConsumerOffset.store({}, std::memory_order_relaxed);
+		other.producerCount.storeRelaxed({});
+		other.nextExplicitConsumerId.storeRelaxed({});
+		other.globalExplicitConsumerOffset.storeRelaxed({});
 
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		explicitProducers.store(other.explicitProducers.load(std::memory_order_relaxed), std::memory_order_relaxed);
-		other.explicitProducers.store({}, std::memory_order_relaxed);
-		implicitProducers.store(other.implicitProducers.load(std::memory_order_relaxed), std::memory_order_relaxed);
-		other.implicitProducers.store({}, std::memory_order_relaxed);
+		explicitProducers.storeRelaxed(other.explicitProducers.loadRelaxed());
+		other.explicitProducers.storeRelaxed({});
+
+		implicitProducers.storeRelaxed(other.implicitProducers.loadRelaxed());
+		other.implicitProducers.storeRelaxed({});
 #endif
 
-		other.initialBlockPoolIndex.store({}, std::memory_order_relaxed);
+		other.initialBlockPoolIndex.storeRelaxed({});
 		other.initialBlockPoolSize = {};
 		other.initialBlockPool = {};
 
@@ -921,14 +922,14 @@ public:
 private:
 	ConcurrentQueue & swap_internal(ConcurrentQueue & other) {
 		if (this == std::addressof(other)) { return *this; }
-		details::swap_relaxed(producerListTail, other.producerListTail);
-		details::swap_relaxed(producerCount, other.producerCount);
-		details::swap_relaxed(initialBlockPoolIndex, other.initialBlockPoolIndex);
+		details::swap_relaxed(producerListTail.m_x_value, other.producerListTail.m_x_value);
+		details::swap_relaxed(producerCount.m_x_value , other.producerCount.m_x_value);
+		details::swap_relaxed(initialBlockPoolIndex.m_x_value, other.initialBlockPoolIndex.m_x_value);
 		std::swap(initialBlockPool, other.initialBlockPool);
 		std::swap(initialBlockPoolSize, other.initialBlockPoolSize);
 		freeList.swap(other.freeList);
-		details::swap_relaxed(nextExplicitConsumerId, other.nextExplicitConsumerId);
-		details::swap_relaxed(globalExplicitConsumerOffset, other.globalExplicitConsumerOffset);
+		details::swap_relaxed(nextExplicitConsumerId.m_x_value, other.nextExplicitConsumerId.m_x_value);
+		details::swap_relaxed(globalExplicitConsumerOffset.m_x_value, other.globalExplicitConsumerOffset.m_x_value);
 
 		swap_implicit_producer_hashes(other);
 
@@ -936,8 +937,8 @@ private:
 		other.reownProducers();
 
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-		details::swap_relaxed(explicitProducers, other.explicitProducers);
-		details::swap_relaxed(implicitProducers, other.implicitProducers);
+		details::swap_relaxed(explicitProducers.m_x_value, other.explicitProducers.m_x_value);
+		details::swap_relaxed(implicitProducers.m_x_value, other.implicitProducers.m_x_value);
 #endif
 
 		return *this;
@@ -1098,7 +1099,7 @@ public:
 	// Never allocates. Thread-safe.
 	template<typename U>
 	constexpr bool try_dequeue_non_interleaved(U & item) {
-		for (auto ptr{ producerListTail.load(std::memory_order_acquire) };
+		for (auto ptr{ producerListTail.loadAcquire() };
 			ptr ; ptr = ptr->next_prod())
 		{ if (ptr->dequeue(item)) { return true; } }
 		return {};
@@ -1116,18 +1117,18 @@ public:
 		// If there's no items where you're supposed to be, keep moving until you find a producer with some items
 		// If the global offset has not changed but you've run out of items to consume, move over from your current position until you find an producer with something in it
 
-		if (!token.desiredProducer || token.lastKnownGlobalOffset != globalExplicitConsumerOffset.load(std::memory_order_relaxed))
+		if (!token.desiredProducer || token.lastKnownGlobalOffset != globalExplicitConsumerOffset.loadRelaxed() )
 		{ if (!update_current_producer_after_rotation(token)) { return {}; } }
 
 		// If there was at least one non-empty queue but it appears empty at the time
 		// we try to dequeue from it, we need to make sure every queue's been tried
 		if (static_cast<ProducerBase*>(token.currentProducer)->dequeue(item)) {
 			if (++token.itemsConsumedFromCurrent == EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE)
-			{ globalExplicitConsumerOffset.fetch_add(1, std::memory_order_relaxed); }
+			{ globalExplicitConsumerOffset.fetchAndAddRelaxed(1); }
 			return true;
 		}
 
-		auto const tail{ producerListTail.load(std::memory_order_acquire)};
+		auto const tail{ producerListTail.loadAcquire() };
 		auto ptr{ static_cast<ProducerBase*>(token.currentProducer)->next_prod() };
 		if (!ptr) { ptr = tail; }
 		while (ptr != static_cast<ProducerBase*>(token.currentProducer)) {
@@ -1167,21 +1168,21 @@ public:
 	template<typename It>
 	constexpr size_t try_dequeue_bulk(consumer_token_t & token, It && itemFirst, size_t const max) {
 
-		if (!token.desiredProducer || token.lastKnownGlobalOffset != globalExplicitConsumerOffset.load(std::memory_order_relaxed))
+		if (!token.desiredProducer || token.lastKnownGlobalOffset != globalExplicitConsumerOffset.loadRelaxed())
 		{ if (!update_current_producer_after_rotation(token)) { return {}; } }
 
 		auto count{ static_cast<ProducerBase*>(token.currentProducer)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max) };
 
 		if (max == count) {
 			if ((token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(max)) >= EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE)
-			{ globalExplicitConsumerOffset.fetch_add(1, std::memory_order_relaxed); }
+			{ globalExplicitConsumerOffset.fetchAndAddRelaxed(1); }
 			return max;
 		}
 
 		token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(count);
 		max -= count;
 
-		auto const tail{ producerListTail.load(std::memory_order_acquire) };
+		auto const tail{ producerListTail.loadAcquire() };
 		auto ptr{ static_cast<ProducerBase*>(token.currentProducer)->next_prod() };
 		if (!ptr) { ptr = tail; }
 
@@ -1231,7 +1232,7 @@ public:
 	// Thread-safe.
 	constexpr size_t size_approx() const {
 		size_t size {};
-		for (auto ptr{ producerListTail.load(std::memory_order_acquire)};
+		for (auto ptr{ producerListTail.loadAcquire() };
 			ptr; ptr = ptr->next_prod())
 		{ size += ptr->size_approx(); }
 		return size;
@@ -1290,10 +1291,10 @@ private:
 
 	constexpr bool update_current_producer_after_rotation(consumer_token_t & token) {
 		// Ah, there's been a rotation, figure out where we should be!
-		auto const tail{ producerListTail.load(std::memory_order_acquire) };
+		auto const tail{ producerListTail.loadAcquire() };
 		if (!token.desiredProducer && !tail ) { return {}; }
-		auto const prodCount{ producerCount.load(std::memory_order_relaxed) };
-		auto const globalOffset { globalExplicitConsumerOffset.load(std::memory_order_relaxed) };
+		auto const prodCount{ producerCount.loadRelaxed() };
+		auto const globalOffset{ globalExplicitConsumerOffset.loadRelaxed() };
 		if ((details::unlikely)(!token.desiredProducer)) {
 			// Aha, first time we're dequeueing anything.
 			// Figure out our local position
@@ -1326,8 +1327,8 @@ private:
 	template <typename N>
 	struct FreeListNode {
 		constexpr FreeListNode() = default;
-		std::atomic<std::uint32_t> freeListRefs{};
-		std::atomic<N*> freeListNext{};
+		XAtomicInteger<std::uint32_t> freeListRefs {};
+		XAtomicPointer<N> freeListNext {};
 	};
 
 	// A simple CAS-based lock-free free list. Not the fastest thing in the world under heavy contention, but
@@ -1338,10 +1339,10 @@ private:
 
 		constexpr FreeList() = default;
 
-		FreeList(FreeList && other) noexcept : freeListHead(other.freeListHead.load(std::memory_order_relaxed))
-		{ other.freeListHead.store({}, std::memory_order_relaxed); }
+		FreeList(FreeList && other) noexcept : freeListHead(other.freeListHead.loadRelaxed())
+		{ other.freeListHead.storeRelaxed({}); }
 
-		constexpr void swap(FreeList & other) noexcept { details::swap_relaxed(freeListHead, other.freeListHead); }
+		constexpr void swap(FreeList & other) noexcept { details::swap_relaxed(freeListHead.m_x_value, other.freeListHead.m_x_value); }
 
 		X_DISABLE_COPY(FreeList)
 
@@ -1351,7 +1352,7 @@ private:
 #endif
 			// We know that the should-be-on-freelist bit is 0 at this point, so it's safe to
 			// set it using a fetch_add
-			if (!node->freeListRefs.fetch_add(SHOULD_BE_ON_FREELIST, std::memory_order_acq_rel)) {
+			if (!node->freeListRefs.fetchAndAddOrdered(SHOULD_BE_ON_FREELIST)) {
 				// Oh look! We were the last ones referencing this node, and we know
 				// we want to add it to the free list, so let's do it!
 		 		add_knowing_refcount_is_zero(node);
@@ -1362,34 +1363,34 @@ private:
 #ifdef MCDBGQ_NOLOCKFREE_FREELIST
 			debug::DebugLock lock { mutex };
 #endif
-			auto head { freeListHead.load(std::memory_order_acquire) };
+			auto head { freeListHead.loadAcquire() };
 			while (head) {
 				auto const prevHead { head };
-				auto refs { head->freeListRefs.load(std::memory_order_relaxed) };
-				if (!(refs & REFS_MASK) || !head->freeListRefs.compare_exchange_strong(refs, refs + 1, std::memory_order_acquire)) {
-					head = freeListHead.load(std::memory_order_acquire);
+				auto refs { head->freeListRefs.loadRelaxed() };
+				if (!(refs & REFS_MASK) || !head->freeListRefs.m_x_value.compare_exchange_strong(refs, refs + 1, std::memory_order_acquire)) {
+					head = freeListHead.loadAcquire();
 					continue;
 				}
 
 				// Good, reference count has been incremented (it wasn't at zero), which means we can read the
 				// next and not worry about it changing between now and the time we do the CAS
 
-				if (auto const next { head->freeListNext.load(std::memory_order_relaxed) };
-					freeListHead.compare_exchange_strong(head, next, std::memory_order_acquire, std::memory_order_relaxed))
+				if (auto const next { head->freeListNext.loadRelaxed() };
+					 freeListHead.m_x_value.compare_exchange_strong(head, next, std::memory_order_acquire, std::memory_order_relaxed) )
 				{
 					// Yay, got the node. This means it was on the list, which means shouldBeOnFreeList must be false no
 					// matter the refcount (because nobody else knows it's been taken off yet, it can't have been put back on).
-					assert(!(head->freeListRefs.load(std::memory_order_relaxed) & SHOULD_BE_ON_FREELIST));
+					assert(!(head->freeListRefs.loadRelaxed() & SHOULD_BE_ON_FREELIST));
 
 					// Decrease refcount twice, once for our ref, and once for the list's ref
-					head->freeListRefs.fetch_sub(2, std::memory_order_release);
+					head->freeListRefs.fetchAndSubRelease(2);
 					return head;
 				}
 
 				// OK, the head must have changed on us, but we still need to decrease the refcount we increased.
 				// Note that we don't need to release any memory effects, but we do need to ensure that the reference
 				// count decrement happens-after the CAS on the head.
-				refs = prevHead->freeListRefs.fetch_sub(1, std::memory_order_acq_rel);
+				refs = prevHead->freeListRefs.fetchAndSubOrdered(1);
 				if (refs == SHOULD_BE_ON_FREELIST + 1) { add_knowing_refcount_is_zero(prevHead); }
 			}
 
@@ -1397,7 +1398,8 @@ private:
 		}
 
 		// Useful for traversing the list when there's no contention (e.g. to destroy remaining nodes)
-		constexpr N * head_unsafe() const noexcept { return freeListHead.load(std::memory_order_relaxed); }
+		constexpr N * head_unsafe() const noexcept
+		{ return freeListHead.loadRelaxed(); }
 
 	private:
 		constexpr void add_knowing_refcount_is_zero(N * const node) noexcept {
@@ -1409,13 +1411,13 @@ private:
 			// something non-zero, then the refcount increment is done by the other thread) -- so, if the CAS
 			// to add the node to the actual list fails, decrease the refcount and leave the add operation to
 			// the next thread who puts the refcount back at zero (which could be us, hence the loop).
-			auto head { freeListHead.load(std::memory_order_relaxed) };
+			auto head { freeListHead.loadRelaxed() };
 			while (true) {
-				node->freeListNext.store(head, std::memory_order_relaxed);
-				node->freeListRefs.store(1, std::memory_order_release);
-				if (!freeListHead.compare_exchange_strong(head, node, std::memory_order_release, std::memory_order_relaxed)) {
+				node->freeListNext.storeRelaxed(head);
+				node->freeListRefs.storeRelease(1);
+				if (!freeListHead.m_x_value.compare_exchange_strong(head, node, std::memory_order_release, std::memory_order_relaxed)) {
 					// Hmm, the add failed, but we can only try again when the refcount goes back to zero
-					if (node->freeListRefs.fetch_add(SHOULD_BE_ON_FREELIST - 1, std::memory_order_acq_rel) == 1)
+					if (node->freeListRefs.fetchAndAddOrdered(SHOULD_BE_ON_FREELIST - 1) == 1)
 					{ continue; }
 				}
 				return;
@@ -1423,8 +1425,7 @@ private:
 		}
 
 		// Implemented like a stack, but where node order doesn't matter (nodes are inserted out of order under contention)
-		std::atomic<N*> freeListHead {};
-
+		XAtomicPointer<N> freeListHead {};
 	static constexpr std::uint32_t REFS_MASK { 0x7FFFFFFF},SHOULD_BE_ON_FREELIST { 0x80000000 };
 
 #ifdef MCDBGQ_NOLOCKFREE_FREELIST
@@ -1447,18 +1448,18 @@ private:
 			MOODYCAMEL_CONSTEXPR_IF (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
 				// Check flags
 				for (size_t i {}; i < BLOCK_SIZE; ++i)
-				{ if (!emptyFlags[i].load(std::memory_order_relaxed)) { return {}; } }
+				{ if (!emptyFlags[i].loadRelaxed()) { return {}; } }
 
 				// Aha, empty; make sure we have all other memory effects that happened before the empty flags were set
 				std::atomic_thread_fence(std::memory_order_acquire);
 				return true;
 			}else {
 				// Check counter
-				if (elementsCompletelyDequeued.load(std::memory_order_relaxed) == BLOCK_SIZE) {
+				if (elementsCompletelyDequeued.loadRelaxed() == BLOCK_SIZE) {
 					std::atomic_thread_fence(std::memory_order_acquire);
 					return true;
 				}
-				assert(elementsCompletelyDequeued.load(std::memory_order_relaxed) <= BLOCK_SIZE);
+				assert(elementsCompletelyDequeued.loadRelaxed() <= BLOCK_SIZE);
 				return {};
 			}
 		}
@@ -1468,12 +1469,12 @@ private:
 		constexpr bool set_empty(MOODYCAMEL_MAYBE_UNUSED index_t const i) noexcept {
 			MOODYCAMEL_CONSTEXPR_IF (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
 				// Set flag
-				assert(!emptyFlags[BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1))].load(std::memory_order_relaxed));
-				emptyFlags[BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1))].store(true, std::memory_order_release);
+				assert(!emptyFlags[BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1))].loadRelaxed());
+				emptyFlags[BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1))].storeRelease(true);
 				return {};
 			}else {
 				// Increment counter
-				auto const prevVal{ elementsCompletelyDequeued.fetch_add(1, std::memory_order_acq_rel) };
+				auto const prevVal{ elementsCompletelyDequeued.fetchAndAddOrdered(1) };
 				assert(prevVal < BLOCK_SIZE);
 				return prevVal == BLOCK_SIZE - 1;
 			}
@@ -1488,13 +1489,13 @@ private:
 				std::atomic_thread_fence(std::memory_order_release);
 				i = BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1)) - count + 1;
 				for (size_t j {}; j != count; ++j) {
-					assert(!emptyFlags[i + j].load(std::memory_order_relaxed));
-					emptyFlags[i + j].store(true, std::memory_order_relaxed);
+					assert(!emptyFlags[i + j].loadRelaxed());
+					emptyFlags[i + j].storeRelaxed(true);
 				}
 				return {};
 			} else {
 				// Increment counter
-				auto const prevVal{ elementsCompletelyDequeued.fetch_add(count, std::memory_order_acq_rel)};
+				auto const prevVal{ elementsCompletelyDequeued.fetchAndAddOrdered(count)};
 				assert(prevVal + count <= BLOCK_SIZE);
 				return prevVal + count == BLOCK_SIZE;
 			}
@@ -1505,11 +1506,11 @@ private:
 			MOODYCAMEL_CONSTEXPR_IF (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
 				// Set all flags
 				for (size_t i {}; i != BLOCK_SIZE; ++i)
-				{ emptyFlags[i].store(true, std::memory_order_relaxed); }
+				{ emptyFlags[i].storeRelaxed(true); }
 			}
 			else {
 				// Reset counter
-				elementsCompletelyDequeued.store(BLOCK_SIZE, std::memory_order_relaxed);
+				elementsCompletelyDequeued.storeRelaxed(BLOCK_SIZE);
 			}
 		}
 
@@ -1518,11 +1519,11 @@ private:
 			MOODYCAMEL_CONSTEXPR_IF (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
 				// Reset flags
 				for (size_t i {}; i != BLOCK_SIZE; ++i)
-				{ emptyFlags[i].store(false, std::memory_order_relaxed); }
+				{ emptyFlags[i].storeRelaxed({}); }
 			}
 			else {
 				// Reset counter
-				elementsCompletelyDequeued.store({}, std::memory_order_relaxed);
+				elementsCompletelyDequeued.storeRelaxed({});
 			}
 		}
 
@@ -1538,11 +1539,11 @@ private:
 
 	public:
 		Block * next { nullptr };
-		std::atomic<size_t> elementsCompletelyDequeued {};
-		std::atomic<bool> emptyFlags[BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD ? BLOCK_SIZE : 1] {};
+		XAtomicInteger<size_t> elementsCompletelyDequeued {};
+		XAtomicBool emptyFlags[BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD ? BLOCK_SIZE : 1] {};
 
-		std::atomic<std::uint32_t> freeListRefs {};
-		std::atomic<Block*> freeListNext {};
+		XAtomicInteger<std::uint32_t> freeListRefs {};
+		XAtomicPointer<Block> freeListNext {};
 		bool dynamicallyAllocated {};		// Perhaps a better name for this would be 'isNotPartOfInitialBlockPool'
 
 #ifdef MCDBGQ_TRACKMEM
@@ -1761,10 +1762,10 @@ private:
 				}
 
 				// Add block to block index
-				auto && entry { blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront] };
+				auto && entry { blockIndex.loadRelaxed()->entries[pr_blockIndexFront] };
 				entry.base = currentTailIndex;
 				entry.block = this->tailBlock;
-				blockIndex.load(std::memory_order_relaxed)->front.store(pr_blockIndexFront, std::memory_order_release);
+				blockIndex.loadRelaxed()->front.storeRelease(pr_blockIndexFront);
 				pr_blockIndexFront = pr_blockIndexFront + 1 & pr_blockIndexSize - 1;
 
 				MOODYCAMEL_CONSTEXPR_IF (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new (static_cast<T*>(nullptr)) T(std::forward<U>(element)))) {
@@ -1834,8 +1835,8 @@ private:
 
 					// Determine which block the element is in
 
-					auto const localBlockIndex { blockIndex.load(std::memory_order_acquire) };
-					auto const localBlockIndexHead{ localBlockIndex->front.load(std::memory_order_acquire) };
+					auto const localBlockIndex { blockIndex.loadAcquire() };
+					auto const localBlockIndexHead{ localBlockIndex->front.loadAcquire() };
 
 					// We need to be careful here about subtracting and dividing because of index wrap-around.
 					// When an index wraps, we need to preserve the sign of the offset when dividing it by the
@@ -1907,7 +1908,7 @@ private:
 					if (!firstAllocatedBlock) { firstAllocatedBlock = this->tailBlock; }
 					//firstAllocatedBlock = !firstAllocatedBlock ? this->tailBlock : firstAllocatedBlock ;
 
-					auto && entry { blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront] };
+					auto && entry { blockIndex.loadRelaxed()->entries[pr_blockIndexFront] };
 					entry.base = currentTailIndex;
 					entry.block = this->tailBlock;
 					pr_blockIndexFront = pr_blockIndexFront + 1 & pr_blockIndexSize - 1;
@@ -1980,7 +1981,7 @@ private:
 
 					++pr_blockIndexSlotsUsed;
 
-					auto && entry { blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront] };
+					auto && entry { blockIndex.loadRelaxed()->entries[pr_blockIndexFront] };
 					entry.base = currentTailIndex;
 					entry.block = this->tailBlock;
 					pr_blockIndexFront = pr_blockIndexFront + 1 & pr_blockIndexSize - 1;
@@ -1997,7 +1998,7 @@ private:
 
 				MOODYCAMEL_CONSTEXPR_IF (MOODYCAMEL_NOEXCEPT_CTOR(T, decltype(*std::forward<decltype(itemFirst)>(itemFirst))
 					, new (static_cast<T*>(nullptr)) T(details::deref_noexcept(std::forward<decltype(itemFirst)>(itemFirst)))))
-				{ blockIndex.load(std::memory_order_relaxed)->front.store(pr_blockIndexFront - 1 & pr_blockIndexSize - 1, std::memory_order_release); }
+				{ blockIndex.loadRelaxed()->front.storeRelease(pr_blockIndexFront - 1 & pr_blockIndexSize - 1); }
 			}
 
 			// Enqueue, one block at a time
@@ -2074,7 +2075,7 @@ private:
 				, new (static_cast<T*>(nullptr)) T(details::deref_noexcept(std::forward<decltype(itemFirst)>(itemFirst)))))
 			{
 				if (firstAllocatedBlock)
-				{ blockIndex.load(std::memory_order_relaxed)->front.store(pr_blockIndexFront - 1 & pr_blockIndexSize - 1, std::memory_order_release); }
+				{ blockIndex.loadRelaxed()->front.storeRelease(pr_blockIndexFront - 1 & pr_blockIndexSize - 1); }
 			}
 
 			this->tailIndex.store(newTailIndex, std::memory_order_release);
@@ -2112,8 +2113,8 @@ private:
 					auto const firstIndex{ this->headIndex.fetch_add(actualCount, std::memory_order_acq_rel)};
 
 					// Determine which block the first element is in
-					auto const localBlockIndex { blockIndex.load(std::memory_order_acquire) };
-					auto const localBlockIndexHead{ localBlockIndex->front.load(std::memory_order_acquire) };
+					auto const localBlockIndex { blockIndex.loadAcquire() };
+					auto const localBlockIndexHead{ localBlockIndex->front.loadAcquire() };
 
 					auto const headBase{ localBlockIndex->entries[localBlockIndexHead].base};
 					auto const firstBlockBaseIndex{ firstIndex & ~static_cast<index_t>(BLOCK_SIZE - 1) };
@@ -2192,7 +2193,7 @@ private:
 
 		struct BlockIndexHeader {
 			size_t size {};
-			std::atomic<size_t> front {};		// Current slot (not next, like pr_blockIndexFront)
+			XAtomicInteger<size_t> front {};	// Current slot (not next, like pr_blockIndexFront)
 			BlockIndexEntry * entries {};
 			void * prev{};
 		};
@@ -2230,19 +2231,19 @@ private:
 			// Update everything
 			auto const header { new (newRawPtr) BlockIndexHeader };
 			header->size = pr_blockIndexSize;
-			header->front.store(numberOfFilledSlotsToExpose - 1, std::memory_order_relaxed);
+			header->front.storeRelaxed(numberOfFilledSlotsToExpose - 1);
 			header->entries = newBlockIndexEntries;
 			header->prev = pr_blockIndexRaw;		// we link the new block to the old one so we can free it later
 
 			pr_blockIndexFront = j;
 			pr_blockIndexEntries = newBlockIndexEntries;
 			pr_blockIndexRaw = newRawPtr;
-			blockIndex.store(header, std::memory_order_release);
+			blockIndex.storeRelease(header);
 
 			return true;
 		}
 
-		std::atomic<BlockIndexHeader*> blockIndex{};
+		XAtomicPointer<BlockIndexHeader> blockIndex {};
 
 		// To be used by producer only -- consumer must use the ones in referenced by blockIndex
 		size_t pr_blockIndexSlotsUsed {}
@@ -2279,7 +2280,7 @@ private:
 
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
 			// Unregister ourselves for thread termination notification
-			if (!this->inactive.load(std::memory_order_relaxed)) {
+			if (!this->inactive.loadRelaxed()) {
 				details::ThreadExitNotifier::unsubscribe(&threadExitListener);
 			}
 #endif
@@ -2306,7 +2307,7 @@ private:
 			{ this->parent->add_block_to_free_list(this->tailBlock); }
 
 			// Destroy block index
-			auto localBlockIndex { blockIndex.load(std::memory_order_relaxed) };
+			auto localBlockIndex { blockIndex.loadRelaxed() };
 			if (localBlockIndex) {
 				for (size_t i {}; i != localBlockIndex->capacity; ++i)
 				{ localBlockIndex->index[i]->~BlockIndexEntry(); }
@@ -2736,7 +2737,7 @@ private:
 		static constexpr index_t INVALID_BLOCK_BASE {1};
 
 		struct BlockIndexEntry {
-			std::atomic<index_t> key {};
+			XAtomicInteger<index_t> key {};
 			std::atomic<Block*> value {};
 		};
 
@@ -2750,33 +2751,32 @@ private:
 
 		template<AllocationMode allocMode>
 		constexpr bool insert_block_index_entry(BlockIndexEntry * & idxEntry, index_t const blockStartIndex) {
-			auto localBlockIndex { blockIndex.load(std::memory_order_relaxed) };		// We're the only writer thread, relaxed is OK
+			auto localBlockIndex { blockIndex.loadRelaxed() };		// We're the only writer thread, relaxed is OK
 			if (!localBlockIndex ) { return {}; }  // this can happen if new_block_index failed in the constructor
 			auto newTail{ localBlockIndex->tail.load(std::memory_order_relaxed) + 1 & localBlockIndex->capacity - 1 };
 			idxEntry = localBlockIndex->index[newTail];
-			if (idxEntry->key.load(std::memory_order_relaxed) == INVALID_BLOCK_BASE
+			if (idxEntry->key.loadRelaxed() == INVALID_BLOCK_BASE
 				|| !idxEntry->value.load(std::memory_order_relaxed) )
 			{
-				idxEntry->key.store(blockStartIndex, std::memory_order_relaxed);
+				idxEntry->key.storeRelaxed(blockStartIndex);
 				localBlockIndex->tail.store(newTail, std::memory_order_release);
 				return true;
 			}
 
 			// No room in the old block index, try to allocate another one!
 			if (allocMode == CannotAlloc || !new_block_index()) { return {}; }
-			else {
-				localBlockIndex = blockIndex.load(std::memory_order_relaxed);
-				newTail = localBlockIndex->tail.load(std::memory_order_relaxed) + 1 & localBlockIndex->capacity - 1;
-				idxEntry = localBlockIndex->index[newTail];
-				assert(idxEntry->key.load(std::memory_order_relaxed) == INVALID_BLOCK_BASE);
-				idxEntry->key.store(blockStartIndex, std::memory_order_relaxed);
-				localBlockIndex->tail.store(newTail, std::memory_order_release);
-				return true;
-			}
+
+			localBlockIndex = blockIndex.loadRelaxed();
+			newTail = localBlockIndex->tail.load(std::memory_order_relaxed) + 1 & localBlockIndex->capacity - 1;
+			idxEntry = localBlockIndex->index[newTail];
+			assert(idxEntry->key.loadRelaxed() == INVALID_BLOCK_BASE);
+			idxEntry->key.storeRelaxed(blockStartIndex);
+			localBlockIndex->tail.store(newTail, std::memory_order_release);
+			return true;
 		}
 
 		constexpr void rewind_block_index_tail() {
-			auto const localBlockIndex { blockIndex.load(std::memory_order_relaxed) };
+			auto const localBlockIndex { blockIndex.loadRelaxed() };
 			localBlockIndex->tail.store(localBlockIndex->tail.load(std::memory_order_relaxed) - 1 & localBlockIndex->capacity - 1, std::memory_order_relaxed);
 		}
 
@@ -2791,9 +2791,9 @@ private:
 			debug::DebugLock lock {mutex};
 #endif
 			index &= ~static_cast<index_t>(BLOCK_SIZE - 1);
-			localBlockIndex = blockIndex.load(std::memory_order_acquire);
+			localBlockIndex = blockIndex.loadAcquire();
 			auto const tail{ localBlockIndex->tail.load(std::memory_order_acquire) };
-			auto const tailBase{ localBlockIndex->index[tail]->key.load(std::memory_order_relaxed) };
+			auto const tailBase{ localBlockIndex->index[tail]->key.loadRelaxed() };
 			assert(tailBase != INVALID_BLOCK_BASE);
 
 			// Note: Must use division instead of shift because the index may wrap around, causing a negative
@@ -2803,13 +2803,13 @@ private:
 				/ static_cast<make_signed_t>(BLOCK_SIZE))
 			};
 			auto const idx{ tail + offset & localBlockIndex->capacity - 1 };
-			assert(localBlockIndex->index[idx]->key.load(std::memory_order_relaxed) == index
+			assert(localBlockIndex->index[idx]->key.loadRelaxed() == index
 				&& localBlockIndex->index[idx]->value.load(std::memory_order_relaxed));
 			return idx;
 		}
 
 		constexpr bool new_block_index() {
-			auto const prev{ blockIndex.load(std::memory_order_relaxed) };
+			auto const prev{ blockIndex.loadRelaxed() };
 			auto const prevCapacity{ prev ? prev->capacity : 0 };
 			auto const entryCount{ !prev ? nextBlockIndexCapacity : prevCapacity };
 			auto const raw { static_cast<char*>((Traits::malloc)(
@@ -2839,7 +2839,7 @@ private:
 
 			for (size_t i {}; i != entryCount; ++i) {
 				new (entries + i) BlockIndexEntry;
-				entries[i].key.store(INVALID_BLOCK_BASE, std::memory_order_relaxed);
+				entries[i].key.storeRelaxed(INVALID_BLOCK_BASE);
 				index[prevCapacity + i] = entries + i;
 			}
 
@@ -2849,7 +2849,7 @@ private:
 			header->capacity = nextBlockIndexCapacity;
 			header->tail.store(prevCapacity - 1 & nextBlockIndexCapacity - 1, std::memory_order_relaxed);
 
-			blockIndex.store(header, std::memory_order_release);
+			blockIndex.storeRelease(header);
 
 			nextBlockIndexCapacity <<= 1;
 
@@ -2857,7 +2857,7 @@ private:
 		}
 
 		size_t nextBlockIndexCapacity {};
-		std::atomic<BlockIndexHeader*> blockIndex{};
+		XAtomicPointer<BlockIndexHeader> blockIndex {};
 
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
 	public:
@@ -2894,9 +2894,9 @@ private:
 	}
 
 	constexpr Block * try_get_block_from_initial_pool() {
-		if (initialBlockPoolIndex.load(std::memory_order_relaxed) >= initialBlockPoolSize) 
+		if (initialBlockPoolIndex.loadRelaxed() >= initialBlockPoolSize)
 		{ return {}; }
-		auto const index { initialBlockPoolIndex.fetch_add(1, std::memory_order_relaxed) };
+		auto const index { initialBlockPoolIndex.fetchAndAddRelaxed(1) };
 		return index < initialBlockPoolSize ? initialBlockPool + index : nullptr;
 	}
 
@@ -2957,12 +2957,12 @@ private:
 
 				stats.elementsEnqueued = q->size_approx();
 
-				for (auto block { q->freeList.head_unsafe() };block ;block = block->freeListNext.load(std::memory_order_relaxed) ) {
+				for (auto block { q->freeList.head_unsafe() };block ;block = block->freeListNext.loadRelaxed() ) {
 					++stats.allocatedBlocks;
 					++stats.freeBlocks;
 				}
 
-				for (auto ptr { q->producerListTail.load(std::memory_order_acquire)}; ptr ; ptr = ptr->next_prod()) {
+				for (auto ptr { q->producerListTail.loadAcquire() }; ptr ; ptr = ptr->next_prod()) {
 					auto const implicit { dynamic_cast<ImplicitProducer*>(ptr) };
 					stats.implicitProducers += implicit ? 1 : 0;
 					stats.explicitProducers += implicit ? 0 : 1;
@@ -2972,10 +2972,10 @@ private:
 						stats.queueClassBytes += sizeof(ImplicitProducer);
 						auto head { prod->headIndex.load(std::memory_order_relaxed) };
 						auto const tail { prod->tailIndex.load(std::memory_order_relaxed) };
-						auto hash { prod->blockIndex.load(std::memory_order_relaxed) };
+						auto hash { prod->blockIndex.loadRelaxed() };
 						if (hash) {
 							for (size_t i {}; i != hash->capacity; ++i) {
-								if (hash->index[i]->key.load(std::memory_order_relaxed) != ImplicitProducer::INVALID_BLOCK_BASE
+								if (hash->index[i]->key.loadRelaxed() != ImplicitProducer::INVALID_BLOCK_BASE
 									&& hash->index[i]->value.load(std::memory_order_relaxed))
 								{
 									++stats.allocatedBlocks;
@@ -3007,7 +3007,7 @@ private:
 								block = block->next;
 							} while (block != tailBlock);
 						}
-						auto index { prod->blockIndex.load(std::memory_order_relaxed) };
+						auto index { prod->blockIndex.loadRelaxed() };
 						while (index) {
 							stats.explicitBlockIndexBytes += sizeof(typename ExplicitProducer::BlockIndexHeader) + index->size * sizeof(typename ExplicitProducer::BlockIndexEntry);
 							index = static_cast<typename ExplicitProducer::BlockIndexHeader*>(index->prev);
@@ -3016,9 +3016,9 @@ private:
 				}
 
 				auto const freeOnInitialPool {
-					q->initialBlockPoolIndex.load(std::memory_order_relaxed) >= q->initialBlockPoolSize
+					q->initialBlockPoolIndex.loadRelaxed() >= q->initialBlockPoolSize
 									? 0
-									: q->initialBlockPoolSize - q->initialBlockPoolIndex.load(std::memory_order_relaxed)
+									: q->initialBlockPoolSize - q->initialBlockPoolIndex.loadRelaxed()
 				};
 				stats.allocatedBlocks += freeOnInitialPool;
 				stats.freeBlocks += freeOnInitialPool;
@@ -3046,9 +3046,10 @@ private:
 #endif
 		// Try to re-use one first
 		for (auto ptr{ producerListTail.loadAcquire() }; ptr; ptr = ptr->next_prod()) {
-			if (ptr->inactive.load(std::memory_order_relaxed) && ptr->isExplicit == isExplicit) {
+			if (ptr->inactive.loadRelaxed() && ptr->isExplicit == isExplicit) {
 				if (auto expected {true};
-					ptr->inactive.compare_exchange_strong(expected, /* desired */ false, std::memory_order_acquire, std::memory_order_relaxed))
+					ptr->inactive.m_x_value.compare_exchange_strong(expected, /* desired */ false
+						, std::memory_order_acquire, std::memory_order_relaxed))
 				{
 					// We caught one! It's been marked as activated, the caller can have it
 					return ptr;
@@ -3063,27 +3064,26 @@ private:
 		// Handle failed memory allocation
 		if (!producer ) { return {}; }
 
-		producerCount.fetch_add(1, std::memory_order_relaxed);
+		producerCount.fetchAndAddRelaxed(1);
 
 		// Add it to the lock-free list
 		auto prevTail{ producerListTail.loadRelaxed() };
 		do {
 			producer->next = prevTail;
-		} //while (!producerListTail.compare_exchange_weak(prevTail, producer, std::memory_order_release, std::memory_order_relaxed));
-		while (!producerListTail.m_x_value.compare_exchange_weak(prevTail, producer, std::memory_order_release, std::memory_order_relaxed));
+		} while (!producerListTail.m_x_value.compare_exchange_weak(prevTail, producer, std::memory_order_release, std::memory_order_relaxed));
 
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
 		if (producer->isExplicit) {
-			auto prevTailExplicit{ explicitProducers.load(std::memory_order_relaxed) };
+			auto prevTailExplicit{ explicitProducers.loadRelaxed() };
 			do {
 				static_cast<ExplicitProducer*>(producer)->nextExplicitProducer = prevTailExplicit;
-			} while (!explicitProducers.compare_exchange_weak(prevTailExplicit, static_cast<ExplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
+			} while (!explicitProducers.m_x_value.compare_exchange_weak(prevTailExplicit, static_cast<ExplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
 		}
 		else {
-			auto prevTailImplicit{ implicitProducers.load(std::memory_order_relaxed) };
+			auto prevTailImplicit{ implicitProducers.loadRelaxed() };
 			do {
 				static_cast<ImplicitProducer*>(producer)->nextImplicitProducer = prevTailImplicit;
-			} while (!implicitProducers.compare_exchange_weak(prevTailImplicit, static_cast<ImplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
+			} while (!implicitProducers.m_x_value.compare_exchange_weak(prevTailImplicit, static_cast<ImplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
 		}
 #endif
 
@@ -3135,14 +3135,14 @@ private:
 
 	constexpr void populate_initial_implicit_producer_hash() {
 		MOODYCAMEL_CONSTEXPR_IF (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE) {
-			implicitProducerHashCount.store({}, std::memory_order_relaxed);
+			implicitProducerHashCount.storeRelaxed({});
 			auto const hash { std::addressof(initialImplicitProducerHash) };
 			hash->capacity = INITIAL_IMPLICIT_PRODUCER_HASH_SIZE;
 			hash->entries = initialImplicitProducerHashEntries.data();
 			for (size_t i {}; i != INITIAL_IMPLICIT_PRODUCER_HASH_SIZE; ++i)
 			{ initialImplicitProducerHashEntries[i].key.store(details::invalid_thread_id, std::memory_order_relaxed); }
 			hash->prev = {};
-			implicitProducerHash.store(hash, std::memory_order_relaxed);
+			implicitProducerHash.storeRelaxed(hash);
 		}
 	}
 
@@ -3153,24 +3153,24 @@ private:
 			initialImplicitProducerHash.entries = initialImplicitProducerHashEntries.data();
 			other.initialImplicitProducerHash.entries = other.initialImplicitProducerHashEntries.data();
 
-			details::swap_relaxed(implicitProducerHashCount, other.implicitProducerHashCount);
-			details::swap_relaxed(implicitProducerHash, other.implicitProducerHash);
+			details::swap_relaxed(implicitProducerHashCount.m_x_value, other.implicitProducerHashCount.m_x_value);
+			details::swap_relaxed(implicitProducerHash.m_x_value, other.implicitProducerHash.m_x_value);
 
 			auto const ImplicitProducerHashPtr { std::addressof(initialImplicitProducerHash) };
 			auto const otherImplicitProducerHashPtr { std::addressof(other.initialImplicitProducerHash) };
 
-			if (implicitProducerHash.load(std::memory_order_relaxed) == otherImplicitProducerHashPtr) {
-				implicitProducerHash.store(ImplicitProducerHashPtr, std::memory_order_relaxed);
+			if (implicitProducerHash.loadRelaxed() == otherImplicitProducerHashPtr) {
+				implicitProducerHash.storeRelaxed(ImplicitProducerHashPtr);
 			}else {
-				auto hash { implicitProducerHash.load(std::memory_order_relaxed) };
+				auto hash { implicitProducerHash.loadRelaxed() };
 				for (;hash->prev != otherImplicitProducerHashPtr; hash = hash->prev) {}
 				hash->prev = ImplicitProducerHashPtr;
 			}
 
-			if (other.implicitProducerHash.load(std::memory_order_relaxed) == ImplicitProducerHashPtr) {
-				other.implicitProducerHash.store(otherImplicitProducerHashPtr,std::memory_order_relaxed);
+			if (other.implicitProducerHash.loadRelaxed() == ImplicitProducerHashPtr) {
+				other.implicitProducerHash.storeRelaxed(otherImplicitProducerHashPtr);
 			}else {
-				auto hash { other.implicitProducerHash.load(std::memory_order_relaxed) };
+				auto hash { other.implicitProducerHash.loadRelaxed() };
 				for (;hash->prev != ImplicitProducerHashPtr; hash = hash->prev) {}
 				hash->prev = otherImplicitProducerHashPtr;
 			}
@@ -3196,7 +3196,7 @@ private:
 		auto const id{ details::thread_id() };
 		auto const hashedId{ details::hash_thread_id(id) };
 
-		auto mainHash{ implicitProducerHash.load(std::memory_order_acquire) };
+		auto mainHash{ implicitProducerHash.loadAcquire() };
 		assert(mainHash);  // silence clang-tidy and MSVC warnings (hash cannot be null)
 		for (auto hash { mainHash }; hash; hash = hash->prev) {
 			// Look for the id in this hash
@@ -3239,7 +3239,7 @@ private:
 		}
 
 		// Insert!
-		auto const newCount{ 1 + implicitProducerHashCount.fetch_add(1, std::memory_order_relaxed) };
+		auto const newCount{ 1 + implicitProducerHashCount.fetchAndAddRelaxed(1) };
 		while (true) {
 			// NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
 			if (newCount >= mainHash->capacity >> 1 && !implicitProducerHashResizeInProgress.test_and_set(std::memory_order_acquire)) {
@@ -3247,7 +3247,7 @@ private:
 				// Note the acquire fence synchronizes with the release fence at the end of this block, and hence when
 				// we reload implicitProducerHash it must be the most recent version (it only gets changed within this
 				// locked block).
-				mainHash = implicitProducerHash.load(std::memory_order_acquire);
+				mainHash = implicitProducerHash.loadAcquire();
 				if (newCount >= mainHash->capacity >> 1) {
 					auto newCapacity{ mainHash->capacity << 1 };
 					while (newCount >= newCapacity >> 1) { newCapacity <<= 1; }
@@ -3258,7 +3258,7 @@ private:
 					};
 					if (!raw) {
 						// Allocation failed
-						implicitProducerHashCount.fetch_sub(1, std::memory_order_relaxed);
+						implicitProducerHashCount.fetchAndSubRelaxed(1);
 						implicitProducerHashResizeInProgress.clear(std::memory_order_relaxed);
 						return {};
 					}
@@ -3271,7 +3271,7 @@ private:
 						newHash->entries[i].key.store(details::invalid_thread_id, std::memory_order_relaxed);
 					}
 					newHash->prev = mainHash;
-					implicitProducerHash.store(newHash, std::memory_order_release);
+					implicitProducerHash.storeRelease(newHash);
 					implicitProducerHashResizeInProgress.clear(std::memory_order_release);
 					mainHash = newHash;
 				}else {
@@ -3287,7 +3287,7 @@ private:
 				auto const producer{ static_cast<ImplicitProducer*>(recycle_or_create_producer({}))};
 
 				if (!producer) {
-					implicitProducerHashCount.fetch_sub(1, std::memory_order_relaxed);
+					implicitProducerHashCount.fetchAndSubRelaxed(1);
 					return {};
 				}
 
@@ -3304,7 +3304,7 @@ private:
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
 					auto reusable { details::invalid_thread_id2 };
 					if (mainHash->entries[index].key.compare_exchange_strong(reusable, id, std::memory_order_seq_cst, std::memory_order_relaxed)) {
-						implicitProducerHashCount.fetch_sub(1, std::memory_order_relaxed);  // already counted as a used slot
+						implicitProducerHashCount.fetchAndSubRelaxed(1);  // already counted as a used slot
 						mainHash->entries[index].value = producer;
 						break;
 					}
@@ -3321,7 +3321,7 @@ private:
 			// Hmm, the old hash is quite full and somebody else is busy allocating a new one.
 			// We need to wait for the allocating thread to finish (if it succeeds, we add, if not,
 			// we try to allocate ourselves).
-			mainHash = implicitProducerHash.load(std::memory_order_acquire);
+			mainHash = implicitProducerHash.loadAcquire();
 		}
 	}
 
@@ -3331,7 +3331,7 @@ private:
 #ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
 		debug::DebugLock lock { implicitProdMutex };
 #endif
-		auto hash { implicitProducerHash.load(std::memory_order_acquire) };
+		auto hash { implicitProducerHash.loadAcquire() };
 		assert(hash);		// The thread exit listener is only registered if we were added to a hash in the first place
 		auto const id { details::thread_id() };
 		auto const hashedId { details::hash_thread_id(id) };
@@ -3351,7 +3351,7 @@ private:
 		}
 
 		// Mark the queue as being recyclable
-		producer->inactive.store(true, std::memory_order_release);
+		producer->inactive.storeRelease(true);
 	}
 
 	static constexpr void implicit_producer_thread_exited_callback(void * const userData) {
@@ -3417,9 +3417,9 @@ private:
 	{ if (p) { p->~U(); } aligned_free<U>(p); }
 
 	XAtomicPointer<ProducerBase> producerListTail {};
-	std::atomic<std::uint32_t> producerCount {};
+	XAtomicInteger<std::uint32_t> producerCount{};
 
-	std::atomic<size_t> initialBlockPoolIndex {};
+	XAtomicInteger<size_t> initialBlockPoolIndex{};
 	Block * initialBlockPool {};
 	size_t initialBlockPoolSize {};
 
@@ -3429,22 +3429,22 @@ private:
 	debug::DebugFreeList<Block> freeList{};
 #endif
 
-	std::atomic<ImplicitProducerHash *> implicitProducerHash{};
-	std::atomic<size_t> implicitProducerHashCount{};		// Number of slots logically used
+	XAtomicPointer<ImplicitProducerHash> implicitProducerHash{};
+	XAtomicInteger<size_t> implicitProducerHashCount{}; // Number of slots logically used
 	ImplicitProducerHash initialImplicitProducerHash{};
 	std::array<ImplicitProducerKVP, INITIAL_IMPLICIT_PRODUCER_HASH_SIZE> initialImplicitProducerHashEntries{};
 	std::atomic_flag implicitProducerHashResizeInProgress{};
 
-	std::atomic<std::uint32_t> nextExplicitConsumerId{}
-			,globalExplicitConsumerOffset{};
+	XAtomicInteger<std::uint32_t> nextExplicitConsumerId{}
+								,globalExplicitConsumerOffset{};
 
 #ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
 	debug::DebugMutex implicitProdMutex{};
 #endif
 
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-	std::atomic<ExplicitProducer * > explicitProducers{};
-	std::atomic<ImplicitProducer * > implicitProducers{};
+	XAtomicPointer<ExplicitProducer> explicitProducers{};
+	XAtomicPointer<ImplicitProducer> implicitProducers{};
 #endif
 };
 
@@ -3455,18 +3455,18 @@ ProducerToken::ProducerToken(ConcurrentQueue<T, Traits> & queue)
 
 template<typename T, typename Traits>
 ProducerToken::ProducerToken(BlockingConcurrentQueue<T, Traits> & queue)
-	: producer(reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->recycle_or_create_producer(true))
+	: producer(reinterpret_cast<ConcurrentQueue<T, Traits>*>(std::addressof(queue))->recycle_or_create_producer(true))
 { if (producer) { producer->token = this; } }
 
 template<typename T, typename Traits>
 ConsumerToken::ConsumerToken(ConcurrentQueue<T, Traits> & queue) {
-	initialOffset = queue.nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
+	initialOffset = queue.nextExplicitConsumerId.fetchAndAddRelease(1);
 	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
 }
 
 template<typename T, typename Traits>
 ConsumerToken::ConsumerToken(BlockingConcurrentQueue<T, Traits> & queue) {
-	initialOffset = reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
+	initialOffset = reinterpret_cast<ConcurrentQueue<T, Traits>*>(std::addressof(queue))->nextExplicitConsumerId.fetchAndAddRelease(1);
 	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
 }
 
