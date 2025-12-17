@@ -168,7 +168,7 @@ public:
 
 */
 template <typename T>
-[[maybe_unused]] void qAtomicAssign(T * &d,T *x) {
+[[maybe_unused]] void qAtomicAssign(T * &d,T *x) noexcept {
     if (d == x){ return; }
     x->ref.ref();
     if (!d->ref.deref()){ delete d; }
@@ -183,7 +183,7 @@ template <typename T>
 */
 
 template <typename T>
-[[maybe_unused]] void qAtomicDetach(T * &d) {
+[[maybe_unused]] void qAtomicDetach(T * &d) noexcept {
     if (1 == d->ref.loadRelaxed()){ return;}
     T * x {d}; d = new T(*d);
     if (!x->ref.deref()){ delete x; }
