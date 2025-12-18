@@ -306,7 +306,7 @@ namespace moodycamel {
 			// If the global offset has not changed but you've run out of items to consume, move over from your current position until you find an producer with something in it
 
 			if (!token.desiredProducer || token.lastKnownGlobalOffset != this->globalExplicitConsumerOffset.loadRelaxed() )
-			{ if (!update_current_producer_after_rotation(token)) { return {}; } }
+			{ if (!this->update_current_producer_after_rotation(token)) { return {}; } }
 
 			// If there was at least one non-empty queue but it appears empty at the time
 			// we try to dequeue from it, we need to make sure every queue's been tried
@@ -357,7 +357,7 @@ namespace moodycamel {
 		constexpr size_t try_dequeue_bulk(Base::consumer_token_t & token, It && itemFirst, size_t const max) {
 
 			if (!token.desiredProducer || token.lastKnownGlobalOffset != this->globalExplicitConsumerOffset.loadRelaxed())
-			{ if (!update_current_producer_after_rotation(token)) { return {}; } }
+			{ if (!this->update_current_producer_after_rotation(token)) { return {}; } }
 
 			auto count{ static_cast<Base::ProducerBase*>(token.currentProducer)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max) };
 
@@ -436,13 +436,9 @@ namespace moodycamel {
 				&& details::static_is_lock_free_v<void*> == 2
 				&& details::static_is_lock_free_v<details::thread_id_converter<details::thread_id_t>::thread_id_numeric_size_t> == 2;
 		}
-#ifdef MCDBGQ_TRACKMEM
-	public:
-		struct MemStats;
-#endif
 
 #ifdef MCDBGQ_TRACKMEM
-	public:
+
 		struct MemStats {
 			size_t allocatedBlocks{}
 			, usedBlocks{}
@@ -470,44 +466,46 @@ namespace moodycamel {
 					++stats.freeBlocks;
 				}
 
-				for (auto ptr { q->producerListTail.loadAcquire() }; ptr ; ptr = ptr->next_prod()) {
-					auto const implicit { dynamic_cast<ImplicitProducer*>(ptr) };
+				for (auto ptr{ q->producerListTail.loadAcquire() };
+					ptr ; ptr = ptr->next_prod())
+				{
+					auto const implicit { dynamic_cast<Base::ImplicitProducer*>(ptr) };
 					stats.implicitProducers += implicit ? 1 : 0;
 					stats.explicitProducers += implicit ? 0 : 1;
 
 					if (implicit) {
-						auto const prod { static_cast<ImplicitProducer*>(ptr) };
-						stats.queueClassBytes += sizeof(ImplicitProducer);
+						auto const prod { static_cast<Base::ImplicitProducer*>(ptr) };
+						stats.queueClassBytes += sizeof(Base::ImplicitProducer);
 						auto head { prod->headIndex.loadRelaxed() };
 						auto const tail { prod->tailIndex.loadRelaxed() };
-						auto hash { prod->blockIndex.loadRelaxed() };
+						auto hash{ prod->blockIndex.loadRelaxed() };
 						if (hash) {
 							for (size_t i {}; i != hash->capacity; ++i) {
-								if (hash->index[i]->key.loadRelaxed() != ImplicitProducer::INVALID_BLOCK_BASE
+								if (hash->index[i]->key.loadRelaxed() != Base::ImplicitProducer::INVALID_BLOCK_BASE
 									&& hash->index[i]->value.loadRelaxed())
 								{
 									++stats.allocatedBlocks;
 									++stats.ownedBlocksImplicit;
 								}
 							}
-							stats.implicitBlockIndexBytes += hash->capacity * sizeof(typename ImplicitProducer::BlockIndexEntry);
+							stats.implicitBlockIndexBytes += hash->capacity * sizeof(Base::ImplicitProducer::BlockIndexEntry);
 							for (; hash ; hash = hash->prev)
-							{ stats.implicitBlockIndexBytes += sizeof(typename ImplicitProducer::BlockIndexHeader) + hash->capacity * sizeof(typename ImplicitProducer::BlockIndexEntry*); }
+							{ stats.implicitBlockIndexBytes += sizeof(Base::ImplicitProducer::BlockIndexHeader) + hash->capacity * sizeof(typename Base::ImplicitProducer::BlockIndexEntry *); }
 						}
-						for (; details::circular_less_than<index_t>(head, tail); head += BLOCK_SIZE) {
+						for (; details::circular_less_than<typename Base::index_t>(head, tail); head += Base::BBLOCK_SIZE) {
 							//auto block = prod->get_block_index_entry_for_index(head);
 							++stats.usedBlocks;
 						}
 					} else {
-						auto const prod { static_cast<ExplicitProducer*>(ptr) };
-						stats.queueClassBytes += sizeof(ExplicitProducer);
+						auto const prod { static_cast<Base::ExplicitProducer*>(ptr) };
+						stats.queueClassBytes += sizeof(Base::ExplicitProducer);
 						auto const tailBlock{ prod->tailBlock };
 						bool wasNonEmpty {};
 						if (tailBlock) {
 							auto block{ tailBlock };
 							do {
 								++stats.allocatedBlocks;
-								if (!block->XConcurrentQueue::Block::template is_empty<explicit_context>() || wasNonEmpty) {
+								if (!block->Base::Block::template is_empty<Base::explicit_context>() || wasNonEmpty) {
 									++stats.usedBlocks;
 									wasNonEmpty = wasNonEmpty || block != tailBlock;
 								}
@@ -517,8 +515,8 @@ namespace moodycamel {
 						}
 						auto index { prod->blockIndex.loadRelaxed() };
 						while (index) {
-							stats.explicitBlockIndexBytes += sizeof(typename ExplicitProducer::BlockIndexHeader) + index->size * sizeof(typename ExplicitProducer::BlockIndexEntry);
-							index = static_cast<typename ExplicitProducer::BlockIndexHeader*>(index->prev);
+							stats.explicitBlockIndexBytes += sizeof(Base::ExplicitProducer::BlockIndexHeader) + index->size * sizeof(Base::ExplicitProducer::BlockIndexEntry);
+							index = static_cast<Base::ExplicitProducer::BlockIndexHeader*>(index->prev);
 						}
 					}
 				}
@@ -531,7 +529,7 @@ namespace moodycamel {
 				stats.allocatedBlocks += freeOnInitialPool;
 				stats.freeBlocks += freeOnInitialPool;
 
-				stats.blockClassBytes = sizeof(Block) * stats.allocatedBlocks;
+				stats.blockClassBytes = sizeof(Base::Block) * stats.allocatedBlocks;
 				stats.queueClassBytes += sizeof(XConcurrentQueue);
 
 				return stats;
@@ -540,12 +538,13 @@ namespace moodycamel {
 
 		// For debugging only. Not thread-safe.
 		constexpr MemStats getMemStats() { return MemStats::getFor(this); }
-	private:
+
 		friend struct MemStats;
 #endif
 
-		// template<typename XT, typename XTraits>
-		// friend constexpr void swap( XConcurrentQueue<XT, XTraits>::ImplicitProducerKVP &,  XConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&) MOODYCAMEL_NOEXCEPT;
+		template<typename XT, typename XTraits>
+		friend constexpr void swap( XConcurrentQueue<XT, XTraits>::ImplicitProducerKVP &,  XConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&) MOODYCAMEL_NOEXCEPT;
+
 		friend struct ProducerToken;
 		friend struct ConsumerToken;
 		friend struct ExplicitProducer;

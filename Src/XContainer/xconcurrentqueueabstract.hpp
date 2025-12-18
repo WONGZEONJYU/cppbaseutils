@@ -2437,7 +2437,7 @@ namespace moodycamel {
 					}
 
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-					producer->threadExitListener.callback = std::addressof(XConcurrentQueue::implicit_producer_thread_exited_callback);
+					producer->threadExitListener.callback = std::addressof(implicit_producer_thread_exited_callback);
 					producer->threadExitListener.userData = producer;
 					details::ThreadExitNotifier::subscribe(std::addressof(producer->threadExitListener));
 #endif
