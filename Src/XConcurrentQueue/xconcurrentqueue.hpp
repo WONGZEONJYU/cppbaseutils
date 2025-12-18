@@ -35,7 +35,7 @@
 #pragma once
 
 #define XUTILS2_X_CONCURRENT_QUEUE_ABSTRACT_HPP_
-#include <XContainer/xconcurrentqueueabstract.hpp>
+#include <XConcurrentQueue/xconcurrentqueueabstract.hpp>
 #undef XUTILS2_X_CONCURRENT_QUEUE_ABSTRACT_HPP_
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)

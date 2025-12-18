@@ -18,7 +18,7 @@
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XAtomic/xatomic.hpp>
 #define XUTILS2_MOODYCAMEL_MACROS_HPP_
-#include <XContainer/moodycamelmacros.hpp>
+#include <XConcurrentQueue/moodycamelmacros.hpp>
 #undef XUTILS2_MOODYCAMEL_MACROS_HPP_
 
 XTD_NAMESPACE_BEGIN
@@ -124,7 +124,6 @@ namespace moodycamel {
 
 	struct ProducerToken;
 	struct ConsumerToken;
-
 	class ConcurrentQueueTests;
 
 	template<typename T, typename Traits> class XConcurrentQueueAbstract;

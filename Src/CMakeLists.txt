@@ -69,6 +69,7 @@ add_subdirectory(XTupleHelper)
 add_subdirectory(XDesignPattern)
 add_subdirectory(XQtHelper)
 add_subdirectory(XThreadPool)
+add_subdirectory(XConcurrentQueue)
 # 平台特定的模块
 if(APPLE OR UNIX)
     add_subdirectory(XSignal)
