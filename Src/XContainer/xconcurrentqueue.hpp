@@ -542,9 +542,6 @@ namespace moodycamel {
 		friend struct MemStats;
 #endif
 
-		template<typename XT, typename XTraits>
-		friend constexpr void swap( XConcurrentQueue<XT, XTraits>::ImplicitProducerKVP &,  XConcurrentQueue<XT, XTraits>::ImplicitProducerKVP&) MOODYCAMEL_NOEXCEPT;
-
 		friend struct ProducerToken;
 		friend struct ConsumerToken;
 		friend struct ExplicitProducer;
