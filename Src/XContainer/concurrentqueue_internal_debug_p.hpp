@@ -1,7 +1,12 @@
 #ifndef XUTILS2_X_CONCURRENT_QUEUE_INTERNAL_DEBUG_P_HPP
 #define XUTILS2_X_CONCURRENT_QUEUE_INTERNAL_DEBUG_P_HPP 1
 
+#include <XHelper/xversion.hpp>
+
 #pragma once
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 #if 0
     #define MCDBGQ_TRACKMEM 1
@@ -81,5 +86,8 @@ namespace moodycamel::debug {
         DebugMutex mutable mutex{};
     };
 }
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
 
 #endif

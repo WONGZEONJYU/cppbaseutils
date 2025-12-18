@@ -4,14 +4,22 @@
 
 int main() {
 
-    XUtils::moodycamel::ConcurrentQueue<int> q {};
+    XUtils::moodycamel::XConcurrentQueue<int> qq{};
+
+    auto q {std::move(qq) };
+
+    XUtils::moodycamel::ProducerToken ptk{q};
+
+    XUtils::moodycamel::ConsumerToken ptk2{q};
 
     int a[]{0,1,2,3,4,5,6,7,8,9};
-    q.try_enqueue_bulk(a,10);
+
+    q.try_enqueue_bulk(ptk,a,10);
 
     std::vector ret(10,int{});
 
-    q.try_dequeue_bulk(ret.data(),10);
+
+    decltype(q)::try_dequeue_bulk_from_producer(ptk,ret.data(),10);
 
     for (auto && i : ret)
     {
