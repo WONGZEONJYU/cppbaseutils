@@ -9,8 +9,6 @@
 #pragma once
 
 #include <cstddef> // For std::size_t
-#include <atomic>
-#include <cassert>
 #include <memory>
 #include <type_traits> // For std::make_signed<T>
 #include <XHelper/xversion.hpp>

@@ -1,9 +1,11 @@
 #ifndef LW_SEM_UNIX_P_HPP
 #define LW_SEM_UNIX_P_HPP 1
 
-#include <XConcurrentQueue/lightweightsemaphore.hpp>
-
 #if defined(__unix__) || defined(__MVS__)
+#include <XHelper/xversion.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
+#include <memory>
+#include <cassert>
 
 //---------------------------------------------------------
 // Semaphore (POSIX, Linux, zOS)
@@ -13,7 +15,6 @@
 #include <zos-semaphore.h>
 #elif defined(__unix__)
 #include <semaphore.h>
-
 #if defined(__GLIBC_PREREQ) && defined(_GNU_SOURCE)
 #if __GLIBC_PREREQ(2,30)
 #define MOODYCAMEL_LIGHTWEIGHTSEMAPHORE_MONOTONIC
@@ -26,34 +27,35 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace moodycamel::details{
 
-    class Semaphore : public XLightweightSemaphoreData {
+    class Semaphore {
         mutable sem_t m_sema_;
+
     public:
         X_DISABLE_COPY_MOVE(Semaphore)
 
-        explicit Semaphore(int const initialCount = {}) {
+        constexpr explicit Semaphore(int const initialCount = {}) {
             assert(initialCount >= 0);
             [[maybe_unused]] auto const rc {sem_init(std::addressof(m_sema_), 0, static_cast<unsigned int>(initialCount))};
             assert(!rc);
         }
 
-        ~Semaphore() override
+        virtual ~Semaphore()
         { sem_destroy(std::addressof(m_sema_)); }
 
-        bool wait() const noexcept {
+        constexpr bool wait() const noexcept {
             // http://stackoverflow.com/questions/2013181/gdb-causes-sem-wait-to-fail-with-eintr-error
             int rc{};
             do { rc = sem_wait(std::addressof(m_sema_)); } while (rc < 0 && errno == EINTR);
             return !rc;
         }
 
-        bool try_wait() const noexcept {
+        constexpr bool try_wait() const noexcept {
             int rc{};
             do { rc = sem_trywait(std::addressof(m_sema_)); } while (rc < 0 && errno == EINTR);
             return !rc;
         }
 
-        bool timed_wait(std::uint64_t const usecs) const noexcept {
+        constexpr bool timed_wait(std::uint64_t const usecs) const noexcept {
             struct timespec ts{};
 #ifdef MOODYCAMEL_LIGHTWEIGHTSEMAPHORE_MONOTONIC
             clock_gettime(CLOCK_MONOTONIC, std::addressof(ts));
@@ -82,10 +84,10 @@ namespace moodycamel::details{
             return !rc;
         }
 
-        void signal() const noexcept
+        constexpr void signal() const noexcept
         { while (sem_post(std::addressof(m_sema_)) < 0); }
 
-        void signal(int count) const noexcept
+        constexpr void signal(int count) const noexcept
         { while (count-- > 0) { while (sem_post(std::addressof(m_sema_)) < 0); } }
     };
 }

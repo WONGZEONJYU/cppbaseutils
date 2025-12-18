@@ -1,9 +1,12 @@
 #ifndef LW_SEM_WIN_P_HPP
 #define LW_SEM_WIN_P_HPP 1
 
-#include <XConcurrentQueue/lightweightsemaphore.hpp>
-
 #if defined(_WIN32)
+#include <XHelper/xversion.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
+#include <memory>
+#include <cassert>
+
 // Avoid including windows.h in a header; we only need a handful of
 // items, so we'll redeclare them here (this is relatively safe since
 // the API generally has to remain stable between Windows versions).
@@ -22,8 +25,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace moodycamel::details{
 
-    class Semaphore : public XLightweightSemaphoreData {
-
+    class Semaphore {
         mutable void * m_hSema_{};
 
     public:
@@ -36,7 +38,7 @@ namespace moodycamel::details{
             assert(m_hSema_);
         }
 
-        ~Semaphore() override
+        virtual ~Semaphore()
         { CloseHandle(m_hSema_); }
 
         bool wait() const noexcept

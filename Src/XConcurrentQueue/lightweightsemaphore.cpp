@@ -1,3 +1,4 @@
+#include <XConcurrentQueue/lightweightsemaphore.hpp>
 #include <XConcurrentQueue/lwsemaphore_mach_p.hpp>
 #include <XConcurrentQueue/lwsemaphore_unix_p.hpp>
 #include <XConcurrentQueue/lwsemaphore_win_p.hpp>
@@ -10,12 +11,12 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 MOODYCAMEL_NAMESPACE_BEGIN
 
-class XLightweightSemaphorePrivate : public details::Semaphore {
-
+class XLightweightSemaphorePrivate final
+    : public XLightweightSemaphoreData , public details::Semaphore
+{
 public:
-    using Base = Semaphore;
-
     X_DECLARE_PUBLIC(XLightweightSemaphore)
+
     XAtomicInteger<XLightweightSemaphore::ssize_t> m_count{};
     int m_maxSpins{};
 
@@ -24,7 +25,7 @@ public:
     ssize_t waitManyWithPartialSpinning(ssize_t max, std::int64_t timeout_usecs = -1) noexcept;
 
     constexpr explicit XLightweightSemaphorePrivate(int const initialCount = {})
-    :Base{initialCount} {}
+    : Semaphore{initialCount} {}
 
     ~XLightweightSemaphorePrivate() override = default;
 };
@@ -64,7 +65,7 @@ bool XLightweightSemaphorePrivate::waitWithPartialSpinning(std::int64_t const ti
 ssize_t XLightweightSemaphorePrivate::waitManyWithPartialSpinning(ssize_t const max, std::int64_t const timeout_usecs) noexcept {
     assert(max > 0);
     ssize_t oldCount{};
-    auto spin { m_maxSpins };
+    auto spin{ m_maxSpins };
     while (--spin >= 0) {
         oldCount = m_count.loadRelaxed();
         if (oldCount > 0) {
@@ -88,7 +89,7 @@ ssize_t XLightweightSemaphorePrivate::waitManyWithPartialSpinning(ssize_t const 
                 oldCount = m_count.loadAcquire();
                 if (oldCount >= 0 && try_wait()) { break; }
                 if (oldCount < 0 && m_count.m_x_value.compare_exchange_strong(oldCount, oldCount + 1, std::memory_order_relaxed, std::memory_order_relaxed))
-                { return 0;}
+                { return {}; }
             }
         }
     }

@@ -1,9 +1,12 @@
 #ifndef LW_SEM_MACH_P_HPP
 #define LW_SEM_MACH_P_HPP 1
 
-#include <XConcurrentQueue/lightweightsemaphore.hpp>
-
 #if defined(__MACH__)
+
+#include <XHelper/xversion.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
+#include <memory>
+#include <cassert>
 #include <mach/mach.h>
 
 //---------------------------------------------------------
@@ -16,13 +19,13 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace moodycamel::details {
 
-        class Semaphore : public XLightweightSemaphoreData {
+        class Semaphore {
             mutable semaphore_t m_sema_{};
-        public:
 
+        public:
             X_DISABLE_COPY_MOVE(Semaphore)
 
-            explicit Semaphore(int const initialCount = {}) {
+            constexpr explicit Semaphore(int const initialCount = {}) {
                 assert(initialCount >= 0);
                 [[maybe_unused]]auto const rc{
                     semaphore_create(mach_task_self(),std::addressof(m_sema_), SYNC_POLICY_FIFO, initialCount)
@@ -30,16 +33,16 @@ namespace moodycamel::details {
                 assert(rc == KERN_SUCCESS);
             }
 
-            ~Semaphore() override
+            constexpr virtual ~Semaphore()
             { semaphore_destroy(mach_task_self(), m_sema_); }
 
-            [[nodiscard]] bool wait() const noexcept
+            [[nodiscard]] constexpr bool wait() const noexcept
             { return semaphore_wait(m_sema_) == KERN_SUCCESS; }
 
-            bool try_wait() const noexcept
+            constexpr bool try_wait() const noexcept
             { return timed_wait(0); }
 
-            bool timed_wait(std::uint64_t const timeout_usecs) const noexcept {
+            constexpr bool timed_wait(std::uint64_t const timeout_usecs) const noexcept {
                 mach_timespec_t const ts {
                      static_cast<unsigned int>(timeout_usecs / 1000000)
                     ,static_cast<int>(timeout_usecs % 1000000 * 1000)
@@ -48,10 +51,10 @@ namespace moodycamel::details {
                 return KERN_SUCCESS == semaphore_timedwait(m_sema_, ts);
             }
 
-            void signal() const noexcept
+            constexpr void signal() const noexcept
             { while (semaphore_signal(m_sema_) != KERN_SUCCESS){} }
 
-            void signal(int count) const noexcept
+            constexpr void signal(int count) const noexcept
             { while (count-- > 0) { while (semaphore_signal(m_sema_) != KERN_SUCCESS){} } }
         };
 }
