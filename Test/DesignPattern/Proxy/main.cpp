@@ -5,7 +5,7 @@
 #include <thread>
 
 #if !defined(_WIN32) && !defined(_WIN64)
-#include <XSignal/xsignal.hpp>
+#include <Unix/XSignal/xsignal.hpp>
 #endif
 
 int main() {

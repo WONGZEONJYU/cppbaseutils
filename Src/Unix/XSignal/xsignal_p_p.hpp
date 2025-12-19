@@ -1,7 +1,7 @@
 #ifndef X_SIGNAL_P_P_HPP
 #define X_SIGNAL_P_P_HPP 1
 
-#include <XSignal/xsignal_p.hpp>
+#include "xsignal_p.hpp"
 #include <unordered_map>
 #include <list>
 #include <thread>

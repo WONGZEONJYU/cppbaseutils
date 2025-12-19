@@ -5,7 +5,7 @@
 #include <XMemory/xmemory.hpp>
 
 #ifndef X_PLATFORM_WINDOWS
-#include <XSignal/xsignal.hpp>
+#include <Unix/XSignal/xsignal.hpp>
 #endif
 
 int main() {

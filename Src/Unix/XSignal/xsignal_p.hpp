@@ -1,7 +1,7 @@
 #ifndef XUTILS_X_SIGNAL_P_HPP
 #define XUTILS_X_SIGNAL_P_HPP 1
 
-#include <XSignal/xsignal.hpp>
+#include "xsignal.hpp"
 #include <unordered_map>
 #include <XAtomic/xatomic.hpp>
 

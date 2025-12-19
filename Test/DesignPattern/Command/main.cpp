@@ -3,7 +3,7 @@
 #include <XGlobal/xclasshelpermacros.hpp>
 
 #ifndef X_PLATFORM_WINDOWS
-#include <XSignal/xsignal.hpp>
+#include <Unix/XSignal/xsignal.hpp>
 #endif
 
 class MyRunnable : public Runnable {

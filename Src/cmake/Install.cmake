@@ -59,8 +59,8 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
 
 # 平台特定的模块
 if(APPLE OR UNIX)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
-        DESTINATION include/XSignal
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Unix/XSignal/
+        DESTINATION include/Unix/XSignal
         FILES_MATCHING
         PATTERN "*.h"
         PATTERN "*.hpp"
@@ -68,14 +68,8 @@ if(APPLE OR UNIX)
         PATTERN "*_private.hpp" EXCLUDE
     )
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Unix/
-            DESTINATION include/Unix
-            FILES_MATCHING
-            PATTERN "*.h"
-            PATTERN "*.hpp"
-            PATTERN "*_p.hpp" EXCLUDE
-            PATTERN "*_private.hpp" EXCLUDE
-    )
+elseif (WIN32)
+
 endif()
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/

@@ -72,7 +72,6 @@ add_subdirectory(XThreadPool)
 add_subdirectory(XConcurrentQueue)
 # 平台特定的模块
 if(APPLE OR UNIX)
-    add_subdirectory(XSignal)
     add_subdirectory(Unix)
 endif()
 
