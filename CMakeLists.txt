@@ -42,3 +42,24 @@ add_subdirectory(Test)
 #macos install
 #   -DCMAKE_INSTALL_PREFIX=/Users/apple/Library/XCppBaseUtils
 #   -DCMAKE_INSTALL_PREFIX=/Users/wong/Library/XCppBaseUtils
+
+#windows install
+#   -DCMAKE_INSTALL_PREFIX=C:\Users\Administrator\XCppBaseUtils\
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    if(APPLE OR UNIX)
+        set(CMAKE_INSTALL_PREFIX
+                "$ENV{HOME}/Library/XCppBaseUtils"
+                CACHE PATH "Install prefix" FORCE
+        )
+    elseif (WIN32)
+        set(CMAKE_INSTALL_PREFIX
+                "$ENV{USERPROFILE}/Library/XCppBaseUtils"
+                CACHE PATH "Install prefix" FORCE
+        )
+    else ()
+        message(FATAL_ERROR "Unknown platform")
+    endif ()
+endif()
+
+unset(HOME_DIR)
