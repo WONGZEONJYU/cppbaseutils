@@ -1667,7 +1667,7 @@ namespace moodycamel {
 
 							currentTailIndex = startTailIndex - 1 & ~static_cast<index_t>(BLOCK_SIZE - 1);
 
-							for (auto b{firstAllocatedBlock}; b; b = b->next) {
+							for (auto block{firstAllocatedBlock}; block; block = block->next) {
 								currentTailIndex += static_cast<index_t>(BLOCK_SIZE);
 								idxEntry = get_block_index_entry_for_index(currentTailIndex);
 								idxEntry->value.storeRelaxed({});

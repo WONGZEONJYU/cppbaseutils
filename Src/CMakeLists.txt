@@ -55,24 +55,22 @@ if(BUILD_STATIC_LIBS)
 endif()
 
 # 包含子目录
-add_subdirectory(XAtomic)
-add_subdirectory(XGlobal)
-add_subdirectory(XHelper)
-#add_subdirectory(XObject)
-#add_subdirectory(XTools)
-add_subdirectory(XLog)
-add_subdirectory(XMath)
-add_subdirectory(XMemory)
-add_subdirectory(XContainer)
-add_subdirectory(XContainerHelper)
-add_subdirectory(XTupleHelper)
-add_subdirectory(XDesignPattern)
-add_subdirectory(XQtHelper)
-add_subdirectory(XThreadPool)
-add_subdirectory(XConcurrentQueue)
+set(folderNamesList
+    XAtomic XGlobal XHelper XLog
+    XThreadPool XMath XMemory XContainerHelper
+    XContainer XTupleHelper XDesignPattern XQtHelper
+    XConcurrentQueue
+)
+
+foreach (name IN LISTS folderNamesList)
+    add_subdirectory(${name})
+endforeach ()
+
 # 平台特定的模块
 if(APPLE OR UNIX)
     add_subdirectory(Unix)
+elseif (WIN32)
+    add_subdirectory(Win)
 endif()
 
 # 包含库配置

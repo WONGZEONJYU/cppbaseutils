@@ -2,6 +2,11 @@
 #include <XConcurrentQueue/xconcurrentqueue.hpp>
 #include <vector>
 #include <XConcurrentQueue/xblockingconcurrentqueue.hpp>
+#ifdef WIN32
+#include <Win/XSignal/xsignal.hpp>
+#else
+#include <Unix/XSignal/xsignal.hpp>
+#endif
 
 int main() {
 
@@ -23,9 +28,6 @@ int main() {
 
     std::cout << std::endl;
 
-    XUtils::moodycamel::XLightweightSemaphore semaphore{};
-    semaphore.wait(2 * 1000 * 1000);
-
     XUtils::moodycamel::XBlockingConcurrentQueue<int> bq{};
 
     int aa[] { 10,20,30,40,50,60,70,80,90,100 };
@@ -33,8 +35,6 @@ int main() {
     bq.try_dequeue_bulk(ret.data(),10);
 
     for (auto && i : ret) { std::cout << i << std::endl; }
-
-    std::cout << "\nHello world!" << std::endl;
 
     return 0;
 }
