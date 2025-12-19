@@ -1923,7 +1923,7 @@ namespace moodycamel {
 				}
 
 				// No room in the old block index, try to allocate another one!
-				if (allocMode == CannotAlloc || !new_block_index()) { return {}; }
+				if constexpr (allocMode == CannotAlloc || !new_block_index()) { return {}; }
 
 				localBlockIndex = blockIndex.loadRelaxed();
 				newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
