@@ -242,8 +242,27 @@ private:
 };
 #endif
 
+struct V {
+    virtual ~V() { std::cout << "~V\n"; }
+};
+
+struct A : virtual V {
+    ~A() override { std::cout << "~A\n"; }
+};
+
+struct B : virtual V {
+    ~B() override { std::cout << "~B\n"; }
+};
+
+struct C : A, B {
+    ~C() override { std::cout << "~C\n"; }
+};
+
 int main()
 {
+    V* p = new C;
+    delete p;
+
     std::vector<int > v;
     std::list<int > l;
 

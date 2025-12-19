@@ -53,28 +53,28 @@ namespace moodycamel {
 		// but many producers, a smaller block size should be favoured. For few producers
 		// and/or many elements, a larger block size is preferred. A sane default
 		// is provided. Must be a power of 2.
-		static constexpr size_t BLOCK_SIZE {32};
+		static constexpr size_t BLOCK_SIZE {32}
 
 		// For explicit producers (i.e. when using a producer token), the block is
 		// checked for being empty by iterating through a list of flags, one per element.
 		// For large block sizes, this is too inefficient, and switching to an atomic
 		// counter-based approach is faster. The switch is made for block sizes strictly
 		// larger than this threshold.
-		static constexpr size_t EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { 32 };
+		, EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { 32 }
 
 		// How many full blocks can be expected for a single explicit producer? This should
 		// reflect that number's maximum for optimal performance. Must be a power of 2.
-		static constexpr size_t EXPLICIT_INITIAL_INDEX_SIZE {32};
+		, EXPLICIT_INITIAL_INDEX_SIZE {32}
 
 		// How many full blocks can be expected for a single implicit producer? This should
 		// reflect that number's maximum for optimal performance. Must be a power of 2.
-		static constexpr size_t IMPLICIT_INITIAL_INDEX_SIZE {32};
+		, IMPLICIT_INITIAL_INDEX_SIZE {32}
 
 		// The initial size of the hash table mapping thread IDs to implicit producers.
 		// Note that the hash is resized every time it becomes half full.
 		// Must be a power of two, and either 0 or at least 1. If 0, implicit production
 		// (using the enqueue methods without an explicit producer token) is disabled.
-		static constexpr size_t INITIAL_IMPLICIT_PRODUCER_HASH_SIZE {32};
+		, INITIAL_IMPLICIT_PRODUCER_HASH_SIZE {32};
 
 		// Controls the number of items that an explicit consumer (i.e. one with a token)
 		// must consume before it causes all consumers to rotate and move on to the next
@@ -106,10 +106,10 @@ namespace moodycamel {
 #if defined(malloc) || defined(free)
 		// Gah, this is 2015, stop defining macros that break standard code already!
 		// Work around malloc/free being special macros:
-		static constexpr void * WORKAROUND_malloc(size_t const size) { return malloc(size); }
-		static constexpr void WORKAROUND_free(void * const ptr) { return free(ptr); }
-		static constexpr void * (malloc)(size_t const size) { return WORKAROUND_malloc(size); }
-		static constexpr void (free)(void * const ptr) { return WORKAROUND_free(ptr); }
+		static void * WORKAROUND_malloc(size_t const size) { return malloc(size); }
+		static void WORKAROUND_free(void * const ptr) { return free(ptr); }
+		static void * (malloc)(size_t const size) { return WORKAROUND_malloc(size); }
+		static void (free)(void * const ptr) { return WORKAROUND_free(ptr); }
 #else
 		static void * malloc(size_t const size) { return std::malloc(size); }
 		static void free(void * const ptr) { return std::free(ptr); }
@@ -117,8 +117,8 @@ namespace moodycamel {
 #else
 		// Debug versions when running under the Relacy race detector (ignore
 		// these in user code)
-		static constexpr void * malloc(size_t const size) { return rl::rl_malloc(size, $); }
-		static constexpr void free(void * const ptr) { return rl::rl_free(ptr, $); }
+		static void * malloc(size_t const size) { return rl::rl_malloc(size, $); }
+		static void free(void * const ptr) { return rl::rl_free(ptr, $); }
 #endif
 	};
 

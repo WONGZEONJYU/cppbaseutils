@@ -1,4 +1,4 @@
-#include <XConcurrentQueue/lightweightsemaphore.hpp>
+#include <XConcurrentQueue/xlightweightsemaphore.hpp>
 #include <XConcurrentQueue/lwsemaphore_mach_p.hpp>
 #include <XConcurrentQueue/lwsemaphore_unix_p.hpp>
 #include <XConcurrentQueue/lwsemaphore_win_p.hpp>
