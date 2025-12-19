@@ -1,6 +1,7 @@
 #include <iostream>
 #include <XConcurrentQueue/xconcurrentqueue.hpp>
 #include <vector>
+#include <XConcurrentQueue/lightweightsemaphore.hpp>
 
 int main() {
 
@@ -18,13 +19,15 @@ int main() {
 
     std::vector ret(10,int{});
 
-
     decltype(q)::try_dequeue_bulk_from_producer(ptk,ret.data(),10);
 
     for (auto && i : ret)
     {
         std::cout << i << std::endl;
     }
+
+    XUtils::moodycamel::XLightweightSemaphore semaphore{};
+    semaphore.wait(2*1000*1000);
 
     std::cout << "Hello world!" << std::endl;
     return 0;

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <cstddef> // For std::size_t
 #include <memory>
 #include <type_traits> // For std::make_signed<T>
 #include <XHelper/xversion.hpp>
@@ -48,13 +47,13 @@ namespace moodycamel {
 #endif
 
 //---------------------------------------------------------
-// LightweightSemaphore
+// XLightweightSemaphore
 //---------------------------------------------------------
 
 class XLightweightSemaphore;
 class XLightweightSemaphorePrivate;
 
-class XLightweightSemaphoreData {
+class X_CLASS_EXPORT XLightweightSemaphoreData {
 public:
 	XLightweightSemaphore * m_x_ptr{};
 protected:
@@ -63,7 +62,7 @@ public:
 	virtual ~XLightweightSemaphoreData() = default;
 };
 
-class XLightweightSemaphore final {
+class X_CLASS_EXPORT XLightweightSemaphore final {
 
 	X_DECLARE_PRIVATE_D(m_d_ptr, XLightweightSemaphore)
 	std::unique_ptr<XLightweightSemaphoreData> m_d_ptr{};

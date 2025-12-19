@@ -4,6 +4,7 @@
 #include <XConcurrentQueue/lwsemaphore_win_p.hpp>
 #include <XAtomic/xatomic.hpp>
 
+
 #define MOODYCAMEL_NAMESPACE_BEGIN namespace moodycamel {
 #define MOODYCAMEL_NAMESPACE_END }
 
@@ -15,16 +16,18 @@ class XLightweightSemaphorePrivate final
     : public XLightweightSemaphoreData , public details::Semaphore
 {
 public:
+    using ssize_t = XLightweightSemaphore::ssize_t;
+
     X_DECLARE_PUBLIC(XLightweightSemaphore)
 
-    XAtomicInteger<XLightweightSemaphore::ssize_t> m_count{};
+    XAtomicInteger<ssize_t> m_count{};
     int m_maxSpins{};
 
     bool waitWithPartialSpinning(std::int64_t timeout_usecs = -1) noexcept;
 
     ssize_t waitManyWithPartialSpinning(ssize_t max, std::int64_t timeout_usecs = -1) noexcept;
 
-    constexpr explicit XLightweightSemaphorePrivate(int const initialCount = {})
+    explicit XLightweightSemaphorePrivate(int const initialCount = {})
     : Semaphore{initialCount} {}
 
     ~XLightweightSemaphorePrivate() override = default;
@@ -62,7 +65,7 @@ bool XLightweightSemaphorePrivate::waitWithPartialSpinning(std::int64_t const ti
     }
 }
 
-ssize_t XLightweightSemaphorePrivate::waitManyWithPartialSpinning(ssize_t const max, std::int64_t const timeout_usecs) noexcept {
+XLightweightSemaphorePrivate::ssize_t XLightweightSemaphorePrivate::waitManyWithPartialSpinning(ssize_t const max, std::int64_t const timeout_usecs) noexcept {
     assert(max > 0);
     ssize_t oldCount{};
     auto spin{ m_maxSpins };
@@ -100,7 +103,7 @@ ssize_t XLightweightSemaphorePrivate::waitManyWithPartialSpinning(ssize_t const 
 }
 
 XLightweightSemaphore::XLightweightSemaphore(ssize_t const initialCount,int const maxSpins)
-    : m_d_ptr { std::make_unique<XLightweightSemaphorePrivate>(initialCount) }
+    : m_d_ptr { std::make_unique<XLightweightSemaphorePrivate>(static_cast<int>(initialCount)) }
 {
     m_d_ptr->m_x_ptr = this;
     d_func()->m_maxSpins = maxSpins;
@@ -126,7 +129,7 @@ bool XLightweightSemaphore::wait(std::int64_t const timeout_usecs) noexcept
 { return tryWait() || d_func()->waitWithPartialSpinning(timeout_usecs); }
 
 // Acquires between 0 and (greedily) max, inclusive
-ssize_t XLightweightSemaphore::tryWaitMany(ssize_t const max) noexcept {
+XLightweightSemaphore::ssize_t XLightweightSemaphore::tryWaitMany(ssize_t const max) noexcept {
     assert(max >= 0);
     X_D(XLightweightSemaphore);
 
@@ -142,14 +145,14 @@ ssize_t XLightweightSemaphore::tryWaitMany(ssize_t const max) noexcept {
 }
 
 // Acquires at least one, and (greedily) at most max
-ssize_t XLightweightSemaphore::waitMany(ssize_t const max, std::int64_t const timeout_usecs) noexcept {
+XLightweightSemaphore::ssize_t XLightweightSemaphore::waitMany(ssize_t const max, std::int64_t const timeout_usecs) noexcept {
     assert(max >= 0);
     auto result{ tryWaitMany(max) };
     if (!result && max > 0) { result = d_func()->waitManyWithPartialSpinning(max, timeout_usecs); }
     return result;
 }
 
-ssize_t XLightweightSemaphore::waitMany(ssize_t const max) noexcept {
+XLightweightSemaphore::ssize_t XLightweightSemaphore::waitMany(ssize_t const max) noexcept {
     auto const result{ waitMany(max, -1) };
     assert(result > 0);
     return result;

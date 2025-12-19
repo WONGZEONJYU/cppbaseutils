@@ -25,7 +25,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace moodycamel::details{
 
-    class Semaphore {
+    class X_CLASS_EXPORT Semaphore {
         mutable void * m_hSema_{};
 
     public:
