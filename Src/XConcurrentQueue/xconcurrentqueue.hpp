@@ -95,8 +95,8 @@ namespace moodycamel {
 			// each kind; this makes it possible to debug them starting from
 			// the root queue object (otherwise wacky casts are needed that
 			// don't compile in the debugger's expression evaluator).
-			explicitProducers.storeRelaxed({});
-			implicitProducers.storeRelaxed({});
+			this->explicitProducers.storeRelaxed({});
+			this->implicitProducers.storeRelaxed({});
 #endif
 		}
 
@@ -111,8 +111,8 @@ namespace moodycamel {
 			};
 			populate_initial_block_list(blocks);
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
-			explicitProducers.storeRelaxed({});
-			implicitProducers.storeRelaxed({});
+			this->explicitProducers.storeRelaxed({});
+			this->implicitProducers.storeRelaxed({});
 #endif
 		}
 
@@ -130,8 +130,7 @@ namespace moodycamel {
 		// Note: When a queue is moved, its tokens are still valid but can only be
 		// used with the destination queue (i.e. semantically they are moved along
 		// with the queue itself).
-		XConcurrentQueue(XConcurrentQueue && other) MOODYCAMEL_NOEXCEPT = default;
-		XConcurrentQueue& operator=(XConcurrentQueue && other) MOODYCAMEL_NOEXCEPT = default;
+		X_DEFAULT_MOVE(XConcurrentQueue)
 
 		// Enqueues a single item (by copying it).
 		// Allocates memory if required. Only fails if memory allocation fails (or implicit

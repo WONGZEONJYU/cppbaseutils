@@ -29,7 +29,9 @@
 
 // Also dual-licensed under the Boost Software License (see LICENSE.md)
 
+
 #pragma once
+#if 0
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and
@@ -3774,4 +3776,6 @@ inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, ty
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #pragma GCC diagnostic pop
+#endif
+
 #endif

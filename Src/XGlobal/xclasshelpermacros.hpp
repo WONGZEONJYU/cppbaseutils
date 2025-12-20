@@ -21,8 +21,8 @@ template <typename Ptr> constexpr auto xGetPtrHelper(Ptr const &ptr) noexcept ->
     __VA_ARGS__ &operator=(const __VA_ARGS__ &) = default;
 
 #define X_DEFAULT_MOVE(...)\
-    __VA_ARGS__ (__VA_ARGS__ &&) = default; \
-    __VA_ARGS__ &operator=(__VA_ARGS__ &&) = default;
+    __VA_ARGS__ (__VA_ARGS__ &&) noexcept = default; \
+    __VA_ARGS__ &operator=(__VA_ARGS__ &&) noexcept = default;
 
 #define X_DEFAULT_COPY_MOVE(...) \
     X_DEFAULT_COPY(__VA_ARGS__)\
