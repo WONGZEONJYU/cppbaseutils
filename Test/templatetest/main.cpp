@@ -242,15 +242,34 @@ private:
 };
 #endif
 
+struct V {
+    virtual ~V() { std::cout << "~V\n"; }
+};
+
+struct A : virtual V {
+    ~A() override { std::cout << "~A\n"; }
+};
+
+struct B : virtual V {
+    ~B() override { std::cout << "~B\n"; }
+};
+
+struct C : A, B {
+    ~C() override { std::cout << "~C\n"; }
+};
+
 int main()
 {
+    V* p = new C;
+    delete p;
+
     std::vector<int > v;
     std::list<int > l;
 
-    XUtils::RingBuffer<std::size_t> const rb{};
+    XUtils::XRingBuffer<std::size_t> const rb{};
 
     for (int i{}; i < 10;++i)
-    { const_cast<XUtils::RingBuffer<std::size_t>&>(rb).push_back(i + 1); }
+    { const_cast<XUtils::XRingBuffer<std::size_t>&>(rb).push_back(i + 1); }
 
     std::cout << std::boolalpha << ( rb.cEnd()  ==  rb.begin() ) << std::endl;
 

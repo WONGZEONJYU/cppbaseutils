@@ -10,7 +10,7 @@
 #include <dbghelp.h>
 #pragma comment(lib, "dbghelp.lib")
 #else
-#include <XSignal/xsignal.hpp>
+#include <xsignal.hpp>
 #include <execinfo.h>
 #endif
 

@@ -9,157 +9,28 @@ install(TARGETS ${LIBRARY_TARGETS} ${PROJECT_NAME}
     INCLUDES DESTINATION include
 )
 
-# 安装头文件，保留子目录结构，排除私有头文件
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XAtomic/
-    DESTINATION include/XAtomic
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XGlobal/
-    DESTINATION include/XGlobal
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XHelper/
-    DESTINATION include/XHelper
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XLog/
-    DESTINATION include/XLog
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-
-#[[
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XObject/
-    DESTINATION include/XObject
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-]]
-
-# 平台特定的模块
-if(APPLE OR UNIX)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XSignal/
-        DESTINATION include/XSignal
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-    )
-
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Unix/
-            DESTINATION include/Unix
+# 安装头文件,保留子目录结构,排除私有头文件
+function(installHeader name)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${name}/
+            DESTINATION include/${name}
             FILES_MATCHING
             PATTERN "*.h"
             PATTERN "*.hpp"
             PATTERN "*_p.hpp" EXCLUDE
             PATTERN "*_private.hpp" EXCLUDE
     )
+endfunction()
+
+foreach (name IN LISTS folderNamesList)
+    installHeader(${name})
+endforeach ()
+
+# 平台特定的模块
+if(APPLE OR UNIX)
+    installHeader("Unix/XSignal")
+elseif (WIN32)
+    installHeader("Win/XSignal")
 endif()
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XThreadPool/
-    DESTINATION include/XThreadPool
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-
-#[[
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XTools/
-    DESTINATION include/XTools
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*_p.hpp" EXCLUDE
-    PATTERN "*_private.hpp" EXCLUDE
-)
-]]
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XMath/
-        DESTINATION include/XMath
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XMemory/
-        DESTINATION include/XMemory
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XContainerHelper/
-        DESTINATION include/XContainerHelper
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XContainer/
-        DESTINATION include/XContainer
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XTupleHelper/
-        DESTINATION include/XTupleHelper
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XDesignPattern/
-        DESTINATION include/XDesignPattern
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/XQtHelper/
-        DESTINATION include/XQtHelper
-        FILES_MATCHING
-        PATTERN "*.h"
-        PATTERN "*.hpp"
-        PATTERN "*_p.hpp" EXCLUDE
-        PATTERN "*_private.hpp" EXCLUDE
-)
 
 # 导出库配置供其他项目使用
 install(EXPORT ${PROJECT_NAME}Targets
@@ -209,4 +80,4 @@ install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
     DESTINATION lib/cmake/${PROJECT_NAME}
-) 
+)

@@ -9,7 +9,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XAtomicBool : public XBasicAtomic<bool>{
     using Base_ = XBasicAtomic;
 public:
-    constexpr explicit XAtomicBool(bool const value = {}) noexcept : Base_(value){}
+    constexpr XAtomicBool(bool const value = {}) noexcept : Base_(value){}
 
     XAtomicBool(XAtomicBool const & other) noexcept : Base_{}
     { this->storeRelease(other.loadAcquire()); }
@@ -24,7 +24,7 @@ class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    constexpr explicit XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
+    constexpr XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
 
     constexpr XAtomicInteger(XAtomicInteger const & other) noexcept
     { this->storeRelease(other.loadAcquire()); }
@@ -113,7 +113,7 @@ public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    explicit constexpr XAtomicInt(const int value = {}) noexcept : XAtomicInteger(value) {}
+    constexpr XAtomicInt(const int value = {}) noexcept : XAtomicInteger(value) {}
 };
 
 // High-level atomic pointer operations
@@ -121,7 +121,7 @@ template <typename T>
 class XAtomicPointer : public XBasicAtomicPointer<T> {
     using Base = XBasicAtomicPointer<T>;
 public:
-    constexpr explicit XAtomicPointer(T * value = {}) noexcept
+    constexpr XAtomicPointer(T * value = {}) noexcept
     : XBasicAtomicPointer<T>(value) {}
 
     constexpr XAtomicPointer(XAtomicPointer const & other) noexcept
@@ -168,7 +168,7 @@ public:
 
 */
 template <typename T>
-[[maybe_unused]] void qAtomicAssign(T * &d,T *x) {
+[[maybe_unused]] void qAtomicAssign(T * &d,T *x) noexcept {
     if (d == x){ return; }
     x->ref.ref();
     if (!d->ref.deref()){ delete d; }
@@ -183,7 +183,7 @@ template <typename T>
 */
 
 template <typename T>
-[[maybe_unused]] void qAtomicDetach(T * &d) {
+[[maybe_unused]] void qAtomicDetach(T * &d) noexcept {
     if (1 == d->ref.loadRelaxed()){ return;}
     T * x {d}; d = new T(*d);
     if (!x->ref.deref()){ delete x; }
