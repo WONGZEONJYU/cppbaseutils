@@ -14,7 +14,6 @@
 #include <XConcurrentQueue/xblockingconcurrentqueueabstract.hpp>
 #undef XUTILS2_X_BLOCKING_CONCURRENT_QUEUE_ABSTRACT_HPP_
 
-
 #include <chrono>
 
 XTD_NAMESPACE_BEGIN

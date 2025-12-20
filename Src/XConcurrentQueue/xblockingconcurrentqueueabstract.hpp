@@ -16,8 +16,8 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace moodycamel {
 
 template<typename T,typename Traits>
-class XBlockingConcurrentQueueAbstract
-{
+class XBlockingConcurrentQueueAbstract {
+
     template<typename,typename> friend class XBlockingConcurrentQueue;
 
     using XConcurrentQueue = XConcurrentQueue<T,Traits>;
@@ -56,10 +56,10 @@ public:
     using ssize_t = std::make_signed_t<size_t>;
 
     static constexpr auto BLOCK_SIZE{ XConcurrentQueue::BLOCK_SIZE}
-    ,EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { XConcurrentQueue::EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD }
-    ,EXPLICIT_INITIAL_INDEX_SIZE { XConcurrentQueue::EXPLICIT_INITIAL_INDEX_SIZE }
-    ,IMPLICIT_INITIAL_INDEX_SIZE { XConcurrentQueue::IMPLICIT_INITIAL_INDEX_SIZE }
-    ,INITIAL_IMPLICIT_PRODUCER_HASH_SIZE { XConcurrentQueue::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE };
+                        ,EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { XConcurrentQueue::EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD }
+                        ,EXPLICIT_INITIAL_INDEX_SIZE { XConcurrentQueue::EXPLICIT_INITIAL_INDEX_SIZE }
+                        ,IMPLICIT_INITIAL_INDEX_SIZE { XConcurrentQueue::IMPLICIT_INITIAL_INDEX_SIZE }
+                        ,INITIAL_IMPLICIT_PRODUCER_HASH_SIZE { XConcurrentQueue::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE };
 
     static constexpr auto EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE { XConcurrentQueue::EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE };
     static constexpr auto MAX_SUBQUEUE_SIZE { XConcurrentQueue::MAX_SUBQUEUE_SIZE };

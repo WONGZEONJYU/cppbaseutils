@@ -124,11 +124,12 @@ namespace moodycamel {
 
 	struct ProducerToken;
 	struct ConsumerToken;
-	class ConcurrentQueueTests;
+	class XConcurrentQueueTests;
 
 	template<typename T, typename Traits> class XConcurrentQueueAbstract;
 	template<typename T, typename Traits> class XConcurrentQueue;
-	template<typename T, typename Traits> class BlockingConcurrentQueue;
+	template<typename T, typename Traits> class XBlockingConcurrentQueueAbstract;
+	template<typename T, typename Traits> class XBlockingConcurrentQueue;
 
 	namespace details {
 		// When producing or consuming many elements, the most efficient way is to:
@@ -332,7 +333,7 @@ namespace moodycamel {
 		{ if (producer) { producer->token = this; } }
 
 		template<typename T,typename Traits>
-		explicit ProducerToken(BlockingConcurrentQueue<T, Traits> & queue)
+		explicit ProducerToken(XBlockingConcurrentQueue<T, Traits> & queue)
 			: producer(reinterpret_cast<XConcurrentQueue<T, Traits>*>(std::addressof(queue))->recycle_or_create_producer(true))
 		{ if (producer) { producer->token = this; } }
 
@@ -369,7 +370,7 @@ namespace moodycamel {
 		X_DISABLE_COPY(ProducerToken)
 
 	private:
-		friend class ConcurrentQueueTests;
+		friend class XConcurrentQueueTests;
 		template<typename, typename > friend class XConcurrentQueue;
 		template<typename, typename > friend class XConcurrentQueueAbstract;
 
@@ -387,7 +388,7 @@ namespace moodycamel {
 		}
 
 		template<typename T, typename Traits>
-		explicit ConsumerToken(BlockingConcurrentQueue<T, Traits> & q) {
+		explicit ConsumerToken(XBlockingConcurrentQueue<T, Traits> & q) {
 			initialOffset = reinterpret_cast<XConcurrentQueue<T, Traits>*>(std::addressof(q))->nextExplicitConsumerId.fetchAndAddRelease(1);
 			lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
 		}
@@ -415,7 +416,7 @@ namespace moodycamel {
 	private:
 		template<typename T, typename Traits> friend class XConcurrentQueue;
 		template<typename T, typename Traits> friend class XConcurrentQueueAbstract;
-		friend class ConcurrentQueueTests;
+		friend class XConcurrentQueueTests;
 
 		// but shared with ConcurrentQueue
 		std::uint32_t initialOffset {},lastKnownGlobalOffset {},itemsConsumedFromCurrent {};
@@ -508,8 +509,7 @@ namespace moodycamel {
 			constexpr FreeList() = default;
 
 			FreeList(FreeList && other) noexcept
-				: freeListHead(other.freeListHead.loadRelaxed())
-			{ other.freeListHead.storeRelaxed({}); }
+			{ swap(other); }
 
 			constexpr void swap(FreeList & other) noexcept
 			{ details::swap_relaxed(freeListHead.m_x_value, other.freeListHead.m_x_value); }
@@ -756,17 +756,15 @@ namespace moodycamel {
 
 		protected:
 			XAtomicInteger<index_t> tailIndex{}		// Where to enqueue to next
-			, headIndex{}		// Where to dequeue from next
-			, dequeueOptimisticCount{}
-			,dequeueOvercommit {};
+									, headIndex{}		// Where to dequeue from next
+									, dequeueOptimisticCount{}
+									,dequeueOvercommit {};
 			Block * tailBlock {};
 
 		public:
 			bool isExplicit {};
 			XConcurrentQueueAbstract * parent{};
-#ifdef MCDBGQ_TRACKMEM
 			friend struct MemStats;
-#endif
 		};
 
 		///////////////////////////
@@ -880,9 +878,12 @@ namespace moodycamel {
 							// Hmm, the circular block index is already full -- we'll need
 							// to allocate a new index. Note pr_blockIndexRaw can only be nullptr if
 							// the initial allocation failed in the constructor.
-
+#if 0
 							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) { return {}; }
 							else { if (!new_block_index(pr_blockIndexSlotsUsed)) { return {} ; } }
+#else
+							MOODYCAMEL_CONSTEXPR_IF(allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) { return {}; }
+#endif
 						}
 
 						// Insert a new block in the circular linked list
@@ -979,7 +980,7 @@ namespace moodycamel {
 					// this load is sequenced after (happens after) the earlier load above. This is supported by read-read
 					// coherency (as defined in the standard), explained here: http://en.cppreference.com/w/cpp/atomic/memory_order
 					tail = this->tailIndex.loadAcquire();
-					if ((moodycamel::details::likely)(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
+					if ((details::likely)(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
 						// Guaranteed to be at least one element to dequeue!
 
 						// Get the index. Note that since there's guaranteed to be at least one element, this
@@ -1088,15 +1089,7 @@ namespace moodycamel {
 								&& (!MAX_SUBQUEUE_SIZE || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))};
 									!pr_blockIndexRaw || pr_blockIndexSlotsUsed == pr_blockIndexSize || full)
 						{
-#if 1
-							if constexpr (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock ? startBlock : firstAllocatedBlock ;
-								return {};
-							}
-#else
+#if 0
 							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) {
 								// Failed to allocate, undo changes (but keep injected blocks)
 								pr_blockIndexFront = originalBlockIndexFront;
@@ -1109,6 +1102,14 @@ namespace moodycamel {
 								pr_blockIndexFront = originalBlockIndexFront;
 								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
 								this->tailBlock = startBlock == nullptr ? firstAllocatedBlock : startBlock;
+								return {};
+							}
+#else
+							if constexpr (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
+								// Failed to allocate, undo changes (but keep injected blocks)
+								pr_blockIndexFront = originalBlockIndexFront;
+								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
+								this->tailBlock = startBlock ? startBlock : firstAllocatedBlock ;
 								return {};
 							}
 #endif
@@ -1245,7 +1246,7 @@ namespace moodycamel {
 			template<typename It>
 			constexpr size_t dequeue_bulk(It && items, size_t const max) {
 
-				auto && itemFirst{ static_cast<std::decay_t<It>>(std::forward<It>(items)) };
+				auto && itemFirst{ static_cast<std::decay_t<decltype(items)>>(std::forward<decltype(items)>(items)) };
 
 				auto tail{ this->tailIndex.loadRelaxed() };
 				auto const overcommit{ this->dequeueOvercommit.loadRelaxed() };
@@ -1319,7 +1320,7 @@ namespace moodycamel {
 									// the dequeued objects are properly destroyed and the block index
 									// (and empty count) are properly updated before we propagate the exception
 									do {
-										block = localBlockIndex->entries[indexIndex].block; (void)block;
+										block = localBlockIndex->entries[indexIndex].block; /*(void)block;*/
 										while (index != endIndex) { (*block)[index++]->~T(); }
 										block->XConcurrentQueueAbstract::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 										indexIndex = indexIndex + 1 & localBlockIndex->size - 1;
@@ -1417,10 +1418,7 @@ namespace moodycamel {
 		public:
 			ExplicitProducer * nextExplicitProducer {};
 #endif
-
-#ifdef MCDBGQ_TRACKMEM
 			friend struct MemStats;
-#endif
 		};
 
 		//////////////////////////////////
@@ -1554,7 +1552,7 @@ namespace moodycamel {
 
 					auto const myDequeueCount{ this->dequeueOptimisticCount.fetchAndAddRelaxed(1) };
 					tail = this->tailIndex.loadAcquire();
-					if ((moodycamel::details::likely)(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
+					if ((details::likely)(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
 						auto const index{ this->headIndex.fetchAndAddOrdered(1) };
 
 						// Determine which block the element is in
@@ -1617,7 +1615,7 @@ namespace moodycamel {
 			template<AllocationMode allocMode, typename It>
 			constexpr bool enqueue_bulk(It && items, size_t const count) {
 
-				auto && itemFirst{ static_cast<std::decay_t<It>>(std::forward<It>(items)) };
+				auto && itemFirst{ static_cast<std::decay_t<decltype(items)>>(std::forward<decltype(items)>(items)) };
 
 				// First, we need to make sure we have enough room to enqueue all of the elements;
 				// this means pre-allocating blocks and putting them in the block index (but only if
@@ -1786,7 +1784,7 @@ namespace moodycamel {
 			template<typename It>
 			constexpr size_t dequeue_bulk(It && items, size_t const max) {
 
-				auto && itemFirst { static_cast<std::decay_t<It>>(std::forward<It>(items)) };
+				auto && itemFirst { static_cast<std::decay_t<decltype(items)>>(std::forward<decltype(items)>(items)) };
 
 				auto tail{ this->tailIndex.loadRelaxed() };
 				auto const overcommit{ this->dequeueOvercommit.loadRelaxed() };
@@ -1819,13 +1817,14 @@ namespace moodycamel {
 						do {
 							auto blockStartIndex{ index };
 							auto endIndex{ (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE) };
+#if 0
+							endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex)
+								? firstIndex + static_cast<index_t>(actualCount)
+								: endIndex;
+#else
 							if ( details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) )
 							{ endIndex = firstIndex + static_cast<index_t>(actualCount); }
-
-							// endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex)
-							// 			? firstIndex + static_cast<index_t>(actualCount)
-							// 			: endIndex;
-
+#endif
 							auto entry { localBlockIndex->index[indexIndex] };
 							auto block { entry->value.loadRelaxed() };
 							if (MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, details::deref_noexcept(std::forward<decltype(itemFirst)>(itemFirst)) = std::move(*(*block)[index]))) {
@@ -2145,7 +2144,7 @@ namespace moodycamel {
 				}
 			}
 
-			auto delta {globalOffset - token.lastKnownGlobalOffset};
+			auto delta{ globalOffset - token.lastKnownGlobalOffset };
 			if (delta >= prodCount) { delta = delta % prodCount; }
 			for (std::uint32_t i {}; i != delta; ++i) {
 				token.desiredProducer = static_cast<ProducerBase*>(token.desiredProducer)->next_prod();
@@ -2170,7 +2169,7 @@ namespace moodycamel {
 			if (!initialBlockPool) { initialBlockPoolSize = {}; }
 
 			for (size_t i {}; i < initialBlockPoolSize; ++i)
-			{ initialBlockPool[i].dynamicallyAllocated = false; }
+			{ initialBlockPool[i].dynamicallyAllocated = {}; }
 		}
 
 		constexpr Block * try_get_block_from_initial_pool() {
@@ -2256,8 +2255,7 @@ namespace moodycamel {
 				do {
 					static_cast<ExplicitProducer*>(producer)->nextExplicitProducer = prevTailExplicit;
 				} while (!explicitProducers.m_x_value.compare_exchange_weak(prevTailExplicit, static_cast<ExplicitProducer*>(producer), std::memory_order_release, std::memory_order_relaxed));
-			}
-			else {
+			}else {
 				auto prevTailImplicit{ implicitProducers.loadRelaxed() };
 				do {
 					static_cast<ImplicitProducer*>(producer)->nextImplicitProducer = prevTailImplicit;
@@ -2283,7 +2281,7 @@ namespace moodycamel {
 				hash->capacity = INITIAL_IMPLICIT_PRODUCER_HASH_SIZE;
 				hash->entries = initialImplicitProducerHashEntries.data();
 				for (size_t i {}; i != INITIAL_IMPLICIT_PRODUCER_HASH_SIZE; ++i)
-				{ initialImplicitProducerHashEntries[i].key.store(moodycamel::details::invalid_thread_id, std::memory_order_relaxed); }
+				{ initialImplicitProducerHashEntries[i].key.store(details::invalid_thread_id, std::memory_order_relaxed); }
 				hash->prev = {};
 				implicitProducerHash.storeRelaxed(hash);
 			}
@@ -2412,7 +2410,7 @@ namespace moodycamel {
 						newHash->entries = reinterpret_cast<ImplicitProducerKVP*>(details::align_for<ImplicitProducerKVP>(raw + sizeof(ImplicitProducerHash)));
 						for (size_t i {}; i != newCapacity; ++i) {
 							new (newHash->entries + i) ImplicitProducerKVP;
-							newHash->entries[i].key.store(moodycamel::details::invalid_thread_id, std::memory_order_relaxed);
+							newHash->entries[i].key.store(details::invalid_thread_id, std::memory_order_relaxed);
 						}
 						newHash->prev = mainHash;
 						implicitProducerHash.storeRelease(newHash);
@@ -2444,7 +2442,7 @@ namespace moodycamel {
 					auto index{ hashedId };
 					while (true) {
 						index &= mainHash->capacity - 1u;
-						auto empty{ moodycamel::details::invalid_thread_id };
+						auto empty{ details::invalid_thread_id };
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
 						auto reusable { details::invalid_thread_id2 };
 						if (mainHash->entries[index].key.compare_exchange_strong(reusable, id, std::memory_order_seq_cst, std::memory_order_relaxed)) {
@@ -2534,7 +2532,7 @@ namespace moodycamel {
 
 		template<typename TAlign>
 		static constexpr void * aligned_malloc(size_t const size) {
-			MOODYCAMEL_CONSTEXPR_IF (std::alignment_of_v<TAlign> <= std::alignment_of_v<moodycamel::details::max_align_t>)
+			MOODYCAMEL_CONSTEXPR_IF (std::alignment_of_v<TAlign> <= std::alignment_of_v<details::max_align_t>)
 			{ return (Traits::malloc)(size); }
 			else {
 				auto const raw{ (Traits::malloc)(size + std::alignment_of_v<TAlign> - 1 + sizeof(void*)) };
@@ -2547,7 +2545,7 @@ namespace moodycamel {
 
 		template<typename TAlign>
 		static constexpr void aligned_free(void * const ptr) noexcept {
-			if constexpr (std::alignment_of_v<TAlign> <= std::alignment_of_v<moodycamel::details::max_align_t>)
+			if constexpr (std::alignment_of_v<TAlign> <= std::alignment_of_v<details::max_align_t>)
 			{ (Traits::free)(ptr); }
 			else {(Traits::free)(ptr ? *(static_cast<void**>(ptr) - 1) : nullptr); }
 		}
@@ -2675,7 +2673,7 @@ namespace moodycamel {
 		friend struct ConsumerToken;
 		friend struct ExplicitProducer;
 		friend struct ImplicitProducer;
-		friend class ConcurrentQueueTests;
+		friend class XConcurrentQueueTests;
 	};
 }
 
