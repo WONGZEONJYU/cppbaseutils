@@ -20,9 +20,13 @@ int main() {
 
     q.try_enqueue_bulk(ptk,a,10);
 
+    std::cerr << "size = " << q.size_approx() << std::endl;
+
     std::vector ret(10,int{});
 
-    decltype(q)::try_dequeue_bulk_from_producer(ptk,ret.data(),10);
+    decltype(q)::try_dequeue_bulk_from_producer(ptk,ret.data(),ret.size());
+
+    std::cerr << "size = " << q.size_approx() << std::endl;
 
     for (auto && i : ret) { std::cout << i << std::endl; }
 
@@ -32,8 +36,9 @@ int main() {
 
     int aa[] { 10,20,30,40,50,60,70,80,90,100 };
     bq.try_enqueue_bulk(aa,10);
+    std::cerr << "bq size = " << bq.size_approx() << std::endl;
     bq.try_dequeue_bulk(ret.data(),10);
-
+    std::cerr << "bq size = " << bq.size_approx() << std::endl;
     for (auto && i : ret) { std::cout << i << std::endl; }
 
     return 0;
