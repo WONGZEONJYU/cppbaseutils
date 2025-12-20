@@ -120,7 +120,7 @@ public:
 	// Thread-safe.
 	template<typename It>
 	constexpr bool enqueue_bulk(It && itemFirst, size_t const count) {
-		if ((details::likely)(this->m_inner_.enqueue_bulk(std::forward<It>(itemFirst), count))) {
+		if ((details::likely)(this->m_inner_.enqueue_bulk(std::forward<decltype(itemFirst)>(itemFirst), count))) {
 			this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 			return true;
 		}
@@ -135,7 +135,7 @@ public:
 	// Thread-safe.
 	template<typename It>
 	constexpr bool enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, size_t const count) {
-		if ((details::likely)(this->m_inner_.enqueue_bulk(token, std::forward<It>(itemFirst), count))) {
+		if ((details::likely)(this->m_inner_.enqueue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), count))) {
 			this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 			return true;
 		}
@@ -199,7 +199,7 @@ public:
 	// Thread-safe.
 	template<typename It>
 	constexpr bool try_enqueue_bulk(It && itemFirst, size_t const count) {
-		if (this->m_inner_.try_enqueue_bulk(std::forward<It>(itemFirst), count)) {
+		if (this->m_inner_.try_enqueue_bulk(std::forward<decltype(itemFirst)>(itemFirst), count)) {
 			this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 			return true;
 		}
@@ -213,7 +213,7 @@ public:
 	// Thread-safe.
 	template<typename It>
 	constexpr bool try_enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, size_t const count) {
-		if (this->m_inner_.try_enqueue_bulk(token, std::forward<It>(itemFirst), count)) {
+		if (this->m_inner_.try_enqueue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), count)) {
 			this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 			return true;
 		}
