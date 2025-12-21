@@ -5,14 +5,18 @@
 #include <XHelper/xcallablehelper.hpp>
 
 #ifdef HAS_QT
+
 #include <QRunnable>
+#include <QMutex>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XQRunnable : public QRunnable {
     Q_DISABLE_COPY(XQRunnable)
+
     CallablePtr m_runHelper_{};
+    QMutex m_mtx_{};
 
 public:
     template<typename ... Args>
@@ -28,12 +32,17 @@ public:
     {}
 
     template<typename ...Args>
-    constexpr void setRunHelper(Args && ...args) noexcept
-    { m_runHelper_ = XCallableHelper::createCallable(std::forward<Args>(args)...); }
+    constexpr void setRunHelper(Args && ...args) noexcept {
+        QMutexLocker locker {std::addressof(m_mtx_)};
+        m_runHelper_ = XCallableHelper::createCallable(std::forward<Args>(args)...);
+    }
 
 protected:
     void run() override {
-        if (m_runHelper_) { std::invoke(*m_runHelper_); }
+        if (auto const runHelper{ [this] {
+            QMutexLocker locker {std::addressof(m_mtx_)};
+            return m_runHelper_;
+        }()}) { (*runHelper)(); }
     }
 };
 
