@@ -1,6 +1,7 @@
 #ifndef XUTILS2_X_QTHREAD_HPP
 #define XUTILS2_X_QTHREAD_HPP 1
 
+#include <XHelper/xqt_detection.hpp>
 #include <XHelper/xcallablehelper.hpp>
 
 #ifdef HAS_QT
