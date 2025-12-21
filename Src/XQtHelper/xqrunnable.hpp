@@ -32,8 +32,10 @@ public:
     {}
 
     template<typename ...Args>
-    constexpr void setRunHelper(Args && ...args) noexcept
-    { m_runHelper_ = XCallableHelper::createCallable(std::forward<Args>(args)...); }
+    constexpr void setRunHelper(Args && ...args) noexcept {
+        QMutexLocker locker {std::addressof(m_mtx_)};
+        m_runHelper_ = XCallableHelper::createCallable(std::forward<Args>(args)...);
+    }
 
 protected:
     void run() override {
