@@ -298,7 +298,7 @@ namespace moodycamel {
 
 			// Thread-local
 			static ThreadExitNotifier & instance() noexcept {
-				thread_local ThreadExitNotifier notifier;
+				thread_local static ThreadExitNotifier notifier;
 				return notifier;
 			}
 
