@@ -1334,7 +1334,7 @@ namespace moodycamel {
 									// the dequeued objects are properly destroyed and the block index
 									// (and empty count) are properly updated before we propagate the exception
 									do {
-										block = localBlockIndex->entries[indexIndex].block; /*(void)block;*/
+										block = localBlockIndex->entries[indexIndex].block; (void)block;
 										while (index != endIndex) { (*block)[index++]->~T(); }
 										block->XConcurrentQueueAbstract::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 										indexIndex = indexIndex + 1 & localBlockIndex->size - 1;
