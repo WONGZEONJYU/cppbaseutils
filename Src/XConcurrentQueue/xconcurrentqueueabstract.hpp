@@ -887,12 +887,8 @@ namespace moodycamel {
 							// Hmm, the circular block index is already full -- we'll need
 							// to allocate a new index. Note pr_blockIndexRaw can only be nullptr if
 							// the initial allocation failed in the constructor.
-#if 0
 							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) { return {}; }
 							else { if (!new_block_index(pr_blockIndexSlotsUsed)) { return {} ; } }
-#else
-							if(allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) { return {}; }
-#endif
 						}
 
 						// Insert a new block in the circular linked list
@@ -1114,12 +1110,21 @@ namespace moodycamel {
 								return {};
 							}
 #else
-							if (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock ? startBlock : firstAllocatedBlock ;
-								return {};
+							{
+								auto const f{ [this
+									,&originalBlockIndexFront
+									,&originalBlockIndexSlotsUsed
+									,&startBlock
+									,&firstAllocatedBlock]()noexcept {
+										// Failed to allocate, undo changes (but keep injected blocks)
+										pr_blockIndexFront = originalBlockIndexFront;
+										pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
+										this->tailBlock = startBlock ? startBlock : firstAllocatedBlock;
+									}
+								};
+
+								MOODYCAMEL_CONSTEXPR_IF(allocMode == CannotAlloc){ f(); return {}; }
+								else { if (full || !new_block_index(originalBlockIndexSlotsUsed)) { f(); return {}; } }
 							}
 #endif
 							// pr_blockIndexFront is updated inside new_block_index, so we need to
@@ -1931,7 +1936,9 @@ namespace moodycamel {
 				}
 
 				// No room in the old block index, try to allocate another one!
-				if (allocMode == CannotAlloc || !new_block_index()) { return {}; }
+				MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc ) { return {}; }
+
+				if (!new_block_index()) { return {}; }
 
 				localBlockIndex = blockIndex.loadRelaxed();
 				newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
