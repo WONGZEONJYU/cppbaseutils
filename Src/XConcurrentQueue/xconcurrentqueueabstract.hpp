@@ -1936,17 +1936,17 @@ namespace moodycamel {
 				}
 
 				// No room in the old block index, try to allocate another one!
-				MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc ) { return {}; }
-
-				if (!new_block_index()) { return {}; }
-
-				localBlockIndex = blockIndex.loadRelaxed();
-				newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
-				idxEntry = localBlockIndex->index[newTail];
-				assert(idxEntry->key.loadRelaxed() == INVALID_BLOCK_BASE);
-				idxEntry->key.storeRelaxed(blockStartIndex);
-				localBlockIndex->tail.storeRelease(newTail);
-				return true;
+				MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) { return {}; }
+				else {
+					if (!new_block_index()) { return {}; }
+					localBlockIndex = blockIndex.loadRelaxed();
+					newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
+					idxEntry = localBlockIndex->index[newTail];
+					assert(idxEntry->key.loadRelaxed() == INVALID_BLOCK_BASE);
+					idxEntry->key.storeRelaxed(blockStartIndex);
+					localBlockIndex->tail.storeRelease(newTail);
+					return true;
+				}
 			}
 
 			constexpr void rewind_block_index_tail() {
