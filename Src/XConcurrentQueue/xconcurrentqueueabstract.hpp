@@ -887,12 +887,8 @@ namespace moodycamel {
 							// Hmm, the circular block index is already full -- we'll need
 							// to allocate a new index. Note pr_blockIndexRaw can only be nullptr if
 							// the initial allocation failed in the constructor.
-#if 0
 							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) { return {}; }
 							else { if (!new_block_index(pr_blockIndexSlotsUsed)) { return {} ; } }
-#else
-							if(allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) { return {}; }
-#endif
 						}
 
 						// Insert a new block in the circular linked list
@@ -1098,34 +1094,26 @@ namespace moodycamel {
 								&& (!MAX_SUBQUEUE_SIZE || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))};
 									!pr_blockIndexRaw || pr_blockIndexSlotsUsed == pr_blockIndexSize || full)
 						{
-#if 0
-							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock == nullptr ? firstAllocatedBlock : startBlock;
-								return {};
+							auto const f{ [this
+								,&originalBlockIndexFront
+								,&originalBlockIndexSlotsUsed
+								,&startBlock
+								,&firstAllocatedBlock]()noexcept {
+									// Failed to allocate, undo changes (but keep injected blocks)
+									pr_blockIndexFront = originalBlockIndexFront;
+									pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
+									this->tailBlock = startBlock ? startBlock : firstAllocatedBlock;
+								}
+							};
+
+							MOODYCAMEL_CONSTEXPR_IF(allocMode == CannotAlloc){ f(); return {}; }
+							else {
+								if (full || !new_block_index(originalBlockIndexSlotsUsed)) { f(); return {}; }
+								// pr_blockIndexFront is updated inside new_block_index, so we need to
+								// update our fallback value too (since we keep the new index even if we
+								// later fail)
+								originalBlockIndexFront = originalBlockIndexSlotsUsed;
 							}
-							else if (full || !new_block_index(originalBlockIndexSlotsUsed)) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock == nullptr ? firstAllocatedBlock : startBlock;
-								return {};
-							}
-#else
-							if (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock ? startBlock : firstAllocatedBlock ;
-								return {};
-							}
-#endif
-							// pr_blockIndexFront is updated inside new_block_index, so we need to
-							// update our fallback value too (since we keep the new index even if we
-							// later fail)
-							originalBlockIndexFront = originalBlockIndexSlotsUsed;
 						}
 
 						// Insert a new block in the circular linked list
@@ -1329,7 +1317,7 @@ namespace moodycamel {
 									// the dequeued objects are properly destroyed and the block index
 									// (and empty count) are properly updated before we propagate the exception
 									do {
-										block = localBlockIndex->entries[indexIndex].block; /*(void)block;*/
+										block = localBlockIndex->entries[indexIndex].block; (void)block;
 										while (index != endIndex) { (*block)[index++]->~T(); }
 										block->XConcurrentQueueAbstract::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 										indexIndex = indexIndex + 1 & localBlockIndex->size - 1;
@@ -1931,15 +1919,17 @@ namespace moodycamel {
 				}
 
 				// No room in the old block index, try to allocate another one!
-				if (allocMode == CannotAlloc || !new_block_index()) { return {}; }
-
-				localBlockIndex = blockIndex.loadRelaxed();
-				newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
-				idxEntry = localBlockIndex->index[newTail];
-				assert(idxEntry->key.loadRelaxed() == INVALID_BLOCK_BASE);
-				idxEntry->key.storeRelaxed(blockStartIndex);
-				localBlockIndex->tail.storeRelease(newTail);
-				return true;
+				MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) { return {}; }
+				else {
+					if (!new_block_index()) { return {}; }
+					localBlockIndex = blockIndex.loadRelaxed();
+					newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
+					idxEntry = localBlockIndex->index[newTail];
+					assert(idxEntry->key.loadRelaxed() == INVALID_BLOCK_BASE);
+					idxEntry->key.storeRelaxed(blockStartIndex);
+					localBlockIndex->tail.storeRelease(newTail);
+					return true;
+				}
 			}
 
 			constexpr void rewind_block_index_tail() {
