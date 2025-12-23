@@ -1094,43 +1094,26 @@ namespace moodycamel {
 								&& (!MAX_SUBQUEUE_SIZE || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))};
 									!pr_blockIndexRaw || pr_blockIndexSlotsUsed == pr_blockIndexSize || full)
 						{
-#if 0
-							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock == nullptr ? firstAllocatedBlock : startBlock;
-								return {};
-							}
-							else if (full || !new_block_index(originalBlockIndexSlotsUsed)) {
-								// Failed to allocate, undo changes (but keep injected blocks)
-								pr_blockIndexFront = originalBlockIndexFront;
-								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-								this->tailBlock = startBlock == nullptr ? firstAllocatedBlock : startBlock;
-								return {};
-							}
-#else
-							{
-								auto const f{ [this
-									,&originalBlockIndexFront
-									,&originalBlockIndexSlotsUsed
-									,&startBlock
-									,&firstAllocatedBlock]()noexcept {
-										// Failed to allocate, undo changes (but keep injected blocks)
-										pr_blockIndexFront = originalBlockIndexFront;
-										pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
-										this->tailBlock = startBlock ? startBlock : firstAllocatedBlock;
-									}
-								};
+							auto const f{ [this
+								,&originalBlockIndexFront
+								,&originalBlockIndexSlotsUsed
+								,&startBlock
+								,&firstAllocatedBlock]()noexcept {
+									// Failed to allocate, undo changes (but keep injected blocks)
+									pr_blockIndexFront = originalBlockIndexFront;
+									pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
+									this->tailBlock = startBlock ? startBlock : firstAllocatedBlock;
+								}
+							};
 
-								MOODYCAMEL_CONSTEXPR_IF(allocMode == CannotAlloc){ f(); return {}; }
-								else { if (full || !new_block_index(originalBlockIndexSlotsUsed)) { f(); return {}; } }
+							MOODYCAMEL_CONSTEXPR_IF(allocMode == CannotAlloc){ f(); return {}; }
+							else {
+								if (full || !new_block_index(originalBlockIndexSlotsUsed)) { f(); return {}; }
+								// pr_blockIndexFront is updated inside new_block_index, so we need to
+								// update our fallback value too (since we keep the new index even if we
+								// later fail)
+								originalBlockIndexFront = originalBlockIndexSlotsUsed;
 							}
-#endif
-							// pr_blockIndexFront is updated inside new_block_index, so we need to
-							// update our fallback value too (since we keep the new index even if we
-							// later fail)
-							originalBlockIndexFront = originalBlockIndexSlotsUsed;
 						}
 
 						// Insert a new block in the circular linked list
