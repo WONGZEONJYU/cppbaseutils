@@ -388,7 +388,7 @@ public:
 	constexpr size_t wait_dequeue_bulk_timed(Base::consumer_token_t & token, It && itemFirst, size_t max, std::int64_t const timeout_usecs) {
 		size_t count {};
 		max = static_cast<size_t>(this->m_sema_->waitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max)), timeout_usecs));
-		while (count != max) { count += this->inner.try_dequeue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+		while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), max - count); }
 		return count;
 	}
 
@@ -398,7 +398,7 @@ public:
 	// and at most max.
 	// Never allocates. Thread-safe.
 	template<typename It, typename Rep, typename Period>
-	constexpr size_t wait_dequeue_bulk_timed(Base::consumer_token_t & token, It && itemFirst, size_t max, std::chrono::duration<Rep, Period> const & timeout) {
+	constexpr size_t wait_dequeue_bulk_timed(Base::consumer_token_t & token, It && itemFirst, size_t const max, std::chrono::duration<Rep, Period> const & timeout) {
 		return wait_dequeue_bulk_timed<It&>(token,std::forward<decltype(itemFirst)>(itemFirst)
     			,max,std::chrono::duration_cast<std::chrono::microseconds>(timeout).count());
     }
