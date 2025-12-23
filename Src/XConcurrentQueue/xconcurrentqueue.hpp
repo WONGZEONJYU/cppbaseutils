@@ -416,13 +416,19 @@ namespace moodycamel {
 		// visible on the calling thread, and no further operations start while this method is
 		// being called).
 		// Thread-safe.
-		[[nodiscard]] constexpr size_t size_approx() const {
+		[[nodiscard]] constexpr size_t size_approx() const noexcept {
 			size_t size {};
 			for (auto ptr{ this->producerListTail.loadAcquire() };
 				ptr; ptr = ptr->next_prod())
 			{ size += ptr->size_approx(); }
 			return size;
 		}
+
+		[[nodiscard]] constexpr bool empty() const noexcept
+		{ return !size_approx(); }
+
+		[[nodiscard]] constexpr bool isEmpty() const noexcept
+		{ return !size_approx(); }
 
 		// Returns true if the underlying atomic variables used by
 		// the queue are lock-free (they should be on most platforms).
