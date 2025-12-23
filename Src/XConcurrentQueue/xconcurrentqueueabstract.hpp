@@ -298,7 +298,7 @@ namespace moodycamel {
 
 			// Thread-local
 			static ThreadExitNotifier & instance() noexcept {
-				thread_local static ThreadExitNotifier notifier;
+				thread_local ThreadExitNotifier notifier;
 				return notifier;
 			}
 
@@ -328,13 +328,13 @@ namespace moodycamel {
 
 	struct ProducerToken {
 		template<typename T,typename Traits>
-		explicit ProducerToken(XConcurrentQueue<T, Traits> & queue)
+		explicit ProducerToken(XConcurrentQueueAbstract<T, Traits> & queue)
 			: producer(queue.recycle_or_create_producer(true))
 		{ if (producer) { producer->token = this; } }
 
 		template<typename T,typename Traits>
 		explicit ProducerToken(XBlockingConcurrentQueue<T, Traits> & queue)
-			: producer(reinterpret_cast<XConcurrentQueue<T, Traits>*>(std::addressof(queue))->recycle_or_create_producer(true))
+			: producer(reinterpret_cast<XConcurrentQueueAbstract<T, Traits>*>(std::addressof(queue))->recycle_or_create_producer(true))
 		{ if (producer) { producer->token = this; } }
 
 		ProducerToken(ProducerToken && other) noexcept : producer {other.producer}
@@ -428,6 +428,10 @@ namespace moodycamel {
 	constexpr void swap(XConcurrentQueue<T, Traits>& a, XConcurrentQueue<T, Traits>& b) MOODYCAMEL_NOEXCEPT
 	{ a.swap(b); }
 
+	template<typename T, typename Traits>
+	constexpr void swap(XConcurrentQueueAbstract<T, Traits> & a, XConcurrentQueueAbstract<T, Traits> & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
 	[[maybe_unused]] static constexpr void swap(ProducerToken & a, ProducerToken & b) MOODYCAMEL_NOEXCEPT
 	{ a.swap(b); }
 
@@ -439,6 +443,11 @@ namespace moodycamel {
 	template<typename T, typename Traits>
 	constexpr void swap(typename XConcurrentQueue<T, Traits>::ImplicitProducerKVP & a
 		, typename XConcurrentQueue<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
+	template<typename T, typename Traits>
+	constexpr void swap(typename XConcurrentQueueAbstract<T, Traits>::ImplicitProducerKVP & a
+		, typename XConcurrentQueueAbstract<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT
 	{ a.swap(b); }
 
 	template<typename T, typename Traits>
@@ -892,7 +901,7 @@ namespace moodycamel {
 #ifdef MCDBGQ_TRACKMEM
 						newBlock->owner = this;
 #endif
-						newBlock->XConcurrentQueue::Block::template reset_empty<explicit_context>();
+						newBlock->XConcurrentQueueAbstract::Block::template reset_empty<explicit_context>();
 
 						if (!this->tailBlock) { newBlock->next = newBlock; }
 						else {
@@ -1016,7 +1025,7 @@ namespace moodycamel {
 								index_t index {};
 								~Guard() {
 									(*block)[index]->~T();
-									block->XConcurrentQueue::Block::template set_empty<explicit_context>(index);
+									block->XConcurrentQueueAbstract::Block::template set_empty<explicit_context>(index);
 								}
 							} guard = { block, index };
 
@@ -1024,7 +1033,7 @@ namespace moodycamel {
 						} else {
 							element = std::move(el); // NOLINT
 							el.~T(); // NOLINT
-							block->XConcurrentQueue::Block::template set_empty<explicit_context>(index);
+							block->XConcurrentQueueAbstract::Block::template set_empty<explicit_context>(index);
 						}
 
 						return true;
@@ -1508,7 +1517,7 @@ namespace moodycamel {
 #ifdef MCDBGQ_TRACKMEM
 					newBlock->owner = this;
 #endif
-					newBlock->XConcurrentQueue::Block::template reset_empty<implicit_context>();
+					newBlock->XConcurrentQueueAbstract::Block::template reset_empty<implicit_context>();
 
 					MOODYCAMEL_CONSTEXPR_IF (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new (static_cast<T*>(nullptr)) T(std::forward<U>(element)))) {
 						// May throw, try to insert now before we publish the fact that we have this new block
@@ -1575,7 +1584,7 @@ namespace moodycamel {
 
 								~Guard() {
 									(*block)[index]->~T();
-									if (block->XConcurrentQueue::Block::template set_empty<implicit_context>(index)) {
+									if (block->XConcurrentQueueAbstract::Block::template set_empty<implicit_context>(index)) {
 										entry->value.storeRelaxed({});
 										parent->add_block_to_free_list(block);
 									}
@@ -1587,7 +1596,7 @@ namespace moodycamel {
 							element = std::move(el); // NOLINT
 							el.~T(); // NOLINT
 
-							if (block->XConcurrentQueue::Block::template set_empty<implicit_context>(index)) {
+							if (block->XConcurrentQueueAbstract::Block::template set_empty<implicit_context>(index)) {
 								{
 #ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
 									debug::DebugLock lock { mutex };

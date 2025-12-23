@@ -70,8 +70,11 @@ namespace moodycamel {
 	class XConcurrentQueue;
 
 	template<typename T, typename Traits>
-	class XConcurrentQueue : public XConcurrentQueueAbstract<T,Traits> {
+	class XConcurrentQueue
+		: public XConcurrentQueueAbstract<T,Traits>
+	{
 		using Base = XConcurrentQueueAbstract<T,Traits>;
+
 	public:
 		using value_type = Base::value_type;
 
@@ -85,7 +88,7 @@ namespace moodycamel {
 		// queue is fully constructed before it starts being used by other threads (this
 		// includes making the memory effects of construction visible, possibly with a
 		// memory barrier).
-		explicit XConcurrentQueue(size_t const capacity = 32 * Base::BLOCK_SIZE) {
+		explicit XConcurrentQueue(Base::size_t const capacity = 32 * Base::BLOCK_SIZE) {
 			this->implicitProducerHashResizeInProgress.clear(std::memory_order_relaxed);
 			this->populate_initial_implicit_producer_hash();
 			this->populate_initial_block_list(capacity / Base::BLOCK_SIZE + ( capacity & Base::BLOCK_SIZE - 1 ? 1 : 0) );
@@ -103,7 +106,7 @@ namespace moodycamel {
 		// Computes the correct amount of pre-allocated blocks for you based
 		// on the minimum number of elements you want available at any given
 		// time, and the maximum concurrent number of each type of producer.
-		XConcurrentQueue(size_t const minCapacity, size_t const maxExplicitProducers, size_t const maxImplicitProducers) {
+		XConcurrentQueue(Base::size_t const minCapacity, Base::size_t const maxExplicitProducers, Base::size_t const maxImplicitProducers) {
 			this->implicitProducerHashResizeInProgress.clear(std::memory_order_relaxed);
 			this->populate_initial_implicit_producer_hash();
 			auto const blocks{
@@ -163,7 +166,7 @@ namespace moodycamel {
 		// Allocates memory if required. Only fails if memory allocation fails (or
 		// Traits::MAX_SUBQUEUE_SIZE has been defined and would be surpassed).
 		// Thread-safe.
-		constexpr bool enqueue(Base::producer_token_t const & token, T && item)
+		constexpr bool enqueue(Base::producer_token_t const & token, value_type && item)
 		{ return this->inner_enqueue<Base::CanAlloc>(token, std::move(item)); }
 
 		// Enqueues several items.
@@ -173,7 +176,7 @@ namespace moodycamel {
 		// Note: Use std::make_move_iterator if the elements should be moved instead of copied.
 		// Thread-safe.
 		template<typename It>
-		constexpr bool enqueue_bulk(It && itemFirst, size_t const count) {
+		constexpr bool enqueue_bulk(It && itemFirst, Base::size_t const count) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
 			else { return this->inner_enqueue_bulk<Base::CanAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
 		}
@@ -185,7 +188,7 @@ namespace moodycamel {
 		// instead of copied.
 		// Thread-safe.
 		template<typename It>
-		constexpr bool enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, size_t const count)
+		constexpr bool enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, Base::size_t const count)
 		{ return this->inner_enqueue_bulk<Base::CanAlloc>(token, std::forward<decltype(itemFirst)>(itemFirst), count); }
 
 		// Enqueues a single item (by copying it).
@@ -228,7 +231,7 @@ namespace moodycamel {
 		// instead of copied.
 		// Thread-safe.
 		template<typename It>
-		constexpr bool try_enqueue_bulk(It && itemFirst, size_t const count) {
+		constexpr bool try_enqueue_bulk(It && itemFirst, Base::size_t const count) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
 			else { return this-> template inner_enqueue_bulk<Base::CannotAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
 		}
@@ -239,7 +242,7 @@ namespace moodycamel {
 		// instead of copied.
 		// Thread-safe.
 		template<typename It>
-		constexpr bool try_enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, size_t const count)
+		constexpr bool try_enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, Base::size_t const count)
 		{ return this->template inner_enqueue_bulk<Base::CannotAlloc>(token, std::forward<decltype(itemFirst)>(itemFirst), count); }
 
 		// Attempts to dequeue from the queue.
@@ -250,9 +253,9 @@ namespace moodycamel {
 		constexpr bool try_dequeue(U & item) {
 			// Instead of simply trying each producer in turn (which could cause needless contention on the first
 			// producer), we score them heuristically.
-			size_t nonEmptyCount {},bestSize {};
+			typename Base::size_t nonEmptyCount {},bestSize {};
 			typename Base::ProducerBase * best {};
-			for (auto ptr{ this->producerListTail.loadAcquire()};
+			for (auto ptr{ this->producerListTail.loadAcquire() };
 				nonEmptyCount < 3 && ptr; ptr = ptr->next_prod())
 			{
 				if (auto const size{ptr->size_approx()};size > 0) {
@@ -336,8 +339,8 @@ namespace moodycamel {
 		// were checked (so, the queue is likely but not guaranteed to be empty).
 		// Never allocates. Thread-safe.
 		template<typename It>
-		constexpr size_t try_dequeue_bulk(It && itemFirst, size_t const max) {
-			size_t count {};
+		constexpr size_t try_dequeue_bulk(It && itemFirst, Base::size_t const max) {
+			typename Base::size_t count {};
 			for (auto ptr{ this->producerListTail.loadAcquire() };
 				ptr; ptr = ptr->next_prod())
 			{
@@ -353,7 +356,7 @@ namespace moodycamel {
 		// were checked (so, the queue is likely but not guaranteed to be empty).
 		// Never allocates. Thread-safe.
 		template<typename It>
-		constexpr size_t try_dequeue_bulk(Base::consumer_token_t & token, It && itemFirst, size_t const max) {
+		constexpr Base::size_t try_dequeue_bulk(Base::consumer_token_t & token, It && itemFirst, Base::size_t const max) {
 
 			if (!token.desiredProducer || token.lastKnownGlobalOffset != this->globalExplicitConsumerOffset.loadRelaxed())
 			{ if (!this->update_current_producer_after_rotation(token)) { return {}; } }
@@ -407,7 +410,7 @@ namespace moodycamel {
 		// was checked (so, the queue is likely but not guaranteed to be empty).
 		// Never allocates. Thread-safe.
 		template<typename It>
-		static constexpr size_t try_dequeue_bulk_from_producer(Base::producer_token_t const & producer, It && itemFirst, size_t const max)
+		static constexpr Base::size_t try_dequeue_bulk_from_producer(Base::producer_token_t const & producer, It && itemFirst, Base::size_t const max)
 		{ return static_cast<Base::ExplicitProducer*>(producer.producer)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max); }
 
 		// Returns an estimate of the total number of elements currently in the queue. This
@@ -416,8 +419,8 @@ namespace moodycamel {
 		// visible on the calling thread, and no further operations start while this method is
 		// being called).
 		// Thread-safe.
-		[[nodiscard]] constexpr size_t size_approx() const noexcept {
-			size_t size {};
+		[[nodiscard]] constexpr Base::size_t size_approx() const noexcept {
+			typename Base::size_t size {};
 			for (auto ptr{ this->producerListTail.loadAcquire() };
 				ptr; ptr = ptr->next_prod())
 			{ size += ptr->size_approx(); }
