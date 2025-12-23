@@ -142,7 +142,7 @@ namespace moodycamel {
 		// Thread-safe.
 		constexpr bool enqueue(value_type const & item) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
-			else { return this->inner_enqueue<Base::CanAlloc>(item); }
+			else { return this->template inner_enqueue<Base::CanAlloc>(item); }
 		}
 
 		// Enqueues a single item (by moving it, if possible).
@@ -152,7 +152,7 @@ namespace moodycamel {
 		// Thread-safe.
 		constexpr bool enqueue(value_type && item) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
-			else { return this->inner_enqueue<Base::CanAlloc>(std::move(item)); }
+			else { return this->template inner_enqueue<Base::CanAlloc>(std::move(item)); }
 		}
 
 		// Enqueues a single item (by copying it) using an explicit producer token.
@@ -160,14 +160,14 @@ namespace moodycamel {
 		// Traits::MAX_SUBQUEUE_SIZE has been defined and would be surpassed).
 		// Thread-safe.
 		constexpr bool enqueue(Base::producer_token_t const & token, value_type const & item)
-		{ return this->inner_enqueue<Base::CanAlloc>(token, item); }
+		{ return this->template inner_enqueue<Base::CanAlloc>(token, item); }
 
 		// Enqueues a single item (by moving it, if possible) using an explicit producer token.
 		// Allocates memory if required. Only fails if memory allocation fails (or
 		// Traits::MAX_SUBQUEUE_SIZE has been defined and would be surpassed).
 		// Thread-safe.
 		constexpr bool enqueue(Base::producer_token_t const & token, value_type && item)
-		{ return this->inner_enqueue<Base::CanAlloc>(token, std::move(item)); }
+		{ return this->template inner_enqueue<Base::CanAlloc>(token, std::move(item)); }
 
 		// Enqueues several items.
 		// Allocates memory if required. Only fails if memory allocation fails (or
@@ -178,7 +178,7 @@ namespace moodycamel {
 		template<typename It>
 		constexpr bool enqueue_bulk(It && itemFirst, Base::size_t const count) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
-			else { return this->inner_enqueue_bulk<Base::CanAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
+			else { return this->template inner_enqueue_bulk<Base::CanAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
 		}
 
 		// Enqueues several items using an explicit producer token.
@@ -189,7 +189,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool enqueue_bulk(Base::producer_token_t const & token, It && itemFirst, Base::size_t const count)
-		{ return this->inner_enqueue_bulk<Base::CanAlloc>(token, std::forward<decltype(itemFirst)>(itemFirst), count); }
+		{ return this->template inner_enqueue_bulk<Base::CanAlloc>(token, std::forward<decltype(itemFirst)>(itemFirst), count); }
 
 		// Enqueues a single item (by copying it).
 		// Does not allocate memory. Fails if not enough room to enqueue (or implicit
@@ -198,7 +198,7 @@ namespace moodycamel {
 		// Thread-safe.
 		constexpr bool try_enqueue(value_type const & item) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE) { return {}; }
-			else { return this->inner_enqueue<Base::CannotAlloc>(item); }
+			else { return this->template inner_enqueue<Base::CannotAlloc>(item); }
 		}
 
 		// Enqueues a single item (by moving it, if possible).
@@ -208,20 +208,20 @@ namespace moodycamel {
 		// Thread-safe.
 		constexpr bool try_enqueue(value_type && item) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
-			else { return this->inner_enqueue<Base::CannotAlloc>(std::move(item)); }
+			else { return this->template inner_enqueue<Base::CannotAlloc>(std::move(item)); }
 		}
 
 		// Enqueues a single item (by copying it) using an explicit producer token.
 		// Does not allocate memory. Fails if not enough room to enqueue.
 		// Thread-safe.
 		constexpr bool try_enqueue(Base::producer_token_t const & token, value_type const & item)
-		{ return this->inner_enqueue<Base::CannotAlloc>(token, item); }
+		{ return this->template inner_enqueue<Base::CannotAlloc>(token, item); }
 
 		// Enqueues a single item (by moving it, if possible) using an explicit producer token.
 		// Does not allocate memory. Fails if not enough room to enqueue.
 		// Thread-safe.
 		constexpr bool try_enqueue(Base::producer_token_t const & token, value_type && item)
-		{ return this->inner_enqueue<Base::CannotAlloc>(token, std::move(item)); }
+		{ return this->template inner_enqueue<Base::CannotAlloc>(token, std::move(item)); }
 
 		// Enqueues several items.
 		// Does not allocate memory (except for one-time implicit producer).
@@ -356,7 +356,7 @@ namespace moodycamel {
 		// were checked (so, the queue is likely but not guaranteed to be empty).
 		// Never allocates. Thread-safe.
 		template<typename It>
-		constexpr Base::size_t try_dequeue_bulk(Base::consumer_token_t & token, It && itemFirst, Base::size_t const max) {
+		constexpr Base::size_t try_dequeue_bulk(Base::consumer_token_t & token, It && itemFirst, Base::size_t max) {
 
 			if (!token.desiredProducer || token.lastKnownGlobalOffset != this->globalExplicitConsumerOffset.loadRelaxed())
 			{ if (!this->update_current_producer_after_rotation(token)) { return {}; } }

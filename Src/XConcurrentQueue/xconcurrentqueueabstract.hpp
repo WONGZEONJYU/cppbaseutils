@@ -891,7 +891,7 @@ namespace moodycamel {
 							MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) { return {}; }
 							else { if (!new_block_index(pr_blockIndexSlotsUsed)) { return {} ; } }
 #else
-							MOODYCAMEL_CONSTEXPR_IF(allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) { return {}; }
+							if(allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) { return {}; }
 #endif
 						}
 
@@ -1114,7 +1114,7 @@ namespace moodycamel {
 								return {};
 							}
 #else
-							if constexpr (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
+							if (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
 								// Failed to allocate, undo changes (but keep injected blocks)
 								pr_blockIndexFront = originalBlockIndexFront;
 								pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
@@ -1267,7 +1267,7 @@ namespace moodycamel {
 
 					std::atomic_thread_fence(std::memory_order_acquire);
 
-					auto const myDequeueCount{this->dequeueOptimisticCount.fetchAndAddRelaxed(desiredCount) };
+					auto const myDequeueCount{ this->dequeueOptimisticCount.fetchAndAddRelaxed(desiredCount) };
 
 					tail = this->tailIndex.loadAcquire();
 					auto actualCount { static_cast<size_t>(tail - (myDequeueCount - overcommit)) };
@@ -1931,7 +1931,7 @@ namespace moodycamel {
 				}
 
 				// No room in the old block index, try to allocate another one!
-				if constexpr (allocMode == CannotAlloc || !new_block_index()) { return {}; }
+				if (allocMode == CannotAlloc || !new_block_index()) { return {}; }
 
 				localBlockIndex = blockIndex.loadRelaxed();
 				newTail = localBlockIndex->tail.loadRelaxed() + 1 & localBlockIndex->capacity - 1;
