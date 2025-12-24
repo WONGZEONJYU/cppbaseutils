@@ -564,7 +564,7 @@ namespace moodycamel {
 		,typename QueueType = XConcurrentQueue<T,Traits>>
 	struct XConcurrentQueueHelper;
 
-	template<typename ,typename ,typename QueueType>
+	template<typename T,typename Traits,typename QueueType>
 	struct XConcurrentQueueHelper {
 
 		using ConcurrentQueue = QueueType;
