@@ -2583,7 +2583,10 @@ namespace moodycamel {
 	public:
 		X_DISABLE_COPY(XConcurrentQueueAbstract)
 
-		virtual ~XConcurrentQueueAbstract() {
+		// Note: The queue should not be accessed concurrently while it's
+		// being deleted. It's up to the user to synchronize this.
+		// This method is not thread safe.
+		~XConcurrentQueueAbstract() {
 			// Destroy producers
 			auto ptr{ producerListTail.loadRelaxed() };
 			while (ptr) {

@@ -69,6 +69,9 @@ namespace moodycamel {
 	template<typename,typename = XConcurrentQueueDefaultTraits>
 	class XConcurrentQueue;
 
+	template<typename ,typename ,typename >
+	struct XConcurrentQueueHelper;
+
 	template<typename T, typename Traits>
 	class XConcurrentQueue
 		: public XConcurrentQueueAbstract<T,Traits>
@@ -122,11 +125,6 @@ namespace moodycamel {
 			this->implicitProducers.storeRelaxed({});
 #endif
 		}
-
-		// Note: The queue should not be accessed concurrently while it's
-		// being deleted. It's up to the user to synchronize this.
-		// This method is not thread safe.
-		~XConcurrentQueue() override = default;
 
 		// Disable copying and copy assignment
 		X_DISABLE_COPY(XConcurrentQueue)
@@ -561,6 +559,128 @@ namespace moodycamel {
 		friend class ConcurrentQueueTests;
 		template<typename ,typename > friend class XConcurrentQueueAbstract;
 	};
+
+	template<typename T,typename Traits = XConcurrentQueueDefaultTraits
+		,typename QueueType = XConcurrentQueue<T,Traits>>
+	struct XConcurrentQueueHelper;
+
+	template<typename ,typename ,typename QueueType>
+	struct XConcurrentQueueHelper {
+
+		using ConcurrentQueue = QueueType;
+		using value_type = ConcurrentQueue::value_type;
+		using size_t = ConcurrentQueue::size_t;
+		using index_t = ConcurrentQueue::index_t;
+		using producer_token_t = ConcurrentQueue::producer_token_t;
+		using consumer_token_t = ConcurrentQueue::consumer_token_t;
+
+		ConcurrentQueue m_q {};
+
+	protected:
+		XAtomicInteger<typename ConcurrentQueue::size_t> m_count {};
+
+	public:
+		template<typename ...Args>
+		constexpr explicit XConcurrentQueueHelper(Args && ...args)
+			: m_q { std::forward<decltype(args)>(args)... }
+		{}
+
+		constexpr size_t size() const noexcept { return m_count.loadRelaxed(); }
+		constexpr size_t length() const noexcept { return m_count.loadRelaxed(); }
+		constexpr size_t size_approx() const noexcept { return m_q.size_approx(); }
+		[[nodiscard]] constexpr bool empty() const noexcept { return !m_count.loadRelaxed(); }
+		[[nodiscard]] constexpr bool isEmpty() const noexcept { return !m_count.loadRelaxed(); }
+
+#define CHECK_NOEXCEPT_(fn) noexcept( noexcept( std::declval<ConcurrentQueue &>().fn( ( std::declval<Args && >() )... ) ) )
+
+#define MAKE_ENQUEUE_FUNC(en_fn) \
+		template<typename ...Args> \
+		constexpr bool en_fn(Args && ...args) CHECK_NOEXCEPT_(en_fn) { \
+			auto const ret { m_q.en_fn(std::forward<decltype(args)>(args)...) }; \
+			if ((details::likely)(ret)) { m_count.ref(); } \
+			return ret; \
+		}
+
+		MAKE_ENQUEUE_FUNC(enqueue)
+		MAKE_ENQUEUE_FUNC(try_enqueue)
+
+#undef MAKE_ENQUEUE_FUNC
+
+#define MAKE_ENQUEUE_BULK_FUNC(en_bulk_fn) \
+		template<typename ...Args> \
+		constexpr bool en_bulk_fn(Args && ...args) CHECK_NOEXCEPT_(en_bulk_fn) { \
+			using Tuple = std::tuple<Args...>; \
+			auto constexpr lastInx { std::tuple_size_v<Tuple> - 1 }; \
+			auto const len { std::get<lastInx>(Tuple{std::forward<decltype(args)>(args)...}) }; \
+			auto const ret { m_q.en_bulk_fn(std::forward<decltype(args)>(args)...) }; \
+			if ((details::likely)(ret)) { m_count.fetchAndAddOrdered(len); } \
+			return ret; \
+		}
+
+		MAKE_ENQUEUE_BULK_FUNC(enqueue_bulk)
+		MAKE_ENQUEUE_BULK_FUNC(try_enqueue_bulk)
+
+#undef MAKE_ENQUEUE_BULK_FUNC
+
+#define MAKE_DEQUEUE_FUNC(de_fn) \
+		template<typename ...Args> \
+		constexpr bool de_fn(Args && ...args) CHECK_NOEXCEPT_(de_fn) { \
+			auto const ret { m_q.de_fn(std::forward<decltype(args)>(args)...) }; \
+			if ((details::likely)(ret)) { m_count.deref(); } \
+			return ret; \
+		}
+
+		MAKE_DEQUEUE_FUNC(try_dequeue)
+		MAKE_DEQUEUE_FUNC(try_dequeue_non_interleaved)
+
+#undef MAKE_DEQUEUE_FUNC
+
+		template<typename ...Args>
+		constexpr size_t try_dequeue_bulk(Args && ...args) CHECK_NOEXCEPT_(try_dequeue_bulk) {
+			auto const ret { m_q.try_dequeue_bulk(std::forward<decltype(args)>(args)...) };
+			m_count.fetchAndSubOrdered(ret);
+			return ret;
+		}
+
+		template<typename ...Args>
+		constexpr bool try_dequeue_from_producer(Args && ...args)
+			CHECK_NOEXCEPT_(try_dequeue_from_producer)
+		{
+			auto const ret { ConcurrentQueue::try_dequeue_from_producer(std::forward<decltype(args)>(args)...) };
+			if ((details::likely)(ret)) { m_count.deref(); }
+			return ret;
+		}
+
+		template<typename ...Args>
+		constexpr size_t try_dequeue_bulk_from_producer(Args && ...args)
+			CHECK_NOEXCEPT_(try_dequeue_bulk_from_producer)
+		{
+			auto const ret { ConcurrentQueue::try_dequeue_bulk_from_producer(std::forward<decltype(args)>(args)...) };
+			m_count.fetchAndSubOrdered(ret);
+			return ret;
+		}
+
+#undef CHECK_NOEXCEPT_
+
+		void swap(XConcurrentQueueHelper & other) noexcept {
+			m_q.swap(other.m_q);
+			auto const v{ m_count.loadRelaxed() };
+			m_count.storeRelaxed(other.m_count.loadRelaxed());
+			other.m_count.storeRelaxed(v);
+		}
+
+		XConcurrentQueueHelper(XConcurrentQueueHelper && other) noexcept
+		{ swap(other); }
+
+		XConcurrentQueueHelper& operator=(XConcurrentQueueHelper && other) noexcept
+		{ swap(other); return *this; }
+
+		X_DISABLE_COPY(XConcurrentQueueHelper)
+	};
+
+	template<typename ...Args>
+	constexpr void swap(XConcurrentQueueHelper<Args...> & lhs,XConcurrentQueueHelper<Args...> & rhs) noexcept
+	{ lhs.swap(rhs); }
 }
 
 #if defined(_MSC_VER) && (!defined(_HAS_CXX17) || !_HAS_CXX17)

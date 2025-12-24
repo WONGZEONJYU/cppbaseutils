@@ -65,8 +65,6 @@ public:
     static constexpr auto EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE { XConcurrentQueue::EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE };
     static constexpr auto MAX_SUBQUEUE_SIZE { XConcurrentQueue::MAX_SUBQUEUE_SIZE };
 
-    virtual ~XBlockingConcurrentQueueAbstract() = default;
-
     XBlockingConcurrentQueueAbstract(XBlockingConcurrentQueueAbstract && o) noexcept
     { swap_internal(o); }
 
@@ -82,15 +80,23 @@ public:
     { swap_internal(other);}
 
 private:
+
+#undef ASSERT_
+#define ASSERT_ assert( reinterpret_cast<XConcurrentQueue*>(reinterpret_cast<XBlockingConcurrentQueueAbstract*>(1)) \
+                                == std::addressof(reinterpret_cast<XBlockingConcurrentQueueAbstract*>(1)->m_inner_) \
+                                && "XBlockingConcurrentQueue must have XConcurrentQueue as its first member");
+
     explicit XBlockingConcurrentQueueAbstract(size_t const capacity)
         :m_inner_{ capacity }
         ,m_sema_{std::make_unique<XLightweightSemaphore>(0,static_cast<int>(Traits::MAX_SEMA_SPINS) ) }
-    { if (!m_sema_) { MOODYCAMEL_THROW(std::bad_alloc()); } }
+    { ASSERT_  }
 
     XBlockingConcurrentQueueAbstract(size_t const minCapacity, size_t const maxExplicitProducers, size_t const maxImplicitProducers)
         :m_inner_ { minCapacity,maxExplicitProducers,maxImplicitProducers }
         ,m_sema_{std::make_unique<XLightweightSemaphore>(0,static_cast<int>(Traits::MAX_SEMA_SPINS) ) }
-    { if (!m_sema_) { MOODYCAMEL_THROW(std::bad_alloc()); } }
+    { ASSERT_ }
+
+#undef ASSERT_
 
     template<typename U, typename A1, typename A2>
     static constexpr U * create(A1 && a1, A2 && a2) {
