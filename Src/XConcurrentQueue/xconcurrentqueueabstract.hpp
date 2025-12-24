@@ -26,12 +26,13 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace moodycamel {
 
-    // Default traits for the ConcurrentQueue. To change some of the
-	// traits without re-implementing all of them, inherit from this
-	// struct and shadow the declarations you wish to be different;
-	// since the traits are used as a template type parameter, the
-	// shadowed declarations will be used where defined, and the defaults
-	// otherwise.
+	/* Default traits for the ConcurrentQueue. To change some of the
+	traits without re-implementing all of them, inherit from this
+	struct and shadow the declarations you wish to be different;
+	since the traits are used as a template type parameter, the
+	shadowed declarations will be used where defined, and the defaults
+	otherwise.
+	*/
 	struct XConcurrentQueueDefaultTraits {
 		// General-purpose size type. std::size_t is strongly recommended.
 		using size_t = std::size_t;
@@ -121,6 +122,10 @@ namespace moodycamel {
 		static void free(void * const ptr) { return rl::rl_free(ptr, $); }
 #endif
 	};
+
+}
+
+namespace moodycamel {
 
 	struct ProducerToken;
 	struct ConsumerToken;
@@ -423,33 +428,9 @@ namespace moodycamel {
 		using ConcurrentQueueProducerTypelessBase = details::ConcurrentQueueProducerTypelessBase;
 		ConcurrentQueueProducerTypelessBase * currentProducer{},* desiredProducer{};
 	};
+}
 
-	template<typename T, typename Traits>
-	constexpr void swap(XConcurrentQueue<T, Traits>& a, XConcurrentQueue<T, Traits>& b) MOODYCAMEL_NOEXCEPT
-	{ a.swap(b); }
-
-	template<typename T, typename Traits>
-	constexpr void swap(XConcurrentQueueAbstract<T, Traits> & a, XConcurrentQueueAbstract<T, Traits> & b) MOODYCAMEL_NOEXCEPT
-	{ a.swap(b); }
-
-	[[maybe_unused]] static constexpr void swap(ProducerToken & a, ProducerToken & b) MOODYCAMEL_NOEXCEPT
-	{ a.swap(b); }
-
-	[[maybe_unused]] static constexpr void swap(ConsumerToken & a, ConsumerToken & b) MOODYCAMEL_NOEXCEPT
-	{ a.swap(b); }
-
-	// Need to forward-declare this swap because it's in a namespace.
-	// See http://stackoverflow.com/questions/4492062/why-does-a-c-friend-class-need-a-forward-declaration-only-in-other-namespaces
-	template<typename T, typename Traits>
-	constexpr void swap(typename XConcurrentQueue<T, Traits>::ImplicitProducerKVP & a
-		, typename XConcurrentQueue<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT
-	{ a.swap(b); }
-
-	template<typename T, typename Traits>
-	constexpr void swap(typename XConcurrentQueueAbstract<T, Traits>::ImplicitProducerKVP & a
-		, typename XConcurrentQueueAbstract<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT
-	{ a.swap(b); }
-
+namespace moodycamel {
 	template<typename T, typename Traits>
 	class XConcurrentQueueAbstract {
 		template<typename ,typename > friend class XConcurrentQueue;
@@ -2677,6 +2658,35 @@ namespace moodycamel {
 		friend struct ImplicitProducer;
 		friend class XConcurrentQueueTests;
 	};
+}
+
+namespace moodycamel {
+
+	template<typename T, typename Traits>
+	constexpr void swap(XConcurrentQueue<T, Traits>& a, XConcurrentQueue<T, Traits>& b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
+	template<typename T, typename Traits>
+	constexpr void swap(XConcurrentQueueAbstract<T, Traits> & a, XConcurrentQueueAbstract<T, Traits> & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
+	[[maybe_unused]] static constexpr void swap(ProducerToken & a, ProducerToken & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
+	[[maybe_unused]] static constexpr void swap(ConsumerToken & a, ConsumerToken & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
+	// Need to forward-declare this swap because it's in a namespace.
+	// See http://stackoverflow.com/questions/4492062/why-does-a-c-friend-class-need-a-forward-declaration-only-in-other-namespaces
+	template<typename T, typename Traits>
+	constexpr void swap(typename XConcurrentQueue<T, Traits>::ImplicitProducerKVP & a
+		, typename XConcurrentQueue<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
+
+	template<typename T, typename Traits>
+	constexpr void swap(typename XConcurrentQueueAbstract<T, Traits>::ImplicitProducerKVP & a
+		, typename XConcurrentQueueAbstract<T, Traits>::ImplicitProducerKVP & b) MOODYCAMEL_NOEXCEPT
+	{ a.swap(b); }
 }
 
 XTD_INLINE_NAMESPACE_END

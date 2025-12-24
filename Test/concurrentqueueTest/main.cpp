@@ -1,20 +1,17 @@
 #include <iostream>
-//#include <XConcurrentQueue/xconcurrentqueue.hpp>
 #include <vector>
-#include <XConcurrentQueue/xblockingconcurrentqueue.hpp>
+#include <XConcurrentQueue/xconcurrentqueueproxy.hpp>
 #ifdef WIN32
 #include <Win/XSignal/xsignal.hpp>
 #else
 #include <Unix/XSignal/xsignal.hpp>
 #endif
 
-//#include <blockingconcurrentqueue.h>
-
 int main()
 {
 #if 1
     {
-        XUtils::moodycamel::XConcurrentQueueHelper<int> qq{};
+        XUtils::moodycamel::XConcurrentQueueProxy<int> qq{};
         auto q { std::move(qq) };
         XUtils::moodycamel::ProducerToken ptk{q.m_q};
         XUtils::moodycamel::ConsumerToken csu{qq.m_q};
@@ -138,7 +135,7 @@ int main()
 
 #if 1
     {
-        XUtils::moodycamel::XBlockingConcurrentQueueHelper<int> bbq{};
+        XUtils::moodycamel::XBlockingConcurrentQueueProxy<int> bbq{};
         XUtils::moodycamel::swap(bbq,bbq);
 
         auto bq { std::move(bbq) };
