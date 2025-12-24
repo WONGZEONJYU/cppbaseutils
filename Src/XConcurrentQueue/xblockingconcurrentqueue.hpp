@@ -24,7 +24,7 @@ namespace moodycamel {
 	template<typename,typename = XConcurrentQueueDefaultTraits>
 	class XBlockingConcurrentQueue;
 
-	template<typename,typename,typename> struct XBlockingConcurrentQueueHelper;
+	template<typename,typename,typename> struct XBlockingConcurrentQueueProxy;
 
 	// This is a blocking version of the queue. It has an almost identical interface to
 	// the normal non-blocking version, with the addition of various wait_dequeue() methods
@@ -43,6 +43,7 @@ namespace moodycamel {
 		using size_t = Base::size_t;
 		using ssize_t = Base::ssize_t;
 
+	protected:
 		// Creates a queue with at least `capacity` element slots; note that the
 		// actual number of elements that can be inserted without additional memory
 		// allocation depends on the number of producers and the block size (e.g. if
@@ -59,6 +60,7 @@ namespace moodycamel {
 		XBlockingConcurrentQueue(size_t const minCapacity, size_t const maxExplicitProducers, size_t const maxImplicitProducers)
 			: Base { minCapacity, maxExplicitProducers, maxImplicitProducers } {}
 
+	public:
 		// Disable copying and copy assignment
 		X_DISABLE_COPY(XBlockingConcurrentQueue)
 
@@ -431,67 +433,16 @@ namespace moodycamel {
 
 		template<typename ,typename >
 		friend class XBlockingConcurrentQueueAbstract;
+
+		template<typename,typename,typename> friend struct XBlockingConcurrentQueueProxy;
+		template<typename,typename,typename> friend struct XConcurrentQueueProxy;
+
 	};
 
 	template<typename T, typename Traits>
 	static constexpr void swap(XBlockingConcurrentQueue<T, Traits> & a, XBlockingConcurrentQueue<T, Traits> & b) noexcept
 	{ a.swap(b); }
 
-	template<typename T,typename Traits = XConcurrentQueueDefaultTraits
-	,typename QueueType = XBlockingConcurrentQueue<T,Traits>>
-	struct XBlockingConcurrentQueueHelper;
-
-	template<typename T,typename Traits,typename QueueType>
-	struct XBlockingConcurrentQueueHelper
-		: XConcurrentQueueHelper<T,Traits,QueueType>
-	{
-	private:
-		using Base = XConcurrentQueueHelper<T,Traits,QueueType>;
-
-	public:
-		using ConcurrentQueue = Base::ConcurrentQueue;
-		using value_type = ConcurrentQueue::value_type;
-		using size_t = ConcurrentQueue::size_t;
-		using index_t = ConcurrentQueue::index_t;
-		using producer_token_t = ConcurrentQueue::producer_token_t;
-		using consumer_token_t = ConcurrentQueue::consumer_token_t;
-
-		template<typename ...Args>
-		constexpr explicit XBlockingConcurrentQueueHelper(Args && ...args)
-			: Base{std::forward<Args>(args)...} {}
-
-#define CHECK_NOEXCEPT_(fn) noexcept( noexcept( std::declval<ConcurrentQueue &>().fn( ( std::declval<Args && >() )... ) ) )
-
-		template<typename ...Args>
-		constexpr void wait_dequeue(Args && ...args) CHECK_NOEXCEPT_(wait_dequeue) {
-			this->m_q.wait_dequeue(std::forward<Args>(args)...);
-			this->m_count.deref();
-		}
-
-		template<typename ...Args>
-		constexpr bool wait_dequeue_timed(Args && ...args) CHECK_NOEXCEPT_(wait_dequeue_timed) {
-			auto const ret { this->m_q.wait_dequeue_timed(std::forward<Args>(args)...) };
-			if (ret) { this->m_count.deref(); }
-			return ret;
-		}
-
-#define MAKE_WAIT_DEQUEUE_BULK_FUNC(wdb_fn) \
-		template<typename ...Args> \
-		constexpr size_t wdb_fn(Args && ...args) CHECK_NOEXCEPT_(wdb_fn) { \
-			auto const len { this->m_q.wdb_fn(std::forward<decltype(args)>(args)...) }; \
-			this->m_count.fetchAndSubOrdered(len); \
-			return len; \
-		}
-
-		MAKE_WAIT_DEQUEUE_BULK_FUNC(wait_dequeue_bulk)
-		MAKE_WAIT_DEQUEUE_BULK_FUNC(wait_dequeue_bulk_timed)
-
-#undef MAKE_WAIT_DEQUEUE_BULK_FUNC
-#undef CHECK_NOEXCEPT_
-
-		X_DEFAULT_MOVE(XBlockingConcurrentQueueHelper)
-		X_DISABLE_COPY(XBlockingConcurrentQueueHelper)
-	};
 }
 
 XTD_INLINE_NAMESPACE_END
