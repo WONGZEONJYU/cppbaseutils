@@ -92,7 +92,7 @@ namespace moodycamel {
 		// queue is fully constructed before it starts being used by other threads (this
 		// includes making the memory effects of construction visible, possibly with a
 		// memory barrier).
-		explicit XConcurrentQueue(size_t const capacity = 32 * Base::BLOCK_SIZE) {
+		explicit XConcurrentQueue(size_t const capacity = 64 * Base::BLOCK_SIZE) {
 			this->implicitProducerHashResizeInProgress.clear(std::memory_order_relaxed);
 			this->populate_initial_implicit_producer_hash();
 			this->populate_initial_block_list(capacity / Base::BLOCK_SIZE + ( capacity & Base::BLOCK_SIZE - 1 ? 1 : 0) );
