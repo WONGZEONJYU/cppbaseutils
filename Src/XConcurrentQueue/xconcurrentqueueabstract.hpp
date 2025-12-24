@@ -456,11 +456,11 @@ namespace moodycamel {
 
 	public:
 		using value_type = T;
-		using producer_token_t = ProducerToken ;
-		using consumer_token_t = ConsumerToken ;
+		using producer_token_t = ProducerToken;
+		using consumer_token_t = ConsumerToken;
 
-		using index_t = Traits::index_t ;
-		using size_t = Traits::size_t ;
+		using index_t = Traits::index_t;
+		using size_t = Traits::size_t;
 
 		static constexpr auto BLOCK_SIZE { static_cast<size_t>(Traits::BLOCK_SIZE) }
 			,EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { static_cast<size_t>(Traits::EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) }
