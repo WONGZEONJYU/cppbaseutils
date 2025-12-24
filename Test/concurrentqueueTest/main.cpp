@@ -10,11 +10,12 @@
 
 int main() {
 
-    XUtils::moodycamel::XConcurrentQueue<int> qq{};
-    auto q{ std::move(qq) };
+    XUtils::moodycamel::XConcurrentQueue<int> qq{32*32};
+    auto q { std::move(qq) };
     XUtils::moodycamel::ProducerToken ptk{q};
     XUtils::moodycamel::ConsumerToken csu{q};
 
+#if 1
     {
         auto constexpr in{-100};
         int out{};
@@ -107,16 +108,24 @@ int main() {
         { std::cerr << i << "\t"; }
         std::cerr << std::endl;
     }
+#endif
 
     {
         std::cerr << "size = " << q.size_approx() << std::endl;
         int constexpr in[1024]{ -130,-230,-330,-430,-530,-630,-730,-830,-930,-1030 };
-        std::cerr << "try_enqueue_bulk = " << std::boolalpha << q.try_enqueue_bulk(ptk,in,std::size(in)) << std::endl;
+        // int i{};
+        // for (auto && item : in) {
+        //     if (!q.try_enqueue(item)) { break; }
+        //     ++i;
+        // }
+        // std::cerr << "i = " << i << std::endl;
+        q.try_enqueue_bulk(ptk,in,std::size(in));
+        //std::cerr << "try_enqueue_bulk = " << std::boolalpha << q.try_enqueue_bulk(ptk,in,std::size(in)) << std::endl;
         auto const length{q.size_approx()};
         std::cerr << "length = " << length << std::endl;
         std::vector out(length,decltype(*in){});
-        std::cerr << "try_dequeue_bulk = " << q.try_dequeue_bulk(csu,out.data(),length) << std::endl;
-        for (auto const & i : out) { std::cerr << i << "\t"; }
+        std::cerr << "try_dequeue_bulk = " << q.try_dequeue_bulk(out.data(),length) << std::endl;
+        for (auto const & item : out) { std::cerr << item << "\t"; }
         std::cerr << "size = " << q.size_approx() << std::endl;
     }
 
