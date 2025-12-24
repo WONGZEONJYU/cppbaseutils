@@ -1,5 +1,5 @@
 #include <iostream>
-#include <XConcurrentQueue/xconcurrentqueue.hpp>
+//#include <XConcurrentQueue/xconcurrentqueue.hpp>
 #include <vector>
 #include <XConcurrentQueue/xblockingconcurrentqueue.hpp>
 #ifdef WIN32
@@ -8,13 +8,16 @@
 #include <Unix/XSignal/xsignal.hpp>
 #endif
 
-int main() {
+//#include <blockingconcurrentqueue.h>
 
-    XUtils::moodycamel::XConcurrentQueue<int> qq{};
-    auto q { std::move(qq) };
-    XUtils::moodycamel::ProducerToken ptk{q};
-    XUtils::moodycamel::ConsumerToken csu{q};
-
+int main()
+{
+#if 1
+    {
+        XUtils::moodycamel::XConcurrentQueueHelper<int> qq{};
+        auto q { std::move(qq) };
+        XUtils::moodycamel::ProducerToken ptk{q.m_q};
+        XUtils::moodycamel::ConsumerToken csu{qq.m_q};
 #if 1
     {
         auto constexpr in{-100};
@@ -35,7 +38,7 @@ int main() {
         auto constexpr in{-300};
         int out{};
         q.enqueue(ptk,in);
-        decltype(q)::try_dequeue_from_producer(ptk,out);
+        q.try_dequeue_from_producer(ptk,out);
         std::cerr << "3 out = " << out << std::endl;
     }
 
@@ -85,7 +88,7 @@ int main() {
         std::vector out(std::size(in),decltype(*in){});
         q.try_dequeue_bulk(out.data(),out.size());
         for (auto const & i : out)
-            { std::cerr << i << "\t"; }
+        { std::cerr << i << "\t"; }
         std::cerr << std::endl;
     }
 
@@ -103,15 +106,16 @@ int main() {
         int constexpr in[]{ -120,-220,-320,-420,-520,-620,-720,-820,-920,-1020 };
         q.try_enqueue_bulk(ptk,in,std::size(in));
         std::vector out(std::size(in),decltype(*in){});
-        decltype(q)::try_dequeue_bulk_from_producer(ptk,out.data(),out.size());
+        q.try_dequeue_bulk_from_producer(ptk,out.data(),out.size());
         for (auto const & i : out)
         { std::cerr << i << "\t"; }
         std::cerr << std::endl;
     }
-#endif
+    #endif
+
 
     {
-        std::cerr << "size = " << q.size_approx() << std::endl;
+        std::cerr << "size = " << q.size() << std::endl;
         int constexpr in[1024]{ -130,-230,-330,-430,-530,-630,-730,-830,-930,-1030 };
         // int i{};
         // for (auto && item : in) {
@@ -121,40 +125,47 @@ int main() {
         // std::cerr << "i = " << i << std::endl;
         q.try_enqueue_bulk(ptk,in,std::size(in));
         //std::cerr << "try_enqueue_bulk = " << std::boolalpha << q.try_enqueue_bulk(ptk,in,std::size(in)) << std::endl;
-        auto const length{q.size_approx()};
+        auto const length{q.length()};
         std::cerr << "length = " << length << std::endl;
         std::vector out(length,decltype(*in){});
         std::cerr << "try_dequeue_bulk = " << q.try_dequeue_bulk(out.data(),length) << std::endl;
+        std::cerr << "size = " << q.size() << std::endl;
         for (auto const & item : out) { std::cerr << item << "\t"; }
-        std::cerr << "size = " << q.size_approx() << std::endl;
+        std::cerr << std::endl;
     }
-
-#if 0
-    {
-        XUtils::moodycamel::XBlockingConcurrentQueue<int> bq{};
-        bq.enqueue(10);
-        int constexpr in{100};
-        bq.try_enqueue(in);
-        bq.enqueue(ptk,100);
-        bq.enqueue(ptk,in);
-        bq.try_enqueue(ptk,100);
-        int constexpr ins[]{0,-1,-2,-3};
-        bq.try_enqueue_bulk(ptk,ins,std::size(ins));
-
-        int ret{};
-        bq.try_dequeue(ret);
-#if 1
-        int p[10]{};
-        bq.wait_dequeue_bulk(csu,p,10);
-        bq.wait_dequeue_bulk_timed(csu,p,std::ranges::size(p),10);
-        bq.try_dequeue_bulk(csu,p,std::ranges::size(p));
-        bq.try_dequeue_bulk(p,std::ranges::size(p));
-        //int ret1{};
-        bq.wait_dequeue_timed(csu,ret,10);
-        //bq.wait_dequeue(csu,ret);
-        bq.try_dequeue(ret);
+    }
 #endif
+
+#if 1
+    {
+        XUtils::moodycamel::XBlockingConcurrentQueueHelper<int> bbq{};
+        XUtils::moodycamel::swap(bbq,bbq);
+
+        auto bq { std::move(bbq) };
+        XUtils::moodycamel::ProducerToken ptk {bq.m_q};
+        XUtils::moodycamel::ConsumerToken csu{bq.m_q};
+
+        bq.enqueue(-100000);
+        std::cerr << "size = " << bq.size() << std::endl;
+        int v {};
+        bq.wait_dequeue(v);
+        std::cerr << "v = " << v << std::endl;
+
+        int constexpr ins[]{-150,-151,-152,-153,-154,-155,-156,-157,-158,-159};
+        bq.try_enqueue_bulk(ins,std::size(ins));
+        bq.try_enqueue_bulk(ins,std::size(ins));
+
+        std::cerr << "length = " << bq.length() << std::endl;
+
+        std::vector outs(bq.length(),decltype(*ins){});
+        using namespace std::chrono;
+        bq.wait_dequeue_bulk(csu,outs.data(),bq.length());
+        for (auto const & i : outs) { std::cerr << i << "\t"; }
+        std::cerr << std::endl;
     }
+#else
+
+
 #endif
 
     return 0;

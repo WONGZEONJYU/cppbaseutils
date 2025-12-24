@@ -29,9 +29,7 @@
 
 // Also dual-licensed under the Boost Software License (see LICENSE.md)
 
-
 #pragma once
-#if 0
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and
@@ -424,7 +422,7 @@ struct ProducerToken;
 struct ConsumerToken;
 
 template<typename T, typename Traits> class ConcurrentQueue;
-template<typename T, typename Traits> class XBlockingConcurrentQueue;
+template<typename T, typename Traits> class BlockingConcurrentQueue;
 class ConcurrentQueueTests;
 
 
@@ -656,7 +654,7 @@ struct ProducerToken
 	explicit ProducerToken(ConcurrentQueue<T, Traits>& queue);
 	
 	template<typename T, typename Traits>
-	explicit ProducerToken(XBlockingConcurrentQueue<T, Traits>& queue);
+	explicit ProducerToken(BlockingConcurrentQueue<T, Traits>& queue);
 	
 	ProducerToken(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
 		: producer(other.producer)
@@ -721,12 +719,10 @@ struct ConsumerToken
 	explicit ConsumerToken(ConcurrentQueue<T, Traits>& q);
 	
 	template<typename T, typename Traits>
-	explicit ConsumerToken(XBlockingConcurrentQueue<T, Traits>& q);
+	explicit ConsumerToken(BlockingConcurrentQueue<T, Traits>& q);
 	
 	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
-		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset)
-		, itemsConsumedFromCurrent(other.itemsConsumedFromCurrent)
-		, currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
+		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset), itemsConsumedFromCurrent(other.itemsConsumedFromCurrent), currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
 	{
 	}
 	
@@ -1235,9 +1231,7 @@ public:
 	size_t try_dequeue_bulk(It itemFirst, size_t max)
 	{
 		size_t count = 0;
-		for (auto ptr = producerListTail.load(std::memory_order_acquire);
-			ptr != nullptr; ptr = ptr->next_prod())
-		{
+		for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
 			count += ptr->dequeue_bulk(itemFirst, max - count);
 			if (count == max) {
 				break;
@@ -1331,9 +1325,7 @@ public:
 	size_t size_approx() const
 	{
 		size_t size = 0;
-		for (auto ptr = producerListTail.load(std::memory_order_acquire);
-			ptr != nullptr; ptr = ptr->next_prod())
-		{
+		for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
 			size += ptr->size_approx();
 		}
 		return size;
@@ -1458,8 +1450,7 @@ private:
 	struct FreeList
 	{
 		FreeList() : freeListHead(nullptr) { }
-		FreeList(FreeList&& other) : freeListHead(other.freeListHead.load(std::memory_order_relaxed))
-		{ other.freeListHead.store(nullptr, std::memory_order_relaxed); }
+		FreeList(FreeList&& other) : freeListHead(other.freeListHead.load(std::memory_order_relaxed)) { other.freeListHead.store(nullptr, std::memory_order_relaxed); }
 		void swap(FreeList& other) { details::swap_relaxed(freeListHead, other.freeListHead); }
 		
 		FreeList(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
@@ -1672,10 +1663,8 @@ private:
 			}
 		}
 		
-		inline T* operator[](index_t idx) MOODYCAMEL_NOEXCEPT
-		{ return static_cast<T*>(static_cast<void*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
-		inline T const* operator[](index_t idx) const MOODYCAMEL_NOEXCEPT
-		{ return static_cast<T const*>(static_cast<void const*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
+		inline T* operator[](index_t idx) MOODYCAMEL_NOEXCEPT { return static_cast<T*>(static_cast<void*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
+		inline T const* operator[](index_t idx) const MOODYCAMEL_NOEXCEPT { return static_cast<T const*>(static_cast<void const*>(elements)) + static_cast<size_t>(idx & static_cast<index_t>(BLOCK_SIZE - 1)); }
 		
 	private:
 		static_assert(std::alignment_of<T>::value <= sizeof(T), "The queue does not support types with an alignment greater than their size at this time");
@@ -1829,10 +1818,7 @@ private:
 					}
 					
 					// Walk through all the items in the block; if this is the tail block, we need to stop when we reach the tail index
-					auto lastValidIndex = (this->tailIndex.load(std::memory_order_relaxed) & static_cast<index_t>(BLOCK_SIZE - 1)) == 0
-							? BLOCK_SIZE
-							: static_cast<size_t>(this->tailIndex.load(std::memory_order_relaxed) & static_cast<index_t>(BLOCK_SIZE - 1));
-
+					auto lastValidIndex = (this->tailIndex.load(std::memory_order_relaxed) & static_cast<index_t>(BLOCK_SIZE - 1)) == 0 ? BLOCK_SIZE : static_cast<size_t>(this->tailIndex.load(std::memory_order_relaxed) & static_cast<index_t>(BLOCK_SIZE - 1));
 					while (i != BLOCK_SIZE && (block != this->tailBlock || i != lastValidIndex)) {
 						(*block)[i++]->~T();
 					}
@@ -1886,8 +1872,7 @@ private:
 					auto head = this->headIndex.load(std::memory_order_relaxed);
 					assert(!details::circular_less_than<index_t>(currentTailIndex, head));
 					if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE)
-						|| (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value
-							&& (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
+						|| (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
 						// We can't enqueue in another block because there's not enough leeway -- the
 						// tail could surpass the head by the time the block fills up! (Or we'll exceed
 						// the size limit, if the second part of the condition was true.)
@@ -2084,11 +2069,7 @@ private:
 			index_t currentTailIndex = (startTailIndex - 1) & ~static_cast<index_t>(BLOCK_SIZE - 1);
 			if (blockBaseDiff > 0) {
 				// Allocate as many blocks as possible from ahead
-				while (blockBaseDiff > 0
-					&& this->tailBlock != nullptr
-					&& this->tailBlock->next != firstAllocatedBlock
-					&& this->tailBlock->next->ConcurrentQueue::Block::template is_empty<explicit_context>())
-				{
+				while (blockBaseDiff > 0 && this->tailBlock != nullptr && this->tailBlock->next != firstAllocatedBlock && this->tailBlock->next->ConcurrentQueue::Block::template is_empty<explicit_context>()) {
 					blockBaseDiff -= static_cast<index_t>(BLOCK_SIZE);
 					currentTailIndex += static_cast<index_t>(BLOCK_SIZE);
 					
@@ -2108,10 +2089,7 @@ private:
 					
 					auto head = this->headIndex.load(std::memory_order_relaxed);
 					assert(!details::circular_less_than<index_t>(currentTailIndex, head));
-					bool full =
-						!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE)
-						|| (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value
-							&& (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head));
+					bool full = !details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE) || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head));
 					if (pr_blockIndexRaw == nullptr || pr_blockIndexSlotsUsed == pr_blockIndexSize || full) {
 						MOODYCAMEL_CONSTEXPR_IF (allocMode == CannotAlloc) {
 							// Failed to allocate, undo changes (but keep injected blocks)
@@ -2187,7 +2165,6 @@ private:
 			auto endBlock = this->tailBlock;
 			this->tailBlock = startBlock;
 			assert((startTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) != 0 || firstAllocatedBlock != nullptr || count == 0);
-
 			if ((startTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0 && firstAllocatedBlock != nullptr) {
 				this->tailBlock = firstAllocatedBlock;
 			}
@@ -2305,10 +2282,7 @@ private:
 					do {
 						auto firstIndexInBlock = index;
 						index_t endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
-						endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex)
-								? firstIndex + static_cast<index_t>(actualCount)
-								: endIndex;
-
+						endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
 						auto block = localBlockIndex->entries[indexIndex].block;
 						if (MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, details::deref_noexcept(itemFirst) = std::move((*(*block)[index])))) {
 							while (index != endIndex) {
@@ -2433,7 +2407,7 @@ private:
 		ExplicitProducer* nextExplicitProducer;
 	private:
 #endif
-
+		
 #ifdef MCDBGQ_TRACKMEM
 		friend struct MemStats;
 #endif
@@ -2490,8 +2464,7 @@ private:
 			// Even if the queue is empty, there's still one block that's not on the free list
 			// (unless the head index reached the end of it, in which case the tail will be poised
 			// to create a new block).
-			if ( this->tailBlock != nullptr
-				&& (forceFreeLastBlock || (tail & static_cast<index_t>(BLOCK_SIZE - 1)) != 0) ) {
+			if (this->tailBlock != nullptr && (forceFreeLastBlock || (tail & static_cast<index_t>(BLOCK_SIZE - 1)) != 0)) {
 				this->parent->add_block_to_free_list(this->tailBlock);
 			}
 			
@@ -2519,11 +2492,7 @@ private:
 				// We reached the end of a block, start a new one
 				auto head = this->headIndex.load(std::memory_order_relaxed);
 				assert(!details::circular_less_than<index_t>(currentTailIndex, head));
-
-				if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE)
-					|| (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0
-						|| MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head)))
-				{
+				if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE) || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
 					return false;
 				}
 #ifdef MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
@@ -2584,7 +2553,6 @@ private:
 			// See ExplicitProducer::dequeue for rationale and explanation
 			index_t tail = this->tailIndex.load(std::memory_order_relaxed);
 			index_t overcommit = this->dequeueOvercommit.load(std::memory_order_relaxed);
-
 			if (details::circular_less_than<index_t>(this->dequeueOptimisticCount.load(std::memory_order_relaxed) - overcommit, tail)) {
 				std::atomic_thread_fence(std::memory_order_acquire);
 				
@@ -3722,7 +3690,7 @@ ProducerToken::ProducerToken(ConcurrentQueue<T, Traits>& queue)
 }
 
 template<typename T, typename Traits>
-ProducerToken::ProducerToken(XBlockingConcurrentQueue<T, Traits>& queue)
+ProducerToken::ProducerToken(BlockingConcurrentQueue<T, Traits>& queue)
 	: producer(reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->recycle_or_create_producer(true))
 {
 	if (producer != nullptr) {
@@ -3739,7 +3707,7 @@ ConsumerToken::ConsumerToken(ConcurrentQueue<T, Traits>& queue)
 }
 
 template<typename T, typename Traits>
-ConsumerToken::ConsumerToken(XBlockingConcurrentQueue<T, Traits>& queue)
+ConsumerToken::ConsumerToken(BlockingConcurrentQueue<T, Traits>& queue)
 	: itemsConsumedFromCurrent(0), currentProducer(nullptr), desiredProducer(nullptr)
 {
 	initialOffset = reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
@@ -3776,6 +3744,4 @@ inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, ty
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #pragma GCC diagnostic pop
-#endif
-
 #endif

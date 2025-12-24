@@ -24,11 +24,13 @@ namespace moodycamel {
 	template<typename,typename = XConcurrentQueueDefaultTraits>
 	class XBlockingConcurrentQueue;
 
+	template<typename,typename,typename> struct XBlockingConcurrentQueueHelper;
+
 	// This is a blocking version of the queue. It has an almost identical interface to
 	// the normal non-blocking version, with the addition of various wait_dequeue() methods
 	// and the removal of producer-specific dequeue methods.
 	template<typename T, typename Traits>
-	class XBlockingConcurrentQueue final
+	class XBlockingConcurrentQueue
 		: public XBlockingConcurrentQueueAbstract<T, Traits>
 	{
 		using Base = XBlockingConcurrentQueueAbstract<T, Traits>;
@@ -301,7 +303,7 @@ namespace moodycamel {
 		// timeout expires, otherwise assigns to `item` and returns true.
 		// Never allocates. Thread-safe.
 		template<typename U, typename Rep, typename Period>
-		constexpr  bool wait_dequeue_timed(U & item, std::chrono::duration<Rep, Period> const & timeout)
+		constexpr bool wait_dequeue_timed(U & item, std::chrono::duration<Rep, Period> const & timeout)
 		{ return wait_dequeue_timed(item, std::chrono::duration_cast<std::chrono::microseconds>(timeout).count()); }
 
 		// Blocks the current thread until there's something to dequeue, then
@@ -418,6 +420,9 @@ namespace moodycamel {
 		[[nodiscard]] constexpr size_t size_approx() const noexcept
 		{ return static_cast<size_t>(this->m_sema_->availableApprox()); }
 
+		[[nodiscard]] constexpr bool empty() const noexcept { return !size_approx(); }
+		[[nodiscard]] constexpr bool ioEmpty() const noexcept { return !size_approx(); }
+
 		// Returns true if the underlying atomic variables used by
 		// the queue are lock-free (they should be on most platforms).
 		// Thread-safe.
@@ -431,6 +436,62 @@ namespace moodycamel {
 	template<typename T, typename Traits>
 	static constexpr void swap(XBlockingConcurrentQueue<T, Traits> & a, XBlockingConcurrentQueue<T, Traits> & b) noexcept
 	{ a.swap(b); }
+
+	template<typename T,typename Traits = XConcurrentQueueDefaultTraits
+	,typename QueueType = XBlockingConcurrentQueue<T,Traits>>
+	struct XBlockingConcurrentQueueHelper;
+
+	template<typename T,typename Traits,typename QueueType>
+	struct XBlockingConcurrentQueueHelper
+		: XConcurrentQueueHelper<T,Traits,QueueType>
+	{
+	private:
+		using Base = XConcurrentQueueHelper<T,Traits,QueueType>;
+
+	public:
+		using ConcurrentQueue = Base::ConcurrentQueue;
+		using value_type = ConcurrentQueue::value_type;
+		using size_t = ConcurrentQueue::size_t;
+		using index_t = ConcurrentQueue::index_t;
+		using producer_token_t = ConcurrentQueue::producer_token_t;
+		using consumer_token_t = ConcurrentQueue::consumer_token_t;
+
+		template<typename ...Args>
+		constexpr explicit XBlockingConcurrentQueueHelper(Args && ...args)
+			: Base{std::forward<Args>(args)...} {}
+
+#define CHECK_NOEXCEPT_(fn) noexcept( noexcept( std::declval<ConcurrentQueue &>().fn( ( std::declval<Args && >() )... ) ) )
+
+		template<typename ...Args>
+		constexpr void wait_dequeue(Args && ...args) CHECK_NOEXCEPT_(wait_dequeue) {
+			this->m_q.wait_dequeue(std::forward<Args>(args)...);
+			this->m_count.deref();
+		}
+
+		template<typename ...Args>
+		constexpr bool wait_dequeue_timed(Args && ...args) CHECK_NOEXCEPT_(wait_dequeue_timed) {
+			auto const ret { this->m_q.wait_dequeue_timed(std::forward<Args>(args)...) };
+			if (ret) { this->m_count.deref(); }
+			return ret;
+		}
+
+#define MAKE_WAIT_DEQUEUE_BULK_FUNC(wdb_fn) \
+		template<typename ...Args> \
+		constexpr size_t wdb_fn(Args && ...args) CHECK_NOEXCEPT_(wdb_fn) { \
+			auto const len { this->m_q.wdb_fn(std::forward<decltype(args)>(args)...) }; \
+			this->m_count.fetchAndSubOrdered(len); \
+			return len; \
+		}
+
+		MAKE_WAIT_DEQUEUE_BULK_FUNC(wait_dequeue_bulk)
+		MAKE_WAIT_DEQUEUE_BULK_FUNC(wait_dequeue_bulk_timed)
+
+#undef MAKE_WAIT_DEQUEUE_BULK_FUNC
+#undef CHECK_NOEXCEPT_
+
+		X_DEFAULT_MOVE(XBlockingConcurrentQueueHelper)
+		X_DISABLE_COPY(XBlockingConcurrentQueueHelper)
+	};
 }
 
 XTD_INLINE_NAMESPACE_END
