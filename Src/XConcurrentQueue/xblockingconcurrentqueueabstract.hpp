@@ -48,6 +48,7 @@ class XBlockingConcurrentQueueAbstract {
     LightweightSemaphorePtr m_sema_{};
 
 public:
+    using value_type = T;
     using producer_token_t = XConcurrentQueue::producer_token_t;
     using consumer_token_t = XConcurrentQueue::consumer_token_t;
 

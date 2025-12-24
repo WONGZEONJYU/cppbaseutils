@@ -109,15 +109,18 @@ int main() {
     }
 
     {
-        int constexpr in[]{ -130,-230,-330,-430,-530,-630,-730,-830,-930,-1030 };
-        q.try_enqueue_bulk(ptk,in,std::size(in));
-        std::vector out(std::size(in),decltype(*in){});
-        q.try_dequeue_bulk(csu,out.data(),out.size());
-        for (auto const & i : out)
-        { std::cerr << i << "\t"; }
-        std::cerr << std::endl;
+        std::cerr << "size = " << q.size_approx() << std::endl;
+        int constexpr in[1024]{ -130,-230,-330,-430,-530,-630,-730,-830,-930,-1030 };
+        std::cerr << "try_enqueue_bulk = " << std::boolalpha << q.try_enqueue_bulk(ptk,in,std::size(in)) << std::endl;
+        auto const length{q.size_approx()};
+        std::cerr << "length = " << length << std::endl;
+        std::vector out(length,decltype(*in){});
+        std::cerr << "try_dequeue_bulk = " << q.try_dequeue_bulk(csu,out.data(),length) << std::endl;
+        for (auto const & i : out) { std::cerr << i << "\t"; }
+        std::cerr << "size = " << q.size_approx() << std::endl;
     }
 
+#if 0
     {
         XUtils::moodycamel::XBlockingConcurrentQueue<int> bq{};
         bq.enqueue(10);
@@ -143,6 +146,7 @@ int main() {
         bq.try_dequeue(ret);
 #endif
     }
+#endif
 
     return 0;
 }
