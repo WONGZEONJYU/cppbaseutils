@@ -10,7 +10,7 @@
 
 int main() {
 
-    XUtils::moodycamel::XConcurrentQueue<int> qq{32*32};
+    XUtils::moodycamel::XConcurrentQueue<int> qq{};
     auto q { std::move(qq) };
     XUtils::moodycamel::ProducerToken ptk{q};
     XUtils::moodycamel::ConsumerToken csu{q};
