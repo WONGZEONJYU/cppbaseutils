@@ -431,9 +431,9 @@ namespace moodycamel {
 }
 
 namespace moodycamel {
+
 	template<typename T, typename Traits>
 	class XConcurrentQueueAbstract {
-		template<typename ,typename > friend class XConcurrentQueue;
 
 	public:
 		using value_type = T;
@@ -2657,7 +2657,9 @@ namespace moodycamel {
 		friend struct ExplicitProducer;
 		friend struct ImplicitProducer;
 		friend class XConcurrentQueueTests;
+		template<typename ,typename > friend class XConcurrentQueue;
 	};
+
 }
 
 namespace moodycamel {
