@@ -431,12 +431,9 @@ namespace moodycamel {
 		static constexpr bool is_lock_free() noexcept
 		{ return Base::XConcurrentQueue::is_lock_free(); }
 
-		template<typename ,typename >
-		friend class XBlockingConcurrentQueueAbstract;
-
+		template<typename ,typename >friend class XBlockingConcurrentQueueAbstract;
 		template<typename,typename,typename> friend struct XBlockingConcurrentQueueProxy;
 		template<typename,typename,typename> friend struct XConcurrentQueueProxy;
-
 	};
 
 	template<typename T, typename Traits>
