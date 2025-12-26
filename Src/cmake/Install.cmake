@@ -13,6 +13,11 @@ install(TARGETS ${LIBRARY_TARGETS} ${PROJECT_NAME}
 function(installHeader name)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${name}/
             DESTINATION include/${name}
+            FILE_PERMISSIONS OWNER_READ GROUP_READ WORLD_READ
+            DIRECTORY_PERMISSIONS
+                OWNER_READ OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE
             FILES_MATCHING
             PATTERN "*.h"
             PATTERN "*.hpp"
