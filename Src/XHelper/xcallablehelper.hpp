@@ -83,7 +83,7 @@ class X_CLASS_EXPORT XCallableHelper {
         using result_t = result_<Tuple>::type;
 
         constexpr XInvoker(Tuple && t,Private_) noexcept
-        :m_fnAndArgs_{std::forward<Tuple>(t)} {}
+            : m_fnAndArgs_{ std::forward<Tuple>(t) } {}
 
         constexpr result_t operator()() const
         { return M_invoke_(std::make_index_sequence<std::tuple_size_v<Tuple>>{}); }
