@@ -41,7 +41,7 @@ class X_CLASS_EXPORT XCallableHelper {
 
     public:
         constexpr XCallable(Callable && call,Private)
-        :m_callable_{std::forward<Callable>(call)}{}
+            : m_callable_{ std::forward<Callable>(call) } {}
 
         constexpr ~XCallable() override = default;
 
