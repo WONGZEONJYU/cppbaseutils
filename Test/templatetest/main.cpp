@@ -2,6 +2,7 @@
 #include <XContainer/ringbuffer.hpp>
 #include <iostream>
 #include <list>
+#include <XHelper/xcallablehelper.hpp>
 
 #if 0
 template<typename T, std::size_t N>
@@ -242,26 +243,19 @@ private:
 };
 #endif
 
-struct V {
-    virtual ~V() { std::cout << "~V\n"; }
-};
+template <typename ...Args>
+struct InvokerTest {
 
-struct A : virtual V {
-    ~A() override { std::cout << "~A\n"; }
-};
-
-struct B : virtual V {
-    ~B() override { std::cout << "~B\n"; }
-};
-
-struct C : A, B {
-    ~C() override { std::cout << "~C\n"; }
+    XUtils::Invoker<Args...> m_ivk {};
+    constexpr explicit InvokerTest(Args && ...args) noexcept
+        :m_ivk { XUtils::XCallableHelper::createInvoker(std::forward<decltype(args)>(args)...) }
+    {}
 };
 
 int main()
 {
-    V* p = new C;
-    delete p;
+    InvokerTest constexpr test { [](int){},123 };
+    test.m_ivk();
 
     std::vector<int > v;
     std::list<int > l;
