@@ -36,14 +36,15 @@ class X_CLASS_EXPORT XUtilsLibErrorLog final {
     template<typename ,typename > friend class XTwoPhaseConstruction;
 };
 
-template<typename F>
+template<typename Fn>
 class Destroyer {
     X_DISABLE_COPY_MOVE(Destroyer)
-    F m_fn_ {};
-    mutable int m_is_destroy:1;
+    mutable Fn m_fn_ {};
+    mutable uint32_t m_is_destroy:1;
 
 public:
-    constexpr explicit Destroyer(F && f)
+    template<typename Fn_>
+    constexpr explicit Destroyer(Fn_ && f)
         : m_fn_ { std::forward<decltype(f)>(f) }
         , m_is_destroy {}
     {}
@@ -58,6 +59,8 @@ public:
     constexpr virtual ~Destroyer() { destroy(); }
 };
 
+template<typename Fn> Destroyer(Fn) -> Destroyer<Fn>;
+
 template<typename F2>
 class X_RAII final : public Destroyer<F2> {
     using Base = Destroyer<F2>;
@@ -66,11 +69,13 @@ class X_RAII final : public Destroyer<F2> {
 public:
     template<typename F1>
     constexpr explicit X_RAII(F1 && f1,F2 && f2)
-    : Base { std::forward<F2>(f2) }
+        : Base { std::forward<decltype(f2)>(f2) }
     { f1(); }
 
     ~X_RAII() override = default;
 };
+
+template<typename F1,typename F2> X_RAII(F1,F2) -> X_RAII<F2>;
 
 /**
  * 错误输出,并终止程序
