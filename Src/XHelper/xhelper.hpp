@@ -39,7 +39,7 @@ class X_CLASS_EXPORT XUtilsLibErrorLog final {
 template<typename F>
 class Destroyer {
     X_DISABLE_COPY_MOVE(Destroyer)
-    F m_fn_{};
+    F m_fn_ {};
     mutable int m_is_destroy:1;
 
 public:
