@@ -39,12 +39,14 @@ class X_CLASS_EXPORT XUtilsLibErrorLog final {
 template<typename F>
 class Destroyer {
     X_DISABLE_COPY_MOVE(Destroyer)
-    mutable F m_fn_{};
-    mutable uint32_t m_is_destroy:1;
+    F m_fn_ {};
+    mutable int m_is_destroy:1;
 
 public:
-    constexpr explicit Destroyer(F && f):
-    m_fn_(std::forward<F>(f)),m_is_destroy{}{}
+    constexpr explicit Destroyer(F && f)
+        : m_fn_ { std::forward<decltype(f)>(f) }
+        , m_is_destroy {}
+    {}
 
     constexpr void destroy() const {
         if (!m_is_destroy) {
