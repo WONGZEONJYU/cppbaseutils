@@ -2,7 +2,6 @@
 #define X_CALLABLE_HELPER_HPP 1
 
 #include <XHelper/xversion.hpp>
-#include <XMemory/xmemory.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -57,9 +56,9 @@ class X_CLASS_EXPORT XCallableHelper {
         XFactoryCallable() = delete;
 
         template<typename Callable_>
-        static constexpr auto create(Callable_ && call) noexcept -> CallablePtr_ {
+        static constexpr auto create(Callable_ && call) -> CallablePtr_ {
             using XCallable_t = XCallable<Callable_>;
-            return makeShared<XCallable_t>(std::forward<Callable_>(call),XAbstractCallable::Private{});
+            return std::make_shared<XCallable_t>(std::forward<Callable_>(call),XAbstractCallable::Private{});
         }
     };
 
@@ -110,7 +109,7 @@ class X_CLASS_EXPORT XCallableHelper {
         }
 
         template<typename... Args>
-        static constexpr auto createCallable(Args && ...args) noexcept -> CallablePtr_ {
+        static constexpr auto createCallable(Args && ...args) -> CallablePtr_ {
             auto invoker { createInvoker(std::forward<Args>(args)...) };
             return XFactoryCallable::create(std::forward<decltype(invoker)>(invoker));
         }
@@ -132,7 +131,7 @@ public:
     { return Factory::createInvoker(std::forward<Args>(args)...); }
 
     template<typename... Args>
-    static constexpr auto createCallable(Args && ...args) noexcept -> CallablePtr
+    static constexpr auto createCallable(Args && ...args) -> CallablePtr
     { return Factory::createCallable(std::forward<Args>(args)...); }
 };
 

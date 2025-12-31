@@ -4,6 +4,7 @@
 #include <XThreadPool/xrunnable.hpp>
 #include <XHelper/xtypetraits.hpp>
 #include <XHelper/xcallablehelper.hpp>
+#include <XMemory/xmemory.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -57,7 +58,8 @@ class X_CLASS_EXPORT XThreadPool final
         }
     public:
         explicit constexpr XTemporaryTasks(Private_,Args && ...args)
-        :m_invoker_{ XCallableHelper::createInvoker(std::forward<Args>(args)...)  } {}
+            : m_invoker_{ XCallableHelper::createInvoker(std::forward<Args>(args)...)  }
+        {}
         ~XTemporaryTasks() override = default;
     };
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <list>
 #include <XHelper/xcallablehelper.hpp>
+#include "XHelper/xraii.hpp"
 
 #if 0
 template<typename T, std::size_t N>
@@ -254,6 +255,8 @@ struct InvokerTest {
 
 int main()
 {
+
+#if 0
     InvokerTest constexpr test { [](int){},123 };
     test.m_ivk();
 
@@ -269,6 +272,13 @@ int main()
 
     for (auto it { rb.begin() };it != rb.cEnd() ;++it)
     { std::cout << *it << "\t"; }
+#endif
+
+    XUtils::X_RAII const r { XUtils::bind([](int const v){
+        std::cerr << v << std::endl;
+    },1),XUtils::bind([](int const v){
+        std::cerr << v << std::endl;
+    },2)};
 
     return 0;
 }

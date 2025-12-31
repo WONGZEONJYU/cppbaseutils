@@ -1,6 +1,7 @@
 #include <utility>
 #include "xthreadpool_p.hpp"
 #include <iostream>
+#include <XHelper/xraii.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
