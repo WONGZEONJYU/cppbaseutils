@@ -1,4 +1,6 @@
 #include "xsignal_p.hpp"
+#include <iostream>
+#include <ranges>
 
 extern "C" {
    using HandlerRoutine_ = int(*)(unsigned long);

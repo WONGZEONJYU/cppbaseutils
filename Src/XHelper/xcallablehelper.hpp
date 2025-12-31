@@ -2,12 +2,12 @@
 #define X_CALLABLE_HELPER_HPP 1
 
 #include <XHelper/xversion.hpp>
-#include <XMemory/xmemory.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 #include <functional>
 #include <memory>
+#include <exception>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -56,10 +56,12 @@ class X_CLASS_EXPORT XCallableHelper {
 
         XFactoryCallable() = delete;
 
-        template<typename Callable_>
-        static constexpr auto create(Callable_ && call) noexcept -> CallablePtr_ {
-            using XCallable_t = XCallable<Callable_>;
-            return makeShared<XCallable_t>(std::forward<Callable_>(call),XAbstractCallable::Private{});
+        template<typename Callable>
+        static constexpr auto create(Callable && call) noexcept -> CallablePtr_ {
+            using XCallable_t = XCallable<Callable>;
+            try {
+                return std::make_shared<XCallable_t>(std::forward<Callable>(call),XAbstractCallable::Private{});
+            } catch(std::exception const &) { return {}; }
         }
     };
 
@@ -67,9 +69,6 @@ class X_CLASS_EXPORT XCallableHelper {
 
     template<typename Tuple>
     class XInvoker final {
-
-        friend struct Factory;
-
         enum class Private_{};
 
         mutable Tuple m_fnAndArgs_{};
@@ -86,12 +85,16 @@ class X_CLASS_EXPORT XCallableHelper {
             : m_fnAndArgs_{ std::forward<Tuple>(t) } {}
 
         constexpr result_t operator()() const
+            noexcept(noexcept(M_invoke_(std::make_index_sequence<std::tuple_size_v<Tuple>>{})))
         { return M_invoke_(std::make_index_sequence<std::tuple_size_v<Tuple>>{}); }
 
     private:
         template<std::size_t... Ind>
         constexpr result_t M_invoke_(std::index_sequence<Ind...>) const
-        { return std::invoke(std::get<Ind>(std::forward<decltype(m_fnAndArgs_)>(m_fnAndArgs_))...); }
+            noexcept(noexcept(std::invoke(std::get<Ind>(std::forward<Tuple>(std::declval<Tuple>()))...)))
+        { return std::invoke(std::get<Ind>(std::forward<Tuple>(m_fnAndArgs_))...); }
+
+        friend struct Factory;
     };
 
     template<typename Tuple> XInvoker(Tuple) -> XInvoker<Tuple>;
@@ -110,10 +113,8 @@ class X_CLASS_EXPORT XCallableHelper {
         }
 
         template<typename... Args>
-        static constexpr auto createCallable(Args && ...args) noexcept -> CallablePtr_ {
-            auto invoker { createInvoker(std::forward<Args>(args)...) };
-            return XFactoryCallable::create(std::forward<decltype(invoker)>(invoker));
-        }
+        static constexpr auto createCallable(Args && ...args) noexcept -> CallablePtr_
+        { return XFactoryCallable::create(createInvoker(std::forward<Args>(args)...)); }
     };
 
 protected:

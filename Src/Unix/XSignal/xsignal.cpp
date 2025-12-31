@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <XHelper/xhelper.hpp>
+#include <XHelper/xraii.hpp>
 #include <XLog/xlog.hpp>
 
 XTD_NAMESPACE_BEGIN

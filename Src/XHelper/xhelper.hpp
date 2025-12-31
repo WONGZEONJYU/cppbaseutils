@@ -36,47 +36,6 @@ class X_CLASS_EXPORT XUtilsLibErrorLog final {
     template<typename ,typename > friend class XTwoPhaseConstruction;
 };
 
-template<typename Fn>
-class Destroyer {
-    X_DISABLE_COPY_MOVE(Destroyer)
-    mutable Fn m_fn_ {};
-    mutable uint32_t m_is_destroy:1;
-
-public:
-    template<typename Fn_>
-    constexpr explicit Destroyer(Fn_ && f)
-        : m_fn_ { std::forward<decltype(f)>(f) }
-        , m_is_destroy {}
-    {}
-
-    constexpr void destroy() const {
-        if (!m_is_destroy) {
-            m_is_destroy = true;
-            m_fn_();
-        }
-    }
-
-    constexpr virtual ~Destroyer() { destroy(); }
-};
-
-template<typename Fn> Destroyer(Fn) -> Destroyer<Fn>;
-
-template<typename F2>
-class X_RAII final : public Destroyer<F2> {
-    using Base = Destroyer<F2>;
-    X_DISABLE_COPY_MOVE(X_RAII)
-
-public:
-    template<typename F1>
-    constexpr explicit X_RAII(F1 && f1,F2 && f2)
-        : Base { std::forward<decltype(f2)>(f2) }
-    { f1(); }
-
-    ~X_RAII() override = default;
-};
-
-template<typename F1,typename F2> X_RAII(F1,F2) -> X_RAII<F2>;
-
 /**
  * 错误输出,并终止程序
  * @param expr
@@ -194,6 +153,7 @@ constexpr auto toUpper(Range && r, const Alloc & = Alloc{}){
     }
 }
 
+#if 0
 enum class ConnectionType {
     AutoConnection,
     DirectConnection,
@@ -201,6 +161,7 @@ enum class ConnectionType {
     BlockingQueuedConnection,
     UniqueConnection
 };
+#endif
 
 enum class NonConst{};
 enum class Const{};

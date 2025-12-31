@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <XHelper/xcallablehelper.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
+#include <string>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
