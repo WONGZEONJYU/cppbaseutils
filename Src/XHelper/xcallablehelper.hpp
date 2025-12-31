@@ -57,8 +57,8 @@ class X_CLASS_EXPORT XCallableHelper {
 
         template<typename Callable>
         static constexpr auto create(Callable && call) -> CallablePtr_ {
-            using Callable_t = XCallable<Callable>;
-            return std::make_shared<Callable_t>(std::forward<Callable>(call),XAbstractCallable::Private{});
+            using XCallable_t = XCallable<Callable>;
+            return std::make_shared<XCallable_t>(std::forward<Callable>(call),XAbstractCallable::Private{});
         }
     };
 
