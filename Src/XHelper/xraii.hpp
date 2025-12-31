@@ -50,7 +50,7 @@ public:
         }
     }
 
-    constexpr virtual ~Destroyer() { destroy(); }
+    virtual ~Destroyer() { destroy(); }
 
     X_DISABLE_COPY_MOVE(Destroyer)
 };
