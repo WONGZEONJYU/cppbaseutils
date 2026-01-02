@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <coroutine>
+#include <cassert>
 #include <XGlobal/xclasshelpermacros.hpp>
 
 template<typename Promise>
@@ -35,7 +36,7 @@ public:
     constexpr void isNeedAutoDestroy(bool const b = true) noexcept
     { m_autoDestroy_ = b; }
 
-    constexpr bool isAutoDestroy() const noexcept
+    [[nodiscard]] constexpr bool isAutoDestroy() const noexcept
     { return m_autoDestroy_; }
 
     constexpr void destroy()
@@ -51,14 +52,14 @@ public:
     constexpr Generator() noexcept = default;
 
     constexpr Generator(coroutine_handle const h) noexcept
-    : m_coroHandle_ { h } {}
+        : m_coroHandle_ { h } { assert(h); }
 
     X_DISABLE_COPY(Generator)
 
     Generator(Generator && o) noexcept
     { swap(o); }
 
-    Generator& operator= (Generator && o) noexcept
+    Generator & operator= (Generator && o) noexcept
     { swap(o); return *this; }
 
     constexpr void swap(Generator & o) noexcept {
@@ -78,19 +79,22 @@ public:
     friend bool operator==(Generator const & lhs, Generator const & rhs) noexcept
     { return lhs.m_coroHandle_ == rhs.m_coroHandle_; }
 
-    friend std::strong_ordering operator<=>(Generator const & lhs, Generator const & rhs) noexcept {
-        return lhs.m_autoDestroy_ <=> rhs.m_autoDestroy_;
-    }
+    friend std::strong_ordering operator<=>(Generator const & lhs, Generator const & rhs) noexcept
+    { return lhs.m_autoDestroy_ <=> rhs.m_autoDestroy_; }
 
-    static constexpr auto from_promise(promise_type * const p) noexcept
+    static constexpr auto from_promise(promise_type * const p)
+        noexcept(noexcept( coroutine_handle::from_promise(*p)))
     { return coroutine_handle::from_promise(*p); }
+
+    static constexpr auto from_promise(promise_type & p)
+        noexcept(noexcept( coroutine_handle::from_promise(p)))
+    { return coroutine_handle::from_promise(p); }
 
     static constexpr auto from_address(void * const p) noexcept
     { return coroutine_handle::from_address(p); }
 
-    explicit operator std::coroutine_handle<> () const noexcept {
-        return static_cast< std::coroutine_handle<> > ( m_coroHandle_ );
-    }
+    explicit operator std::coroutine_handle<> () const noexcept
+    { return static_cast< std::coroutine_handle<> > ( m_coroHandle_ ); }
 
     friend struct std::hash<Generator>;
 };

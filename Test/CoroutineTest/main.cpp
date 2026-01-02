@@ -1,11 +1,14 @@
 #include <iostream>
 #include <coroutine1.hpp>
 #include <future>
-#include <thread>
 #include <XHelper/xhelper.hpp>
 
 template<typename T>
 struct promise {
+
+    constexpr promise() = default;
+
+    constexpr promise(T && v) : m_value { v }{}
 
     T m_value{};
 
@@ -17,7 +20,7 @@ struct promise {
     static std::suspend_always initial_suspend() noexcept
     { return {}; }
 
-    static auto final_suspend() noexcept {
+    [[nodiscard]] auto final_suspend() const noexcept {
 
         struct awaiter {
             static constexpr bool await_ready() noexcept { return {}; }
@@ -32,8 +35,8 @@ struct promise {
     void return_value(T v) noexcept
     { m_value = std::move(v); }
 
-    std::suspend_always yield_value(T v) noexcept
-    { m_value = std::move(v); return {}; }
+    auto yield_value(T v) noexcept
+    { m_value = std::move(v); return std::suspend_always{};  }
 
     void unhandled_exception() const noexcept { (void)this;std::terminate(); }
 
@@ -77,11 +80,11 @@ struct promise< std::future<T> > {
     static auto initial_suspend() noexcept
     { return std::suspend_always{}; }
 
-    static auto final_suspend() noexcept {
+    [[nodiscard]] auto final_suspend() const noexcept {
 
         struct awaiter {
             static constexpr bool await_ready() noexcept { return {}; }
-            static constexpr auto await_suspend(std::coroutine_handle<> const coro)  noexcept
+            static constexpr void await_suspend(std::coroutine_handle<> const coro)  noexcept
             { if (coro) { while (!coro.done()) { coro.resume(); } } }
             static constexpr void await_resume() noexcept {}
         };
@@ -89,9 +92,10 @@ struct promise< std::future<T> > {
         return awaiter {};
     }
 
-    static void return_void() noexcept{}
+    static void return_void() noexcept {}
 
-    void unhandled_exception() const noexcept { (void)this; std::terminate(); }
+    void unhandled_exception() const noexcept
+    { (void)this; std::terminate(); }
 
     static coroutine_handle_type get_return_object_on_allocation_failure()
     { return {}; }
@@ -101,6 +105,12 @@ struct promise< std::future<T> > {
 
     void operator delete(void * const p) noexcept
     { std::free(p); }
+
+    template<typename U>
+    static auto await_transform(U && u){
+        std::cout << FUNC_SIGNATURE << typeid(u).name() << std::endl;
+        return u;
+    }
 };
 #endif
 
@@ -121,22 +131,18 @@ struct Future {
         });
     }
 
-    auto await_resume() const noexcept{ return m_value; }
-
-    //void await_transform() = delete;
-
+    [[nodiscard]] auto await_resume() const noexcept{ return m_value; }
 };
 
-// template <std::movable T>
-// auto operator co_await(Future<T> const & f) noexcept{
-//     std::cout << FUNC_SIGNATURE << " = " << f.m_value << std::endl;
-//     return f;
-// }
+template <std::movable T>
+auto operator co_await(Future<T> const & f) noexcept{
+    std::cout << FUNC_SIGNATURE << " = " << f.m_value << std::endl;
+    return f;
+}
 
 static Generator<promise<std::future<int>>> f2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
-    Future f { 5} ;
-    auto const v { co_await f };
+    auto const v { co_await Future{5} };
     std::cout << FUNC_SIGNATURE << " Future::m_value = " << v << std::endl;
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
@@ -147,8 +153,8 @@ static Generator<promise<std::future<int>>> f2() {
     auto const ch{ f2() };
     while (!ch.done()) {
         ch.resume();
-        std::cout << "fuck" << std::endl;
-        std::cout << FUNC_SIGNATURE << " wait value = "
+        ch.promiseRef()->m_finalValue.wait();
+        std::cout << "wait value = "
             << ch.promiseRef()->m_finalValue.get()
             << std::endl << std::flush;
     }
