@@ -1,5 +1,6 @@
 #include <iostream>
-#include <coroutine1.hpp>
+//#include <coroutine1.hpp>
+#include <XCoroutine/XCoroutine.hpp>
 #include <future>
 #include <XHelper/xhelper.hpp>
 
@@ -12,7 +13,7 @@ struct promise {
 
     T m_value{};
 
-    using coroutine_handle_type = Generator<promise>;
+    using coroutine_handle_type = XUtils::XCoroutineGenerator<promise>;
 
     auto get_return_object ()
     { return coroutine_handle_type::from_promise(this); }
@@ -50,7 +51,7 @@ struct promise {
     { std::free(p); }
 };
 
-[[maybe_unused]] static Generator<promise<int>> f1() {
+[[maybe_unused]] static XUtils::XCoroutineGenerator<promise<int>> f1() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     for (int i{1};i <= 10; ++i) { co_yield i; }
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
@@ -93,7 +94,7 @@ struct Future {
 template<std::movable T>
 struct promise< std::future<T> > {
 
-    using coroutine_handle_type = Generator<promise>;
+    using coroutine_handle_type = XUtils::XCoroutineGenerator<promise>;
     using future = std::future<T>;
     future m_finalValue {};
 
@@ -146,7 +147,7 @@ struct promise< std::future<T> > {
 };
 #endif
 
-static Generator<promise<std::future<int>>> f2() {
+static XUtils::XCoroutineGenerator<promise<std::future<int>>> f2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     auto const v { co_await 5 };
     std::cout << FUNC_SIGNATURE << " Future::m_value = " << v << std::endl;
@@ -158,14 +159,20 @@ static Generator<promise<std::future<int>>> f2() {
     auto const ch{ f2() };
 
     ch.promiseRef().m_finalValue.wait();
+    std::cout << std::boolalpha << ch.done() << std::endl;
     std::cout << "wait value = "
         << ch.promiseRef().m_finalValue.get()
         << std::endl;
+    auto coro { ch.operator std::coroutine_handle<>() };
+    std::cout << std::boolalpha << ch.done() << std::endl;
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
 int main() {
     //testF1();
     testF2();
+
+
+
     return 0;
 }

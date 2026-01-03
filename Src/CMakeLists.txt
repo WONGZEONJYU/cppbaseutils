@@ -59,7 +59,7 @@ set(folderNamesList
     XAtomic XGlobal XHelper XLog
     XThreadPool XMath XMemory XContainerHelper
     XContainer XTupleHelper XDesignPattern XQtHelper
-    XConcurrentQueue
+    XConcurrentQueue XCoroutine
 )
 
 foreach (name IN LISTS folderNamesList)

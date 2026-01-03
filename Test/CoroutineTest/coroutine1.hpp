@@ -1,10 +1,13 @@
 #ifndef XUTILS2_COROUTINE1_HPP
 #define XUTILS2_COROUTINE1_HPP
 
-#include <iostream>
 #include <coroutine>
+#include <cstddef>
 #include <cassert>
 #include <XGlobal/xclasshelpermacros.hpp>
+
+//XCoroutineGenerator
+//XCoroutine
 
 template<typename Promise>
 struct Generator {
