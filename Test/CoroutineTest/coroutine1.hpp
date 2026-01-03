@@ -18,8 +18,8 @@ private:
     bool m_autoDestroy_ { true };
 
 public:
-    [[nodiscard]] constexpr auto promiseRef() const
-    { return std::addressof(m_coroHandle_.promise()); }
+    [[nodiscard]] constexpr auto & promiseRef() const
+    { return m_coroHandle_.promise(); }
 
     constexpr void resume() const
     { if (m_coroHandle_) { m_coroHandle_.resume(); } }
@@ -92,6 +92,9 @@ public:
 
     static constexpr auto from_address(void * const p) noexcept
     { return coroutine_handle::from_address(p); }
+
+    [[nodiscard]] constexpr void * address() const noexcept
+    { return m_coroHandle_.address(); }
 
     explicit operator std::coroutine_handle<> () const noexcept
     { return static_cast< std::coroutine_handle<> > ( m_coroHandle_ ); }

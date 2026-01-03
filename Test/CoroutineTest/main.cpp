@@ -61,12 +61,35 @@ struct promise {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     for (auto const ch{ f1() };!ch.done();) {
         ch();
-        std::cout << std::dec << ch.promiseRef()->m_value << std::endl;
+        std::cout << std::dec << ch.promiseRef().m_value << std::endl;
     }
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
 #if 1
+
+template <std::movable T>
+struct Future {
+
+    T m_value{};
+
+    static constexpr auto await_ready() noexcept{ return false; }
+
+    template<typename coro>
+    constexpr auto await_suspend(coro const h) noexcept{
+        h.promise().m_finalValue = std::async([this,h]{
+            auto const end { m_value };
+            for (T i{1}; i < end; ++i) { m_value *= i; }
+            std::cout << std::boolalpha << h.done() << std::endl;
+            if (!h.done()) { h.resume(); }
+            return m_value;
+        });
+    }
+
+    [[nodiscard]] auto await_resume() const noexcept
+    { return m_value; }
+};
+
 template<std::movable T>
 struct promise< std::future<T> > {
 
@@ -78,19 +101,24 @@ struct promise< std::future<T> > {
     { return coroutine_handle_type::from_promise(this); }
 
     static auto initial_suspend() noexcept
-    { return std::suspend_always{}; }
+    { return std::suspend_never{}; }
 
-    [[nodiscard]] auto final_suspend() const noexcept {
-
+    [[nodiscard]] static auto final_suspend() noexcept {
+        std::cout << FUNC_SIGNATURE << std::endl;
+#if 0
         struct awaiter {
             static constexpr bool await_ready() noexcept { return {}; }
             static constexpr void await_suspend(std::coroutine_handle<> const coro)  noexcept
             { if (coro) { while (!coro.done()) { coro.resume(); } } }
             static constexpr void await_resume() noexcept {}
         };
-
         return awaiter {};
+#else
+        return std::suspend_always {};
+#endif
     }
+
+    ~promise() { std::cout << FUNC_SIGNATURE << std::endl; }
 
     static void return_void() noexcept {}
 
@@ -100,65 +128,39 @@ struct promise< std::future<T> > {
     static coroutine_handle_type get_return_object_on_allocation_failure()
     { return {}; }
 
-    void * operator new(std::size_t const n) noexcept
-    { return std::malloc(n); }
+    void * operator new(std::size_t const n) noexcept {
+        std::cout << FUNC_SIGNATURE << std::endl;
+        return std::malloc(n);
+    }
 
-    void operator delete(void * const p) noexcept
-    { std::free(p); }
+    void operator delete(void * const p) noexcept {
+        std::cout << FUNC_SIGNATURE << std::endl;
+        std::free(p);
+    }
 
     template<typename U>
-    static auto await_transform(U && u){
+    static auto await_transform(U && u) {
         std::cout << FUNC_SIGNATURE << typeid(u).name() << std::endl;
-        return u;
+        return Future {u};
     }
 };
 #endif
 
-template <std::movable T>
-struct Future {
-
-    T m_value{};
-
-    static constexpr bool await_ready() noexcept { return {}; }
-
-    template<typename coro>
-    constexpr auto await_suspend(coro const h) noexcept{
-        h.promise().m_finalValue = std::async([this,h]{
-            auto const end { m_value };
-            for (T i{1}; i < end; ++i) { m_value *= i; }
-            if (!h.done()) { h(); }
-            return m_value;
-        });
-    }
-
-    [[nodiscard]] auto await_resume() const noexcept{ return m_value; }
-};
-
-template <std::movable T>
-auto operator co_await(Future<T> const & f) noexcept{
-    std::cout << FUNC_SIGNATURE << " = " << f.m_value << std::endl;
-    return f;
-}
-
 static Generator<promise<std::future<int>>> f2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
-    auto const v { co_await Future{5} };
+    auto const v { co_await 5 };
     std::cout << FUNC_SIGNATURE << " Future::m_value = " << v << std::endl;
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
-[[maybe_unused]] static void testF2()
-{
+[[maybe_unused]] static void testF2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     auto const ch{ f2() };
-    while (!ch.done()) {
-        ch.resume();
-        ch.promiseRef()->m_finalValue.wait();
-        std::cout << "wait value = "
-            << ch.promiseRef()->m_finalValue.get()
-            << std::endl << std::flush;
-    }
 
+    ch.promiseRef().m_finalValue.wait();
+    std::cout << "wait value = "
+        << ch.promiseRef().m_finalValue.get()
+        << std::endl;
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
