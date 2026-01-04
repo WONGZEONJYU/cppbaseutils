@@ -1,6 +1,8 @@
 #ifndef XUTILS2_COROUTINE1_HPP
 #define XUTILS2_COROUTINE1_HPP
 
+#if 0
+
 #include <coroutine>
 #include <cstddef>
 #include <cassert>
@@ -128,5 +130,7 @@ struct std::hash<Generator<Promise>> {
         return seed;
     }
 };
+
+#endif
 
 #endif

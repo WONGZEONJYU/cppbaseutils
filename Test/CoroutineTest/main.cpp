@@ -51,7 +51,10 @@ struct promise {
     { std::free(p); }
 };
 
-[[maybe_unused]] static XUtils::XCoroutineGenerator<promise<int>> f1() {
+using promise1 = promise<int>;
+using XCoroutine1 = XUtils::XCoroutineGenerator<promise1>;
+
+[[maybe_unused]] static XCoroutine1 f1() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     for (int i{1};i <= 10; ++i) { co_yield i; }
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
@@ -62,7 +65,7 @@ struct promise {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     for (auto const ch{ f1() };!ch.done();) {
         ch();
-        std::cout << std::dec << ch.promiseRef().m_value << std::endl;
+        std::cout << std::dec << ch.promise().m_value << std::endl;
     }
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
@@ -102,7 +105,7 @@ struct promise< std::future<T> > {
     { return coroutine_handle_type::from_promise(this); }
 
     static auto initial_suspend() noexcept
-    { return std::suspend_never{}; }
+    { return std::suspend_always{}; }
 
     [[nodiscard]] static auto final_suspend() noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
@@ -145,9 +148,13 @@ struct promise< std::future<T> > {
         return Future {u};
     }
 };
+
 #endif
 
-static XUtils::XCoroutineGenerator<promise<std::future<int>>> f2() {
+using promise2 = promise<std::future<int>>;
+using Coroutine2 = XUtils::XCoroutineGenerator<promise2>;
+
+static Coroutine2 f2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     auto const v { co_await 5 };
     std::cout << FUNC_SIGNATURE << " Future::m_value = " << v << std::endl;
@@ -157,22 +164,20 @@ static XUtils::XCoroutineGenerator<promise<std::future<int>>> f2() {
 [[maybe_unused]] static void testF2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     auto const ch{ f2() };
-
-    ch.promiseRef().m_finalValue.wait();
+    ch();
+    ch.promise().m_finalValue.wait();
     std::cout << std::boolalpha << ch.done() << std::endl;
     std::cout << "wait value = "
-        << ch.promiseRef().m_finalValue.get()
+        << ch.promise().m_finalValue.get()
         << std::endl;
-    auto coro { ch.operator std::coroutine_handle<>() };
     std::cout << std::boolalpha << ch.done() << std::endl;
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
+    getchar();
 }
 
 int main() {
     //testF1();
-    testF2();
-
-
-
+    //std::cout << std::endl << std::endl;
+    //testF2();
     return 0;
 }
