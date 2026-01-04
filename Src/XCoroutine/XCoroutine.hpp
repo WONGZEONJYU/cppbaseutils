@@ -13,10 +13,10 @@ template<typename PromiseType>
 struct XCoroutineGenerator {
 
     using promise_type = PromiseType;
-    using coroutineHandle = std::coroutine_handle<promise_type>;
+    using coroutine_handle = std::coroutine_handle<promise_type>;
 
 private:
-    coroutineHandle m_coroHandle_ {};
+    coroutine_handle m_coroHandle_ {};
     bool m_isDestroy_ {}
         ,m_autoDestroy_ { true };
 
@@ -25,7 +25,7 @@ private:
     noexcept( noexcept( std::declval<Class>().fn( __VA_OPT__(, ) __VA_ARGS__ ) ) )
 
 #undef NOEXCEPT_
-#define NOEXCEPT_(fn) CHECK_NOEXCEPT_(coroutineHandle,fn)
+#define NOEXCEPT_(fn) CHECK_NOEXCEPT_(coroutine_handle,fn)
 
 public:
     [[nodiscard]] constexpr auto & promise() const NOEXCEPT_(promise)
@@ -57,7 +57,7 @@ public:
         }
     }
 
-    constexpr XCoroutineGenerator(coroutineHandle const h = {}) noexcept
+    constexpr XCoroutineGenerator(coroutine_handle const h = {}) noexcept
         : m_coroHandle_ { h } {  }
 
     X_DISABLE_COPY(XCoroutineGenerator)
@@ -72,15 +72,15 @@ public:
     { if (m_autoDestroy_) { destroy(); } }
 
     static constexpr auto from_promise(promise_type * const p)
-        noexcept(noexcept( coroutineHandle::from_promise(*p)))
-    { return coroutineHandle::from_promise(*p); }
+        noexcept(noexcept( coroutine_handle::from_promise(*p)))
+    { return coroutine_handle::from_promise(*p); }
 
     static constexpr auto from_promise(promise_type & p)
-        noexcept(noexcept( coroutineHandle::from_promise(p)))
-    { return coroutineHandle::from_promise(p); }
+        noexcept(noexcept( coroutine_handle::from_promise(p)))
+    { return coroutine_handle::from_promise(p); }
 
     static constexpr auto from_address(void * const p) noexcept
-    { return coroutineHandle::from_address(p); }
+    { return coroutine_handle::from_address(p); }
 
     [[nodiscard]] constexpr auto address() const noexcept
     { assert(m_coroHandle_); return m_coroHandle_.address(); }

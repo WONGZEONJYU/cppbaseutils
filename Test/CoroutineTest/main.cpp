@@ -84,7 +84,6 @@ struct Future {
         h.promise().m_finalValue = std::async([this,h]{
             auto const end { m_value };
             for (T i{1}; i < end; ++i) { m_value *= i; }
-            std::cout << std::boolalpha << h.done() << std::endl;
             if (!h.done()) { h.resume(); }
             return m_value;
         });
@@ -97,23 +96,27 @@ struct Future {
 template<std::movable T>
 struct promise< std::future<T> > {
 
-    using coroutine_handle_type = XUtils::XCoroutineGenerator<promise>;
+    using coroutine_handle = XUtils::XCoroutineGenerator<promise>::coroutine_handle;
     using future = std::future<T>;
     future m_finalValue {};
 
     auto get_return_object()
-    { return coroutine_handle_type::from_promise(this); }
+    { return coroutine_handle::from_promise(*this); }
 
     static auto initial_suspend() noexcept
     { return std::suspend_always{}; }
 
     [[nodiscard]] static auto final_suspend() noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
-#if 0
+#if 1
         struct awaiter {
             static constexpr bool await_ready() noexcept { return {}; }
-            static constexpr void await_suspend(std::coroutine_handle<> const coro)  noexcept
-            { if (coro) { while (!coro.done()) { coro.resume(); } } }
+            static constexpr void await_suspend(coroutine_handle const coro)  noexcept{
+                while (coro && !coro.done()) {
+                    coro.resume();
+                    std::cout << FUNC_SIGNATURE << " = " << coro.done() << std::endl;
+                }
+            }
             static constexpr void await_resume() noexcept {}
         };
         return awaiter {};
@@ -129,7 +132,7 @@ struct promise< std::future<T> > {
     void unhandled_exception() const noexcept
     { (void)this; std::terminate(); }
 
-    static coroutine_handle_type get_return_object_on_allocation_failure()
+    static coroutine_handle get_return_object_on_allocation_failure()
     { return {}; }
 
     void * operator new(std::size_t const n) noexcept {
@@ -166,18 +169,15 @@ static Coroutine2 f2() {
     auto const ch{ f2() };
     ch();
     ch.promise().m_finalValue.wait();
-    std::cout << std::boolalpha << ch.done() << std::endl;
     std::cout << "wait value = "
         << ch.promise().m_finalValue.get()
         << std::endl;
-    std::cout << std::boolalpha << ch.done() << std::endl;
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
-    getchar();
 }
 
 int main() {
-    //testF1();
-    //std::cout << std::endl << std::endl;
-    //testF2();
+    testF1();
+    std::cout << std::endl << std::endl;
+    testF2();
     return 0;
 }
