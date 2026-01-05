@@ -18,14 +18,14 @@ struct promise {
 
     XUtils::CoroState m_coro_state { };
 
-    using XCoroutineGenerator = XUtils::XCoroutineGenerator<promise>;
-    using coroutine_handle = XCoroutineGenerator::coroutine_handle;
+    using CoroutineGenerator = XUtils::XCoroutineGenerator<promise>;
+    using coroutine_handle = CoroutineGenerator::coroutine_handle;
 
     auto get_return_object ()
     { return coroutine_handle::from_promise(*this); }
 
     auto initial_suspend() noexcept
-    {  m_coro_state = XUtils::CoroState::suspended; return std::suspend_always{}; }
+    {  m_coro_state = XUtils::CoroState::suspended; return std::suspend_always {}; }
 
     auto final_suspend() noexcept
     { m_coro_state = XUtils::CoroState::suspended; return std::suspend_always {}; }
@@ -65,11 +65,13 @@ struct Task1 : XUtils::XCoroutineGenerator<promise<int>> {
 
 [[maybe_unused]] static void testF1() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
-    for (auto const ch{ f1() };!ch.done();) {
-        ch();
-        std::cout << FUNC_SIGNATURE << " "
-            << std::dec << ch.promise().m_value << std::endl;
-    }
+    auto const ch{ f1() };
+    std::cout << std::boolalpha << ch.done() << std::endl;
+    // for (!ch.done();) {
+    //     ch();
+    //     std::cout << FUNC_SIGNATURE << " "
+    //         << std::dec << ch.promise().m_value << std::endl;
+    // }
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
@@ -190,6 +192,6 @@ static Task2 f2() {
 int main() {
     testF1();
     std::cout << std::endl << std::endl;
-    testF2();
+    //testF2();
     return 0;
 }
