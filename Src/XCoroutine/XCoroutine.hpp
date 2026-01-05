@@ -58,7 +58,7 @@ public:
     }
 
     constexpr XCoroutineGenerator(coroutine_handle const h = {}) noexcept
-        : m_coroHandle_ { h } {  }
+        : m_coroHandle_ { h } { }
 
     X_DISABLE_COPY(XCoroutineGenerator)
 
@@ -97,15 +97,14 @@ public:
     { return lhs.m_autoDestroy_ <=> rhs.m_autoDestroy_; }
 
     constexpr void swap(XCoroutineGenerator & o) noexcept {
-        if (this != std::addressof(o)) {
-            if (m_coroHandle_) { m_coroHandle_.destroy(); }
-            m_coroHandle_ = o.m_coroHandle_;
-            m_isDestroy_ = o.m_isDestroy_;
-            m_autoDestroy_ = o.m_autoDestroy_;
-            o.m_coroHandle_ = {};
-            o.m_isDestroy_ = {};
-            o.m_autoDestroy_ = true;
-        }
+        if (this == std::addressof(o)) { return; }
+        if (m_coroHandle_) { m_coroHandle_.destroy(); }
+        m_coroHandle_ = o.m_coroHandle_;
+        m_isDestroy_ = o.m_isDestroy_;
+        m_autoDestroy_ = o.m_autoDestroy_;
+        o.m_coroHandle_ = {};
+        o.m_isDestroy_ = {};
+        o.m_autoDestroy_ = true;
     }
 
     //friend struct std::hash<XCoroutineGenerator>;
