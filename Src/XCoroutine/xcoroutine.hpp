@@ -9,6 +9,13 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+enum class CoroState : int {
+    created,
+    running,
+    suspended,
+    finished
+};
+
 template<typename PromiseType>
 struct XCoroutineGenerator {
 
@@ -31,11 +38,19 @@ public:
     [[nodiscard]] constexpr auto & promise() const NOEXCEPT_(promise)
     { assert(m_coroHandle_); return m_coroHandle_.promise(); }
 
-    constexpr void resume() const NOEXCEPT_(resume)
-    { assert(m_coroHandle_); m_coroHandle_.resume(); }
+    constexpr void resume() const NOEXCEPT_(resume) {
+        assert(m_coroHandle_);
+        m_coroHandle_.resume();
+        // if (auto && coro_state{ this->promise().m_coro_state };
+        //     CoroState::suspended == coro_state)
+        // {
+        //     coro_state = CoroState::running;
+        //     m_coroHandle_.resume();
+        // }
+    }
 
-    constexpr void operator()() const NOEXCEPT_(operator())
-    { assert(m_coroHandle_);m_coroHandle_(); }
+    constexpr void operator()() const NOEXCEPT_(resume)
+    { resume(); }
 
     [[nodiscard]] bool done() const NOEXCEPT_(done)
     { assert(m_coroHandle_); return m_coroHandle_.done(); }
@@ -51,7 +66,7 @@ public:
 
     constexpr void destroy() NOEXCEPT_(destroy) {
         if (m_coroHandle_ && !m_isDestroy_) {
-            while (!m_coroHandle_.done()) { m_coroHandle_(); }
+            while (!m_coroHandle_.done()) { resume(); }
             m_isDestroy_ = true;
             m_coroHandle_.destroy();
         }

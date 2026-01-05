@@ -1,6 +1,7 @@
 #include <iostream>
 #include <XCoroutine/xcoroutine.hpp>
 #include <future>
+#include <thread>
 #include <XHelper/xhelper.hpp>
 
 template<typename T>
@@ -15,25 +16,31 @@ struct promise {
 
     T m_value{};
 
+    XUtils::CoroState m_coro_state { };
+
     using XCoroutineGenerator = XUtils::XCoroutineGenerator<promise>;
     using coroutine_handle = XCoroutineGenerator::coroutine_handle;
 
     auto get_return_object ()
     { return coroutine_handle::from_promise(*this); }
 
-    static auto initial_suspend() noexcept
-    { return std::suspend_always{}; }
+    auto initial_suspend() noexcept
+    {  m_coro_state = XUtils::CoroState::suspended; return std::suspend_always{}; }
 
-    static auto final_suspend() noexcept
-    { return std::suspend_always {}; }
+    auto final_suspend() noexcept
+    { m_coro_state = XUtils::CoroState::suspended; return std::suspend_always {}; }
 
     auto return_value(T v) noexcept
-    { m_value = std::move(v); }
+    { m_value = std::move(v); m_coro_state = XUtils::CoroState::suspended;}
 
-    auto yield_value(T v) noexcept
-    { m_value = std::move(v); return std::suspend_always{};  }
+    template<std::convertible_to<T> From>
+    auto yield_value(From && from) noexcept {
+        m_coro_state = XUtils::CoroState::suspended;
+        m_value = std::forward<From>(from);
+        return std::suspend_always{};
+    }
 
-    static auto unhandled_exception() noexcept { std::terminate(); }
+    static auto unhandled_exception() noexcept{ std::terminate(); }
 
     static auto get_return_object_on_allocation_failure()
     { return coroutine_handle{}; }
@@ -60,7 +67,8 @@ struct Task1 : XUtils::XCoroutineGenerator<promise<int>> {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     for (auto const ch{ f1() };!ch.done();) {
         ch();
-        std::cout << std::dec << ch.promise().m_value << std::endl;
+        std::cout << FUNC_SIGNATURE << " "
+            << std::dec << ch.promise().m_value << std::endl;
     }
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
@@ -70,7 +78,7 @@ struct Task1 : XUtils::XCoroutineGenerator<promise<int>> {
 template <std::movable T>
 struct FutureAwait {
 
-    T m_value{};
+    T m_value {};
 
     static constexpr auto await_ready() noexcept
     { return false; }
@@ -83,6 +91,7 @@ struct FutureAwait {
             if (!h.done()) { h.resume(); }
             return m_value;
         });
+        h.promise().m_coro_state = XUtils::CoroState::suspended;
     }
 
     [[nodiscard]] auto await_resume() const noexcept
@@ -94,17 +103,21 @@ struct promise< std::future<T> > {
 
     using CoroutineGenerator = XUtils::XCoroutineGenerator<promise>;
     using coroutine_handle = CoroutineGenerator::coroutine_handle;
+
     using future = std::future<T>;
     future m_finalValue {};
+
+    XUtils::CoroState m_coro_state {} ;
 
     auto get_return_object()
     { return coroutine_handle::from_promise(*this); }
 
-    static auto initial_suspend() noexcept
-    { return std::suspend_always{}; }
+    auto initial_suspend() noexcept
+    { m_coro_state = XUtils::CoroState::suspended; return std::suspend_always{}; }
 
-    [[nodiscard]] static auto final_suspend() noexcept {
+    [[nodiscard]] auto final_suspend() noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
+        m_coro_state = XUtils::CoroState::suspended;
 #if 1
         struct awaiter {
             static constexpr bool await_ready() noexcept { return {}; }
@@ -166,7 +179,6 @@ static Task2 f2() {
 [[maybe_unused]] static void testF2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
     auto const ch{ f2() };
-    getchar();
     ch();
     ch.promise().m_finalValue.wait();
     std::cout << "wait value = "
