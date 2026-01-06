@@ -10,24 +10,35 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename PromiseType>
-class XCoroutineAbstract {
+enum class CoroState : int {
+    created,
+    running,
+    suspended,
+    finished
+};
 
-public:
+struct XPromiseAbstract;
+
+template<typename PromiseType>
+struct XCoroutineGenerator {
+
     using promise_type = PromiseType;
     using coroutine_handle = std::coroutine_handle<promise_type>;
 
+    static_assert(std::is_base_of_v<XPromiseAbstract,promise_type>
+        ,"promise_type must inherit XPromiseAbstract!");
+
 private:
-    #undef CHECK_NOEXCEPT_
-    #define CHECK_NOEXCEPT_(Class,fn,...) \
-    noexcept( noexcept( std::declval<Class>().fn( __VA_OPT__(, ) __VA_ARGS__ ) ) )
-
-    #undef NOEXCEPT_
-    #define NOEXCEPT_(fn) CHECK_NOEXCEPT_(coroutine_handle,fn)
-
     coroutine_handle m_coroHandle_ {};
     bool m_isDestroy_ {}
         ,m_autoDestroy_ { true };
+
+#undef CHECK_NOEXCEPT_
+#define CHECK_NOEXCEPT_(Class,fn,...) \
+noexcept( noexcept( std::declval<Class>().fn( __VA_OPT__(, ) __VA_ARGS__ ) ) )
+
+#undef NOEXCEPT_
+#define NOEXCEPT_(fn) CHECK_NOEXCEPT_(coroutine_handle,fn)
 
 public:
     static constexpr auto from_promise(promise_type * const p) NOEXCEPT_(from_promise(*p))
@@ -36,13 +47,10 @@ public:
     static constexpr auto from_promise(promise_type & p) NOEXCEPT_(from_promise(p))
     { return coroutine_handle::from_promise(p); }
 
-    static constexpr auto from_address(void * const p) noexcept
-    { return coroutine_handle::from_address(p); }
-
     [[nodiscard]] constexpr auto & promise() const NOEXCEPT_(promise)
     { assert(m_coroHandle_); return m_coroHandle_.promise(); }
 
-    [[nodiscard]] bool done() const NOEXCEPT_(done)
+    [[nodiscard]] constexpr bool done() const NOEXCEPT_(done)
     { assert(m_coroHandle_); return m_coroHandle_.done(); }
 
     explicit constexpr operator bool() const noexcept
@@ -61,82 +69,60 @@ public:
         }
     }
 
-    [[nodiscard]] constexpr auto address() const noexcept
-    { assert(m_coroHandle_); return m_coroHandle_.address(); }
-
-    constexpr operator std::coroutine_handle<> () const noexcept {
-        assert(m_coroHandle_);
-        return static_cast< std::coroutine_handle<> > ( m_coroHandle_ );
-    }
-
-    virtual ~XCoroutineAbstract()
+    virtual ~XCoroutineGenerator()
     { if (m_autoDestroy_) { destroy(); } }
 
-private:
-    constexpr XCoroutineAbstract(coroutine_handle const & h)
-        : m_coroHandle_{h} {}
-
-    X_DISABLE_COPY(XCoroutineAbstract)
-
-    template<typename > friend class XCoroutineGenerator;
-    template<typename> friend struct XCoroutineGeneratorHash;
-};
-
-enum class CoroState : int {
-    created,
-    running,
-    suspended,
-    finished
-};
-
-template<typename PromiseType>
-class XCoroutineGenerator : public XCoroutineAbstract<PromiseType> {
-
-    X_DISABLE_COPY(XCoroutineGenerator)
-    using Base = XCoroutineAbstract<PromiseType>;
-    XAtomicInt m_currentStatus { static_cast<int>(CoroState::created) };
-
-public:
-    using promise_type = Base::promise_type;
-    using coroutine_handle = Base::coroutine_handle;
-
-    constexpr XCoroutineGenerator(coroutine_handle const h = {})
-        :Base {h}
-    {
-
+    [[nodiscard]] constexpr bool tryResume() const {
+        if (!operator bool() || done()) { return {} ; }
+        m_coroHandle_.resume();
+        return true;
     }
 
-    constexpr void resume() const NOEXCEPT_(resume)
-    { if (this->m_coroHandle_) { this->m_coroHandle_.resume(); } }
+    constexpr bool operator()() const
+    { return tryResume(); }
 
-    constexpr void operator()() const NOEXCEPT_(resume)
-    { resume(); }
+    constexpr explicit(false) XCoroutineGenerator(coroutine_handle const h = {})
+        : m_coroHandle_{h} {}
 
-    XCoroutineGenerator(XCoroutineGenerator && o) noexcept : Base{}
+    XCoroutineGenerator(XCoroutineGenerator && o) noexcept
     { swap(o); }
 
     XCoroutineGenerator & operator=(XCoroutineGenerator && o) noexcept
     { swap(o); return *this; }
 
-    friend bool operator==(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept
-    { return lhs.m_coroHandle_ == rhs.m_coroHandle_; }
-
-    friend std::strong_ordering operator<=>(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept
-    { return lhs.m_autoDestroy_ <=> rhs.m_autoDestroy_; }
-
     constexpr void swap(XCoroutineGenerator & o) noexcept {
         if (this == std::addressof(o)) { return; }
-        if (this->m_coroHandle_) { this->m_coroHandle_.destroy(); }
-        this->m_coroHandle_ = o.m_coroHandle_;
-        this->m_isDestroy_ = o.m_isDestroy_;
-        this->m_autoDestroy_ = o.m_autoDestroy_;
-        o.m_coroHandle_ = {};
-        o.m_isDestroy_ = {};
-        o.m_autoDestroy_ = true;
+        if (m_coroHandle_) { m_coroHandle_.destroy(); }
+        std::swap(m_coroHandle_, o.m_coroHandle_);
+        std::swap(m_isDestroy_ , o.m_isDestroy_);
+        std::swap(m_autoDestroy_, o.m_autoDestroy_);
     }
 
-    //friend struct std::hash<XCoroutineGenerator>;
+#if 0
+    constexpr explicit(false) operator std::coroutine_handle<> () const noexcept {
+        assert(m_coroHandle_);
+        return static_cast< std::coroutine_handle<> > ( m_coroHandle_ );
+    }
+
+    static constexpr auto from_address(void * const p) noexcept
+    { return coroutine_handle::from_address(p); }
+
+    constexpr auto address() const NOEXCEPT_(address())
+    { return m_coroHandle_.address(); }
+
+#endif
+
+    friend bool operator==(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept = default;
+
+    friend std::strong_ordering operator<=>(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept {
+        return std::tie( lhs.m_coroHandle_, lhs.m_isDestroy_,lhs.m_autoDestroy_ )
+            <=> std::tie( rhs.m_coroHandle_, rhs.m_isDestroy_,rhs.m_autoDestroy_ );
+    }
+
     template<typename> friend struct XCoroutineGeneratorHash;
+
+    X_DISABLE_COPY(XCoroutineGenerator)
+
 #undef CHECK_NOEXCEPT_
 #undef NOEXCEPT_
 };
@@ -165,6 +151,42 @@ struct XCoroutineGeneratorHash<XCoroutineGenerator<Promise>> {
         for (auto && item : h) { hash_combine(seed, item); }
         return seed;
     }
+};
+
+struct XFinalAwaiter {
+    virtual ~XFinalAwaiter() = default;
+    [[nodiscard]] virtual bool await_ready() noexcept { return {}; }
+    virtual void await_suspend(std::coroutine_handle<>) noexcept {}
+    virtual void await_resume() noexcept {}
+};
+
+struct XPromiseAbstract {
+
+private:
+    mutable XAtomicInt m_status_ { static_cast<int>(CoroState::created) };
+
+protected:
+    constexpr XPromiseAbstract() noexcept = default;
+
+    constexpr void onCreated() const noexcept
+    { m_status_.storeRelease(static_cast<int>(CoroState::created)); };
+
+    constexpr void onRunning() const noexcept
+    { m_status_.storeRelease(static_cast<int>(CoroState::running)); }
+
+    constexpr void onSuspended() const noexcept
+    { m_status_.storeRelease(static_cast<int>(CoroState::suspended)); }
+
+    constexpr void onFinished() const noexcept
+    { m_status_.storeRelease(static_cast<int>(CoroState::finished)); }
+
+    template<typename > friend struct XCoroutineGenerator;
+
+public:
+    virtual std::suspend_always final_suspend() noexcept
+    { return {}; }
+
+    virtual ~XPromiseAbstract() = default;
 };
 
 XTD_INLINE_NAMESPACE_END
