@@ -153,12 +153,14 @@ struct XCoroutineGeneratorHash<XCoroutineGenerator<Promise>> {
     }
 };
 
+#if 0
 struct XFinalAwaiter {
     virtual ~XFinalAwaiter() = default;
     [[nodiscard]] virtual bool await_ready() noexcept { return {}; }
     virtual void await_suspend(std::coroutine_handle<>) noexcept {}
     virtual void await_resume() noexcept {}
 };
+#endif
 
 struct XPromiseAbstract {
 
