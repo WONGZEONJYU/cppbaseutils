@@ -1,15 +1,56 @@
-#ifndef XUTILS2_X_COROUTINE_HPP
-#define XUTILS2_X_COROUTINE_HPP 1
+#ifndef XUTILS2_X_COROUTINE_TASK_HPP
+#define XUTILS2_X_COROUTINE_TASK_HPP 1
 
-#include <coroutine>
-#include <cassert>
+#pragma once
+
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XHelper/xversion.hpp>
 #include <XAtomic/xatomic.hpp>
 #include <XHelper/xutility.hpp>
 
-#if 0
+#include <XCoroutine/private/coroutine_p.hpp>
 
+#include <vector>
+#include <exception>
+#include <variant>
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+template<typename T = void>
+class XCoroTask;
+
+namespace detail {
+
+    using coroutine_handle_vector = std::vector<std::coroutine_handle<>>;
+
+    class TaskFinalSuspend {
+
+        coroutine_handle_vector m_awaitingCoroutines_ {};
+
+    public:
+        constexpr explicit TaskFinalSuspend(coroutine_handle_vector awaitingCoroutines);
+
+        [[nodiscard]] constexpr bool await_ready() noexcept;
+
+        template<typename Promise>
+        constexpr void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept;
+
+        static constexpr void await_resume() noexcept;
+
+    };
+
+}
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
+#include <XCoroutine/impl/taskfinalsuspend.hpp>
+#include <XCoroutine/impl/mixins.hpp>
+
+#endif
+
+#if 0
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
@@ -259,4 +300,3 @@ struct std::hash<XUtils::XCoroutineGenerator<Promise>> {
 
 #endif
 
-#endif

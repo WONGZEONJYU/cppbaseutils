@@ -1,0 +1,22 @@
+#ifndef XUTILS2_CONCEPTS_P_HPP
+#define XUTILS2_CONCEPTS_P_HPP
+
+#pragma once
+
+#include <concepts>
+#include <XHelper/xversion.hpp>
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+template<typename T>
+concept destructible = std::is_nothrow_destructible_v<T>;
+
+template<typename T, typename ... Args>
+concept constructible_from = destructible<T>
+    && std::is_constructible_v<T, Args...>;
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
+#endif
