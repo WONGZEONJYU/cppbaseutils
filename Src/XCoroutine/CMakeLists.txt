@@ -3,6 +3,9 @@
 # 收集源文件
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SRC_FILES)
 file(GLOB HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h*)
+file(GLOB IMPL_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/impl/*.h*)
+
+list(APPEND HEADER_FILES ${IMPL_HEADER_FILES})
 
 # 过滤掉 CMakeLists.txt 文件
 list(FILTER SRC_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
@@ -19,6 +22,7 @@ foreach(target IN LISTS LIBRARY_TARGETS)
         # 设置包含目录
         target_include_directories(${target} PRIVATE
                 ${CMAKE_CURRENT_SOURCE_DIR}
+                ${CMAKE_CURRENT_SOURCE_DIR}/impl
         )
     endif()
 endforeach()

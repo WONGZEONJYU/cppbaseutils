@@ -19,16 +19,34 @@ function(installHeader name)
                 GROUP_READ GROUP_EXECUTE
                 WORLD_READ WORLD_EXECUTE
             FILES_MATCHING
-            PATTERN "*.h"
-            PATTERN "*.hpp"
-            PATTERN "*_p.hpp" EXCLUDE
-            PATTERN "*_private.hpp" EXCLUDE
+                PATTERN "*.h"
+                PATTERN "*.hpp"
+                PATTERN "*_p.hpp" EXCLUDE
+                PATTERN "*_private.hpp" EXCLUDE
     )
-endfunction()
+endfunction(installHeader)
+
+function(InstallCoroHeader name)
+
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${name}/
+            DESTINATION include/${name}
+            FILE_PERMISSIONS OWNER_READ GROUP_READ WORLD_READ
+            DIRECTORY_PERMISSIONS
+                OWNER_READ OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE
+            FILES_MATCHING
+                PATTERN "*.h"
+                PATTERN "*.hpp"
+    )
+
+endfunction(InstallCoroHeader)
 
 foreach (name IN LISTS folderNamesList)
     installHeader(${name})
 endforeach ()
+
+InstallCoroHeader(XCoroutine)
 
 # 平台特定的模块
 if(APPLE OR UNIX)

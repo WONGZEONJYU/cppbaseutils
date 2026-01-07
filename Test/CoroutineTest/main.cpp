@@ -4,17 +4,16 @@
 #include <XHelper/xhelper.hpp>
 #include "XHelper/xraii.hpp"
 
-struct TaskPromise : XUtils::XPromiseAbstract {
+#if 0
+
+struct TaskTcb;
+
+struct TaskPromise : XUtils::XPromiseInterface<TaskPromise> {
 
     auto get_return_object()
-    { return std::coroutine_handle<TaskPromise>::from_promise(*this); }
-
-    static auto initial_suspend() {
-        return std::suspend_always{};
-    }
+    { return std::coroutine_handle<TaskPromise>::from_promise(*this) ; }
 
     static void return_void() {}
-    static void unhandled_exception() {}
 };
 
 struct TaskTcb : XUtils::XCoroutineGenerator<TaskPromise> {
@@ -26,21 +25,21 @@ struct TaskTcb : XUtils::XCoroutineGenerator<TaskPromise> {
 
 struct awaiter {
 
-     constexpr bool await_ready() const noexcept {
+     constexpr static bool await_ready() noexcept {
          std::cout << FUNC_SIGNATURE << std::endl;
          return false;
      }
-     constexpr void await_suspend(std::coroutine_handle<>) const noexcept {
+
+     constexpr static void await_suspend(std::coroutine_handle<>) noexcept {
          std::cout << FUNC_SIGNATURE << std::endl;
-        // std::this_thread::sleep_for(std::chrono::seconds { 5 });
      }
-     constexpr void await_resume() const noexcept {
+     constexpr static void await_resume() noexcept {
          std::cout << FUNC_SIGNATURE << std::endl;
      }
 };
 
-
 static TaskTcb task1() {
+
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
 
     XUtils::X_RAII const r{ [] {
@@ -52,6 +51,7 @@ static TaskTcb task1() {
     co_await awaiter{};
 
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
+    co_return;
 }
 
 static void testTask1() {
@@ -59,13 +59,15 @@ static void testTask1() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
 
     auto const task1Tcb { task1() };
-    task1Tcb.tryResume();
-    task1Tcb.tryResume();
-
+    //task1Tcb.tryResume();
+    // task1Tcb.tryResume();
+    getchar();
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
+#endif
+
 int main() {
-    testTask1();
+    //testTask1();
     return 0;
 }

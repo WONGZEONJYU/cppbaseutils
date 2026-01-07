@@ -6,6 +6,9 @@
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XHelper/xversion.hpp>
 #include <XAtomic/xatomic.hpp>
+#include <XHelper/xutility.hpp>
+
+#if 0
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -29,9 +32,8 @@ struct XCoroutineGenerator {
         ,"promise_type must inherit XPromiseAbstract!");
 
 private:
-    coroutine_handle m_coroHandle_ {};
-    bool m_isDestroy_ {}
-        ,m_autoDestroy_ { true };
+    mutable coroutine_handle m_coroHandle_ {};
+    mutable bool m_autoDestroy_ { true };
 
 #undef CHECK_NOEXCEPT_
 #define CHECK_NOEXCEPT_(Class,fn,...) \
@@ -56,24 +58,27 @@ public:
     explicit constexpr operator bool() const noexcept
     { assert(m_coroHandle_); return m_coroHandle_.operator bool(); }
 
-    constexpr void setAutoDestroy(bool const b = true) noexcept
+    constexpr void setAutoDestroy(bool const b = true) const noexcept
     { m_autoDestroy_ = b; }
 
     [[nodiscard]] constexpr bool isAutoDestroy() const noexcept
     { return m_autoDestroy_; }
 
-    constexpr void destroy() NOEXCEPT_(destroy) {
-        if (m_coroHandle_ && !m_isDestroy_) {
-            m_isDestroy_ = true;
+    constexpr void destroy() const NOEXCEPT_(destroy) {
+        if (m_coroHandle_) {
             m_coroHandle_.destroy();
+            m_coroHandle_ = {};
         }
     }
 
-    virtual ~XCoroutineGenerator()
-    { if (m_autoDestroy_) { destroy(); } }
+    virtual ~XCoroutineGenerator() {
+        std::cout << FUNC_SIGNATURE << " status " << promise().m_status_ << std::endl;
+        //if (m_autoDestroy_) { destroy(); }
+    }
 
     [[nodiscard]] constexpr bool tryResume() const {
         if (!operator bool() || done()) { return {} ; }
+        promise().m_status_;
         m_coroHandle_.resume();
         return true;
     }
@@ -94,7 +99,6 @@ public:
         if (this == std::addressof(o)) { return; }
         if (m_coroHandle_) { m_coroHandle_.destroy(); }
         std::swap(m_coroHandle_, o.m_coroHandle_);
-        std::swap(m_isDestroy_ , o.m_isDestroy_);
         std::swap(m_autoDestroy_, o.m_autoDestroy_);
     }
 
@@ -115,8 +119,8 @@ public:
     friend bool operator==(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept = default;
 
     friend std::strong_ordering operator<=>(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept {
-        return std::tie( lhs.m_coroHandle_, lhs.m_isDestroy_,lhs.m_autoDestroy_ )
-            <=> std::tie( rhs.m_coroHandle_, rhs.m_isDestroy_,rhs.m_autoDestroy_ );
+        return std::tie( lhs.m_coroHandle_, lhs.m_autoDestroy_ )
+            <=> std::tie( rhs.m_coroHandle_,rhs.m_autoDestroy_ );
     }
 
     template<typename> friend struct XCoroutineGeneratorHash;
@@ -153,23 +157,12 @@ struct XCoroutineGeneratorHash<XCoroutineGenerator<Promise>> {
     }
 };
 
-#if 0
-struct XFinalAwaiter {
-    virtual ~XFinalAwaiter() = default;
-    [[nodiscard]] virtual bool await_ready() noexcept { return {}; }
-    virtual void await_suspend(std::coroutine_handle<>) noexcept {}
-    virtual void await_resume() noexcept {}
-};
-#endif
-
 struct XPromiseAbstract {
 
 private:
     mutable XAtomicInt m_status_ { static_cast<int>(CoroState::created) };
 
 protected:
-    constexpr XPromiseAbstract() noexcept = default;
-
     constexpr void onCreated() const noexcept
     { m_status_.storeRelease(static_cast<int>(CoroState::created)); };
 
@@ -185,10 +178,58 @@ protected:
     template<typename > friend struct XCoroutineGenerator;
 
 public:
-    virtual std::suspend_always final_suspend() noexcept
-    { return {}; }
-
     virtual ~XPromiseAbstract() = default;
+
+private:
+    constexpr XPromiseAbstract() noexcept = default;
+    template<typename > friend struct XPromiseInterface;
+};
+
+namespace detail {
+    template<typename Class>
+    concept has_initSuspend = requires(Class const & c)
+    { c.initSuspend(); };
+
+    template<typename Class>
+    concept has_finalSuspend = requires(Class c)
+    { c.finalSuspend(); };
+}
+
+template<typename Promise>
+struct XPromiseInterface : XPromiseAbstract {
+
+    ~XPromiseInterface() override = default;
+
+    auto initial_suspend() {
+        if constexpr (detail::has_initSuspend<Promise>) {
+            return static_cast<Promise*>(this)->initSuspend();
+        } else {
+            onSuspended();
+            return std::suspend_always {};
+        }
+    }
+
+    auto final_suspend() noexcept {
+        if constexpr (detail::has_finalSuspend<Promise>){
+            return static_cast<Promise*>(this)->finalSuspend();
+        } else{
+            onSuspended();
+            struct awaiter {
+                const XPromiseInterface * this_{};
+                static constexpr bool await_ready() noexcept { return {}; }
+                static constexpr void await_suspend(std::coroutine_handle<>) noexcept {}
+                constexpr void await_resume() const noexcept
+                { this_->onFinished(); }
+            };
+            return awaiter {this};
+        }
+    }
+
+    virtual void unhandled_exception() { std::terminate(); }
+
+protected:
+    constexpr XPromiseInterface() noexcept = default;
+    template<typename > friend struct XCoroutineGenerator;
 };
 
 XTD_INLINE_NAMESPACE_END
@@ -214,6 +255,8 @@ struct std::hash<XUtils::XCoroutineGenerator<Promise>> {
         return seed;
     }
 };
+#endif
+
 #endif
 
 #endif

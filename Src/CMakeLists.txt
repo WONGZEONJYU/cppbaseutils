@@ -59,12 +59,14 @@ set(folderNamesList
     XAtomic XGlobal XHelper XLog
     XThreadPool XMath XMemory XContainerHelper
     XContainer XTupleHelper XDesignPattern XQtHelper
-    XConcurrentQueue XCoroutine
+    XConcurrentQueue
 )
 
 foreach (name IN LISTS folderNamesList)
     add_subdirectory(${name})
 endforeach ()
+
+add_subdirectory(XCoroutine)
 
 # 平台特定的模块
 if(APPLE OR UNIX)
