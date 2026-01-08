@@ -29,274 +29,178 @@ namespace detail {
         coroutine_handle_vector m_awaitingCoroutines_ {};
 
     public:
-        constexpr explicit TaskFinalSuspend(coroutine_handle_vector awaitingCoroutines);
+        explicit constexpr TaskFinalSuspend(coroutine_handle_vector awaitingCoroutines);
 
-        [[nodiscard]] constexpr bool await_ready() noexcept;
+        static constexpr bool await_ready() noexcept;
 
         template<typename Promise>
         constexpr void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept;
 
         static constexpr void await_resume() noexcept;
-
     };
 
-}
+    class TaskPromiseAbstract {
+
+        friend class TaskFinalSuspend;
+        coroutine_handle_vector m_awaitingCoroutines_ {};
+        XAtomicInteger<uint32_t> m_ref_ {1};
+
+    public:
+        static constexpr std::suspend_never initial_suspend() noexcept;
+        constexpr auto final_suspend() const noexcept;
+
+        constexpr void addAwaitingCoroutine(std::coroutine_handle<> awaitingCoroutine);
+        constexpr bool hasAwaitingCoroutine() const noexcept;
+
+        constexpr void derefCoroutine();
+        constexpr void refCoroutine() noexcept;
+        constexpr void destroyCoroutine();
+
+        constexpr virtual ~TaskPromiseAbstract() = default;
+
+    protected:
+        explicit constexpr TaskPromiseAbstract() = default;
+    };
+
+    template<typename T>
+    class TaskPromise: public TaskPromiseAbstract {
+
+        std::variant<std::monostate, T, std::exception_ptr> m_value_ {};
+
+    public:
+        constexpr auto get_return_object() noexcept -> XCoroTask<T>;
+        constexpr void unhandled_exception();
+        constexpr void return_value(T && value) noexcept;
+        constexpr void return_value(T const & value) noexcept;
+
+        template<typename U> requires std::constructible_from<T, U>
+        constexpr void return_value(U &&value) noexcept;
+
+        constexpr T & result() &;
+        constexpr T && result() &&;
+
+        using TaskPromiseAbstract::TaskPromiseAbstract;
+        constexpr ~TaskPromise() override = default;
+    };
+
+    template<>
+    class TaskPromise<void> : public TaskPromiseAbstract {
+        std::exception_ptr m_exception_ {};
+
+    public:
+        constexpr auto get_return_object() noexcept;
+        constexpr void unhandled_exception();
+        static constexpr void return_void() noexcept;
+        constexpr void result() const;
+
+        using TaskPromiseAbstract::TaskPromiseAbstract;
+        constexpr ~TaskPromise() override = default;
+    };
+
+    template<typename Promise>
+    class TaskAwaiterAbstract {
+    protected:
+        std::coroutine_handle<Promise> m_awaitedCoroutine_ {};
+
+    public:
+        [[nodiscard]] constexpr bool await_ready() const noexcept;
+        constexpr void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
+
+    protected:
+        explicit constexpr TaskAwaiterAbstract(std::coroutine_handle<Promise> promise) noexcept;
+    };
+
+    template<typename T>
+    struct is_task : std::false_type { using return_type = T; };
+
+    template<typename T>
+    struct is_task<XCoroTask<T>> : std::true_type
+    { using return_type = typename XCoroTask<T>::value_type; };
+
+    template<typename T>
+    inline constexpr auto is_task_v { is_task<T>::value };
+
+    template<typename T>
+    using is_task_rt = typename is_task<T>::return_type;
+
+    template<typename T, template<typename> class TaskImpl, typename PromiseType>
+    class XCoroTaskAbstract {
+    protected:
+        std::coroutine_handle<PromiseType> m_coroutine_ {};
+
+    public:
+        constexpr XCoroTaskAbstract(XCoroTaskAbstract &&) noexcept;
+
+        constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && ) noexcept;
+
+        virtual ~XCoroTaskAbstract();
+
+        [[nodiscard]] constexpr bool isReady() const;
+
+        auto operator co_await() const noexcept;
+
+        constexpr void swap(XCoroTaskAbstract &) noexcept;
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback>
+            || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto then(ThenCallback &&callback) &;
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback>
+            || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto then(ThenCallback &&callback) &&;
+
+        template<typename ThenCallback, typename ErrorCallback>
+        requires (
+            ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
+            && std::is_invocable_v<ErrorCallback, std::exception const &>
+        )
+        auto then(ThenCallback && callback, ErrorCallback &&errorCallback) &;
+
+        template<typename ThenCallback, typename ErrorCallback>
+        requires (
+            ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
+            && std::is_invocable_v<ErrorCallback, std::exception const &>
+        )
+        auto then(ThenCallback && callback, ErrorCallback && errorCallback) &&;
+
+    private:
+        template<typename ThenCallback, typename ... Args>
+        static constexpr auto invokeCb(ThenCallback && callback, [[maybe_unused]] Args && ... args)
+            noexcept(std::is_nothrow_invocable_v<ThenCallback,decltype(std::declval<Args>())...>);
+
+        template<typename R, typename ErrorCallback , typename U = is_task_rt<R>>
+        static auto handleException(ErrorCallback &errCb, const std::exception &exception) -> U;
+
+        template<typename F, typename Arg>
+        using cb_invoke_result_t =
+            std::conditional_t<
+                std::is_void_v<Arg>,
+                std::invoke_result_t<F>,
+                std::invoke_result_t<F, Arg>
+            >;
+
+        template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
+        static auto thenImpl(TaskT task, ThenCallback &&thenCallback, ErrorCallback &&errorCallback)
+            -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >;
+
+        template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
+        static auto thenImplRef(TaskT &task, ThenCallback &&thenCallback, ErrorCallback &&errorCallback)
+            -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
+
+    protected:
+        explicit constexpr XCoroTaskAbstract() = default;
+        explicit constexpr XCoroTaskAbstract(std::coroutine_handle<PromiseType> coroutine) noexcept;
+        X_DISABLE_COPY(XCoroTaskAbstract)
+    };
+
+
+}//namespace detail
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
-#include <XCoroutine/impl/taskfinalsuspend.hpp>
-#include <XCoroutine/impl/mixins.hpp>
-
 #endif
-
-#if 0
-XTD_NAMESPACE_BEGIN
-XTD_INLINE_NAMESPACE_BEGIN(v1)
-
-enum class CoroState : int {
-    created,
-    running,
-    suspended,
-    finished
-};
-
-struct XPromiseAbstract;
-
-template<typename PromiseType>
-struct XCoroutineGenerator {
-
-    using promise_type = PromiseType;
-    using coroutine_handle = std::coroutine_handle<promise_type>;
-
-    static_assert(std::is_base_of_v<XPromiseAbstract,promise_type>
-        ,"promise_type must inherit XPromiseAbstract!");
-
-private:
-    mutable coroutine_handle m_coroHandle_ {};
-    mutable bool m_autoDestroy_ { true };
-
-#undef CHECK_NOEXCEPT_
-#define CHECK_NOEXCEPT_(Class,fn,...) \
-noexcept( noexcept( std::declval<Class>().fn( __VA_OPT__(, ) __VA_ARGS__ ) ) )
-
-#undef NOEXCEPT_
-#define NOEXCEPT_(fn) CHECK_NOEXCEPT_(coroutine_handle,fn)
-
-public:
-    static constexpr auto from_promise(promise_type * const p) NOEXCEPT_(from_promise(*p))
-    { return coroutine_handle::from_promise(*p); }
-
-    static constexpr auto from_promise(promise_type & p) NOEXCEPT_(from_promise(p))
-    { return coroutine_handle::from_promise(p); }
-
-    [[nodiscard]] constexpr auto & promise() const NOEXCEPT_(promise)
-    { assert(m_coroHandle_); return m_coroHandle_.promise(); }
-
-    [[nodiscard]] constexpr bool done() const NOEXCEPT_(done)
-    { assert(m_coroHandle_); return m_coroHandle_.done(); }
-
-    explicit constexpr operator bool() const noexcept
-    { assert(m_coroHandle_); return m_coroHandle_.operator bool(); }
-
-    constexpr void setAutoDestroy(bool const b = true) const noexcept
-    { m_autoDestroy_ = b; }
-
-    [[nodiscard]] constexpr bool isAutoDestroy() const noexcept
-    { return m_autoDestroy_; }
-
-    constexpr void destroy() const NOEXCEPT_(destroy) {
-        if (m_coroHandle_) {
-            m_coroHandle_.destroy();
-            m_coroHandle_ = {};
-        }
-    }
-
-    virtual ~XCoroutineGenerator() {
-        std::cout << FUNC_SIGNATURE << " status " << promise().m_status_ << std::endl;
-        //if (m_autoDestroy_) { destroy(); }
-    }
-
-    [[nodiscard]] constexpr bool tryResume() const {
-        if (!operator bool() || done()) { return {} ; }
-        promise().m_status_;
-        m_coroHandle_.resume();
-        return true;
-    }
-
-    constexpr bool operator()() const
-    { return tryResume(); }
-
-    constexpr explicit(false) XCoroutineGenerator(coroutine_handle const h = {})
-        : m_coroHandle_{h} {}
-
-    XCoroutineGenerator(XCoroutineGenerator && o) noexcept
-    { swap(o); }
-
-    XCoroutineGenerator & operator=(XCoroutineGenerator && o) noexcept
-    { swap(o); return *this; }
-
-    constexpr void swap(XCoroutineGenerator & o) noexcept {
-        if (this == std::addressof(o)) { return; }
-        if (m_coroHandle_) { m_coroHandle_.destroy(); }
-        std::swap(m_coroHandle_, o.m_coroHandle_);
-        std::swap(m_autoDestroy_, o.m_autoDestroy_);
-    }
-
-#if 0
-    constexpr explicit(false) operator std::coroutine_handle<> () const noexcept {
-        assert(m_coroHandle_);
-        return static_cast< std::coroutine_handle<> > ( m_coroHandle_ );
-    }
-
-    static constexpr auto from_address(void * const p) noexcept
-    { return coroutine_handle::from_address(p); }
-
-    constexpr auto address() const NOEXCEPT_(address())
-    { return m_coroHandle_.address(); }
-
-#endif
-
-    friend bool operator==(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept = default;
-
-    friend std::strong_ordering operator<=>(XCoroutineGenerator const & lhs, XCoroutineGenerator const & rhs) noexcept {
-        return std::tie( lhs.m_coroHandle_, lhs.m_autoDestroy_ )
-            <=> std::tie( rhs.m_coroHandle_,rhs.m_autoDestroy_ );
-    }
-
-    template<typename> friend struct XCoroutineGeneratorHash;
-
-    X_DISABLE_COPY(XCoroutineGenerator)
-
-#undef CHECK_NOEXCEPT_
-#undef NOEXCEPT_
-};
-
-template<typename Promise>
-using XGeneratorCoro = XCoroutineGenerator<Promise>;
-
-template<typename Promise>
-constexpr void swap(XCoroutineGenerator<Promise> & lhs,XCoroutineGenerator<Promise> & rhs) noexcept
-{ lhs.swap(rhs); }
-
-template<typename> struct XCoroutineGeneratorHash;
-
-template<typename Promise>
-struct XCoroutineGeneratorHash<XCoroutineGenerator<Promise>> {
-    constexpr std::size_t operator()(XCoroutineGenerator<Promise> const & coro) const noexcept {
-        using coroutineHandle = XCoroutineGenerator<Promise>::coroutineHandle;
-        std::size_t const h[] {
-            std::hash<coroutineHandle>{}(coro.m_coroHandle_)
-            ,std::hash<bool>{}(coro.m_isDestroy_)
-            , std::hash<bool>{}(coro.m_autoDestroy_)
-        };
-        static auto const hash_combine { [](std::size_t & seed, std::size_t const value) noexcept
-        { seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2); } };
-        std::size_t seed{};
-        for (auto && item : h) { hash_combine(seed, item); }
-        return seed;
-    }
-};
-
-struct XPromiseAbstract {
-
-private:
-    mutable XAtomicInt m_status_ { static_cast<int>(CoroState::created) };
-
-protected:
-    constexpr void onCreated() const noexcept
-    { m_status_.storeRelease(static_cast<int>(CoroState::created)); };
-
-    constexpr void onRunning() const noexcept
-    { m_status_.storeRelease(static_cast<int>(CoroState::running)); }
-
-    constexpr void onSuspended() const noexcept
-    { m_status_.storeRelease(static_cast<int>(CoroState::suspended)); }
-
-    constexpr void onFinished() const noexcept
-    { m_status_.storeRelease(static_cast<int>(CoroState::finished)); }
-
-    template<typename > friend struct XCoroutineGenerator;
-
-public:
-    virtual ~XPromiseAbstract() = default;
-
-private:
-    constexpr XPromiseAbstract() noexcept = default;
-    template<typename > friend struct XPromiseInterface;
-};
-
-namespace detail {
-    template<typename Class>
-    concept has_initSuspend = requires(Class const & c)
-    { c.initSuspend(); };
-
-    template<typename Class>
-    concept has_finalSuspend = requires(Class c)
-    { c.finalSuspend(); };
-}
-
-template<typename Promise>
-struct XPromiseInterface : XPromiseAbstract {
-
-    ~XPromiseInterface() override = default;
-
-    auto initial_suspend() {
-        if constexpr (detail::has_initSuspend<Promise>) {
-            return static_cast<Promise*>(this)->initSuspend();
-        } else {
-            onSuspended();
-            return std::suspend_always {};
-        }
-    }
-
-    auto final_suspend() noexcept {
-        if constexpr (detail::has_finalSuspend<Promise>){
-            return static_cast<Promise*>(this)->finalSuspend();
-        } else{
-            onSuspended();
-            struct awaiter {
-                const XPromiseInterface * this_{};
-                static constexpr bool await_ready() noexcept { return {}; }
-                static constexpr void await_suspend(std::coroutine_handle<>) noexcept {}
-                constexpr void await_resume() const noexcept
-                { this_->onFinished(); }
-            };
-            return awaiter {this};
-        }
-    }
-
-    virtual void unhandled_exception() { std::terminate(); }
-
-protected:
-    constexpr XPromiseInterface() noexcept = default;
-    template<typename > friend struct XCoroutineGenerator;
-};
-
-XTD_INLINE_NAMESPACE_END
-XTD_NAMESPACE_END
-
-#if 0
-template <typename Promise>
-struct std::hash<XUtils::XCoroutineGenerator<Promise>> {
-
-    constexpr std::size_t operator()(XUtils::XCoroutineGenerator<Promise> const & coro) const noexcept {
-
-        std::size_t const h[] {
-            std::hash<void*>{}(coro.m_coroHandle_.address())
-            ,std::hash<bool>{}(coro.m_isDestroy_)
-            , std::hash<bool>{}(coro.m_autoDestroy_)
-        };
-
-        static auto const hash_combine { [](std::size_t & seed, std::size_t const value) noexcept
-            { seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2); } };
-
-        std::size_t seed{};
-        for (auto && item : h) { hash_combine(seed, item); }
-        return seed;
-    }
-};
-#endif
-
-#endif
-

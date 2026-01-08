@@ -11,19 +11,16 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     template<typename T, typename Awaiter>
-    constexpr auto AwaitTransformMixin::await_transform(T && value) {
-        return Awaiter {std::forward<T>(value)};
-    }
+    constexpr auto AwaitTransformMixin::await_transform(T && value)
+    { return Awaiter {std::forward<T>(value)}; }
 
     template<Awaitable T>
-    constexpr auto && AwaitTransformMixin::await_transform(T &&awaitable) {
-        return std::forward<T>(awaitable);
-    }
+    constexpr auto && AwaitTransformMixin::await_transform(T && awaitable)
+    { return std::forward<T>(awaitable); }
 
     template<Awaitable T>
-    constexpr auto & AwaitTransformMixin::await_transform(T &awaitable) {
-        return awaitable;
-    }
+    constexpr auto & AwaitTransformMixin::await_transform(T & awaitable)
+    { return awaitable; }
 
 }
 

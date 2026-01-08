@@ -69,5 +69,8 @@ static void testTask1() {
 
 int main() {
 
+    XUtils::XAtomicInteger<uint32_t> m_ref_ {1};
+    std::cout << std::boolalpha << m_ref_.deref() << std::endl;
+
     return 0;
 }
