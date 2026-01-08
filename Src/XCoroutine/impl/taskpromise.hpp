@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <XCoroutine/xcoroutinetask.hpp>
 #include <cassert>
 
 XTD_NAMESPACE_BEGIN
@@ -52,8 +51,8 @@ namespace detail {
 
 #undef HAS_EXCEPTION
 
-    constexpr auto TaskPromise<void>::get_return_object() noexcept
-    { return XCoroTask<> { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
+    constexpr auto TaskPromise<void>::get_return_object() noexcept -> XCoroTask<>
+    { return XCoroTask { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
     constexpr void TaskPromise<void>::unhandled_exception()
     { m_exception_ = std::current_exception(); }

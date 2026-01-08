@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <XCoroutine/xcoroutinetask.hpp>
-
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
@@ -13,7 +11,7 @@ namespace detail {
     constexpr std::suspend_never TaskPromiseAbstract::initial_suspend() noexcept
     { return {}; }
 
-    constexpr auto TaskPromiseAbstract::final_suspend() const noexcept
+    constexpr TaskFinalSuspend TaskPromiseAbstract::final_suspend() const noexcept
     { return TaskFinalSuspend{m_awaitingCoroutines_}; }
 
     constexpr void TaskPromiseAbstract::addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)

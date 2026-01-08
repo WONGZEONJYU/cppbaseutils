@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <XCoroutine/xcoroutinetask.hpp>
 #include <cassert>
+#include <optional>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -106,18 +106,68 @@ namespace detail {
         noexcept(std::is_nothrow_invocable_v<ThenCallback,decltype(std::declval<Args>())...>)
     {
         if constexpr (std::is_invocable_v<ThenCallback,Args...>) {
-            return std::invoke(callback, std::forward<Args>(args)...);
+            return std::invoke(std::forward<ThenCallback>(callback), std::forward<Args>(args)...);
         }else {
-            return std::invoke(callback);
+            return std::invoke(std::forward<ThenCallback>(callback));
         }
     }
 
+    XCoroTaskAbstractClassTemplate
+    template<typename R, typename ErrorCallback , typename U>
+    constexpr auto XCoroTaskAbstractClass handleException(ErrorCallback & errCb, std::exception const & exception) -> U
+    { errCb(exception); if constexpr (std::is_void_v<R>)  { return ; } else { return U {}; } }
 
+    XCoroTaskAbstractClassTemplate
+    template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R >
+    constexpr auto XCoroTaskAbstractClass thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >
+    { return thenImplCore(task, thenCallback, errorCallback); }
 
+    XCoroTaskAbstractClassTemplate
+    template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
+    constexpr auto XCoroTaskAbstractClass thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
+    { return thenImplCore(task, thenCallback, errorCallback); }
 
+    XCoroTaskAbstractClassTemplate
+    template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R >
+    auto XCoroTaskAbstractClass thenImplCore(TaskT && task_, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
+    {
+        auto thenCb { std::forward<ThenCallback>(thenCallback) };
+        auto errCb { std::forward<ErrorCallback>(errorCallback) };
+        const auto & task { static_cast<const TaskImpl<T> &>(std::forward<TaskT>(task_)) };
 
+        if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
+            try {
+                co_await task;
+            } catch (std::exception const & e) {
+                co_return handleException<R>(errCb, e);
+            }
+            if constexpr (is_task_v<R>) {
+                co_return co_await invokeCb(thenCb);
+            } else {
+                co_return invokeCb(thenCb);
+            }
+        } else {
+            std::optional<T> value;
+            try {
+                value.emplace(std::move(co_await task));
+            } catch (const std::exception &e) {
+                co_return handleException<R>(errCb, e);
+            }
+            if constexpr (is_task_v<R>) {
+                co_return co_await invokeCb(thenCb, std::move(*value));
+            } else {
+                co_return invokeCb(thenCb, std::move(*value));
+            }
+        }
+    }
 
-
+    XCoroTaskAbstractClassTemplate
+    constexpr XCoroTaskAbstractClass XCoroTaskAbstract(std::coroutine_handle<PromiseType> const coroutine) noexcept
+        : m_coroutine_ { coroutine }
+    { m_coroutine_.promise().refCoroutine(); }
 
 #undef XCoroTaskAbstractClass
 #undef XCoroTaskAbstractClassTemplate

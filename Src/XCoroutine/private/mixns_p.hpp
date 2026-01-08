@@ -37,4 +37,6 @@ namespace detail {
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
+#include <XCoroutine/impl/mixins.hpp>
+
 #endif

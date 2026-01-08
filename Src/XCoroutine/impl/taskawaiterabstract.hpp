@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <XCoroutine/xcoroutinetask.hpp>
 #include <iostream>
 
 XTD_NAMESPACE_BEGIN
