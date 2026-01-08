@@ -182,7 +182,7 @@ namespace moodycamel {
 		template<typename It>
 		constexpr bool enqueue_bulk(It && itemFirst, size_t const count) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
-			else { return this->template inner_enqueue_bulk<Base::CanAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
+			else { return this->template inner_enqueue_bulk<Base::CanAlloc>(std::forward<It>(itemFirst), count); }
 		}
 
 		// Enqueues several items using an explicit producer token.
@@ -193,7 +193,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool enqueue_bulk(producer_token_t const & token, It && itemFirst, size_t const count)
-		{ return this->template inner_enqueue_bulk<Base::CanAlloc>(token, std::forward<decltype(itemFirst)>(itemFirst), count); }
+		{ return this->template inner_enqueue_bulk<Base::CanAlloc>(token, std::forward<It>(itemFirst), count); }
 
 		// Enqueues a single item (by copying it).
 		// Does not allocate memory. Fails if not enough room to enqueue (or implicit
@@ -237,7 +237,7 @@ namespace moodycamel {
 		template<typename It>
 		constexpr bool try_enqueue_bulk(It && itemFirst, size_t const count) {
 			MOODYCAMEL_CONSTEXPR_IF (!Base::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE ) { return {}; }
-			else { return this-> template inner_enqueue_bulk<Base::CannotAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
+			else { return this-> template inner_enqueue_bulk<Base::CannotAlloc>(std::forward<It>(itemFirst), count); }
 		}
 
 		// Enqueues several items using an explicit producer token.
@@ -247,7 +247,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool try_enqueue_bulk(producer_token_t const & token, It && itemFirst, size_t const count)
-		{ return this->template inner_enqueue_bulk<Base::CannotAlloc>(token, std::forward<decltype(itemFirst)>(itemFirst), count); }
+		{ return this->template inner_enqueue_bulk<Base::CannotAlloc>(token, std::forward<It>(itemFirst), count); }
 
 		// Attempts to dequeue from the queue.
 		// Returns false if all producer streams appeared empty at the time they
@@ -348,7 +348,7 @@ namespace moodycamel {
 			for (auto ptr{ this->producerListTail.loadAcquire() };
 				ptr; ptr = ptr->next_prod())
 			{
-				count += ptr->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max - count);
+				count += ptr->dequeue_bulk(std::forward<It>(itemFirst), max - count);
 				if (count == max) { break; }
 			}
 			return count;
@@ -365,7 +365,7 @@ namespace moodycamel {
 			if (!token.desiredProducer || token.lastKnownGlobalOffset != this->globalExplicitConsumerOffset.loadRelaxed())
 			{ if (!this->update_current_producer_after_rotation(token)) { return {}; } }
 
-			auto count{ static_cast<Base::ProducerBase*>(token.currentProducer)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max) };
+			auto count{ static_cast<Base::ProducerBase*>(token.currentProducer)->dequeue_bulk(std::forward<It>(itemFirst), max) };
 
 			if (max == count) {
 				if ((token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(max)) >= Base::EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE)
@@ -381,7 +381,7 @@ namespace moodycamel {
 			if (!ptr) { ptr = tail; }
 
 			while (ptr != static_cast<Base::ProducerBase*>(token.currentProducer)) {
-				auto const dequeued{ ptr->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max)};
+				auto const dequeued{ ptr->dequeue_bulk(std::forward<It>(itemFirst), max)};
 				count += dequeued;
 				if (dequeued) {
 					token.currentProducer = ptr;
@@ -415,7 +415,7 @@ namespace moodycamel {
 		// Never allocates. Thread-safe.
 		template<typename It>
 		static constexpr size_t try_dequeue_bulk_from_producer(producer_token_t const & producer, It && itemFirst, size_t const max)
-		{ return static_cast<Base::ExplicitProducer*>(producer.producer)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max); }
+		{ return static_cast<Base::ExplicitProducer*>(producer.producer)->dequeue_bulk(std::forward<It>(itemFirst), max); }
 
 		// Returns an estimate of the total number of elements currently in the queue. This
 		// estimate is only accurate if the queue has completely stabilized before it is called

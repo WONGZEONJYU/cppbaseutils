@@ -729,8 +729,8 @@ namespace moodycamel {
 			template<typename It>
 			constexpr size_t dequeue_bulk(It && itemFirst, size_t const max) {
 				return isExplicit
-						? static_cast<ExplicitProducer*>(this)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max)
-						: static_cast<ImplicitProducer*>(this)->dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max);
+						? static_cast<ExplicitProducer*>(this)->dequeue_bulk(std::forward<It>(itemFirst), max)
+						: static_cast<ImplicitProducer*>(this)->dequeue_bulk(std::forward<It>(itemFirst), max);
 			}
 
 			constexpr ProducerBase * next_prod() const noexcept { return static_cast<ProducerBase*>(next); }
@@ -1024,7 +1024,7 @@ namespace moodycamel {
 			template<AllocationMode allocMode, typename It>
 			constexpr bool MOODYCAMEL_NO_TSAN enqueue_bulk(It && items, size_t const count) {
 
-				auto && itemFirst { static_cast<std::decay_t<decltype(items)>>(std::forward<decltype(items)>(items)) };
+				auto && itemFirst { static_cast<std::decay_t<decltype(items)>>(std::forward<It>(items)) };
 
 				// First, we need to make sure we have enough room to enqueue all of the elements;
 				// this means pre-allocating blocks and putting them in the block index (but only if
@@ -1224,7 +1224,7 @@ namespace moodycamel {
 			template<typename It>
 			constexpr size_t dequeue_bulk(It && items, size_t const max) {
 
-				auto && itemFirst{ static_cast<std::decay_t<decltype(items)>>(std::forward<decltype(items)>(items)) };
+				auto && itemFirst{ static_cast<std::decay_t<decltype(items)>>(std::forward<It>(items)) };
 
 				auto tail{ this->tailIndex.loadRelaxed() };
 				auto const overcommit{ this->dequeueOvercommit.loadRelaxed() };
@@ -1593,7 +1593,7 @@ namespace moodycamel {
 			template<AllocationMode allocMode, typename It>
 			constexpr bool enqueue_bulk(It && items, size_t const count) {
 
-				auto && itemFirst{ static_cast<std::decay_t<decltype(items)>>(std::forward<decltype(items)>(items)) };
+				auto && itemFirst{ static_cast<std::decay_t<decltype(items)>>(std::forward<It>(items)) };
 
 				// First, we need to make sure we have enough room to enqueue all of the elements;
 				// this means pre-allocating blocks and putting them in the block index (but only if
@@ -2096,13 +2096,13 @@ namespace moodycamel {
 
 		template<AllocationMode canAlloc, typename It>
 		static constexpr bool inner_enqueue_bulk(producer_token_t const & token, It && itemFirst, size_t const count)
-		{ return static_cast<ExplicitProducer*>(token.producer)->XConcurrentQueueAbstract::ExplicitProducer::template enqueue_bulk<canAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count); }
+		{ return static_cast<ExplicitProducer*>(token.producer)->XConcurrentQueueAbstract::ExplicitProducer::template enqueue_bulk<canAlloc>(std::forward<It>(itemFirst), count); }
 
 		template<AllocationMode canAlloc, typename It>
 		constexpr bool inner_enqueue_bulk(It && itemFirst, size_t const count) {
 			auto const producer { get_or_add_implicit_producer() };
 			return producer
-				? producer->ImplicitProducer::template enqueue_bulk<canAlloc>(std::forward<decltype(itemFirst)>(itemFirst), count)
+				? producer->ImplicitProducer::template enqueue_bulk<canAlloc>(std::forward<It>(itemFirst), count)
 				: false;
 		}
 
