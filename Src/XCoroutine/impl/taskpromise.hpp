@@ -47,15 +47,15 @@ namespace detail {
 
 #undef HAS_EXCEPTION
 
-    constexpr XCoroTask<> TaskPromise<void>::get_return_object() noexcept
+    inline XCoroTask<> TaskPromise<void>::get_return_object() noexcept
     { return XCoroTask { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
-    constexpr void TaskPromise<void>::unhandled_exception()
+    inline void TaskPromise<void>::unhandled_exception()
     { m_exception_ = std::current_exception(); }
 
     constexpr void TaskPromise<void>::return_void() noexcept {}
 
-    constexpr void TaskPromise<void>::result() const
+    inline void TaskPromise<void>::result() const
     { if (m_exception_) { std::rethrow_exception(m_exception_); } }
 
 }

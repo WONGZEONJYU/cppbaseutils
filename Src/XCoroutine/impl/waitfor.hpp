@@ -15,8 +15,8 @@
  */
 struct QEventLoop {
     constexpr QEventLoop() = default;
-    constexpr void quit() noexcept { m_is_quit_.storeRelaxed(true); }
-    constexpr int exec() const noexcept
+    void quit() noexcept { m_is_quit_.storeRelaxed(true); }
+    int exec() const noexcept
     { while (!m_is_quit_.loadRelaxed()) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); } return 0;}
 private:
     XUtils::XAtomicBool m_is_quit_ {};
@@ -37,7 +37,7 @@ namespace detail {
         QEventLoop m_loop {};
         bool m_coroutineFinished {};
         std::exception_ptr m_exception {};
-        constexpr void quit() noexcept
+        void quit() noexcept
         { m_coroutineFinished = true; m_loop.quit(); }
     };
 

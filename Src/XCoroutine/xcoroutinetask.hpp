@@ -52,9 +52,9 @@ namespace detail {
         constexpr void addAwaitingCoroutine(std::coroutine_handle<>);
         constexpr bool hasAwaitingCoroutine() const noexcept;
 
-        constexpr void derefCoroutine();
-        constexpr void refCoroutine() noexcept;
-        constexpr void destroyCoroutine();
+        void derefCoroutine();
+        void refCoroutine() noexcept;
+        void destroyCoroutine();
 
         constexpr virtual ~TaskPromiseAbstract() = default;
 
@@ -87,10 +87,10 @@ namespace detail {
         std::exception_ptr m_exception_ {};
 
     public:
-        constexpr XCoroTask<> get_return_object() noexcept;
-        constexpr void unhandled_exception();
+        XCoroTask<> get_return_object() noexcept;
+        void unhandled_exception();
         static constexpr void return_void() noexcept;
-        constexpr void result() const;
+        void result() const;
         constexpr ~TaskPromise() override = default;
     };
 

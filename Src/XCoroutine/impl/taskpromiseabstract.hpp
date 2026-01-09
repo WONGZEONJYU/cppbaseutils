@@ -20,13 +20,13 @@ namespace detail {
     constexpr bool TaskPromiseAbstract::hasAwaitingCoroutine() const noexcept
     { return !m_awaitingCoroutines_.empty(); }
 
-    constexpr void TaskPromiseAbstract::derefCoroutine()
+    inline void TaskPromiseAbstract::derefCoroutine()
     { if (!m_ref_.deref()) { destroyCoroutine(); } }
 
-    constexpr void TaskPromiseAbstract::refCoroutine() noexcept
+    inline void TaskPromiseAbstract::refCoroutine() noexcept
     { m_ref_.ref(); }
 
-    constexpr void TaskPromiseAbstract::destroyCoroutine() {
+    inline void TaskPromiseAbstract::destroyCoroutine() {
         m_ref_.storeRelaxed({});
         auto const handle { std::coroutine_handle<TaskPromiseAbstract>::from_promise(*this) };
         handle.destroy();
