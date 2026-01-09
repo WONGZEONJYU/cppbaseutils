@@ -186,7 +186,7 @@ template<typename T>
 inline constexpr auto is_initializer_list_v {is_initializer_list<T>::value};
 
 template<typename Ty>
-[[maybe_unused]] inline auto typeName(Ty &&) {
+[[maybe_unused]] auto typeName(Ty &&) {
 #ifdef HAS_BOOST
     return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
 #else
@@ -195,7 +195,7 @@ template<typename Ty>
 }
 
 template<typename Ty>
-[[maybe_unused]] inline auto typeName() {
+[[maybe_unused]] auto typeName() {
 #ifdef HAS_BOOST
     return boost::typeindex::type_id_with_cvr<Ty>().pretty_name();
 #else

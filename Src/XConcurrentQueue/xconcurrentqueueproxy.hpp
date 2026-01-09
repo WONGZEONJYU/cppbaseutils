@@ -39,7 +39,7 @@ namespace moodycamel {
 	public:
 		template<typename ...Args>
 		constexpr explicit XConcurrentQueueProxy(Args && ...args)
-			: m_q { std::forward<decltype(args)>(args)... }
+			: m_q { std::forward<Args>(args)... }
 		{}
 
 		constexpr size_t size() const noexcept { return m_count.loadRelaxed(); }
@@ -57,7 +57,7 @@ namespace moodycamel {
 #define MAKE_ENQUEUE_FUNC(en_fn) \
 		template<typename ...Args> \
 		constexpr bool en_fn(Args && ...args) NOEXCEPT_(en_fn) { \
-			auto const ret { m_q.en_fn(std::forward<decltype(args)>(args)...) }; \
+			auto const ret { m_q.en_fn(std::forward<Args>(args)...) }; \
 			if ((details::likely)(ret)) { m_count.ref(); } \
 			return ret; \
 		}
@@ -72,8 +72,8 @@ namespace moodycamel {
 		constexpr bool en_bulk_fn(Args && ...args) NOEXCEPT_(en_bulk_fn) { \
 			using Tuple = std::tuple<Args...>; \
 			auto constexpr lastInx { std::tuple_size_v<Tuple> - 1 }; \
-			auto const len { std::get<lastInx>(Tuple{std::forward<decltype(args)>(args)...}) }; \
-			auto const ret { m_q.en_bulk_fn(std::forward<decltype(args)>(args)...) }; \
+			auto const len { std::get<lastInx>(Tuple{std::forward<Args>(args)...}) }; \
+			auto const ret { m_q.en_bulk_fn(std::forward<Args>(args)...) }; \
 			if ((details::likely)(ret)) { m_count.fetchAndAddOrdered(len); } \
 			return ret; \
 		}
@@ -86,7 +86,7 @@ namespace moodycamel {
 #define MAKE_DEQUEUE_FUNC(de_fn) \
 		template<typename ...Args> \
 		constexpr bool de_fn(Args && ...args) NOEXCEPT_(de_fn) { \
-			auto const ret { m_q.de_fn(std::forward<decltype(args)>(args)...) }; \
+			auto const ret { m_q.de_fn(std::forward<Args>(args)...) }; \
 			if ((details::likely)(ret)) { m_count.deref(); } \
 			return ret; \
 		}
@@ -98,7 +98,7 @@ namespace moodycamel {
 
 		template<typename ...Args>
 		constexpr size_t try_dequeue_bulk(Args && ...args) NOEXCEPT_(try_dequeue_bulk) {
-			auto const ret { m_q.try_dequeue_bulk(std::forward<decltype(args)>(args)...) };
+			auto const ret { m_q.try_dequeue_bulk(std::forward<Args>(args)...) };
 			m_count.fetchAndSubOrdered(ret);
 			return ret;
 		}
@@ -107,7 +107,7 @@ namespace moodycamel {
 		constexpr bool try_dequeue_from_producer(Args && ...args)
 			NOEXCEPT_(try_dequeue_from_producer)
 		{
-			auto const ret { ConcurrentQueue::try_dequeue_from_producer(std::forward<decltype(args)>(args)...) };
+			auto const ret { ConcurrentQueue::try_dequeue_from_producer(std::forward<Args>(args)...) };
 			if ((details::likely)(ret)) { m_count.deref(); }
 			return ret;
 		}
@@ -116,7 +116,7 @@ namespace moodycamel {
 		constexpr size_t try_dequeue_bulk_from_producer(Args && ...args)
 			NOEXCEPT_(try_dequeue_bulk_from_producer)
 		{
-			auto const ret { ConcurrentQueue::try_dequeue_bulk_from_producer(std::forward<decltype(args)>(args)...) };
+			auto const ret { ConcurrentQueue::try_dequeue_bulk_from_producer(std::forward<Args>(args)...) };
 			m_count.fetchAndSubOrdered(ret);
 			return ret;
 		}
@@ -172,7 +172,7 @@ namespace moodycamel {
 #define MAKE_WAIT_DEQUEUE_BULK_FUNC(wdb_fn) \
 		template<typename ...Args> \
 		constexpr size_t wdb_fn(Args && ...args) NOEXCEPT_(wdb_fn) { \
-			auto const len { this->m_q.wdb_fn(std::forward<decltype(args)>(args)...) }; \
+			auto const len { this->m_q.wdb_fn(std::forward<Args>(args)...) }; \
 			this->m_count.fetchAndSubOrdered(len); \
 			return len; \
 		}

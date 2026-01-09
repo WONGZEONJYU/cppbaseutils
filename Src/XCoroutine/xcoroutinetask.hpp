@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <XHelper/xqt_detection.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XHelper/xversion.hpp>
 #include <XAtomic/xatomic.hpp>
@@ -262,6 +263,24 @@ constexpr T waitFor(XCoroTask<T> && task);
 template<Awaitable Awaitable>
 constexpr auto waitFor(Awaitable && awaitable);
 
+#ifdef HAS_QT
+template <typename T, typename QObjectSubclass, typename Callback>
+requires std::is_invocable_v<Callback>
+    || std::is_invocable_v<Callback, T>
+    || std::is_invocable_v<Callback, QObjectSubclass *>
+    || std::is_invocable_v<Callback, QObjectSubclass *, T>
+void connect(XCoroTask<T> && task, QObjectSubclass * context, Callback && func);
+
+template <typename T, typename QObjectSubclass, typename Callback>
+requires detail::TaskConvertible<T>
+        && (std::is_invocable_v<Callback>
+            || std::is_invocable_v<Callback, detail::convertible_awaitable_return_type_t<T>>
+            || std::is_invocable_v<Callback, QObjectSubclass *>
+            || std::is_invocable_v<Callback, QObjectSubclass *, detail::convertible_awaitable_return_type_t<T>>)
+        && (!detail::is_task_v<T>)
+void connect(T && future, QObjectSubclass *context, Callback && func);
+#endif
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
@@ -271,5 +290,6 @@ XTD_NAMESPACE_END
 #include <XCoroutine/impl/xcorotaskabstract.hpp>
 #include <XCoroutine/impl/taskpromise.hpp>
 #include <XCoroutine/impl/waitfor.hpp>
+#include <XCoroutine/impl/connect.hpp>
 
 #endif

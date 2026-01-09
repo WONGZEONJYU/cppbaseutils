@@ -130,7 +130,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool enqueue_bulk(It && itemFirst, size_t const count) {
-			if ((details::likely)(this->m_inner_.enqueue_bulk(std::forward<decltype(itemFirst)>(itemFirst), count))) {
+			if ((details::likely)(this->m_inner_.enqueue_bulk(std::forward<It>(itemFirst), count))) {
 				this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 				return true;
 			}
@@ -145,7 +145,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool enqueue_bulk(producer_token_t const & token, It && itemFirst, size_t const count) {
-			if ((details::likely)(this->m_inner_.enqueue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), count))) {
+			if ((details::likely)(this->m_inner_.enqueue_bulk(token,std::forward<It>(itemFirst), count))) {
 				this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 				return true;
 			}
@@ -209,7 +209,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool try_enqueue_bulk(It && itemFirst, size_t const count) {
-			if (this->m_inner_.try_enqueue_bulk(std::forward<decltype(itemFirst)>(itemFirst), count)) {
+			if (this->m_inner_.try_enqueue_bulk(std::forward<It>(itemFirst), count)) {
 				this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 				return true;
 			}
@@ -223,7 +223,7 @@ namespace moodycamel {
 		// Thread-safe.
 		template<typename It>
 		constexpr bool try_enqueue_bulk(producer_token_t const & token, It && itemFirst, size_t const count) {
-			if (this->m_inner_.try_enqueue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), count)) {
+			if (this->m_inner_.try_enqueue_bulk(token, std::forward<It>(itemFirst), count)) {
 				this->m_sema_->signal(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(count)));
 				return true;
 			}
@@ -262,7 +262,7 @@ namespace moodycamel {
 			size_t count {};
 			max = static_cast<size_t>(this->m_sema_->tryWaitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max))));
 			while (count != max)
-			{ count += this->m_inner_.try_dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+			{ count += this->m_inner_.try_dequeue_bulk(std::forward<It>(itemFirst), max - count); }
 			return count;
 		}
 
@@ -275,7 +275,7 @@ namespace moodycamel {
 		constexpr size_t try_dequeue_bulk(consumer_token_t & token, It && itemFirst, size_t max) {
 			size_t count {};
 			max = static_cast<size_t>(this->m_sema_->tryWaitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max))));
-			while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+			while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<It>(itemFirst), max - count); }
 			return count;
 		}
 
@@ -346,7 +346,7 @@ namespace moodycamel {
 		constexpr size_t wait_dequeue_bulk(It && itemFirst, size_t max) {
 			size_t count {};
 			max = static_cast<size_t>(this->m_sema_->waitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max))));
-			while (count != max) { count += this->m_inner_.try_dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+			while (count != max) { count += this->m_inner_.try_dequeue_bulk(std::forward<It>(itemFirst), max - count); }
 			return count;
 		}
 
@@ -361,7 +361,7 @@ namespace moodycamel {
 		constexpr size_t wait_dequeue_bulk_timed(It && itemFirst, size_t max, std::int64_t const timeout_usecs) {
 			size_t count{};
 			max = static_cast<size_t>(this->m_sema_->waitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max)), timeout_usecs));
-			while (count != max) { count += this->m_inner_.try_dequeue_bulk(std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+			while (count != max) { count += this->m_inner_.try_dequeue_bulk(std::forward<It>(itemFirst), max - count); }
 			return count;
 		}
 
@@ -372,7 +372,7 @@ namespace moodycamel {
 		// Never allocates. Thread-safe.
 		template<typename It, typename Rep, typename Period>
 		constexpr size_t wait_dequeue_bulk_timed(It && itemFirst, size_t const max, std::chrono::duration<Rep, Period> const & timeout)
-		{ return wait_dequeue_bulk_timed(std::forward<decltype(itemFirst)>(itemFirst), max,std::chrono::duration_cast<std::chrono::microseconds>(timeout).count()); }
+		{ return wait_dequeue_bulk_timed(std::forward<It>(itemFirst), max,std::chrono::duration_cast<std::chrono::microseconds>(timeout).count()); }
 
 		// Attempts to dequeue several elements from the queue using an explicit consumer token.
 		// Returns the number of items actually dequeued, which will
@@ -383,7 +383,7 @@ namespace moodycamel {
 		constexpr size_t wait_dequeue_bulk(consumer_token_t & token, It && itemFirst, size_t max) {
 			size_t count {};
 			max = static_cast<size_t>(this->m_sema_->waitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max))));
-			while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+			while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<It>(itemFirst), max - count); }
 			return count;
 		}
 
@@ -398,7 +398,7 @@ namespace moodycamel {
 		constexpr size_t wait_dequeue_bulk_timed(consumer_token_t & token, It && itemFirst, size_t max, std::int64_t const timeout_usecs) {
 			size_t count {};
 			max = static_cast<size_t>(this->m_sema_->waitMany(static_cast<Base::LightweightSemaphore::ssize_t>(static_cast<Base::ssize_t>(max)), timeout_usecs));
-			while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<decltype(itemFirst)>(itemFirst), max - count); }
+			while (count != max) { count += this->m_inner_.try_dequeue_bulk(token, std::forward<It>(itemFirst), max - count); }
 			return count;
 		}
 
@@ -409,7 +409,7 @@ namespace moodycamel {
 		// Never allocates. Thread-safe.
 		template<typename It, typename Rep, typename Period>
 		constexpr size_t wait_dequeue_bulk_timed(consumer_token_t & token, It && itemFirst, size_t const max, std::chrono::duration<Rep, Period> const & timeout) {
-			return wait_dequeue_bulk_timed<It&>(token,std::forward<decltype(itemFirst)>(itemFirst)
+			return wait_dequeue_bulk_timed<It&>(token,std::forward<It>(itemFirst)
 					,max,std::chrono::duration_cast<std::chrono::microseconds>(timeout).count());
 		}
 

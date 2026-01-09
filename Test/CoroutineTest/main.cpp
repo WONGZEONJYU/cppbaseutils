@@ -1,8 +1,6 @@
 #include <iostream>
-#include <thread>
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <XHelper/xhelper.hpp>
-#include "XHelper/xraii.hpp"
 #include <XHelper/xtypetraits.hpp>
 
 template<typename T>
@@ -40,9 +38,13 @@ XUtils::XCoroTask<> f2() {
 static constexpr void test()
 { XUtils::waitFor(f1()); }
 
+template <typename T>
+void ff(T && t) {
+    std::cout << XUtils::typeName(std::forward<T>(t)) << std::endl;
+}
+
 int main() {
 
-    test();
-
+    ff([]{ std::cout << FUNC_SIGNATURE << std::endl; });
     return 0;
 }
