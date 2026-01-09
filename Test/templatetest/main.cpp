@@ -4,6 +4,7 @@
 #include <list>
 #include <XHelper/xcallablehelper.hpp>
 #include "XHelper/xraii.hpp"
+#include <XCoroutine/xcoroutinetask.hpp>
 
 #if 0
 template<typename T, std::size_t N>
@@ -252,6 +253,13 @@ struct InvokerTest {
         :m_ivk { XUtils::XCallableHelper::createInvoker(std::forward<decltype(args)>(args)...) }
     {}
 };
+
+XUtils::XCoroTask<> f1()
+{
+
+    co_await std::suspend_always{};
+}
+
 
 int main()
 {

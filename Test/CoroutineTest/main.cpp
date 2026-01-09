@@ -3,31 +3,46 @@
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <XHelper/xhelper.hpp>
 #include "XHelper/xraii.hpp"
+#include <XHelper/xtypetraits.hpp>
 
+template<typename T>
 struct Awaiter {
 
-    bool await_ready() const noexcept {
+    static constexpr bool await_ready() noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
         return false;
     }
-    void await_suspend(std::coroutine_handle<> ) noexcept {
+    static constexpr void await_suspend(std::coroutine_handle<> ) noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
     }
-    void await_resume() noexcept {
+    static constexpr  void await_resume() noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
     }
 };
 
-XUtils::XCoroTask<> f() {
+struct A {
+    auto operator co_await() const noexcept
+    { return Awaiter<A>{}; }
+};
+
+XUtils::XCoroTask<> f1() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
-    co_await Awaiter{};
+    co_await A{};
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
+XUtils::XCoroTask<> f2() {
+    std::cout << FUNC_SIGNATURE << " begin" << std::endl;
+    co_await A{};
+    std::cout << FUNC_SIGNATURE << " end" << std::endl;
+}
+
+static constexpr void test()
+{ XUtils::waitFor(f1()); }
+
 int main() {
-    auto const h{ f()};
-    //h.coroutineHandle()->operator()();
-    //getchar();
+
+    test();
 
     return 0;
 }

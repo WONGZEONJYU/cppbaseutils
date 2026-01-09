@@ -19,8 +19,8 @@ namespace detail {
     template<typename T>
     concept has_await_methods = requires(T t) {
         { t.await_ready() } -> std::same_as<bool>;
-        {t.await_suspend(std::declval<std::coroutine_handle<>>())};
-        {t.await_resume()};
+        { t.await_suspend(std::declval<std::coroutine_handle<>>()) };
+        { t.await_resume() };
     };
 
     template<typename T>
@@ -43,9 +43,9 @@ namespace detail {
 }
 
 template<typename T>
-concept Awaitable = detail::has_member_operator_coawait<T> ||
-                    detail::has_nonmember_operator_coawait<T> ||
-                    detail::has_await_methods<T>;
+concept Awaitable = detail::has_member_operator_coawait<T>
+                    || detail::has_nonmember_operator_coawait<T>
+                    || detail::has_await_methods<T>;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

@@ -11,7 +11,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     template<typename T>
-    constexpr auto TaskPromise<T>::get_return_object() noexcept -> XCoroTask<T>
+    constexpr XCoroTask<T> TaskPromise<T>::get_return_object() noexcept
     { return XCoroTask<T> { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
     template<typename T>
@@ -35,23 +35,19 @@ namespace detail {
     if (std::holds_alternative<std::exception_ptr>(m_value_)) { \
         assert(std::get<std::exception_ptr>(m_value_)); \
         std::rethrow_exception(std::get<std::exception_ptr>(m_value_)); \
-    } }while (false)
+    } } while (false)
 
     template<typename T>
-    constexpr T & TaskPromise<T>::result() & {
-        HAS_EXCEPTION();
-        return std::get<T>(m_value_);
-    }
+    constexpr T & TaskPromise<T>::result() &
+    { HAS_EXCEPTION(); return std::get<T>(m_value_); }
 
     template<typename T>
-    constexpr T && TaskPromise<T>::result() && {
-        HAS_EXCEPTION();
-        return std::move(std::get<T>(m_value_));
-    }
+    constexpr T && TaskPromise<T>::result() &&
+    { HAS_EXCEPTION(); return std::move(std::get<T>(m_value_)); }
 
 #undef HAS_EXCEPTION
 
-    constexpr auto TaskPromise<void>::get_return_object() noexcept -> XCoroTask<>
+    constexpr XCoroTask<> TaskPromise<void>::get_return_object() noexcept
     { return XCoroTask { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
     constexpr void TaskPromise<void>::unhandled_exception()

@@ -9,6 +9,7 @@ XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
+
     template<typename Promise>
     constexpr bool TaskAwaiterAbstract<Promise>::await_ready() const noexcept
     { return m_awaitedCoroutine_ && m_awaitedCoroutine_.done(); }
@@ -26,6 +27,7 @@ namespace detail {
     constexpr TaskAwaiterAbstract<Promise>::TaskAwaiterAbstract(std::coroutine_handle<Promise> const promise) noexcept
         : m_awaitedCoroutine_ { promise }
     {}
+
 }
 
 XTD_INLINE_NAMESPACE_END
