@@ -52,7 +52,7 @@ requires detail::TaskConvertible<T>
             || std::is_invocable_v<Callback, QObjectSubclass *, detail::convertible_awaitable_return_type_t<T>>)
         && (!detail::is_task_v<T>)
 void connect(T && future, QObjectSubclass * const context, Callback && func)
-{ connect(detail::toTask(std::forward<T>(future)), context, func); }
+{ connect(detail::toTask(std::forward<T>(future)), context, std::forward<Callback>(func)); }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
