@@ -34,11 +34,11 @@ using Tid_t = xptrdiff;
 
 class XThread_ final : public std::enable_shared_from_this<XThread_> {
     enum class Private{};
-    using task_t = std::function<void(const Tid_t &)>;
+    using task_t = std::function<void(Tid_t const &)>;
     task_t m_taskFunc_{};
 
 public:
-    explicit XThread_(task_t && t,Private):m_taskFunc_(std::move(t)){}
+    explicit XThread_(task_t && t,Private) : m_taskFunc_ {std::move(t) }{}
     ~XThread_() = default;
 
     void start() const { std::thread(m_taskFunc_, reinterpret_cast<Tid_t>(this)).detach();}
@@ -50,7 +50,7 @@ public:
 
     template<typename F>
     static XThreadPtr create(F && t) noexcept
-    { return makeShared<XThread_>(std::forward<decltype(t)>(t),Private{}); }
+    { return makeShared<XThread_>(std::forward<F>(t),Private{}); }
 
     X_DEFAULT_COPY_MOVE(XThread_)
 };

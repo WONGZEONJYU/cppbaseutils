@@ -49,8 +49,8 @@ public:
     /// @tparam Ty
     /// @return T类型
     template<typename Ty>
-    [[maybe_unused]] [[nodiscard]] constexpr Ty result(const Model& model_ = Model::BLOCK) const noexcept(false) {
-        const auto & r{m_d_ptr_->m_result_};
+    [[maybe_unused]] [[nodiscard]] constexpr Ty result(Model const & model_ = Model::BLOCK) const noexcept(false) {
+        auto const & r{m_d_ptr_->m_result_};
         return Model::BLOCK == model_ ? r.get<Ty>() : r.try_get<Ty>();
     }
 
@@ -61,7 +61,7 @@ public:
     /// @param rel_time
     /// @return Ty类型数据
     template<typename Ty,typename Rep_,typename Period_>
-    [[maybe_unused]] [[nodiscard]] constexpr Ty result(const std::chrono::duration<Rep_,Period_> &rel_time) const noexcept(false)
+    [[maybe_unused]] [[nodiscard]] constexpr Ty result(std::chrono::duration<Rep_,Period_> const & rel_time) const noexcept(false)
     { return m_d_ptr_->m_result_.get_for<Ty>(rel_time); }
 
     /// 带指定时间等候返回值
@@ -70,7 +70,7 @@ public:
     /// @param abs_time_
     /// @return Ty类型
     template<typename Ty,typename Clock_,typename Duration_>
-    [[maybe_unused]] [[nodiscard]] constexpr Ty result(const std::chrono::time_point<Clock_,Duration_> & abs_time_) const noexcept(false)
+    [[maybe_unused]] [[nodiscard]] constexpr Ty result(std::chrono::time_point<Clock_,Duration_> const & abs_time_) const noexcept(false)
     { return m_d_ptr_->m_result_.get_until<Ty>(abs_time_); }
 
     /// 加入线程池,会按照默认线程数量启动线程池
@@ -100,7 +100,7 @@ private:
     void set_exit_function_(std::function<bool()> &&) const noexcept;
     void resetRecall_() const noexcept;
     void allow_get_() const noexcept;
-    XAtomicPointer<const void> &Owner_() const noexcept;
+    XAtomicPointer<const void> & Owner_() const noexcept;
 
     template<typename> friend class XRunnable;
     friend class XThreadPool;

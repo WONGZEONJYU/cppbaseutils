@@ -178,7 +178,7 @@ namespace XPrivate {
         constexpr Allocator_() = default;
 
         template<typename U>
-        constexpr Allocator_(Allocator_<U> const & o) noexcept {
+        explicit(false) constexpr Allocator_(Allocator_<U> const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
         }
@@ -288,7 +288,7 @@ protected:
         constexpr Destructor_() = default;
 
         template<typename U > requires (std::is_constructible_v<U*,value_type *>)
-        constexpr Destructor_(Destructor_<U> const &) {}
+        explicit(false) constexpr Destructor_(Destructor_<U> const &) {}
 
         static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)
@@ -343,7 +343,7 @@ public:
         static_assert(std::is_base_of_v<QObject, Object> ,
                      "Object must inherit from QObject to be used in Qt Object tree");
 
-        auto obj { CreateUniquePtr(std::forward<decltype(args1)>(args1), std::forward<decltype(args2)>(args2)) };
+        auto obj { CreateUniquePtr(std::forward<ArgsList1>(args1), std::forward<ArgsList2>(args2)) };
 
         // 设置父对象,让Qt对象树管理生命周期
         return obj && parent ? obj->setParent(parent),obj.release() : nullptr;
@@ -356,8 +356,8 @@ public:
         noexcept -> Object *
     {
         return CreateForQtObjectTree(parent.get()
-            ,std::forward<decltype(args1)>(args1)
-            ,std::forward<decltype(args2)>(args2));
+            ,std::forward<ArgsList1>(args1)
+            ,std::forward<ArgsList2>(args2));
     }
 
     template<typename QtObject,typename ArgsList1 = Parameter<> , typename ArgsList2 = Parameter<> >
@@ -367,8 +367,8 @@ public:
         noexcept -> Object *
     {
         return CreateForQtObjectTree(std::addressof(parent)
-            ,std::forward<decltype(args1)>(args1)
-            ,std::forward<decltype(args2)>(args2));
+            ,std::forward<ArgsList1>(args1)
+            ,std::forward<ArgsList2>(args2));
     }
 
     // 为Qt对象提供手动从对象树中移除并删除的方法
@@ -408,9 +408,9 @@ public:
         {
             try{
                 auto const raw_ptr { std::allocator_traits<Allocator>::allocate( sm_allocator_, 1) };
-                auto const obj_ptr { new (raw_ptr) Object( std::get<I1>( std::forward< decltype( args1 ) >( args1 ) )... ) };
+                auto const obj_ptr { new (raw_ptr) Object( std::get<I1>( std::forward< ArgsList1 >( args1 ) )... ) };
                 ObjectUPtr obj { obj_ptr, Deleter {} };
-                return obj_ptr && obj->construct_( std::get<I2>( std::forward< decltype( args2 ) >( args2 ) )... ) ? obj.release() : nullptr;
+                return obj_ptr && obj->construct_( std::get<I2>( std::forward< ArgsList2 >( args2 ) )... ) ? obj.release() : nullptr;
             } catch (const std::exception &) {
                 return nullptr;
             }
@@ -422,8 +422,8 @@ public:
     static constexpr auto CreateUniquePtr ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
         noexcept -> ObjectUPtr
     {
-        return { Create( std::forward< decltype( args1 ) >( args1 )
-            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter {} };
+        return { Create( std::forward< ArgsList1 >( args1 )
+            ,std::forward< ArgsList2 >( args2 ) ) ,Deleter {} };
     }
 
     template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
@@ -431,8 +431,8 @@ public:
     static constexpr auto CreateSharedPtr ( ArgsList1 && args1 = {} ,ArgsList2 && args2 = {} )
         noexcept -> ObjectSPtr
     {
-        return ObjectSPtr { Create( std::forward< decltype( args1 ) >( args1 )
-            ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} , sm_allocator_ };
+        return ObjectSPtr { Create( std::forward< ArgsList1 >( args1 )
+            ,std::forward< ArgsList2 >( args2 ) ) ,Deleter{} , sm_allocator_ };
     }
 
 #ifdef HAS_QT
@@ -446,8 +446,8 @@ public:
     static constexpr auto CreateQScopedPointer ( ArgsList1 && args1 = {},ArgsList2 && args2 = {} )
         noexcept -> ObjectQUPtr
     {
-        return ObjectQUPtr{ Create( std::forward< decltype( args1 ) >( args1 )
-                ,std::forward< decltype( args2 ) >( args2 ) ) };
+        return ObjectQUPtr{ Create( std::forward< ArgsList1 >( args1 )
+                ,std::forward< ArgsList2 >( args2 ) ) };
     }
 
     template<typename ArgsList1 = Parameter<> ,typename ArgsList2 = Parameter<> >
@@ -457,8 +457,8 @@ public:
         noexcept -> ObjectQSPtr
     {
         try{
-            return ObjectQSPtr { Create( std::forward< decltype( args1 ) >( args1 )
-                    ,std::forward< decltype( args2 ) >( args2 ) ) ,Deleter{} };
+            return ObjectQSPtr { Create( std::forward< ArgsList1 >( args1 )
+                    ,std::forward< ArgsList2 >( args2 ) ) ,Deleter{} };
         }catch (std::exception const &) {
             return ObjectQSPtr {};
         }
@@ -579,8 +579,8 @@ public:
         STATIC_ASSERT_P
 
         allocate_([&args1,&args2]()noexcept {
-            return Base_::CreateSharedPtr(std::forward< decltype(args1) >(args1)
-                    ,std::forward<decltype(args2) >(args2));
+            return Base_::CreateSharedPtr(std::forward< ArgsList1 >(args1)
+                    ,std::forward< ArgsList2 >(args2));
         });
 
         return data();
@@ -613,8 +613,8 @@ public:
         STATIC_ASSERT_P
 
         allocate_([&args1,&args2]()noexcept{
-            return Base_::CreateQSharedPointer( std::forward< decltype( args1 ) >( args1 )
-                    ,std::forward< decltype( args2 ) >( args2 ) );
+            return Base_::CreateQSharedPointer( std::forward< ArgsList1 >( args1 )
+                    ,std::forward< ArgsList2 >( args2 ) );
         });
         return qdata();
     }

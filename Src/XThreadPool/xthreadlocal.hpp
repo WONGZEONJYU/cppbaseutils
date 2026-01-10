@@ -60,7 +60,7 @@ class X_TEMPLATE_EXPORT XThreadLocalStorage final {
     uint32_t m_unfree_:1{};
 
 public:
-    constexpr explicit XThreadLocalStorage(XThreadLocal<Ty> & tls,const Ty & v,const bool & is_Unfree = {}):
+    constexpr explicit XThreadLocalStorage(XThreadLocal<Ty> & tls,Ty const & v,bool const & is_Unfree = {}):
     m_tls_(std::addressof(tls)),m_unfree_(is_Unfree)
     { tls.set_val(v); }
 

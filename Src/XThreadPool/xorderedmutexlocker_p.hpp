@@ -17,19 +17,19 @@ public:
 
     X_DISABLE_COPY(XOrderedMutexLocker)
 
-    constexpr void swap(XOrderedMutexLocker &other)  noexcept {
+    constexpr void swap(XOrderedMutexLocker & other)  noexcept {
         std::swap(m_mtx1_, other.m_mtx1_);
         std::swap(m_mtx2_, other.m_mtx2_);
         std::swap(m_locked_, other.m_locked_);
     }
 
-    constexpr XOrderedMutexLocker& operator=(XOrderedMutexLocker&& other) noexcept {
+    constexpr XOrderedMutexLocker& operator=(XOrderedMutexLocker && other) noexcept {
         XOrderedMutexLocker moved (std::move(other));
         swap(moved);
         return *this;
     }
 
-    constexpr XOrderedMutexLocker(XOrderedMutexLocker &&other) noexcept
+    constexpr XOrderedMutexLocker(XOrderedMutexLocker && other) noexcept
         : m_mtx1_(std::exchange(other.m_mtx1_, {}))
         , m_mtx2_(std::exchange(other.m_mtx2_, {}))
         , m_locked_(std::exchange(other.m_locked_, {}))
