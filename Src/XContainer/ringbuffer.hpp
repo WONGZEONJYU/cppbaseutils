@@ -161,7 +161,7 @@ public:
     constexpr XRingBufferIterator() = default;
 
     template<typename OtherIter>
-    constexpr XRingBufferIterator(XRingBufferIterator<OtherIter> const & other)
+    explicit(false) constexpr XRingBufferIterator(XRingBufferIterator<OtherIter> const & other)
         :m_ref_ { other.m_ref_ },m_index_ { other.m_index_ } {}
 
     constexpr self_type & operator++() {

@@ -9,9 +9,10 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XAtomicBool : public XBasicAtomic<bool>{
     using Base_ = XBasicAtomic;
 public:
-    constexpr XAtomicBool(bool const value = {}) noexcept : Base_(value){}
+    explicit(false) constexpr XAtomicBool(bool const value = {}) noexcept
+        : Base_ {value} {}
 
-    XAtomicBool(XAtomicBool const & other) noexcept : Base_{}
+    constexpr XAtomicBool(XAtomicBool const & other) noexcept : Base_ {{}}
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicBool & operator=(XAtomicBool const & other) noexcept
@@ -24,9 +25,10 @@ class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    constexpr XAtomicInteger(T const value = {}) noexcept : Base_(value) {}
+    explicit(false) constexpr XAtomicInteger(T const value = {}) noexcept
+        : Base_ {value} {}
 
-    constexpr XAtomicInteger(XAtomicInteger const & other) noexcept
+    constexpr XAtomicInteger(XAtomicInteger const & other) noexcept : Base_ {{}}
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicInteger & operator=(XAtomicInteger const & other) noexcept
@@ -109,22 +111,24 @@ public:
 };
 
 class XAtomicInt : public XAtomicInteger<int> {
+    using Base_ = XAtomicInteger;
 public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    constexpr XAtomicInt(const int value = {}) noexcept : XAtomicInteger(value) {}
+    explicit(false) constexpr XAtomicInt(int const value = {}) noexcept
+        : Base_ {value} {}
 };
 
 // High-level atomic pointer operations
 template <typename T>
 class XAtomicPointer : public XBasicAtomicPointer<T> {
-    using Base = XBasicAtomicPointer<T>;
+    using Base_ = XBasicAtomicPointer<T>;
 public:
-    constexpr XAtomicPointer(T * value = {}) noexcept
-    : XBasicAtomicPointer<T>(value) {}
+    explicit(false) constexpr XAtomicPointer(T * const value = {}) noexcept
+        : Base_ {value} {}
 
-    constexpr XAtomicPointer(XAtomicPointer const & other) noexcept
+    constexpr XAtomicPointer(XAtomicPointer const & other) noexcept : Base_ {{}}
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicPointer & operator=(XAtomicPointer const & other) noexcept
