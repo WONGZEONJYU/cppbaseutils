@@ -68,21 +68,11 @@ class XGeneratorIterator {
 
 public:
     using iterator_category = std::input_iterator_tag;
-    // Not sure what type should be used for difference_type as we don't
-    // allow calculating difference between two iterators.
     using difference_type = std::ptrdiff_t;
     using value_type = std::remove_reference_t<T>;
     using reference = std::add_lvalue_reference_t<T>;
     using pointer = std::add_pointer_t<value_type>;
 
-    /**
-     * @brief Resumes the generator coroutine until it yields new value or finishes.
-     *
-     * Returns an iterator holding the next value produced by the generator coroutine
-     * or an invalid iterator, indicating the generator coroutine has finishes.
-     *
-     * If the generator coroutine throws an exception, it will be rethrown from here.
-     **/
     constexpr XGeneratorIterator operator++() {
 
         if (!m_GeneratorCoroutine_) { return *this; }
@@ -179,10 +169,8 @@ private:
 };
 
 template<typename T>
-XGenerator<T> detail::XGeneratorPromise<T>::get_return_object() {
-    using coroutine_handle = std::coroutine_handle<typename XGenerator<T>::promise_type>;
-    return { coroutine_handle::from_promise(*this) };
-}
+XGenerator<T> detail::XGeneratorPromise<T>::get_return_object()
+{ return { typename XGenerator<T>::coroutine_handle::from_promise(*this) }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
