@@ -1,0 +1,190 @@
+#ifndef XUTILS2_X_CORO_GENERATOR_HPP
+#define XUTILS2_X_CORO_GENERATOR_HPP 1
+
+#pragma once
+
+#include <XHelper/xversion.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
+#include <variant>
+#include <exception>
+#include <coroutine>
+#include <iostream>
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+template<typename> struct XGenerator;
+
+namespace detail {
+
+    template<typename T>
+    class XGeneratorPromise {
+        using value_type = std::remove_reference_t<T>;
+        const void * m_value_ { };
+        std::exception_ptr m_exception_ { };
+
+    public:
+        XGenerator<T> get_return_object();
+
+        static constexpr auto initial_suspend()noexcept
+        { return std::suspend_always {}; }
+
+        constexpr auto final_suspend() noexcept
+        { m_value_ = {}; return std::suspend_always {}; }
+
+        void unhandled_exception()
+        { m_exception_ = std::current_exception(); }
+
+        constexpr auto yield_value(value_type & value) noexcept
+        { m_value_ = std::addressof(value); return std::suspend_always {}; }
+
+        constexpr auto yield_value(value_type && value) noexcept
+        { m_value_ = std::addressof(value); return std::suspend_always {}; }
+
+        static constexpr void return_void() {}
+
+        [[nodiscard]] std::exception_ptr exception() const noexcept
+        { return m_exception_; }
+
+        constexpr value_type & value() const noexcept
+        { return *const_cast<value_type *>(static_cast<const value_type *>(m_value_)); }
+
+        [[nodiscard]] constexpr bool finished() const noexcept
+        { return !m_value_; }
+
+        void rethrowIfException() const
+        { if (m_exception_) { std::rethrow_exception(m_exception_); } }
+
+        template<typename U>
+        constexpr std::suspend_never await_transform(U &&) = delete;
+    };
+
+}
+
+template<typename T>
+class XGeneratorIterator {
+    using promise_type = detail::XGeneratorPromise<T>;
+    std::coroutine_handle<promise_type> m_GeneratorCoroutine_ { };
+
+public:
+    using iterator_category = std::input_iterator_tag;
+    // Not sure what type should be used for difference_type as we don't
+    // allow calculating difference between two iterators.
+    using difference_type = std::ptrdiff_t;
+    using value_type = std::remove_reference_t<T>;
+    using reference = std::add_lvalue_reference_t<T>;
+    using pointer = std::add_pointer_t<value_type>;
+
+    /**
+     * @brief Resumes the generator coroutine until it yields new value or finishes.
+     *
+     * Returns an iterator holding the next value produced by the generator coroutine
+     * or an invalid iterator, indicating the generator coroutine has finishes.
+     *
+     * If the generator coroutine throws an exception, it will be rethrown from here.
+     **/
+    constexpr XGeneratorIterator operator++() {
+
+        if (!m_GeneratorCoroutine_) { return *this; }
+
+        m_GeneratorCoroutine_.resume(); // generate next value
+
+        if (auto && promise { m_GeneratorCoroutine_.promise() };promise.finished()) {
+            m_GeneratorCoroutine_ = {};
+            promise.rethrowIfException();
+        }
+
+        return *this;
+    }
+
+    constexpr reference operator *() const noexcept
+    { return m_GeneratorCoroutine_.promise().value(); }
+
+    friend bool operator==(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept
+    { return lhs.m_GeneratorCoroutine_ == rhs.m_GeneratorCoroutine_; }
+
+    friend bool operator!=(XGeneratorIterator const & lhs ,XGeneratorIterator const & rhs) noexcept
+    { return !(lhs == rhs); }
+
+private:
+    template<typename> friend struct XGenerator;
+
+    explicit(false) constexpr XGeneratorIterator(std::nullptr_t) noexcept {}
+
+    explicit(false) constexpr XGeneratorIterator(std::coroutine_handle<promise_type> const h)
+        : m_GeneratorCoroutine_ { h }
+    { }
+};
+
+template<typename T>
+struct XGenerator {
+    using promise_type = detail::XGeneratorPromise<T>;
+    using iterator = XGeneratorIterator<T>;
+
+private:
+    using coroutine_handle = std::coroutine_handle<promise_type>;
+    coroutine_handle m_generatorCoroutine_ { };
+
+public:
+    explicit(false) constexpr XGenerator() = default;
+
+    XGenerator(XGenerator &&other) noexcept {
+        m_generatorCoroutine_ = other.m_generatorCoroutine_;
+        other.m_generatorCoroutine_ = coroutine_handle({});
+    }
+
+    X_DISABLE_COPY(XGenerator)
+
+    XGenerator &operator=(XGenerator && other) noexcept {
+        m_generatorCoroutine_ = other.m_generatorCoroutine_;
+        other.m_generatorCoroutine_ = coroutine_handle({});
+        return *this;
+    }
+
+    ~XGenerator()
+    { if (m_generatorCoroutine_.address())  { m_generatorCoroutine_.destroy(); } }
+
+    /**
+     * @brief Returns iterator "pointing" to the first value produced by the generator.
+     *
+     * If the generator coroutine did not produce any value and finished immediately,
+     * the returned iterator will be equal to end().
+     *
+     * If the generator coroutine has thrown an exception if will be rethrown from here.
+     **/
+    iterator begin() {
+        m_generatorCoroutine_.resume(); // generate first value
+        if (m_generatorCoroutine_.promise().finished()) { // did not yield anything
+            m_generatorCoroutine_.promise().rethrowIfException();
+            return iterator{};
+        }
+        return { m_generatorCoroutine_ } ;
+    }
+
+    /**
+     * @brief Returns iterator indicating the past-last value produced by the generator.
+     *
+     * Can be used to check whether the generator have produced another value or
+     * whether it has finished.
+     **/
+    static constexpr iterator end() noexcept
+    { return {}; }
+
+private:
+    friend XGenerator detail::XGeneratorPromise<T>::get_return_object();
+
+    explicit(false) constexpr XGenerator(coroutine_handle const h)
+        : m_generatorCoroutine_ { h }
+    {}
+};
+
+template<typename T>
+XGenerator<T> detail::XGeneratorPromise<T>::get_return_object() {
+    using coroutine_handle = std::coroutine_handle<typename XGenerator<T>::promise_type>;
+    return { coroutine_handle::from_promise(*this) };
+}
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
+#endif
