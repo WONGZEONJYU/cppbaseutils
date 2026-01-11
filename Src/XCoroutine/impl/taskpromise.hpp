@@ -15,7 +15,7 @@ namespace detail {
     { return XCoroTask<T> { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
     template<typename T>
-    constexpr void TaskPromise<T>::unhandled_exception()
+    void TaskPromise<T>::unhandled_exception()
     { m_value_ = std::current_exception(); }
 
     template<typename T>

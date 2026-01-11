@@ -11,8 +11,8 @@ namespace detail {
     constexpr std::suspend_never TaskPromiseAbstract::initial_suspend() noexcept
     { return {}; }
 
-    constexpr TaskFinalSuspend TaskPromiseAbstract::final_suspend() const noexcept
-    { return TaskFinalSuspend{m_awaitingCoroutines_}; }
+    constexpr TaskFinalSuspend TaskPromiseAbstract::final_suspend() noexcept
+    { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
 
     constexpr void TaskPromiseAbstract::addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
     { m_awaitingCoroutines_.push_back(awaitingCoroutine); }

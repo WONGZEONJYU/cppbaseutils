@@ -26,29 +26,26 @@ namespace detail {
     using coroutine_handle_vector = std::vector<std::coroutine_handle<>>;
 
     class TaskFinalSuspend {
-
         coroutine_handle_vector m_awaitingCoroutines_ {};
-
     public:
-        explicit constexpr TaskFinalSuspend(coroutine_handle_vector awaitingCoroutines);
+        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines);
 
         static constexpr bool await_ready() noexcept;
 
         template<typename Promise>
-        constexpr void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept;
 
         static constexpr void await_resume() noexcept;
     };
 
     class TaskPromiseAbstract : public AwaitTransformMixin {
-
         friend class TaskFinalSuspend;
         coroutine_handle_vector m_awaitingCoroutines_ {};
         XAtomicInteger<uint32_t> m_ref_ {1};
 
     public:
         static constexpr std::suspend_never initial_suspend() noexcept;
-        constexpr TaskFinalSuspend final_suspend() const noexcept;
+        constexpr TaskFinalSuspend final_suspend() noexcept;
 
         constexpr void addAwaitingCoroutine(std::coroutine_handle<>);
         constexpr bool hasAwaitingCoroutine() const noexcept;
@@ -60,33 +57,30 @@ namespace detail {
         constexpr virtual ~TaskPromiseAbstract() = default;
 
     protected:
-        explicit constexpr TaskPromiseAbstract() = default;
+        explicit(false) constexpr TaskPromiseAbstract() = default;
     };
 
     template<typename T>
     class TaskPromise: public TaskPromiseAbstract {
-
         std::variant<std::monostate, T, std::exception_ptr> m_value_ {};
-
     public:
         constexpr XCoroTask<T> get_return_object() noexcept;
-        constexpr void unhandled_exception();
+        void unhandled_exception();
+
         constexpr void return_value(T && value) noexcept;
         constexpr void return_value(T const & value) noexcept;
-
         template<typename U> requires std::constructible_from<T, U>
         constexpr void return_value(U && value) noexcept;
 
         constexpr T & result() &;
         constexpr T && result() &&;
+
         constexpr ~TaskPromise() override = default;
     };
 
     template<>
     class TaskPromise<void> : public TaskPromiseAbstract {
-
         std::exception_ptr m_exception_ {};
-
     public:
         XCoroTask<> get_return_object() noexcept;
         void unhandled_exception();
@@ -201,8 +195,8 @@ namespace detail {
             -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
 
     protected:
-        explicit constexpr XCoroTaskAbstract() = default;
-        explicit constexpr XCoroTaskAbstract(coroutine_handle) noexcept;
+        constexpr XCoroTaskAbstract() = default;
+        explicit(false) constexpr XCoroTaskAbstract(coroutine_handle) noexcept;
         X_DISABLE_COPY(XCoroTaskAbstract)
     };
 
@@ -248,7 +242,7 @@ public:
 
     constexpr XCoroTask() noexcept = default;
 
-    constexpr explicit(false) XCoroTask(std::coroutine_handle<detail::TaskPromise<T>> coroutine)
+    explicit(false) constexpr XCoroTask(std::coroutine_handle<detail::TaskPromise<T>> coroutine)
         : Base(coroutine) {}
 };
 

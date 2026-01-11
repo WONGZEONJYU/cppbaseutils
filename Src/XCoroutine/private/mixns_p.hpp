@@ -12,8 +12,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    template<typename T>
-    struct awaiter_type;
+    template<typename> struct awaiter_type;
 
     template<typename T>
     using awaiter_type_t = awaiter_type<T>::type;
