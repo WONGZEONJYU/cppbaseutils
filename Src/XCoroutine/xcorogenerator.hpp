@@ -32,7 +32,7 @@ namespace detail {
         constexpr auto final_suspend() noexcept
         { m_value_ = {}; return std::suspend_always {}; }
 
-        void unhandled_exception()
+        void unhandled_exception() noexcept
         { m_exception_ = std::current_exception(); }
 
         constexpr auto yield_value(value_type & value) noexcept
@@ -41,15 +41,15 @@ namespace detail {
         constexpr auto yield_value(value_type && value) noexcept
         { m_value_ = std::addressof(value); return std::suspend_always {}; }
 
-        static constexpr void return_void() {}
+        static constexpr void return_void() noexcept {}
 
-        [[nodiscard]] std::exception_ptr exception() const noexcept
+        [[nodiscard]] constexpr auto exception() const noexcept
         { return m_exception_; }
 
         constexpr value_type & value() const noexcept
         { return *const_cast<value_type *>(static_cast<const value_type *>(m_value_)); }
 
-        [[nodiscard]] constexpr bool finished() const noexcept
+        [[nodiscard]] constexpr auto finished() const noexcept
         { return !m_value_; }
 
         void rethrowIfException() const
@@ -74,27 +74,21 @@ public:
     using pointer = std::add_pointer_t<value_type>;
 
     constexpr XGeneratorIterator operator++() {
-
         if (!m_GeneratorCoroutine_) { return *this; }
-
         m_GeneratorCoroutine_.resume(); // generate next value
-
         if (auto && promise { m_GeneratorCoroutine_.promise() };promise.finished()) {
             m_GeneratorCoroutine_ = {};
             promise.rethrowIfException();
         }
-
         return *this;
     }
 
     constexpr reference operator *() const noexcept
     { return m_GeneratorCoroutine_.promise().value(); }
 
-    friend bool operator==(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept
-    { return lhs.m_GeneratorCoroutine_ == rhs.m_GeneratorCoroutine_; }
-
-    friend bool operator!=(XGeneratorIterator const & lhs ,XGeneratorIterator const & rhs) noexcept
-    { return !(lhs == rhs); }
+    friend constexpr bool operator==(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept = default;
+    friend constexpr std::strong_ordering operator<=>(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept
+    { return lhs.m_GeneratorCoroutine_ <=> rhs.m_GeneratorCoroutine_; }
 
 private:
     template<typename> friend struct XGenerator;
@@ -118,21 +112,17 @@ private:
 public:
     explicit(false) constexpr XGenerator() = default;
 
-    XGenerator(XGenerator &&other) noexcept {
-        m_generatorCoroutine_ = other.m_generatorCoroutine_;
-        other.m_generatorCoroutine_ = coroutine_handle({});
-    }
+    constexpr XGenerator(XGenerator && other) noexcept
+    { swap(other); }
 
-    X_DISABLE_COPY(XGenerator)
-
-    XGenerator &operator=(XGenerator && other) noexcept {
-        m_generatorCoroutine_ = other.m_generatorCoroutine_;
-        other.m_generatorCoroutine_ = coroutine_handle({});
-        return *this;
-    }
+    constexpr XGenerator &operator=(XGenerator && other) noexcept
+    { swap(other); return *this; }
 
     ~XGenerator()
-    { if (m_generatorCoroutine_.address())  { m_generatorCoroutine_.destroy(); } }
+    { if (m_generatorCoroutine_)  { m_generatorCoroutine_.destroy(); } }
+
+    constexpr void swap(XGenerator & o) noexcept
+    { std::swap(m_generatorCoroutine_,o.m_generatorCoroutine_); }
 
     /**
      * @brief Returns iterator "pointing" to the first value produced by the generator.
@@ -142,13 +132,13 @@ public:
      *
      * If the generator coroutine has thrown an exception if will be rethrown from here.
      **/
-    iterator begin() {
+    auto begin(){
         m_generatorCoroutine_.resume(); // generate first value
         if (m_generatorCoroutine_.promise().finished()) { // did not yield anything
             m_generatorCoroutine_.promise().rethrowIfException();
-            return iterator{};
+            return iterator {};
         }
-        return { m_generatorCoroutine_ } ;
+        return iterator { m_generatorCoroutine_ } ;
     }
 
     /**
@@ -157,8 +147,8 @@ public:
      * Can be used to check whether the generator have produced another value or
      * whether it has finished.
      **/
-    static constexpr iterator end() noexcept
-    { return {}; }
+    static constexpr auto end() noexcept
+    { return iterator {}; }
 
 private:
     friend XGenerator detail::XGeneratorPromise<T>::get_return_object();
@@ -166,6 +156,8 @@ private:
     explicit(false) constexpr XGenerator(coroutine_handle const h)
         : m_generatorCoroutine_ { h }
     {}
+
+    X_DISABLE_COPY(XGenerator)
 };
 
 template<typename T>

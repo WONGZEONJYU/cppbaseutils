@@ -1,6 +1,10 @@
 #ifndef XUTILS2_WAIT_FOR_HPP
 #define XUTILS2_WAIT_FOR_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not waitfor.hpp directly
+#endif
+
 #pragma once
 
 #include <XHelper/xqt_detection.hpp>

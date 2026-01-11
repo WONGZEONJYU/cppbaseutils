@@ -1,6 +1,10 @@
 #ifndef XUTILS2_MIXINS_HPP
 #define XUTILS2_MIXINS_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not minins.hpp directly
+#endif
+
 #pragma once
 
 XTD_NAMESPACE_BEGIN

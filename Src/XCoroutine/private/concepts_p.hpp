@@ -1,6 +1,10 @@
 #ifndef XUTILS2_CONCEPTS_P_HPP
 #define XUTILS2_CONCEPTS_P_HPP
 
+#ifndef X_COROUTINE_
+#error Do not concepts_p.hpp directly
+#endif
+
 #pragma once
 
 #ifndef Q_MOC_RUN

@@ -1,6 +1,10 @@
 #ifndef XUTILS2_X_CORO_TASK_ABSTRACT_HPP
 #define XUTILS2_X_CORO_TASK_ABSTRACT_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not xcorotaskabstract.hpp directly
+#endif
+
 #pragma once
 
 #include <cassert>

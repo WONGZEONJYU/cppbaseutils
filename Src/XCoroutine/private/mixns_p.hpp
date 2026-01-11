@@ -1,6 +1,10 @@
 #ifndef XUTILS2_MIXNS_P_HPP
 #define XUTILS2_MIXNS_P_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not mixns_p.hpp directly
+#endif
+
 #pragma once
 
 #include <XHelper/xversion.hpp>
@@ -36,6 +40,8 @@ namespace detail {
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
+#define X_COROUTINE_
 #include <XCoroutine/impl/mixins.hpp>
+#undef X_COROUTINE_
 
 #endif

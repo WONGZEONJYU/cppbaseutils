@@ -1,6 +1,10 @@
 #ifndef XUTILS2_CORO_LAZY_TASK_HPP
 #define XUTILS2_CORO_LAZY_TASK_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not corolazytask.hpp directly
+#endif
+
 #pragma once
 
 #include <iostream>

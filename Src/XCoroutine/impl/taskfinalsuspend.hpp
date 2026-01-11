@@ -1,6 +1,10 @@
 #ifndef XUTILS2_TASK_FINAL_SUSPEND_HPP
 #define XUTILS2_TASK_FINAL_SUSPEND_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not taskfinalsuspend.hpp directly
+#endif
+
 #pragma once
 
 XTD_NAMESPACE_BEGIN

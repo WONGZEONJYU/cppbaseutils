@@ -1,6 +1,10 @@
 #ifndef XUTILS2_TASK_PROMISE_ABSTRACT_HPP
 #define XUTILS2_TASK_PROMISE_ABSTRACT_HPP 1
 
+#ifndef X_COROUTINE_
+#error Do not taskpromiseabstract.hpp directly
+#endif
+
 #pragma once
 
 XTD_NAMESPACE_BEGIN

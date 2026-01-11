@@ -1,6 +1,10 @@
 #ifndef XUTILS2_CONNECT_HPP
 #define XUTILS2_CONNECT_HPP
 
+#ifndef X_COROUTINE_
+#error Do not connecct.hpp directly
+#endif
+
 #pragma once
 
 #ifdef HAS_QT

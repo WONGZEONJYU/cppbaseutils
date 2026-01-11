@@ -11,8 +11,6 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 template<typename = void>
 class XCoroLazyTask;
 
-//! Specialization of QCoro::detail::isTask for LazyTask.
-
 namespace detail {
 
     template<typename T>

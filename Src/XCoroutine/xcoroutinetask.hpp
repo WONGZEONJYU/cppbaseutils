@@ -8,8 +8,10 @@
 #include <XHelper/xversion.hpp>
 #include <XAtomic/xatomic.hpp>
 
+#define X_COROUTINE_
 #include <XCoroutine/private/coroutine_p.hpp>
 #include <XCoroutine/private/mixns_p.hpp>
+#undef X_COROUTINE_
 
 #include <vector>
 #include <exception>
@@ -278,6 +280,7 @@ void connect(T && future, QObjectSubclass *context, Callback && func);
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
+#define X_COROUTINE_
 #include <XCoroutine/impl/taskawaiterabstract.hpp>
 #include <XCoroutine/impl/taskfinalsuspend.hpp>
 #include <XCoroutine/impl/taskpromiseabstract.hpp>
@@ -285,5 +288,6 @@ XTD_NAMESPACE_END
 #include <XCoroutine/impl/taskpromise.hpp>
 #include <XCoroutine/impl/waitfor.hpp>
 #include <XCoroutine/impl/connect.hpp>
+#undef X_COROUTINE_
 
 #endif

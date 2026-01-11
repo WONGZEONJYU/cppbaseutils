@@ -1,6 +1,10 @@
 #ifndef XUTILS2_COROUTINE_P_HPP
 #define XUTILS2_COROUTINE_P_HPP
 
+#ifndef X_COROUTINE_
+#error Do not coroutine.hpp directly
+#endif
+
 #pragma once
 
 #include <utility>
