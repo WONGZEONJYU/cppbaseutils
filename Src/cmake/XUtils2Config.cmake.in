@@ -69,8 +69,9 @@ check_required_components(@PROJECT_NAME@)
 # PACKAGE_PREFIX_DIR 是 CMake 自动根据安装位置计算出的根目录
 set_and_check(LibXUnits2_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
 
-function(moc_qt_helper_headers TARGET_NAME headers_path qt_helper_headers)
-    set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/${headers_path}/${qt_helper_headers}")
+function(moc_qt_helper_headers TARGET_NAME)
+    set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/xqthread.hpp")
+    # list(APPEND HELPER_HEADER )
 
     if(EXISTS "${HELPER_HEADER}")
         # 核心：将绝对路径的头文件加入到主工程目标的源码中
