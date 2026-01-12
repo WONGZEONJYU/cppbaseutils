@@ -12,7 +12,7 @@ public:
     explicit(false) constexpr XAtomicBool(bool const value = {}) noexcept
         : Base_ {value} {}
 
-    constexpr XAtomicBool(XAtomicBool const & other) noexcept : Base_ {{}}
+    XAtomicBool(XAtomicBool const & other) noexcept : Base_ {{}}
     { this->storeRelease(other.loadAcquire()); }
 
     XAtomicBool & operator=(XAtomicBool const & other) noexcept
