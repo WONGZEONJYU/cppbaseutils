@@ -64,3 +64,19 @@ endif()
 
 # 检查所有必要的组件是否都已找到
 check_required_components(@PROJECT_NAME@)
+
+# 自动计算安装后的绝对路径
+# PACKAGE_PREFIX_DIR 是 CMake 自动根据安装位置计算出的根目录
+set_and_check(LibXUnits2_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
+
+function(moc_qt_helper_headers TARGET_NAME headers_path qt_helper_headers)
+    set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/${headers_path}/${qt_helper_headers}")
+
+    if(EXISTS "${HELPER_HEADER}")
+        # 核心：将绝对路径的头文件加入到主工程目标的源码中
+        target_sources(${TARGET_NAME} PRIVATE "${HELPER_HEADER}")
+        set_target_properties(${TARGET_NAME} PROPERTIES AUTOMOC ON)
+    else()
+        message(WARNING "LibXUnits2: Could not find ${qt_helper_headers} at ${HELPER_HEADER}")
+    endif()
+endfunction()

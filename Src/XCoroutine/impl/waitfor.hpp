@@ -14,14 +14,16 @@
 #ifdef HAS_QT
 #include <QEventLoop>
 #else
-/**
- * 此处只是防止编译出错,本质是没有任何意义的
- */
+//此处只是防止编译出错,本质是没有任何意义的
 struct QEventLoop {
     constexpr QEventLoop() = default;
     void quit() noexcept { m_is_quit_.storeRelaxed(true); }
-    int exec() const noexcept
-    { while (!m_is_quit_.loadRelaxed()) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); } return 0;}
+    int exec() const noexcept {
+        while (!m_is_quit_.loadRelaxed()) {
+            using namespace std::this_thread;using namespace std::chrono;
+            sleep_for(milliseconds(1));
+        } return 0;
+    }
 private:
     XUtils::XAtomicBool m_is_quit_ {};
 };

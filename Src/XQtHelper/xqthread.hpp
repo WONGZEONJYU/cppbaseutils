@@ -14,6 +14,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XQThreadHelper : public QThread {
 
+    Q_OBJECT
     Q_DISABLE_COPY(XQThreadHelper)
 
     CallablePtr m_callable_{};
