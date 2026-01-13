@@ -9,7 +9,7 @@
 
 #include <utility>
 #include <coroutine>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 #ifndef Q_MOC_RUN
 

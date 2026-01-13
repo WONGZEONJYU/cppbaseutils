@@ -1,7 +1,7 @@
 #ifndef X_UTILITY_HPP
 #define X_UTILITY_HPP 1
 
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <type_traits>
 #include <utility>
 

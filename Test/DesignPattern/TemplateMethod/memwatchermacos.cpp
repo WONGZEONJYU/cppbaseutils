@@ -1,5 +1,5 @@
 #include <memwatchermacos.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 #ifdef X_PLATFORM_MACOS
 #include <sys/sysctl.h>

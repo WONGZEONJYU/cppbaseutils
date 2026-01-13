@@ -2,7 +2,7 @@
 #define XTYPES_HPP
 
 #include <XGlobal/xprocessordetection.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <cstddef>
 
 XTD_NAMESPACE_BEGIN

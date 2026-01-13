@@ -1,7 +1,7 @@
 #ifndef XUTILS2_X_RAII_HPP
 #define XUTILS2_X_RAII_HPP 1
 
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <functional>
 

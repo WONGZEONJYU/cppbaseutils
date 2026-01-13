@@ -70,7 +70,7 @@ check_required_components(@PROJECT_NAME@)
 set_and_check(LibXUnits2_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
 
 function(xqt_helper_load TARGET_NAME)
-    set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/xqthread.hpp")
+    set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/concurrency/xqthread.hpp")
     # list(APPEND HELPER_HEADER )
 
     if(EXISTS "${HELPER_HEADER}")

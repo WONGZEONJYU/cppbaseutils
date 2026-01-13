@@ -10,7 +10,7 @@
 #ifndef Q_MOC_RUN
 
 #include <concepts>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

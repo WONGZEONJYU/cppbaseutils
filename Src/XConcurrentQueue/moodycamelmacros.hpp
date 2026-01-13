@@ -22,7 +22,7 @@
 #include <TargetConditionals.h>
 #endif
 #include <thread>		// partly for __WINPTHREADS_VERSION if on MinGW-w64 w/ POSIX threading
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

@@ -5,7 +5,7 @@
 #include <mutex>
 #include <sstream>
 #include <XHelper/xhelper.hpp>
-#include <XHelper/xqt_detection.hpp>
+#include <XGlobal/xqt_detection.hpp>
 #include <XAtomic/xatomic.hpp>
 #ifdef HAS_QT
     #include <QMetaEnum>

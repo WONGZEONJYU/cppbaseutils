@@ -4,7 +4,7 @@
 #pragma once
 
 #include <XGlobal/xclasshelpermacros.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <coroutine>
 #include <memory>
 #include <QTimer>

@@ -1,7 +1,7 @@
 #ifndef X_OVERLOAD_HPP
 #define X_OVERLOAD_HPP 1
 
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <XHelper/xdecorator.hpp>
 
 XTD_NAMESPACE_BEGIN

@@ -1,10 +1,10 @@
 #ifndef X_HELPER_HPP_
 #define X_HELPER_HPP_
 
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <XHelper/xtypetraits.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
-#include <XHelper/xqt_detection.hpp>
+#include <XGlobal/xqt_detection.hpp>
 #include <string>
 #include <string_view>
 #include <utility>

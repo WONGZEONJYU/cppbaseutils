@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <XHelper/xqt_detection.hpp>
+#include <XGlobal/xqt_detection.hpp>
 #include <optional>
 #include <thread>
 

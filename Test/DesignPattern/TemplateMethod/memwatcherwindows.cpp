@@ -1,5 +1,5 @@
 #include <memwatcherwindows.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 #ifdef X_PLATFORM_WINDOWS
 #include <windows.h>

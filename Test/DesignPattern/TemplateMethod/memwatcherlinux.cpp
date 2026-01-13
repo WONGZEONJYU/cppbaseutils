@@ -1,5 +1,5 @@
 #include <memwatcherlinux.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #ifdef X_PLATFORM_LINUX
 #include <sys/sysinfo.h>
 #endif

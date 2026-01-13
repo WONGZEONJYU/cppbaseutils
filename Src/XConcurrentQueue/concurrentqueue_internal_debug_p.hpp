@@ -1,7 +1,7 @@
 #ifndef XUTILS2_X_CONCURRENT_QUEUE_INTERNAL_DEBUG_P_HPP
 #define XUTILS2_X_CONCURRENT_QUEUE_INTERNAL_DEBUG_P_HPP 1
 
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 #pragma once
 

@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <XHelper/xqt_detection.hpp>
+#include <XGlobal/xqt_detection.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <XAtomic/xatomic.hpp>
 
 #define X_COROUTINE_

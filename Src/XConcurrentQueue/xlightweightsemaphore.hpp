@@ -10,7 +10,7 @@
 
 #include <memory>
 #include <type_traits> // For std::make_signed<T>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
 
 XTD_NAMESPACE_BEGIN

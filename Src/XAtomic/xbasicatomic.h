@@ -2,7 +2,7 @@
 #define X_BASIC_ATOMIC_HPP 1
 
 #include <XAtomic/xatomic_cxx11.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

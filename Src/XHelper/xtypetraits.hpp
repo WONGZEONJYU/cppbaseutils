@@ -2,7 +2,7 @@
 #define X_TYPETRAITS_HPP
 
 #include <XHelper/xdecorator.hpp>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <type_traits>
 #include <memory>
 #include <tuple>

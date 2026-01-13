@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <type_traits>
 #include <XCoroutine/private/coroutine_p.hpp>
 

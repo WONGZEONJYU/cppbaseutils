@@ -2,7 +2,7 @@
 #define XUTILS_XMATH_HPP 1
 
 #include <utility>
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <cstdint>
 
 XTD_NAMESPACE_BEGIN
