@@ -73,7 +73,7 @@ namespace concepts {
         struct args_tuple<R (Obj::*)(Args...)>
         { using type = filtered_tuple_t<std::tuple<>, std::remove_cvref_t<Args>...>; };
 
-        using result_tuple = args_tuple<std::remove_cvref_t<FuncPtr>>::type;
+        using result_tuple_t = args_tuple<std::remove_cvref_t<FuncPtr>>::type;
 
         template<typename> struct result_type_from_tuple;
 
@@ -92,7 +92,7 @@ namespace concepts {
          *  * T if result_tuple is std::tuple<T>
          *  * result_tuple otherwise
          **/
-        using result_type = std::optional<result_type_from_tuple_t<result_tuple>>;
+        using result_type = std::optional<result_type_from_tuple_t<result_tuple_t>>;
 
         Q_DISABLE_COPY(QCoroSignalAbstract)
         X_DEFAULT_MOVE(QCoroSignalAbstract)
@@ -150,6 +150,86 @@ namespace concepts {
         constexpr void storeResult(StoreResultCb && storeResult)
         { std::invoke(std::forward<StoreResultCb>(storeResult)); }
     };
+
+    template<concepts::QObject T, typename FuncPtr>
+    class QCoroSignal : public QCoroSignalAbstract<T, FuncPtr> {
+    public:
+        using typename QCoroSignalBase<T, FuncPtr>::result_type;
+
+        QCoroSignal(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
+            : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout)
+            , mDummyReceiver(std::make_unique<QObject>()) {}
+        QCoroSignal(const QCoroSignal &) = delete;
+        QCoroSignal(QCoroSignal &&other) noexcept
+            : QCoroSignalBase<T, FuncPtr>(std::move(other))
+            , mResult(std::move(other.mResult))
+            , mDummyReceiver(std::move(other.mDummyReceiver)) {
+            if (this->mConn) {
+                QObject::disconnect(this->mConn);
+                setupConnection();
+            }
+        }
+
+        QCoroSignal &operator=(QCoroSignal &&other) noexcept {
+            QCoroSignalBase<T, FuncPtr>::operator=(std::move(other));
+            std::swap(mResult, other.mResult);
+            std::swap(mDummyReceiver, other.mDummyReceiver);
+            if (this->mConn) {
+                QObject::disconnect(this->mConn);
+                setupConnection();
+            }
+            return *this;
+        }
+
+        QCoroSignal &operator=(const QCoroSignal &) = delete;
+        ~QCoroSignal() = default;
+
+
+        bool await_ready() const noexcept {
+            return this->mObj.isNull();
+        }
+
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+            this->handleTimeout(awaitingCoroutine);
+            mAwaitingCoroutine = awaitingCoroutine;
+            setupConnection();
+        }
+
+        result_type await_resume() {
+            return std::move(mResult);
+        }
+
+    private:
+        void setupConnection() {
+            Q_ASSERT(!this->mConn);
+            this->mConn = QObject::connect(
+                this->mObj, this->mFuncPtr, this->mDummyReceiver.get(),
+                [this](auto &&...args) mutable {
+                    if (this->mTimeoutTimer) {
+                        this->mTimeoutTimer->stop();
+                    }
+                    QObject::disconnect(this->mConn);
+
+                    this->storeResult([this](auto && ...args) {
+                        mResult.emplace(std::forward<decltype(args)>(args)...);
+                    }, std::forward<decltype(args)>(args)...);
+
+                    if (mAwaitingCoroutine) {
+                        mAwaitingCoroutine.resume();
+                    }
+                },
+                Qt::QueuedConnection);
+        }
+
+        result_type mResult;
+        std::coroutine_handle<> mAwaitingCoroutine;
+        std::unique_ptr<QObject> mDummyReceiver;
+    };
+
+
+
+
+
 
 }
 
