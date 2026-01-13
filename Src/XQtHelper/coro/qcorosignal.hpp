@@ -110,49 +110,46 @@ namespace concepts {
             }
         }
 
-protected:
-    using milliseconds = std::chrono::milliseconds;
-    explicit(false) constexpr QCoroSignalAbstract(T * const obj, FuncPtr && funcPtr, milliseconds const timeout)
-        : m_obj_{ obj }, m_funcPtr_(std::forward<FuncPtr>(funcPtr))
-    {
-        if (timeout.count() > -1) {
-            m_timeoutTimer_ = std::make_unique<QTimer>();
-            m_timeoutTimer_->setInterval(timeout);
-            m_timeoutTimer_->setSingleShot(true);
+    protected:
+        using milliseconds = std::chrono::milliseconds;
+        explicit(false) constexpr QCoroSignalAbstract(T * const obj, FuncPtr && funcPtr, milliseconds const timeout)
+            : m_obj_{ obj }, m_funcPtr_(std::forward<FuncPtr>(funcPtr))
+        {
+            if (timeout.count() > -1) {
+                m_timeoutTimer_ = std::make_unique<QTimer>();
+                m_timeoutTimer_->setInterval(timeout);
+                m_timeoutTimer_->setSingleShot(true);
+            }
         }
-    }
 
-    template<typename... Args>
-    struct select_last
-    { using type = decltype( (std::type_identity<Args>{}, ...) )::type; };
+        template<typename... Args>
+        struct select_last
+        { using type = decltype( (std::type_identity<Args>{}, ...) )::type; };
 
-    template<typename... Args>
-    using select_last_t = select_last<Args...>::type;
+        template<typename... Args>
+        using select_last_t = select_last<Args...>::type;
 
-    template<typename StoreResultCb, typename... Args>
-    constexpr void storeResult(StoreResultCb && storeResult, Args &&...args) {
-        using LastArg = select_last_t<Args...>;
-        if constexpr (is_QPrivateSignal_v<LastArg>) {
-            // Based on https://stackoverflow.com/a/77026174/4601437
-            // Remove the last element (which is a QPrivateSignal) from the tuple
-            auto all { std::forward_as_tuple(std::forward<Args>(args)...) };
-            auto reduced { [&]<std::size_t... I>(std::index_sequence<I...>) constexpr
-                { return std::make_tuple(std::get<I>(all)...); }
-                (std::make_index_sequence<sizeof...(Args) - 1> {})
-            };
-            // Use the shortened tuple as arguments to mResult.emplace()
-            std::apply(std::forward<StoreResultCb>(storeResult), std::move(reduced));
-        } else {
-            std::invoke(std::forward<StoreResultCb>(storeResult), std::forward<Args>(args)...);
+        template<typename StoreResultCb, typename... Args> requires(sizeof...(Args) > 0)
+        constexpr void storeResult(StoreResultCb && storeResult, Args &&...args) {
+            using LastArg = select_last_t<Args...>;
+            if constexpr (is_QPrivateSignal_v<LastArg>) {
+                // Based on https://stackoverflow.com/a/77026174/4601437
+                // Remove the last element (which is a QPrivateSignal) from the tuple
+                auto reduced { []<typename Args_,std::size_t... I>(Args_ && all,std::index_sequence<I...>) constexpr
+                    { return std::make_tuple(std::get<I>(all)...); }
+                    (std::forward_as_tuple(std::forward<Args>(args)...),std::make_index_sequence<sizeof...(Args) - 1> {})
+                };
+                // Use the shortened tuple as arguments to mResult.emplace()
+                std::apply(std::forward<StoreResultCb>(storeResult), std::move(reduced));
+            } else {
+                std::invoke(std::forward<StoreResultCb>(storeResult), std::forward<Args>(args)...);
+            }
         }
-    }
 
-    template<typename StoreResultCb>
-    constexpr void storeResult(StoreResultCb &&storeResult) {
-        std::invoke(std::forward<StoreResultCb>(storeResult));
-    }
-
-};
+        template<typename StoreResultCb>
+        constexpr void storeResult(StoreResultCb && storeResult)
+        { std::invoke(std::forward<StoreResultCb>(storeResult)); }
+    };
 
 }
 
