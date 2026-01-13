@@ -105,7 +105,7 @@ namespace concepts {
                 m_timeoutTimer_->callOnTimeout([this,h]{
                     QObject::disconnect(m_conn_);
                     h.resume();
-                },Qt::DirectConnection); // force coro to be resumed on our thread, not mObj's thread
+                }); // force coro to be resumed on our thread, not mObj's thread
                 m_timeoutTimer_->start();
             }
         }
