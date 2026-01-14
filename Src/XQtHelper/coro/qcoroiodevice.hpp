@@ -4,6 +4,7 @@
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <XCoroutine/private/waitoperationabstract_p.hpp>
 #include <XQtHelper/coro/private/waitsignalhelper.hpp>
+#include <XQtHelper/coro/qcorosignal.hpp>
 #include <optional>
 #include <functional>
 #include <chrono>
@@ -15,6 +16,9 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+// inline auto qCoro(QIODevice & ) noexcept;
+// inline auto qCoro(QIODevice * ) noexcept;
+
 namespace detail {
 
     class QCoroIODevice {
@@ -24,13 +28,12 @@ namespace detail {
 
     private:
         struct OperationAbstract {
-
         protected:
             QPointer<QIODevice> m_device_ {};
             QMetaObject::Connection m_conn_ {}, m_closeConn_ {}, m_finishedConn_ {};
 
         public:
-            Q_DISABLE_COPY(OperationAbstract)
+            Q_DISABLE_COPY(OperationAbstract);
             X_DEFAULT_MOVE(OperationAbstract)
 
             virtual ~OperationAbstract() = default;
@@ -55,12 +58,10 @@ namespace detail {
             callback_t m_resultCb_{};
 
         public:
-            explicit(false) constexpr ReadOperation(QIODevice * const device
-                , callback_t && resultCb)
-                    : Base { device },m_resultCb_ { std::move(resultCb) }
-            { }
+            explicit(false) constexpr ReadOperation(QIODevice * const device, callback_t && resultCb)
+                : Base { device } , m_resultCb_ { std::move(resultCb) } { }
 
-            Q_DISABLE_COPY(ReadOperation)
+            Q_DISABLE_COPY(ReadOperation);
             X_DEFAULT_MOVE(ReadOperation)
 
             [[nodiscard]] virtual bool await_ready() const noexcept
@@ -124,7 +125,7 @@ namespace detail {
         XCoroTask<bool> waitForReadyRead(milliseconds const timeout) {
             if (!m_device_->isReadable()) { co_return false; }
             if (m_device_->bytesAvailable() > 0) { co_return true; }
-            auto const result { co_await waitForReadyReadImpl(timeout) };
+            auto const result{ co_await waitForReadyReadImpl(timeout) };
             co_return result.has_value();
         }
 
@@ -159,10 +160,33 @@ namespace detail {
 }
 
 inline auto qCoro(QIODevice & d) noexcept
-{ return detail::QCoroIODevice{std::addressof(d)}; }
+{ return detail::QCoroIODevice {std::addressof(d) }; }
 
-inline auto qCoro(QIODevice * const d) noexcept
+inline auto qCoro(QIODevice * d) noexcept
 { return detail::QCoroIODevice{d}; }
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
+class QAbstractSocket;
+class QLocalSocket;
+class QNetworkReply;
+
+/*
+If you got here due to a compile error, make sure to #include the QCoro header
+for the corresponding class, so that the qCoro() overload that wraps the QIODevice-derived
+classes in their respective QCoroIODevice-derived wrappers is used.
+
+Wrapping those classes directly into QCoroIODevice will cause co_awaiting certain operations to not
+work as expected.
+*/
+
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+auto qCoro(QAbstractSocket *) noexcept; // You are likely missing "#include <QCoroAbstractSocket>"
+auto qCoro(QLocalSocket *) noexcept; // You are likely missing "#include <QCoroLocalSocket>"
+auto qCoro(QNetworkReply *) noexcept; // You are likely missing "#include <QNetworkReply>"
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

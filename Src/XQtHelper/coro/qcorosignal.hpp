@@ -249,7 +249,7 @@ namespace concepts {
                 explicit(false) constexpr Awaiter(QCoroSignalQueue & queue) noexcept
                     : m_queue_ { std::addressof(queue) } {}
 
-                bool await_ready() const noexcept
+                [[nodiscard]] bool await_ready() const noexcept
                 { return !m_queue_->isValid() || !m_queue_->empty(); }
 
                 void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
@@ -264,10 +264,10 @@ namespace concepts {
         }
 
     private:
-        bool isValid() const noexcept
+        [[nodiscard]] bool isValid() const noexcept
         { return !this->m_obj_.isNull(); }
 
-        bool empty() const noexcept
+        [[nodiscard]] bool empty() const noexcept
         { return m_queue_.empty(); }
 
         result_type dequeue() {
@@ -340,7 +340,7 @@ auto qCoroSignalListener(T * const obj, FuncPtr && ptr,std::chrono::milliseconds
         -> XAsyncGenerator<typename SignalQueue::result_type::value_type>
         {
             while (true) {
-                auto result {co_await *signalQueue };
+                auto result { co_await *signalQueue };
                 if (!result.has_value()) { break; } // timeout
                 co_yield std::move(*result);
             }
