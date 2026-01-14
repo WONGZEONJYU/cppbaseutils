@@ -3,7 +3,7 @@
 
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <XCoroutine/private/waitoperationabstract_p.hpp>
-#include <XCoroutine/xcoroutinetask.hpp>
+#include <XQtHelper/coro/private/waitsignalhelper.hpp>
 #include <optional>
 #include <functional>
 #include <chrono>
@@ -11,8 +11,6 @@
 #include <QByteArray>
 #include <QIODevice>
 #include <QTimer>
-
-class QIODevice;
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -159,6 +157,12 @@ namespace detail {
     struct awaiter_type<T *> { using type = QCoroIODevice::ReadAllOperation; };
 
 }
+
+inline auto qCoro(QIODevice & d) noexcept
+{ return detail::QCoroIODevice{std::addressof(d)}; }
+
+inline auto qCoro(QIODevice * const d) noexcept
+{ return detail::QCoroIODevice{d}; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
