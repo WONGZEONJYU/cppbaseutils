@@ -133,9 +133,7 @@ namespace detail {
     auto XCoroTaskAbstractClass thenImplCore(TaskT && task_, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
     {
-
-        auto && task__ { std::forward<TaskT>(task_) };
-        auto && task { static_cast< TaskImpl<T> const & >( task__ ) };
+        auto && task { static_cast< TaskImpl<T> const & >(task_) };
 
         if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
             try { co_await task;}
