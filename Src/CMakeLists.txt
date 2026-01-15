@@ -108,3 +108,5 @@ endif()
 if(ENABLE_INSTALL)
     include(cmake/Install.cmake)
 endif()
+
+include(cmake/InternalFunc.cmake)

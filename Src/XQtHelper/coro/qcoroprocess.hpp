@@ -3,10 +3,79 @@
 
 #pragma once
 
+#include <XQtHelper/coro/private/waitoperationabstract_p.hpp>
+#include <XQtHelper/coro/qcoroiodevice.hpp>
+#include <chrono>
+#include <QProcess>
 
+#ifndef QT_CONFIG
+    #define QT_CONFIG(x) x
+#endif
 
+#if QT_CONFIG(process)
 
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+namespace detail {
 
+    struct QCoroProcess : QCoroIODevice {
 
+        using milliseconds = std::chrono::milliseconds;
+
+        explicit(false) constexpr QCoroProcess(QProcess * const process)
+            : QCoroIODevice { process } { }
+
+        ~QCoroProcess() override = default;
+
+        auto waitForStarted(int const timeout_msecs = 30'000)
+        { return waitForStarted(milliseconds {timeout_msecs}); }
+
+        XCoroTask<bool> waitForStarted(milliseconds const timeout) {
+            auto const process { qobject_cast<QProcess *>(m_device_.data()) };
+            if (process->state() == QProcess::Starting) {
+                auto const started { co_await qCoro(process, &QProcess::started, timeout) };
+                co_return started.has_value();
+            }
+            co_return process->state() == QProcess::Running;
+        }
+
+        auto waitForFinished(int const timeout_msecs = 30'000)
+        { return waitForFinished(milliseconds { timeout_msecs }); }
+
+        XCoroTask<bool> waitForFinished(milliseconds const timeout) {
+            auto const process { qobject_cast<QProcess *>(m_device_.data()) };
+            if (process->state() == QProcess::NotRunning) { co_return false; }
+            auto const finished { co_await qCoro(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), timeout) };
+            co_return finished.has_value();
+        }
+
+        auto start(QIODevice::OpenMode const mode = QIODevice::ReadWrite
+            ,milliseconds const timeout = std::chrono::seconds{30})
+        {
+            qobject_cast<QProcess *>(m_device_.data())->start(mode);
+            return waitForStarted(timeout);
+        }
+
+        XCoroTask<bool> start(QString const & program, QStringList const & arguments,
+                         QIODevice::OpenMode const mode = QIODevice::ReadWrite,
+                         milliseconds const timeout = std::chrono::seconds{30})
+        {
+            qobject_cast<QProcess *>(m_device_.data())->start(program, arguments, mode);
+            return waitForStarted(timeout);
+        }
+    };
+
+}
+
+inline auto qCoro(QProcess & p) noexcept
+{ return detail::QCoroProcess {std::addressof(p)}; }
+
+inline auto qCoro(QProcess * const p) noexcept
+{ return detail::QCoroProcess{p}; }
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END
+
+#endif
 #endif

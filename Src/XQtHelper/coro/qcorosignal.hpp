@@ -131,13 +131,10 @@ namespace concepts {
         constexpr void storeResult(StoreResultCb && storeResult, Args &&...args) {
             using LastArg = select_last_t<Args...>;
             if constexpr (is_QPrivateSignal_v<LastArg>) {
-                // Based on https://stackoverflow.com/a/77026174/4601437
-                // Remove the last element (which is a QPrivateSignal) from the tuple
                 auto reduced { []<typename Tuple,std::size_t... I>(Tuple && tuple,std::index_sequence<I...>) constexpr
                     { return std::make_tuple(std::get<I>(std::forward<Tuple>(tuple))...); }
                     (std::forward_as_tuple(std::forward<Args>(args)...),std::make_index_sequence<sizeof...(Args) - 1> {})
                 };
-                // Use the shortened tuple as arguments to mResult.emplace()
                 std::apply(std::forward<StoreResultCb>(storeResult), std::move(reduced));
             } else {
                 std::invoke(std::forward<StoreResultCb>(storeResult), std::forward<Args>(args)...);
@@ -186,7 +183,7 @@ namespace concepts {
 
         ~QCoroSignal() override = default;
 
-        bool await_ready() const noexcept
+        [[nodiscard]] bool await_ready() const noexcept
         { return this->m_obj_.isNull(); }
 
         void await_suspend(std::coroutine_handle<> const awaitingCoroutine) noexcept {
@@ -205,13 +202,14 @@ namespace concepts {
 
             this->m_conn_ = QObject::connect(this->m_obj_, this->m_funcPtr_, this->m_dummyReceiver_.get(),
 
-                [this]<typename ...AS1>(AS1 && ...as1) {
+                [this]<typename ...A1>(A1 && ...a1) {
 
                     if (this->m_timeoutTimer_) { this->m_timeoutTimer_->stop(); }
 
                     QObject::disconnect(this->m_conn_);
 
-                    this->storeResult([this]<typename AS2>(AS2 && ...as2){ m_result_.emplace(std::forward<AS2>(as2)...); }, std::forward<AS1>(as1)...);
+                    auto f { [this]<typename ...A2>(A2 && ...a2) { m_result_.emplace(std::forward<A2>(a2)...); } };
+                    this->storeResult( std::move(f) , std::forward<A1>(a1)...);
 
                     if (m_awaitingCoroutine_) { m_awaitingCoroutine_.resume(); }
 
@@ -329,13 +327,10 @@ template<detail::concepts::QObject T, typename FuncPtr>
 auto qCoroSignalListener(T * const obj, FuncPtr && ptr,std::chrono::milliseconds const timeout = std::chrono::milliseconds{-1})
     -> XAsyncGenerator<typename detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type>
 {
-
     using SignalQueue = detail::QCoroSignalQueue<T, FuncPtr>;
-
     // The actual generator is in a wrapper function, so that we can perform
     // some initialization (constructing signalQueue) in the qCoroSignalListener()
     // function before the generator gets initially suspended.
-
     constexpr auto innerGenerator { [](std::unique_ptr<SignalQueue> signalQueue)
         -> XAsyncGenerator<typename SignalQueue::result_type::value_type>
         {

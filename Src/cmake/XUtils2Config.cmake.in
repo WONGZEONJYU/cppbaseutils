@@ -32,6 +32,7 @@ endif()
 
 # 包含导出的目标
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/ExternalFunc.cmake")
 
 # 设置变量以便其他项目使用
 set(@PROJECT_NAME@_FOUND TRUE)
@@ -64,20 +65,3 @@ endif()
 
 # 检查所有必要的组件是否都已找到
 check_required_components(@PROJECT_NAME@)
-
-# 自动计算安装后的绝对路径
-# PACKAGE_PREFIX_DIR 是 CMake 自动根据安装位置计算出的根目录
-set_and_check(LibXUnits2_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
-
-function(xqt_helper_load TARGET_NAME)
-    set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/concurrency/xqthread.hpp")
-    list(APPEND HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/coro/private/waitsignalhelper.hpp")
-
-    if(EXISTS "${HELPER_HEADER}")
-        # 核心：将绝对路径的头文件加入到主工程目标的源码中
-        target_sources(${TARGET_NAME} PRIVATE "${HELPER_HEADER}")
-        set_target_properties(${TARGET_NAME} PROPERTIES AUTOMOC ON)
-    else()
-        message(WARNING "LibXUnits2: Could not find ${HELPER_HEADER}")
-    endif()
-endfunction()

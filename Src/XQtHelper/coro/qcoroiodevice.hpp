@@ -2,7 +2,7 @@
 #define XUTILS2_Q_CORO_IO_DEVICE_HPP 1
 
 #include <XCoroutine/xcoroutinetask.hpp>
-#include <XCoroutine/private/waitoperationabstract_p.hpp>
+#include <XQtHelper/coro/private/waitoperationabstract_p.hpp>
 #include <XQtHelper/coro/private/waitsignalhelper.hpp>
 #include <XQtHelper/coro/qcorosignal.hpp>
 #include <optional>
@@ -15,9 +15,6 @@
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
-
-// inline auto qCoro(QIODevice & ) noexcept;
-// inline auto qCoro(QIODevice * ) noexcept;
 
 namespace detail {
 
@@ -89,6 +86,8 @@ namespace detail {
         explicit(false) constexpr QCoroIODevice(QIODevice * const device)
             : m_device_ { device } {}
 
+        virtual ~QCoroIODevice() = default;
+
         using milliseconds = std::chrono::milliseconds;
 
         XCoroTask<QByteArray> readAll(milliseconds const timeout = milliseconds{-1}) {
@@ -138,6 +137,9 @@ namespace detail {
             auto const result { co_await waitForBytesWrittenImpl(timeout) };
             co_return result;
         }
+
+        XCoroTask<std::optional<qint64>> waitForBytesWritten(int const timeout_msecs)
+        { return waitForBytesWritten(milliseconds{timeout_msecs}); }
 
     protected:
         virtual XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) {
