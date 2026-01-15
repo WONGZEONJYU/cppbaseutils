@@ -1,14 +1,8 @@
 #ifndef XUTILS2_CONNECT_HPP
 #define XUTILS2_CONNECT_HPP
 
-#ifndef X_COROUTINE_
-#error Do not connecct.hpp directly
-#endif
-
 #pragma once
-
-#ifdef HAS_QT
-
+#include <XCoroutine/xcoroutinetask.hpp>
 #include <QPointer>
 
 XTD_NAMESPACE_BEGIN
@@ -61,5 +55,4 @@ void connect(T && future, QObjectSubclass * const context, Callback && func)
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
-#endif
 #endif

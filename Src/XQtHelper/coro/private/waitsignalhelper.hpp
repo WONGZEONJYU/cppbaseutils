@@ -5,6 +5,7 @@
 
 #include <XGlobal/xversion.hpp>
 #include <QIODevice>
+#include <type_traits>
 
 #ifndef Q_OBJECT
     #define Q_OBJECT

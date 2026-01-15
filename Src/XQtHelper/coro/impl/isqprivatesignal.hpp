@@ -47,7 +47,7 @@ namespace detail {
 #endif
         }
 
-        static constexpr bool getValue() {
+        static constexpr bool getValue() noexcept {
             // Clang: static auto QCoro::detail::is_QPrivateSignal<Foo>::functionName() [T = Foo]
             // GCC  : static consteval auto QCoro::detail::is_QPrivateSignal<T>::functionName() [with T = Foo]
             // MSVC : const char *__cdecl QCoro::detail::is_QPrivateSignal<Foo>::functionName(void)

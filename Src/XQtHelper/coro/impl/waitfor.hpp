@@ -1,33 +1,11 @@
 #ifndef XUTILS2_WAIT_FOR_HPP
 #define XUTILS2_WAIT_FOR_HPP 1
 
-#ifndef X_COROUTINE_
-#error Do not waitfor.hpp directly
-#endif
-
 #pragma once
 
-#include <XGlobal/xqt_detection.hpp>
+#include <XCoroutine/xcoroutinetask.hpp>
 #include <optional>
-#include <thread>
-
-#ifdef HAS_QT
 #include <QEventLoop>
-#else
-//此处只是防止编译出错,本质是没有任何意义的
-struct QEventLoop {
-    constexpr QEventLoop() = default;
-    void quit() noexcept { m_is_quit_.storeRelaxed(true); }
-    int exec() const noexcept {
-        while (!m_is_quit_.loadRelaxed()) {
-            using namespace std::this_thread;using namespace std::chrono;
-            sleep_for(milliseconds(1));
-        } return 0;
-    }
-private:
-    XUtils::XAtomicBool m_is_quit_ {};
-};
-#endif
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -35,8 +13,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     template <typename Awaitable> requires TaskConvertible<Awaitable>
-    auto toTask(Awaitable && future)
-        -> XCoroTask< convertible_awaitable_return_type_t<Awaitable> >
+    auto toTask(Awaitable && future) -> XCoroTask< convertible_awaitable_return_type_t<Awaitable> >
     { co_return co_await std::forward<Awaitable>(future); }
 
     struct WaitContext {
@@ -66,8 +43,8 @@ namespace detail {
 
         WaitContext context {};
 
-        auto f { [&context]{
-            if (!context.m_coroutineFinished) { (void)context.m_loop.exec(); }
+        auto const f { [&context]{
+            if (!context.m_coroutineFinished) { context.m_loop.exec(); }
             if (context.m_exception) { std::rethrow_exception(context.m_exception); }
         } };
 

@@ -35,9 +35,6 @@ XUtils::XCoroTask<> f2() {
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
-static constexpr void test()
-{ XUtils::waitFor(f1()); }
-
 template <typename T>
 void ff(T && t) {
     std::cout << XUtils::typeName(std::forward<T>(t)) << std::endl;

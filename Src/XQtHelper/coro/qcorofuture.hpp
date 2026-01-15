@@ -8,7 +8,7 @@
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <memory>
 
-#ifdef HAS_QT
+//#ifdef HAS_QT
 
 #include <QFuture>
 #include <QFutureWatcher>
@@ -31,7 +31,7 @@ namespace detail {
             QFuture<Tp> m_future_ {};
 
         public:
-            Q_DISABLE_COPY(WaitForFinishedOperationAbstract)
+            Q_DISABLE_COPY(WaitForFinishedOperationAbstract);
             X_DEFAULT_MOVE(WaitForFinishedOperationAbstract)
 
             [[nodiscard]] bool await_ready() const noexcept
@@ -106,4 +106,4 @@ XTD_NAMESPACE_END
 
 #endif
 
-#endif
+//#endif

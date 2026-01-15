@@ -43,10 +43,7 @@ namespace detail {
 
         void startTimeoutTimer(std::coroutine_handle<> const h) {
             if (!m_timeoutTimer_) { return; }
-            m_timeoutTimer_->callOnTimeout([this,h]{
-                m_timedOut_ = true;
-                resume(h);
-            });
+            m_timeoutTimer_->callOnTimeout([this,h]{ m_timedOut_ = true; resume(h); });
             m_timeoutTimer_->start();
         }
 
