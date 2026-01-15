@@ -71,7 +71,7 @@ set_and_check(LibXUnits2_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
 
 function(xqt_helper_load TARGET_NAME)
     set(HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/concurrency/xqthread.hpp")
-    # list(APPEND HELPER_HEADER )
+    list(APPEND HELPER_HEADER "${LibXUnits2_INCLUDE_DIRS}/XQtHelper/coro/private/waitsignalhelper.hpp")
 
     if(EXISTS "${HELPER_HEADER}")
         # 核心：将绝对路径的头文件加入到主工程目标的源码中
