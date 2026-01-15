@@ -238,9 +238,6 @@ public:
     //! The type of the coroutine return value.
     using value_type = T;
 
-    [[nodiscard]] constexpr const auto * coroutineHandle() const noexcept
-    { return std::addressof(this->m_coroutine_); }
-
     constexpr XCoroTask() noexcept = default;
 
     explicit(false) constexpr XCoroTask(std::coroutine_handle<detail::TaskPromise<T>> coroutine)
