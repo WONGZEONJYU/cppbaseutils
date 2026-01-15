@@ -66,17 +66,17 @@ namespace detail {
 
             virtual void await_suspend(std::coroutine_handle<> const h) noexcept {
                 Q_ASSERT(m_device_);
-                auto slotF { [this, h]() noexcept{ finish(h); } };
-                m_conn_ = QObject::connect(m_device_, &QIODevice::readyRead,std::forward<decltype(slotF)>(slotF));
-                m_closeConn_ = QObject::connect(m_device_, &QIODevice::aboutToClose,std::forward<decltype(slotF)>(slotF));
+                auto const slotF { [this, h]() noexcept{ finish(h); } };
+                m_conn_ = QObject::connect(m_device_, &QIODevice::readyRead,slotF);
+                m_closeConn_ = QObject::connect(m_device_, &QIODevice::aboutToClose,slotF);
             }
 
-            QByteArray await_resume() const { return m_resultCb_(m_device_); }
+            [[nodiscard]] QByteArray await_resume() const { return m_resultCb_(m_device_); }
         };
 
         struct ReadAllOperation final : ReadOperation {
             explicit(false) constexpr ReadAllOperation(QIODevice * const device)
-                : ReadOperation { device,[](QIODevice * const d) { return d->readAll(); } } { }
+                : ReadOperation { device,[](QIODevice * const d){ return d->readAll(); } } { }
 
             explicit(false) constexpr ReadAllOperation(QIODevice & device)
                 : ReadAllOperation { std::addressof(device) } { }
@@ -110,9 +110,9 @@ namespace detail {
 
         XCoroTask<qint64> write(QByteArray const & buffer) {
             qint64 bytesConfirmed {};
-            auto const bytesWritten { m_device_->write(buffer) };
+            auto const bytesWritten{ m_device_->write(buffer) };
             while (bytesConfirmed < bytesWritten) {
-                auto const flushed { co_await waitForBytesWritten(-1) };
+                auto const flushed{ co_await waitForBytesWritten(-1) };
                 // There was an intermediate error and we don't know how much was actually
                 // written, so we report only what we know for sure was written.
                 if (!flushed.has_value()) { break; }

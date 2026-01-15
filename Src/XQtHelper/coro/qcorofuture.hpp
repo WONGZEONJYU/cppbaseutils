@@ -8,8 +8,6 @@
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <memory>
 
-//#ifdef HAS_QT
-
 #include <QFuture>
 #include <QFutureWatcher>
 
@@ -39,7 +37,7 @@ namespace detail {
 
             void await_suspend(std::coroutine_handle<> const h) {
                 auto const watcher { std::make_unique<QFutureWatcher<Tp>>().release() };
-                QObject::connect(watcher, &QFutureWatcher::finished, [watcher, h]{
+                QObject::connect(watcher, &QFutureWatcherBase::finished, [watcher, h]{
                     watcher->deleteLater();
                     h.resume();
                 });
@@ -105,5 +103,3 @@ XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
 #endif
-
-//#endif

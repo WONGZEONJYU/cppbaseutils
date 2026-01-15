@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <XQtHelper/coro/private/waitoperationabstract_p.hpp>
 #include <XQtHelper/coro/qcoroiodevice.hpp>
-#include <chrono>
 #include <QProcess>
 
 #ifndef QT_CONFIG
@@ -28,7 +26,7 @@ namespace detail {
 
         ~QCoroProcess() override = default;
 
-        auto waitForStarted(int const timeout_msecs = 30'000)
+        XCoroTask<bool> waitForStarted(int const timeout_msecs = 30'000)
         { return waitForStarted(milliseconds {timeout_msecs}); }
 
         XCoroTask<bool> waitForStarted(milliseconds const timeout) {
@@ -40,7 +38,7 @@ namespace detail {
             co_return process->state() == QProcess::Running;
         }
 
-        auto waitForFinished(int const timeout_msecs = 30'000)
+        XCoroTask<bool> waitForFinished(int const timeout_msecs = 30'000)
         { return waitForFinished(milliseconds { timeout_msecs }); }
 
         XCoroTask<bool> waitForFinished(milliseconds const timeout) {
@@ -50,7 +48,7 @@ namespace detail {
             co_return finished.has_value();
         }
 
-        auto start(QIODevice::OpenMode const mode = QIODevice::ReadWrite
+        XCoroTask<bool> start(QIODevice::OpenMode const mode = QIODevice::ReadWrite
             ,milliseconds const timeout = std::chrono::seconds{30})
         {
             qobject_cast<QProcess *>(m_device_.data())->start(mode);
