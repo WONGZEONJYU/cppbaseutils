@@ -120,13 +120,13 @@ namespace detail {
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
     constexpr auto XCoroTaskAbstractClass thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >
-    { return thenImplCore(std::move(task), std::forward<ThenCallback>(thenCallback), std::forward<ErrorCallback>(errorCallback)); }
+    { return thenImplCore(std::forward<TaskT>(task), std::forward<ThenCallback>(thenCallback), std::forward<ErrorCallback>(errorCallback)); }
 
     XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
     constexpr auto XCoroTaskAbstractClass thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
-    { return thenImplCore(task, std::forward<ThenCallback>(thenCallback), std::forward<ErrorCallback>(errorCallback)); }
+    { return thenImplCore(std::forward<TaskT>(task), std::forward<ThenCallback>(thenCallback), std::forward<ErrorCallback>(errorCallback)); }
 
     XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
