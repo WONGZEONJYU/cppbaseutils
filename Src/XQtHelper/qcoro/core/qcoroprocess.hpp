@@ -21,7 +21,7 @@ namespace detail {
 
         using milliseconds = std::chrono::milliseconds;
 
-        explicit(false) constexpr QCoroProcess(QProcess * const process)
+        explicit(false) QCoroProcess(QProcess * const process)
             : QCoroIODevice { process } { }
 
         ~QCoroProcess() override = default;

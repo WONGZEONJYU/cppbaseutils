@@ -36,7 +36,7 @@ namespace detail {
             virtual ~OperationAbstract() = default;
 
         protected:
-            explicit(false) constexpr OperationAbstract(QIODevice * const device)
+            explicit(false) OperationAbstract(QIODevice * const device)
                 : m_device_ { device } {  }
 
             virtual void finish(std::coroutine_handle<> const h) {
@@ -55,7 +55,7 @@ namespace detail {
             callback_t m_resultCb_{};
 
         public:
-            explicit(false) constexpr ReadOperation(QIODevice * const device, callback_t && resultCb)
+            explicit(false) ReadOperation(QIODevice * const device, callback_t && resultCb)
                 : Base { device } , m_resultCb_ { std::move(resultCb) } { }
 
             Q_DISABLE_COPY(ReadOperation);
@@ -75,15 +75,15 @@ namespace detail {
         };
 
         struct ReadAllOperation final : ReadOperation {
-            explicit(false) constexpr ReadAllOperation(QIODevice * const device)
+            explicit(false) ReadAllOperation(QIODevice * const device)
                 : ReadOperation { device,[](QIODevice * const d){ return d->readAll(); } } { }
 
-            explicit(false) constexpr ReadAllOperation(QIODevice & device)
+            explicit(false) ReadAllOperation(QIODevice & device)
                 : ReadAllOperation { std::addressof(device) } { }
         };
 
     public:
-        explicit(false) constexpr QCoroIODevice(QIODevice * const device)
+        explicit(false) QCoroIODevice(QIODevice * const device)
             : m_device_ { device } {}
 
         virtual ~QCoroIODevice() = default;

@@ -49,7 +49,7 @@ namespace detail {
     class QCoroThread {
         QPointer<QThread> m_thread_{};
     public:
-        explicit(false) constexpr QCoroThread(QThread * const thread)
+        explicit(false) QCoroThread(QThread * const thread)
             : m_thread_ { thread } {}
 
         using milliseconds = std::chrono::milliseconds;

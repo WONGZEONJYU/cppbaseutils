@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 if(APPLE OR UNIX)
     list(APPEND Qt6_DIR "$ENV{HOME}/Qt/6.10.1/macos")
 elseif (WIN32)
-    list(APPEND Qt6_DIR "$ENV{USERPROFILE}/Qt/6.10.1/msvc2022_64")
+    list(APPEND Qt6_DIR "C:/Qt/6.10.1/msvc2022_64")
 endif()
 
 set(QtMode)
