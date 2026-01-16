@@ -1,9 +1,8 @@
 #include <QApplication>
 #include <QPushButton>
 #include <iostream>
-#include <XQtHelper/coro/qcoroprocess.hpp>
-#include <XQtHelper/coro/qcorofuture.hpp>
-#include <XQtHelper/coro/qcorothread.hpp>
+#include <XQtHelper/qcoro/core/qcorocore.hpp>
+#include <XQtHelper/qcoro/dbus/qcorodbus.hpp>
 
 template<typename ...Args>
 constexpr void fff(Args && ...args)

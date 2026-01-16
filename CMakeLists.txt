@@ -39,14 +39,6 @@ include(cmake/Dependencies.cmake)
 add_subdirectory(Src)
 add_subdirectory(Test)
 
-#install path
-#macos install
-#   -DCMAKE_INSTALL_PREFIX=/Users/apple/Library/XCppBaseUtils
-#   -DCMAKE_INSTALL_PREFIX=/Users/wong/Library/XCppBaseUtils
-
-#windows install
-#   -DCMAKE_INSTALL_PREFIX=C:/Users/Administrator/Library/XCppBaseUtils
-
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     if(APPLE OR UNIX)
         set(CMAKE_INSTALL_PREFIX

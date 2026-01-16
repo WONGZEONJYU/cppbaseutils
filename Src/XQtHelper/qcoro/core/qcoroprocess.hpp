@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <XQtHelper/coro/qcoroiodevice.hpp>
+#include <XQtHelper/qcoro/core/qcoroiodevice.hpp>
 #include <QProcess>
 
 #ifndef QT_CONFIG

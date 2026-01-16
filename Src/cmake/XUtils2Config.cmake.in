@@ -30,6 +30,7 @@ elseif(_XUtils_Qt5_FOUND STREQUAL "TRUE" OR _XUtils_Qt5_FOUND STREQUAL "ON")
     endif()
 endif()
 
+set_and_check(XUnits2_XQtHelper_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include/XQtHelper")
 # 包含导出的目标
 include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/ExternalFunc.cmake")

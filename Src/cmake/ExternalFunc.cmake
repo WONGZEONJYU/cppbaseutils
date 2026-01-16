@@ -1,13 +1,13 @@
-set_and_check(XUnits2_XQtHelper_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include/XQtHelper")
+include_guard()
+function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
 
-function(xqt_helper_load TARGET_NAME)
-
-    list(APPEND HELPER_HEADER "${XUnits2_XQtHelper_INCLUDE_DIRS}/concurrency/xqthread.hpp")
-    list(APPEND HELPER_HEADER "${XUnits2_XQtHelper_INCLUDE_DIRS}/coro/private/waitsignalhelper.hpp")
+    list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/concurrency/xqthread.hpp")
+    list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/qcoro/core/private/waitsignalhelper.hpp")
+    list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/qcoro/core/qcorothread.hpp")
 
     foreach (item ${HELPER_HEADER})
         if(NOT EXISTS ${item})
-            message(WARNING "LibXUnits2: Could not find ${item}" file)
+            message(WARNING "LibXUnits2: Could not find ${item} file" )
             return()
         endif ()
     endforeach ()
@@ -16,3 +16,8 @@ function(xqt_helper_load TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES AUTOMOC ON)
 
 endfunction()
+
+macro(qt_helper_load TARGET_NAME)
+    message(STATUS "XUnits2_XQtHelper_INCLUDE_DIRS = ${XUnits2_XQtHelper_INCLUDE_DIRS}")
+    xqt_helper_load(${TARGET_NAME} ${XUnits2_XQtHelper_INCLUDE_DIRS})
+endmacro()

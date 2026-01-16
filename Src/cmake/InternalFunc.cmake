@@ -1,18 +1,14 @@
-set(XQtHelper_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/XQtHelper CACHE PATH "QThelper header")
+include_guard()
+include(cmake/ExternalFunc.cmake)
 
-function(xqt_helper_load TARGET_NAME)
+macro(qt_helper_load)
+endmacro()
 
-    list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/concurrency/xqthread.hpp")
-    list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/coro/private/waitsignalhelper.hpp")
+set(XQtHelper_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/XQtHelper CACHE PATH "QT_helper_header")
 
-    foreach (item ${HELPER_HEADER})
-        if(NOT EXISTS ${item})
-            message(WARNING "LibXUnits2: Could not find ${item}" file)
-            return()
-        endif ()
-    endforeach ()
+macro(qt_helper_load TARGET_NAME)
+    message(STATUS "XQtHelper_INCLUDE_DIRS = ${XQtHelper_INCLUDE_DIRS}")
+    xqt_helper_load(${TARGET_NAME} ${XQtHelper_INCLUDE_DIRS})
+endmacro()
 
-    target_sources(${TARGET_NAME} PRIVATE "${HELPER_HEADER}")
-    set_target_properties(${TARGET_NAME} PROPERTIES AUTOMOC ON)
-
-endfunction()
+unset(XQtHelper_INCLUDE_DIRS)

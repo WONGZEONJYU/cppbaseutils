@@ -5,7 +5,7 @@
 
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <XCoroutine/xcoroasyncgenerator.hpp>
-#include <XQtHelper/coro/impl/isqprivatesignal.hpp>
+#include <XQtHelper/qcoro/core/impl/isqprivatesignal.hpp>
 #include <QObject>
 #include <QPointer>
 #include <QTimer>

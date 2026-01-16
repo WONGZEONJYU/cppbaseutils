@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <XQtHelper/coro/qcorosignal.hpp>
+#include <XQtHelper/qcoro/core/qcorosignal.hpp>
 #include <chrono>
 #include <QPointer>
 #include <QThread>
@@ -96,7 +96,6 @@ public:
     void await_suspend(std::coroutine_handle<> const awaiter) const noexcept {
         m_d_->m_context = std::make_unique<detail::ContextHelper>(awaiter, m_d_->m_thread);
         m_d_->m_context->moveToThread(m_d_->m_thread);
-
         qCoro(m_d_->m_thread).waitForStarted().then([this]{
             auto event { std::make_unique<QEvent>(static_cast<QEvent::Type>(detail::ContextHelper::eventType)) };
             QCoreApplication::postEvent(m_d_->m_context.get(), event.release());
@@ -110,7 +109,7 @@ inline ThreadContext moveToThread(QThread * const thread)
 { return {thread}; }
 
 inline detail::QCoroThread qCoro(QThread * const thread)
-{ return  { thread }; }
+{ return { thread }; }
 
 inline detail::QCoroThread qCoro(QThread & thread)
 { return { std::addressof(thread) }; }

@@ -12,7 +12,7 @@ elseif (WIN32)
 endif()
 
 set(QtMode)
-list(APPEND QtModel Core Gui Widgets)
+list(APPEND QtModel Core Gui Widgets DBus)
 find_package(Qt6 COMPONENTS ${QtModel} REQUIRED PATHS ${Qt6_DIR})
 
 # 收集源文件
@@ -25,7 +25,7 @@ list(FILTER HEADER_FILES EXCLUDE REGEX "CMakeLists\\.txt$")
 
 # 创建主测试可执行文件
 add_executable(${TargetName})
-xqt_helper_load(${TargetName})
+qt_helper_load(${TargetName})
 
 # 添加主测试源文件
 target_sources(${TargetName} PRIVATE ${SRC_FILES} ${HEADER_FILES})

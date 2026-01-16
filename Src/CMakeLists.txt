@@ -1,5 +1,7 @@
 # XUtils 库构建配置
 
+include(cmake/AddXUntilsLibrary.cmake)
+
 # 创建库目标列表
 set(LIBRARY_TARGETS)
 

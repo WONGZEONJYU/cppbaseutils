@@ -1,2 +1,3 @@
 add_subdirectory(concurrency)
-add_subdirectory(coro)
+add_subdirectory(qcoro/core)
+add_subdirectory(qcoro/dbus)
