@@ -23,10 +23,10 @@ namespace detail {
             QMetaObject::Connection m_conn_{};
             QPointer<QTimer> m_timer_{};
         public:
-            explicit(false) WaitForTimeoutOperation(QTimer * const timer)
+            explicit(false) WaitForTimeoutOperation(QTimer * const timer) noexcept
                 : m_timer_ {timer} { }
 
-            explicit(false) WaitForTimeoutOperation(QTimer & timer)
+            explicit(false) WaitForTimeoutOperation(QTimer & timer) noexcept
                 : m_timer_ { std::addressof(timer) } {  }
 
             [[nodiscard]] bool await_ready() const noexcept
@@ -43,7 +43,7 @@ namespace detail {
         QPointer<QTimer> m_timer_{};
 
     public:
-        explicit(false) QCoroTimer(QTimer * const timer)
+        explicit(false) QCoroTimer(QTimer * const timer) noexcept
             : m_timer_ {timer} { }
 
         [[nodiscard]] XCoroTask<> waitForTimeout() const

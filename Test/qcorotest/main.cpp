@@ -3,6 +3,7 @@
 #include <iostream>
 #include <XQtHelper/qcoro/core/qcorocore.hpp>
 #include <XQtHelper/qcoro/dbus/qcorodbus.hpp>
+#include <XQtHelper/qcoro/network/qcoronetwork.hpp>
 
 template<typename ...Args>
 constexpr void fff(Args && ...args)

@@ -1,9 +1,20 @@
 include_guard()
 function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
 
+    if (NOT TARGET Qt${QT_VERSION_MAJOR}::Core)
+        message(WARNING "QT not found!")
+        return()
+    endif ()
+
+    message(STATUS "QT found!")
+
     list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/concurrency/xqthread.hpp")
     list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/qcoro/core/private/waitsignalhelper.hpp")
     list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/qcoro/core/qcorothread.hpp")
+
+    if (TARGET Qt${QT_VERSION_MAJOR}::Network)
+        list(APPEND HELPER_HEADER "${XQtHelper_INCLUDE_DIRS}/qcoro/network/qcoroabstractsocket.hpp")
+    endif()
 
     foreach (item ${HELPER_HEADER})
         if(NOT EXISTS ${item})

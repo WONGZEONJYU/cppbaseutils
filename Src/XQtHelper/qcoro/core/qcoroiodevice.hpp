@@ -91,19 +91,19 @@ namespace detail {
         using milliseconds = std::chrono::milliseconds;
 
         XCoroTask<QByteArray> readAll(milliseconds const timeout = milliseconds{-1}) {
-            auto const d { m_device_ };
+            auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray{}; }
             co_return d->readAll();
         }
 
         XCoroTask<QByteArray> read(qint64 const maxSize, milliseconds const timeout = milliseconds{-1}) {
-            auto const d { m_device_ };
+            auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray{}; }
             co_return d->read(maxSize);
         }
 
         XCoroTask<QByteArray> readLine(qint64 const maxSize = {} ,milliseconds const timeout = milliseconds{-1}) {
-            auto const d { m_device_ };
+            auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray {}; }
             co_return d->readLine(maxSize);
         }
@@ -143,12 +143,12 @@ namespace detail {
 
     protected:
         virtual XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) {
-            WaitSignalHelper helper { m_device_.data(), &QIODevice::readyRead };
+            WaitSignalHelper helper {m_device_.data(), &QIODevice::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&WaitSignalHelper::ready), timeout);
         }
 
         virtual XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) {
-            WaitSignalHelper helper { m_device_.data(), &QIODevice::bytesWritten };
+            WaitSignalHelper helper {m_device_.data(), &QIODevice::bytesWritten };
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&WaitSignalHelper::ready), timeout);
         }
     };

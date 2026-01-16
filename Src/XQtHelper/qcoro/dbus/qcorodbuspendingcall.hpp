@@ -38,7 +38,7 @@ namespace detail {
         };
 
     public:
-        explicit(false) constexpr QCoroDBusPendingCall(QDBusPendingCall const & call)
+        explicit(false) QCoroDBusPendingCall(QDBusPendingCall const & call)
             : m_call_ { std::addressof(call) } {}
 
         [[nodiscard]] XCoroTask<QDBusMessage> waitForFinished() const {
@@ -46,14 +46,13 @@ namespace detail {
             co_await qCoro(std::addressof(watcher), &QDBusPendingCallWatcher::finished);
             co_return watcher.reply();
         }
-};
+    };
 
-template<>
-struct awaiter_type<QDBusPendingCall> { using type = QCoroDBusPendingCall::WaitForFinishedOperation; };
+    template<> struct awaiter_type<QDBusPendingCall> { using type = QCoroDBusPendingCall::WaitForFinishedOperation; };
 
 }
 
-inline auto qCoro(QDBusPendingCall const & call)
+inline auto qCoro(QDBusPendingCall const & call) noexcept
 { return detail::QCoroDBusPendingCall{call}; }
 
 XTD_INLINE_NAMESPACE_END

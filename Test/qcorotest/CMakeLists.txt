@@ -12,7 +12,7 @@ elseif (WIN32)
 endif()
 
 set(QtMode)
-list(APPEND QtModel Core Gui Widgets DBus)
+list(APPEND QtModel Core Gui Widgets DBus Network)
 find_package(Qt6 COMPONENTS ${QtModel} REQUIRED PATHS ${Qt6_DIR})
 
 # 收集源文件

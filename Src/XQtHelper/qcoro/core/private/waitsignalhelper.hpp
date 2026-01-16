@@ -33,14 +33,14 @@ namespace detail {
         template<bool b = false>
         using signalFunc = std::conditional_t<b,void(QIODevice::*)(qint64),void(QIODevice::*)()>;
 
-        explicit WaitSignalHelper(QIODevice * const device , signalFunc<> const f )
-            : m_ready_ { connect(device, f, [this]{ this->emitReady(true); }) }
-            , m_aboutToClose_ { connect(device, &QIODevice::aboutToClose, [this]{ this->emitReady(false); }) }
+        explicit(false) WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
+            : m_ready_ { connect_(device, signalFunc, [this]{ this->emitReady(true); }) }
+            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, [this]{ this->emitReady(false); }) }
         { }
 
-        explicit WaitSignalHelper(QIODevice * const device, signalFunc<true> const f)
-            : m_ready_ { connect(device, f, this, &WaitSignalHelper::emitReady<qint64>) }
-            , m_aboutToClose_ { connect(device, &QIODevice::aboutToClose, [this]{ this->emitReady(static_cast<qint64>(0)); }) }
+        explicit(false) WaitSignalHelper(const QIODevice * const device, signalFunc<true> const signalFunc)
+            : m_ready_ { connect_(device, signalFunc, this, &WaitSignalHelper::emitReady<qint64>) }
+            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, [this]{ this->emitReady(static_cast<qint64>(0)); }) }
         { }
 
         ~WaitSignalHelper() override = default;
@@ -50,9 +50,14 @@ namespace detail {
         void ready(qint64 result);
 
     protected:
-        template<typename T>
-        void emitReady(T const result) { cleanup(); Q_EMIT this->ready(result); }
-        virtual void cleanup() { disconnect(m_ready_); disconnect(m_aboutToClose_); }
+        template<typename T> void emitReady(T const result)
+        { cleanup(); Q_EMIT this->ready(result); }
+
+        virtual void cleanup()
+        { disconnect(m_ready_); disconnect(m_aboutToClose_); }
+
+        template<typename ...Args> static QMetaObject::Connection connect_(Args && ...args)
+        { return QObject::connect(std::forward<Args>(args)...); }
     };
 
 }

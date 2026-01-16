@@ -66,9 +66,8 @@ namespace detail {
 }
 
 template<typename ... Args>
-auto qCoro(QDBusPendingReply<Args ...> const & reply) {
-    return detail::QCoroDBusPendingReply<Args ...> {reply};
-}
+auto qCoro(QDBusPendingReply<Args ...> const & reply) noexcept
+{ return detail::QCoroDBusPendingReply<Args ...> {reply}; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
