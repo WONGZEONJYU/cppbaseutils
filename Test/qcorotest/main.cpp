@@ -4,6 +4,7 @@
 #include <XQtHelper/qcoro/core/qcorocore.hpp>
 #include <XQtHelper/qcoro/dbus/qcorodbus.hpp>
 #include <XQtHelper/qcoro/network/qcoronetwork.hpp>
+#include <XQtHelper/qcoro/qml/qcoroqml.hpp>
 
 template<typename ...Args>
 constexpr void fff(Args && ...args)

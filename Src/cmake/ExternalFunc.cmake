@@ -17,6 +17,16 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
         list(APPEND HELPER_HEADER "${Network}")
     endif()
 
+    if (TARGET Qt${QT_VERSION_MAJOR}::Qml)
+
+        if (NOT TARGET Qt${QT_VERSION_MAJOR}::QmlPrivate)
+            message(WARNING "Please link to the QmlPrivate module")
+        endif ()
+
+        file(GLOB_RECURSE QML "${XQtHelper_INCLUDE_DIRS}/qcoro/qml/*.h*")
+        list(APPEND HELPER_HEADER "${QML}")
+    endif ()
+
     #message(STATUS "HELPER_HEADER = ${HELPER_HEADER}")
 
     foreach (item IN LISTS ${HELPER_HEADER})

@@ -4,6 +4,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
+set(QT_NO_PRIVATE_MODULE_WARNING ON)
 
 if(APPLE OR UNIX)
     list(APPEND Qt6_DIR "$ENV{HOME}/Qt/6.10.1/macos")
@@ -12,7 +13,7 @@ elseif (WIN32)
 endif()
 
 set(QtMode)
-list(APPEND QtModel Core Gui Widgets DBus Network)
+list(APPEND QtModel Core Gui Widgets DBus Network Qml QmlPrivate)
 find_package(Qt6 COMPONENTS ${QtModel} REQUIRED PATHS ${Qt6_DIR})
 
 # 收集源文件
@@ -31,7 +32,7 @@ qt_helper_load(${TargetName})
 target_sources(${TargetName} PRIVATE ${SRC_FILES} ${HEADER_FILES})
 
 set(QtModelLink ${QtModel})
-list(TRANSFORM QtModelLink PREPEND "Qt::")
+list(TRANSFORM QtModelLink PREPEND "Qt6::")
 
 # 链接库 - 现在可以使用简化的方式
 target_link_libraries(${TargetName} ${PROJECT_NAME} ${QtModelLink})
