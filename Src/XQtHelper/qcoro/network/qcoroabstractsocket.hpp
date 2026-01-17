@@ -19,23 +19,26 @@ namespace detail {
     public:
         explicit(false) AbstractSocketReadySignalHelper(const QAbstractSocket * const socket, signalFunc<> const readySignal)
             : WaitSignalHelper { socket, readySignal }
-        , m_stateChanged_ { connect_(socket, &QAbstractSocket::stateChanged, this,
-                        [this](QAbstractSocket::SocketState const state) { handleStateChange(state,false); }) }
+            , m_stateChanged_ { connect_(socket, &QAbstractSocket::stateChanged, this,
+                        [this]<typename Tp>(Tp && state)
+                        { handleStateChange(std::forward<Tp>(state),false); })
+            }
         {   }
 
         explicit(false) AbstractSocketReadySignalHelper(const QAbstractSocket * const socket, signalFunc<true> const readySignal)
             : WaitSignalHelper(socket, readySignal)
             , m_stateChanged_{ connect_(socket, &QAbstractSocket::stateChanged, this,
-                            [this](QAbstractSocket::SocketState const state){
-                                handleStateChange(state, static_cast<qint64>(0)); }) }
+                            [this]<typename Tp>(Tp && state){
+                                handleStateChange(std::forward<Tp>(state), static_cast<qint64>(0)); })
+            }
         {   }
 
     private:
         template<typename T>
-        void handleStateChange(QAbstractSocket::SocketState const state, T const result) {
+        void handleStateChange(QAbstractSocket::SocketState const state, T && result) {
             if (state == QAbstractSocket::ClosingState || state == QAbstractSocket::UnconnectedState) {
                 disconnect(m_stateChanged_);
-                emitReady(result);
+                emitReady(std::forward<T>(result));
             }
         }
     };

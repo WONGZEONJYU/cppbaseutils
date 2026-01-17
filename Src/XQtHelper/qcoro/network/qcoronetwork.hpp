@@ -4,5 +4,6 @@
 #pragma once
 
 #include <XQtHelper/qcoro/network/qcoroabstractsocket.hpp>
+#include <XQtHelper/qcoro/network/qcorolocalsocket.hpp>
 
 #endif
