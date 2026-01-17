@@ -7,9 +7,6 @@
 #include <XQtHelper/qcoro/core/impl/waitfor.hpp>
 #include <type_traits>
 #include <optional>
-#include <QJSValue>
-#include <QJSEngine>
-#include <QLoggingCategory>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 QT_WARNING_PUSH
@@ -18,8 +15,8 @@ QT_WARNING_DISABLE_MSVC(4458 4201)
 QT_WARNING_POP
 #endif
 
-Q_DECLARE_LOGGING_CATEGORY(qcoroqml)
-Q_LOGGING_CATEGORY(qcoroqml, "qcoro.qml")
+inline Q_DECLARE_LOGGING_CATEGORY(qcoroqml)
+inline Q_LOGGING_CATEGORY(qcoroqml, "qcoro.qml")
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -29,31 +26,56 @@ namespace QmlPrivate {
     struct QmlTaskPrivate : QSharedData {
         std::optional<XCoroTask<QVariant>> m_task;
         constexpr QmlTaskPrivate() = default;
-        explicit(false) QmlTaskPrivate(const QmlTaskPrivate &)
+        QmlTaskPrivate(QmlTaskPrivate const &)
         { Q_UNREACHABLE(); }
     };
+
+    inline QJSEngine *getEngineForValue(QJSValue const & val) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        // QJSValue::engine is deprecated, but still nicer, since it doesn't require using private symbols
+        QT_WARNING_PUSH
+        QT_WARNING_DISABLE_DEPRECATED
+        return val.engine();
+        QT_WARNING_POP
+    #else
+        return QJSValuePrivate::engine(std::addressof(val))->jsEngine();
+#endif
+    }
+
 }
+
+class QmlTaskListener : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QVariant value READ value NOTIFY valueChanged)
+    QVariant m_value_{};
+
+public:
+    using QObject::QObject;
+    [[nodiscard]] QVariant value() const { return m_value_; }
+    void setValue(QVariant && value) noexcept
+    { m_value_ = std::move(value); Q_EMIT valueChanged(); }
+    Q_SIGNAL void valueChanged();
+};
 
 struct QmlTask {
     Q_GADGET
-    QSharedDataPointer<QmlPrivate::QmlTaskPrivate> d{};
+    QSharedDataPointer<QmlPrivate::QmlTaskPrivate> m_d_{};
 
 public:
-    explicit QmlTask() noexcept
-        :d { std::make_unique<QmlPrivate::QmlTaskPrivate>().release() }
-    {
+    explicit(false) QmlTask() noexcept
+        :m_d_ { std::make_unique<QmlPrivate::QmlTaskPrivate>().release() }
+    {   }
 
-    }
+    X_DEFAULT_COPY(QmlTask)
 
-    QmlTask(const QmlTask &other);
-    QmlTask &operator=(const QmlTask &other);
-    ~QmlTask();
+    ~QmlTask() = default;
 
-    explicit(false) QmlTask(XCoroTask<QVariant> && task);
+    explicit(false) QmlTask(XCoroTask<QVariant> && task) :QmlTask{}
+    { m_d_->m_task = std::move(task); }
 
     template <typename T>
-    explicit(false) QmlTask(XCoroTask<T> && task) : QmlTask {
-        task.then([]<typename Tp>(Tp && result) -> XCoroTask<QVariant> {
+    explicit(false) QmlTask(XCoroTask<T> && task)
+        : QmlTask { task.then([]<typename Tp>(Tp && result) -> XCoroTask<QVariant> {
             co_return QVariant::fromValue(std::forward<Tp>(result));
         }) }
     { qMetaTypeId<T>(); }
@@ -63,31 +85,37 @@ public:
     {   }
 
     template <typename = void>
-    explicit(false) QmlTask(QCoro::Task<> &&task) : QmlTask(
-        task.then([]() -> QCoro::Task<QVariant> {
-            co_return QVariant();
-        }))
+    explicit(false) QmlTask(XCoroTask<> && task)
+        : QmlTask { task.then([]-> XCoroTask<QVariant> { co_return QVariant{ }; }) }
     {   }
 
-    Q_INVOKABLE void then(QJSValue func);
+    Q_INVOKABLE void then(QJSValue func) {
+        if (!m_d_->m_task) {
+            qCWarning(qcoroqml, ".then called on a QmlTask that is not connected to any coroutine. "
+                                "Make sure you don't default-construct QmlTask in your code");
+            return;
+        }
 
-    Q_INVOKABLE QCoro::QmlTaskListener *await(const QVariant &intermediateValue = {});
+        if (!func.isCallable()) {
+            qCWarning(qcoroqml, ".then called with an argument that is not a function. The .then call will do nothing");
+            return;
+        }
 
+        m_d_->m_task->then([func = std::move(func)](QVariant const & result){
+            auto const jSval{ QmlPrivate::getEngineForValue(func)->toScriptValue(result)};
+            [[maybe_unused]] auto const _{ func.call({jSval}) };
+        });
+    }
+
+    Q_INVOKABLE QmlTaskListener * await(QVariant const & intermediateValue = {}) {
+        QPointer listener { std::make_unique<QmlTaskListener>().release() };
+        if (!intermediateValue.isNull()) { listener->setValue(QVariant(intermediateValue)); }
+        m_d_->m_task->then([listener]<typename Tp>(Tp && value){
+            if (listener) { listener->setValue(std::forward<Tp>(value)); }
+        });
+        return listener.data();
+    }
 };
-
-class QmlTaskListener : public QObject {
-    Q_OBJECT
-    Q_PROPERTY(QVariant value READ value NOTIFY valueChanged)
-    QVariant m_value{};
-
-public:
-    QVariant value() const;
-    void setValue(QVariant &&value);
-    Q_SIGNAL void valueChanged();
-};
-
-
-
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
