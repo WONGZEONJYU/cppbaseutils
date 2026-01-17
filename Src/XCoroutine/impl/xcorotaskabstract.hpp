@@ -25,12 +25,13 @@ namespace detail {
 
     XCoroTaskAbstractClassTemplate
     constexpr XCoroTaskAbstractClass XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
-    { swap(o); }
+        : m_coroutine_ { o.m_coroutine_ }
+    { o.m_coroutine_ = {}; }
 
     XCoroTaskAbstractClassTemplate
     constexpr auto XCoroTaskAbstractClass operator=(XCoroTaskAbstract && o) noexcept
         -> XCoroTaskAbstract &
-    { swap(o); return *this; }
+    { XCoroTaskAbstract{std::move(o)}.swap(*this); return *this; }
 
     XCoroTaskAbstractClassTemplate
     constexpr void XCoroTaskAbstractClass swap(XCoroTaskAbstract & o) noexcept {

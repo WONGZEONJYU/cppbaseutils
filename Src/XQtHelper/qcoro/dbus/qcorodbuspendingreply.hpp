@@ -34,12 +34,8 @@ namespace detail {
             [[nodiscard]] bool await_ready() const noexcept
             { return m_reply_.isFinished(); }
 
-            void await_suspend(std::coroutine_handle<> const awaitingCoroutine) const {
-                auto slot { [awaitingCoroutine]<typename Tp_>(Tp_ && watcher_) {
-                    awaitingCoroutine.resume();
-                    std::forward<Tp_>(watcher_)->deleteLater();
-                } };
-
+            void await_suspend(std::coroutine_handle<> const h) const {
+                auto slot { [h]<typename Tp_>(Tp_ && watcher_) { h.resume(); std::forward<Tp_>(watcher_)->deleteLater(); } };
                 auto const watcher { std::make_unique<QDBusPendingCallWatcher>(m_reply_).release() };
                 QObject::connect(watcher,&QDBusPendingCallWatcher::finished,std::move(slot));
             }

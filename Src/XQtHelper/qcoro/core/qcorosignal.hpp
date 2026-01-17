@@ -89,6 +89,7 @@ namespace concepts {
 
     public:
         Q_DISABLE_COPY(QCoroSignalAbstract);
+        X_DEFAULT_MOVE(QCoroSignalAbstract)
 
         virtual ~QCoroSignalAbstract()
         { if (static_cast<bool>(m_conn_)) { QObject::disconnect(m_conn_); } }
@@ -101,10 +102,10 @@ namespace concepts {
          **/
         using result_type = std::optional<result_type_from_tuple_t<result_tuple_t>>;
 
-        void handleTimeout(std::coroutine_handle<> const h) {
+        void handleTimeout(std::coroutine_handle<> const h) const {
             if (!m_timeoutTimer_) { return; }
-            auto lambda { [this,h]{ QObject::disconnect(m_conn_); h.resume(); } };
-            m_timeoutTimer_->callOnTimeout(m_obj_.get(),std::move(lambda),Qt::DirectConnection);
+            auto slot { [this,h]{ QObject::disconnect(m_conn_); h.resume(); } };
+            m_timeoutTimer_->callOnTimeout(m_obj_.get(),std::move(slot),Qt::DirectConnection);
             // force coro to be resumed on our thread, not mObj's thread
             m_timeoutTimer_->start();
         }
@@ -112,6 +113,7 @@ namespace concepts {
         using milliseconds = std::chrono::milliseconds;
 
         constexpr QCoroSignalAbstract() = default;
+
         explicit(false) constexpr QCoroSignalAbstract(T * const obj, FuncPtr && funcPtr, milliseconds const timeout)
             : m_obj_{ obj }, m_funcPtr_ { std::forward<FuncPtr>(funcPtr) }
         {
@@ -128,7 +130,7 @@ namespace concepts {
         template<typename... Args> using select_last_t = select_last<Args...>::type;
 
         template<typename StoreResultCb, typename... Args> requires(sizeof...(Args) > 0)
-        constexpr void storeResult(StoreResultCb && storeResult, Args &&...args) {
+        static constexpr void storeResult(StoreResultCb && storeResult, Args &&...args) {
             using LastArg = select_last_t<Args...>;
             if constexpr (is_QPrivateSignal_v<LastArg>) {
                 auto reduced { []<typename Tuple,std::size_t... I>(Tuple && tuple,std::index_sequence<I...>) constexpr
@@ -142,7 +144,7 @@ namespace concepts {
         }
 
         template<typename StoreResultCb>
-        constexpr void storeResult(StoreResultCb && storeResult)
+        static constexpr void storeResult(StoreResultCb && storeResult)
         { std::invoke(std::forward<StoreResultCb>(storeResult)); }
     };
 
@@ -171,24 +173,37 @@ namespace concepts {
             std::ranges::swap(this->m_timeoutTimer_, other.m_timeoutTimer_);
             std::ranges::swap(m_result_,other.m_result_);
             std::ranges::swap (m_dummyReceiver_,other.m_dummyReceiver_);
-            std::ranges::swap(m_awaitingCoroutine_,other.m_awaitingCoroutine_);
-            if (static_cast<bool>(this->m_conn_)) { QObject::disconnect(this->m_conn_); setupConnection(); }
         }
 
-        QCoroSignal(QCoroSignal && other) noexcept
-        { swap(other); }
+        QCoroSignal(QCoroSignal && o) noexcept
+            : QCoroSignalAbstract<T, FuncPtr>(std::move(o))
+            , m_result_ { std::move(o.m_result_) }
+            , m_dummyReceiver_ { std::move(o.m_dummyReceiver_) }
+        {
+#undef reconnect
+#define reconnect if (static_cast<bool>(this->m_conn_)) { QObject::disconnect(this->m_conn_); setupConnection(); }
+            reconnect
+        }
 
-        QCoroSignal &operator=(QCoroSignal && other) noexcept
-        { swap(other); return *this; }
+        QCoroSignal &operator=(QCoroSignal && o) noexcept {
+            if (this == std::addressof(o)) { return *this; }
+            QCoroSignalAbstract<T, FuncPtr>::operator=(std::move(o));
+            std::swap(m_result_, o.m_result_);
+            std::swap(m_dummyReceiver_, o.m_dummyReceiver_);
+            reconnect
+            return *this;
+        }
+
+#undef reconnect
 
         ~QCoroSignal() override = default;
 
         [[nodiscard]] bool await_ready() const noexcept
         { return this->m_obj_.isNull(); }
 
-        void await_suspend(std::coroutine_handle<> const awaitingCoroutine) noexcept {
-            this->handleTimeout(awaitingCoroutine);
-            m_awaitingCoroutine_ = awaitingCoroutine;
+        void await_suspend(std::coroutine_handle<> const h) noexcept {
+            this->handleTimeout(h);
+            m_awaitingCoroutine_ = h;
             setupConnection();
         }
 
@@ -197,24 +212,18 @@ namespace concepts {
 
     private:
         void setupConnection() {
-
             Q_ASSERT(!this->m_conn_);
-
-            this->m_conn_ = QObject::connect(this->m_obj_, this->m_funcPtr_, this->m_dummyReceiver_.get(),
-
+            auto slot {
                 [this]<typename ...A1>(A1 && ...a1) {
-
                     if (this->m_timeoutTimer_) { this->m_timeoutTimer_->stop(); }
-
                     QObject::disconnect(this->m_conn_);
-
                     auto f { [this]<typename ...A2>(A2 && ...a2) { m_result_.emplace(std::forward<A2>(a2)...); } };
                     this->storeResult( std::move(f) , std::forward<A1>(a1)...);
-
                     if (m_awaitingCoroutine_) { m_awaitingCoroutine_.resume(); }
-
-                },Qt::QueuedConnection
-            );
+                }
+            };
+            this->m_conn_ = QObject::connect(this->m_obj_, this->m_funcPtr_
+                , this->m_dummyReceiver_.get(),std::move(slot),Qt::QueuedConnection);
         }
     };
 
@@ -275,30 +284,24 @@ namespace concepts {
             return result;
         }
 
-        void setAwaiter(std::coroutine_handle<> const h)
+        void setAwaiter(std::coroutine_handle<> const h) noexcept
         { m_awaitingCoroutine_ = h; }
 
         void setupConnection() {
 
             if (static_cast<bool>(this->m_conn_)) { return; }
 
-            auto lambda {
-
+            auto slot {
                 [this]<typename ...A1>(A1 && ...a1) {
-
                     if (this->m_timeoutTimer_) { this->m_timeoutTimer_->stop(); }
-
-                    auto f { [this]<typename ...A2>(A2 && ...a2) { m_queue_.emplace_back(std::forward<A2>(a2)...); } };
-
-                    this->storeResult(std::move(f), std::forward<A1>(a1)... );
-
+                    auto cb { [this]<typename ...A2>(A2 && ...a2) { m_queue_.emplace_back(std::forward<A2>(a2)...); } };
+                    this->storeResult(std::move(cb), std::forward<A1>(a1)... );
                     if (m_awaitingCoroutine_) { m_awaitingCoroutine_.resume(); }
-
                 }
             };
 
             this->m_conn_ = QObject::connect(this->m_obj_, this->m_funcPtr_
-                , std::addressof(m_dummyReceiver_),std::move(lambda), Qt::QueuedConnection);
+                , std::addressof(m_dummyReceiver_),std::move(slot), Qt::QueuedConnection);
         }
     };
 

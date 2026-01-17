@@ -37,10 +37,8 @@ namespace detail {
 
             void await_suspend(std::coroutine_handle<> const h) {
                 auto const watcher { std::make_unique<QFutureWatcher<Tp>>().release() };
-                QObject::connect(watcher, &QFutureWatcherBase::finished, [watcher, h]{
-                    watcher->deleteLater();
-                    h.resume();
-                });
+                auto slot { [watcher, h]{ watcher->deleteLater(); h.resume(); } };
+                QObject::connect(watcher, &QFutureWatcherBase::finished,std::move(slot));
                 watcher->setFuture(m_future_);
             }
 
@@ -82,14 +80,14 @@ namespace detail {
         explicit(false) constexpr QCoroFuture(QFuture<T> const & future)
             : m_future_ {future} { }
 
-        XCoroTask<T> waitForFinished()
+        XCoroTask<T> waitForFinished() const
         { co_return co_await WaitForFinishedOperation { m_future_ }; }
 
-        XCoroTask<T> result()
+        XCoroTask<T> result() const
         { co_return co_await WaitForFinishedOperation { m_future_ }; }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        XCoroTask<T> takeResult() requires (!std::is_void_v<T>)
+        XCoroTask<T> takeResult() const requires (!std::is_void_v<T>)
         { co_return std::move(co_await TakeResultOperation<> { m_future_ }); }
 #endif
     };

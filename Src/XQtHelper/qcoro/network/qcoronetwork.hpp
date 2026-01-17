@@ -5,5 +5,7 @@
 
 #include <XQtHelper/qcoro/network/qcoroabstractsocket.hpp>
 #include <XQtHelper/qcoro/network/qcorolocalsocket.hpp>
+#include <XQtHelper/qcoro/network/qcoronetworkreply.hpp>
+#include <XQtHelper/qcoro/network/qcorotcpserver.hpp>
 
 #endif

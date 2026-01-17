@@ -112,11 +112,12 @@ private:
 public:
     explicit(false) constexpr XGenerator() = default;
 
-    constexpr XGenerator(XGenerator && other) noexcept
-    { swap(other); }
+    constexpr XGenerator(XGenerator && o) noexcept
+        : m_generatorCoroutine_ { std::move(o.m_generatorCoroutine_) }
+    { o.m_generatorCoroutine_ = {}; }
 
-    constexpr XGenerator &operator=(XGenerator && other) noexcept
-    { swap(other); return *this; }
+    constexpr XGenerator &operator=(XGenerator && o) noexcept
+    { XGenerator {std::move(o)}.swap(*this); return *this; }
 
     ~XGenerator()
     { if (m_generatorCoroutine_)  { m_generatorCoroutine_.destroy(); } }
@@ -124,14 +125,6 @@ public:
     constexpr void swap(XGenerator & o) noexcept
     { std::swap(m_generatorCoroutine_,o.m_generatorCoroutine_); }
 
-    /**
-     * @brief Returns iterator "pointing" to the first value produced by the generator.
-     *
-     * If the generator coroutine did not produce any value and finished immediately,
-     * the returned iterator will be equal to end().
-     *
-     * If the generator coroutine has thrown an exception if will be rethrown from here.
-     **/
     auto begin(){
         m_generatorCoroutine_.resume(); // generate first value
         if (m_generatorCoroutine_.promise().finished()) { // did not yield anything
@@ -141,12 +134,6 @@ public:
         return iterator { m_generatorCoroutine_ } ;
     }
 
-    /**
-     * @brief Returns iterator indicating the past-last value produced by the generator.
-     *
-     * Can be used to check whether the generator have produced another value or
-     * whether it has finished.
-     **/
     static constexpr auto end() noexcept
     { return iterator {}; }
 

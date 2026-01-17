@@ -54,14 +54,14 @@ namespace detail {
 
         using milliseconds = std::chrono::milliseconds;
 
-        XCoroTask<bool> waitForStarted(milliseconds const timeout = milliseconds{-1}) {
+        XCoroTask<bool> waitForStarted(milliseconds const timeout = milliseconds{-1}) const {
             if (m_thread_->isRunning()) { co_return true; }
             if (m_thread_->isFinished()) { co_return false; }
             auto const result { co_await qCoro(m_thread_.data(), &QThread::started, timeout) };
             co_return result.has_value();
         }
 
-        XCoroTask<bool> waitForFinished(milliseconds const timeout = milliseconds{-1}) {
+        XCoroTask<bool> waitForFinished(milliseconds const timeout = milliseconds{-1}) const {
             if (m_thread_->isFinished()) { co_return true; }
             if (!m_thread_->isRunning()) { co_return false; }
             auto const result { co_await qCoro(m_thread_.data(), &QThread::finished, timeout) };

@@ -26,10 +26,10 @@ namespace detail {
 
         ~QCoroProcess() override = default;
 
-        XCoroTask<bool> waitForStarted(int const timeout_msecs = 30'000)
+        XCoroTask<bool> waitForStarted(int const timeout_msecs = 30'000) const
         { return waitForStarted(milliseconds {timeout_msecs}); }
 
-        XCoroTask<bool> waitForStarted(milliseconds const timeout) {
+        XCoroTask<bool> waitForStarted(milliseconds const timeout) const {
             auto const process { qobject_cast<QProcess *>(m_device_.data()) };
             if (process->state() == QProcess::Starting) {
                 auto const started { co_await qCoro(process, &QProcess::started, timeout) };
@@ -38,10 +38,10 @@ namespace detail {
             co_return process->state() == QProcess::Running;
         }
 
-        XCoroTask<bool> waitForFinished(int const timeout_msecs = 30'000)
+        XCoroTask<bool> waitForFinished(int const timeout_msecs = 30'000) const
         { return waitForFinished(milliseconds { timeout_msecs }); }
 
-        XCoroTask<bool> waitForFinished(milliseconds const timeout) {
+        XCoroTask<bool> waitForFinished(milliseconds const timeout) const {
             auto const process { qobject_cast<QProcess *>(m_device_.data()) };
             if (process->state() == QProcess::NotRunning) { co_return false; }
             auto const finished { co_await qCoro(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), timeout) };
@@ -49,7 +49,7 @@ namespace detail {
         }
 
         XCoroTask<bool> start(QIODevice::OpenMode const mode = QIODevice::ReadWrite
-            ,milliseconds const timeout = std::chrono::seconds{30})
+            ,milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QProcess *>(m_device_.data())->start(mode);
             return waitForStarted(timeout);
@@ -57,7 +57,7 @@ namespace detail {
 
         XCoroTask<bool> start(QString const & program, QStringList const & arguments,
                          QIODevice::OpenMode const mode = QIODevice::ReadWrite,
-                         milliseconds const timeout = std::chrono::seconds{30})
+                         milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QProcess *>(m_device_.data())->start(program, arguments, mode);
             return waitForStarted(timeout);

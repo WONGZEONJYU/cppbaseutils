@@ -47,20 +47,20 @@ namespace detail {
 
         explicit(false) QCoroAbstractSocket(QAbstractSocket * const socket) : QCoroIODevice {socket} { }
 
-        XCoroTask<bool> waitForConnected(int const timeout_msecs = 30'000)
+        XCoroTask<bool> waitForConnected(int const timeout_msecs = 30'000) const
         { return waitForConnected(milliseconds{ timeout_msecs }); }
 
-        XCoroTask<bool> waitForConnected(milliseconds const timeout) {
+        XCoroTask<bool> waitForConnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() == QAbstractSocket::ConnectedState) { co_return true; }
             auto const result{ co_await qCoro(socket, &QAbstractSocket::connected, timeout) };
             co_return result.has_value();
         }
 
-        XCoroTask<bool> waitForDisconnected(int const timeout_msecs = 30'000)
+        XCoroTask<bool> waitForDisconnected(int const timeout_msecs = 30'000) const
         { return waitForDisconnected(milliseconds{ timeout_msecs }); }
 
-        XCoroTask<bool> waitForDisconnected(milliseconds const timeout) {
+        XCoroTask<bool> waitForDisconnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() == QAbstractSocket::UnconnectedState) { co_return false; }
             const auto result{ co_await qCoro(socket, &QAbstractSocket::disconnected, timeout) };
@@ -70,7 +70,7 @@ namespace detail {
         XCoroTask<bool> connectToHost(QString const & hostName, quint16 const port,
                              QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                              QAbstractSocket::NetworkLayerProtocol const protocol = QAbstractSocket::AnyIPProtocol,
-                             milliseconds const timeout = std::chrono::seconds{30})
+                             milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QAbstractSocket *>(m_device_.data())->connectToHost(hostName, port, openMode, protocol);
             return waitForConnected(timeout);
@@ -78,21 +78,21 @@ namespace detail {
 
         XCoroTask<bool> connectToHost(QHostAddress const & address, quint16 const port,
                              QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
-                             milliseconds const timeout = std::chrono::seconds{30})
+                             milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QAbstractSocket *>(m_device_.data())->connectToHost(address, port, openMode);
             return waitForConnected(timeout);
         }
 
     private:
-        XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) override {
+        XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() != QAbstractSocket::ConnectedState) { co_return false; }
             AbstractSocketReadySignalHelper helper { socket, &QIODevice::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&WaitSignalHelper::ready), timeout);
         }
 
-        XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) override {
+        XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() != QAbstractSocket::ConnectedState) { co_return std::nullopt; }
             AbstractSocketReadySignalHelper helper { socket, &QIODevice::bytesWritten };
