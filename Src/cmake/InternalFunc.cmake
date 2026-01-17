@@ -7,7 +7,6 @@ endmacro()
 set(XQtHelper_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/XQtHelper CACHE PATH "QT_helper_header")
 
 macro(qt_helper_load TARGET_NAME)
-    message(STATUS "XQtHelper_INCLUDE_DIRS = ${XQtHelper_INCLUDE_DIRS}")
     xqt_helper_load(${TARGET_NAME} ${XQtHelper_INCLUDE_DIRS})
 endmacro()
 

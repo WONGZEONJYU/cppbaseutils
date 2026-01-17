@@ -105,3 +105,25 @@ install(FILES
     "cmake/ExternalFunc.cmake"
     DESTINATION lib/cmake/${PROJECT_NAME}
 )
+
+function(install_path)
+
+    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        if(APPLE OR UNIX)
+            set(CMAKE_INSTALL_PREFIX
+                    "$ENV{HOME}/Library/XCppBaseUtils"
+                    CACHE PATH "Install prefix" FORCE
+            )
+        elseif (WIN32)
+            set(CMAKE_INSTALL_PREFIX
+                    "$ENV{USERPROFILE}/Library/XCppBaseUtils"
+                    CACHE PATH "Install prefix" FORCE
+            )
+        else ()
+            message(FATAL_ERROR "Unknown platform")
+        endif ()
+    endif()
+
+endfunction()
+
+install_path()

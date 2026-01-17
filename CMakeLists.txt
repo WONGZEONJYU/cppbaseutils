@@ -9,6 +9,7 @@ project(XUtils2
 )
 
 # 设置C++标准
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -39,18 +40,3 @@ include(cmake/Dependencies.cmake)
 add_subdirectory(Src)
 add_subdirectory(Test)
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    if(APPLE OR UNIX)
-        set(CMAKE_INSTALL_PREFIX
-                "$ENV{HOME}/Library/XCppBaseUtils"
-                CACHE PATH "Install prefix" FORCE
-        )
-    elseif (WIN32)
-        set(CMAKE_INSTALL_PREFIX
-                "$ENV{USERPROFILE}/Library/XCppBaseUtils"
-                CACHE PATH "Install prefix" FORCE
-        )
-    else ()
-        message(FATAL_ERROR "Unknown platform")
-    endif ()
-endif()

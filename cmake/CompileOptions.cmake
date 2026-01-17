@@ -36,7 +36,7 @@ else()
         -Wpedantic               # 严格遵循标准
         -fPIC                    # 位置无关代码
     )
-    
+
     # 根据构建类型设置优化选项
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-g -O0 -fno-omit-frame-pointer)
