@@ -112,3 +112,4 @@ if(ENABLE_INSTALL)
 endif()
 
 include(cmake/InternalFunc.cmake)
+include(cmake/QtTestHelper.cmake)

@@ -32,8 +32,9 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
         list(APPEND HELPER_HEADER "${Quick}")
     endif ()
 
-    if (TARGET Qt${QT_VERSION_MAJOR}::WebSockets)
+    if (TARGET Qt${QT_VERSION_MAJOR}::Network AND TARGET Qt${QT_VERSION_MAJOR}::WebSockets)
         file(GLOB_RECURSE WebSockets "${XQtHelper_INCLUDE_DIRS}/qcoro/websockets/*.h*")
+        message(WARNING "WebSockets = ${WebSockets}")
         list(APPEND HELPER_HEADER ${WebSockets})
     endif ()
 
