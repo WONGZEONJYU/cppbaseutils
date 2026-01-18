@@ -13,7 +13,8 @@ elseif (WIN32)
 endif()
 
 set(QtMode)
-list(APPEND QtModel Core Gui Widgets DBus Network Qml QmlPrivate)
+list(APPEND QtModel Core Gui Widgets DBus Network
+        Qml QmlPrivate Quick WebSockets Test)
 find_package(Qt6 COMPONENTS ${QtModel} REQUIRED PATHS ${Qt6_DIR})
 
 # 收集源文件

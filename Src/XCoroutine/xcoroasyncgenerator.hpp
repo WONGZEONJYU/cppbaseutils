@@ -110,13 +110,15 @@ namespace detail {
 
         constexpr XAsyncGenerator<T> get_return_object() noexcept;
 
-        constexpr auto yield_value(value_type & value) noexcept{
+        constexpr auto yield_value(value_type & value) noexcept
+            -> XAsyncGeneratorYieldOperation
+        {
             m_currentValue_ = const_cast<std::remove_const_t<value_type> *>(std::addressof(value));
             return internal_yield_value();
         }
 
         constexpr auto yield_value(value_type && value) noexcept
-        { return yield_value(std::forward<value_type>(value)); }
+        { return yield_value(value); }
 
         constexpr T & value() const noexcept
         { return *const_cast<value_type *>(static_cast<const value_type *>(m_currentValue_)); }
@@ -129,7 +131,9 @@ namespace detail {
 
         constexpr XAsyncGenerator<T> get_return_object() noexcept;
 
-        constexpr auto yield_value(T && value) noexcept{
+        constexpr auto yield_value(T && value) noexcept
+            -> XAsyncGeneratorYieldOperation
+        {
             m_currentValue_ = std::addressof(std::forward<T>(value));
             return internal_yield_value();
         }
@@ -184,6 +188,9 @@ public:
     constexpr reference operator *() const noexcept
     { return m_coroutine_.promise().value(); }
 
+    constexpr pointer operator->() const noexcept
+    { return std::addressof(**this); /* std::addressof(operator *()) */ }
+
     friend constexpr bool operator==(XAsyncGeneratorIterator const & lhs
         , XAsyncGeneratorIterator const & rhs) = default;
 
@@ -235,10 +242,10 @@ public:
             [[nodiscard]] constexpr bool await_ready() const noexcept
             { return m_promise_; }
 
-            constexpr auto await_resume() const{
-                if (!m_promise_) { return iterator { }; }
-                if (m_promise_->finished()) { m_promise_->rethrow_if_unhandled_exception(); return iterator { }; }
-                return iterator { coroutine_handle::from_promise(*static_cast<promise_type *>(m_promise_)) };
+            constexpr iterator await_resume() const {
+                if (!m_promise_) { return { }; }
+                if (m_promise_->finished()) { m_promise_->rethrow_if_unhandled_exception(); return { }; }
+                return { coroutine_handle::from_promise(*static_cast<promise_type *>(m_promise_)) };
             }
         };
 

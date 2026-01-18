@@ -5,6 +5,9 @@
 #include <XQtHelper/qcoro/dbus/qcorodbus.hpp>
 #include <XQtHelper/qcoro/network/qcoronetwork.hpp>
 #include <XQtHelper/qcoro/qml/qcoroqml.hpp>
+#include <XQtHelper/qcoro/quick/qcoroimageprovider.hpp>
+#include <XQtHelper/qcoro/websockets/qcorowebsockets.hpp>
+#include <XQtHelper/qcoro/test/qcorotest.hpp>
 
 template<typename ...Args>
 constexpr void fff(Args && ...args)

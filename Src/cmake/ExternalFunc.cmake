@@ -27,6 +27,16 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
         list(APPEND HELPER_HEADER "${QML}")
     endif ()
 
+    if (TARGET Qt${QT_VERSION_MAJOR}::Quick)
+        file(GLOB_RECURSE Quick "${XQtHelper_INCLUDE_DIRS}/qcoro/quick/*.h*")
+        list(APPEND HELPER_HEADER "${Quick}")
+    endif ()
+
+    if (TARGET Qt${QT_VERSION_MAJOR}::WebSockets)
+        file(GLOB_RECURSE WebSockets "${XQtHelper_INCLUDE_DIRS}/qcoro/websockets/*.h*")
+        list(APPEND HELPER_HEADER ${WebSockets})
+    endif ()
+
     #message(STATUS "HELPER_HEADER = ${HELPER_HEADER}")
 
     foreach (item IN LISTS ${HELPER_HEADER})
