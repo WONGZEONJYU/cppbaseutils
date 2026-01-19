@@ -109,8 +109,7 @@ endfunction()
 
 qcoro_add_test(qtimer)
 qcoro_add_test(qcoroprocess)
-
-#qcoro_add_test(qcorosignal)
+qcoro_add_test(qcorosignal)
 #qcoro_add_test(qcorothread)
 #qcoro_add_test(qcorotask)
 #qcoro_add_test(qcorolazytask)

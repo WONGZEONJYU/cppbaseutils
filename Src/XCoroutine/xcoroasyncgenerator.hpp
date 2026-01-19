@@ -37,7 +37,8 @@ namespace detail {
         static constexpr auto initial_suspend() noexcept
         { return std::suspend_always {}; }
 
-        constexpr auto final_suspend() noexcept;
+        constexpr auto final_suspend() noexcept
+            -> XAsyncGeneratorYieldOperation;
 
         void unhandled_exception() noexcept
         { m_exception_ = std::current_exception(); }
@@ -56,7 +57,8 @@ namespace detail {
         X_DEFAULT_MOVE(XAsyncGeneratorPromiseAbstract)
 
     protected:
-        [[nodiscard]] constexpr XAsyncGeneratorYieldOperation internal_yield_value() const noexcept;
+        [[nodiscard]] constexpr auto internal_yield_value() const noexcept
+            -> XAsyncGeneratorYieldOperation;
         constexpr XAsyncGeneratorPromiseAbstract() noexcept = default;
     };
 
@@ -76,6 +78,7 @@ namespace detail {
     };
 
     constexpr auto XAsyncGeneratorPromiseAbstract::final_suspend() noexcept
+        -> XAsyncGeneratorYieldOperation
     { m_currentValue_ = {}; return internal_yield_value(); }
 
     constexpr auto XAsyncGeneratorPromiseAbstract::internal_yield_value() const noexcept
@@ -108,7 +111,7 @@ namespace detail {
     public:
         constexpr XAsyncGeneratorPromise() noexcept = default;
 
-        constexpr XAsyncGenerator<T> get_return_object() noexcept;
+        constexpr XAsyncGenerator<T> get_return_object() noexcept { return {this}; }
 
         constexpr auto yield_value(value_type & value) noexcept
             -> XAsyncGeneratorYieldOperation
@@ -129,7 +132,7 @@ namespace detail {
     public:
         constexpr XAsyncGeneratorPromise() noexcept = default;
 
-        constexpr XAsyncGenerator<T> get_return_object() noexcept;
+        constexpr XAsyncGenerator<T> get_return_object() noexcept { return {this}; }
 
         constexpr auto yield_value(T && value) noexcept
             -> XAsyncGeneratorYieldOperation
@@ -219,12 +222,13 @@ public:
         : XAsyncGenerator { *promise } { }
 
     constexpr XAsyncGenerator(XAsyncGenerator && o) noexcept
-    { swap(o); }
+        : m_coroutine_ { o.m_coroutine_ }
+    { o.m_coroutine_ = {}; }
 
     XAsyncGenerator& operator=(XAsyncGenerator && o) noexcept
-    { swap(o); return *this; }
+    { XAsyncGenerator{o}.swap(*this); return *this; }
 
-    virtual ~XAsyncGenerator()
+    ~XAsyncGenerator()
     { if (m_coroutine_) { m_coroutine_.destroy(); } }
 
     constexpr auto begin() noexcept {
@@ -240,7 +244,7 @@ public:
                 : Base { h.promise(), h } {}
 
             [[nodiscard]] constexpr bool await_ready() const noexcept
-            { return m_promise_; }
+            { return !m_promise_; }
 
             constexpr iterator await_resume() const {
                 if (!m_promise_) { return { }; }
@@ -265,6 +269,7 @@ template<typename T>
 constexpr void swap(XAsyncGenerator<T> & arg1, XAsyncGenerator<T> & arg2) noexcept
 { arg1.swap(arg2); }
 
+#if 0
 template<typename T>
 constexpr XAsyncGenerator<T> detail::XAsyncGeneratorPromise<T>::get_return_object() noexcept
 { return { this }; }
@@ -272,6 +277,8 @@ constexpr XAsyncGenerator<T> detail::XAsyncGeneratorPromise<T>::get_return_objec
 template<typename T>
 constexpr XAsyncGenerator<T> detail::XAsyncGeneratorPromise<T&&>::get_return_object() noexcept
 { return { this }; }
+#endif
+
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

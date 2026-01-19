@@ -31,9 +31,9 @@ namespace detail {
      * implementation-specific, so we need to handle each compiler separately. This
      * can cause truble in the future if an implementation changes the output format.
      **/
-    template<typename>
+    template<typename T>
     class is_QPrivateSignal {
-
+        using type [[maybe_unused]] = T;
         static constexpr auto functionName() noexcept{
 #if defined(_MSC_VER)
             // While MSVC does support std::source_location, std::source_location::function_name()

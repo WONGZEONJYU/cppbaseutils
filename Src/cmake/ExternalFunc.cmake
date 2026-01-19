@@ -17,7 +17,6 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
     endfunction()
 
     target_links_qt_module(${TARGET_NAME} Core HASCore)
-
     if (NOT HASCore)
         message(WARNING "QT not found!")
         return()
