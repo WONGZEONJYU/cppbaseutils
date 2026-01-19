@@ -18,17 +18,18 @@ function(qcoro_add_test _name)
     set(multiValueAgs LINK_LIBRARIES)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
     add_executable(test-${_name} ${_name}.cpp)
+
     target_link_libraries(
             test-${_name}
             PRIVATE
             qcoro_testlib
             ${PROJECT_NAME}
-            #QCoro${QT_VERSION_MAJOR}Core
             Qt${QT_VERSION_MAJOR}::Core
             Qt${QT_VERSION_MAJOR}::Test
             ${TEST_LINK_LIBRARIES}
             Threads::Threads
     )
+    qt_helper_load(test-${_name})
     set_target_defaults(test-${_name})
     if (NOT TEST_SKIP_ADD_TEST)
         add_test(NAME test-${_name} COMMAND test-${_name})
@@ -107,8 +108,8 @@ function(qcoro_add_quick_test _name)
 endfunction()
 
 qcoro_add_test(qtimer)
-#
-#qcoro_add_test(qcoroprocess)
+qcoro_add_test(qcoroprocess)
+
 #qcoro_add_test(qcorosignal)
 #qcoro_add_test(qcorothread)
 #qcoro_add_test(qcorotask)

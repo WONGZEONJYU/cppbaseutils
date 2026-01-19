@@ -25,9 +25,9 @@ function(addQtTestExecutable TargetName SRC_FILES HEADER_FILES)
 
     add_executable(${TargetName} "${SRC_FILES}" "${HEADER_FILES}")
 
-    qt_helper_load(${TargetName})
-
     target_link_libraries(${TargetName} ${PROJECT_NAME} "${QtModelLinkList}")
+
+    qt_helper_load(${TargetName})
 
     set_target_properties(${TargetName} PROPERTIES  OUTPUT_NAME "${TargetName}")
     set_target_properties(${TargetName} PROPERTIES
