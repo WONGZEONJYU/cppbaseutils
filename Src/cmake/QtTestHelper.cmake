@@ -1,5 +1,5 @@
 
-function(addQtTestExecutable TargetName SRC_FILES HEADER_FILES Qt_Dir)
+function(addQtTestExecutable TargetName SRC_FILES HEADER_FILES)
     # 1. 定义关键字
     set(multi_value_args Qt_MODULES)
 
@@ -17,7 +17,7 @@ function(addQtTestExecutable TargetName SRC_FILES HEADER_FILES Qt_Dir)
         list(APPEND QtModelList ${module})
     endforeach()
 
-    find_package(Qt6 COMPONENTS "${QtModelList}" REQUIRED PATHS ${Qt_Dir})
+    find_package(Qt6 COMPONENTS "${QtModelList}" REQUIRED)
 
     set(QtModelLinkList "${QtModelList}")
     list(TRANSFORM QtModelLinkList PREPEND "Qt::")

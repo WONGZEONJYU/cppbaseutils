@@ -6,20 +6,17 @@
 #include <QEventLoop>
 #include <QTimer>
 
-#define DELAYED(expr) \
-QTimer::singleShot(10ms, [&]() { expr; })
+#define DELAYED(expr) QTimer::singleShot(10ms, [&] { expr; })
 
 class TestLoop : public QObject {
     Q_OBJECT
-public:
-    explicit TestLoop(QObject *parent = nullptr);
+    QEventLoop m_eventLoop_{};
+    QTimer m_timer_{};
 
+public:
+    explicit(false) TestLoop(QObject * = nullptr);
     void exec();
     void quit();
-
-private:
-    QEventLoop mEventLoop;
-    QTimer mTimer;
 };
 
 #endif

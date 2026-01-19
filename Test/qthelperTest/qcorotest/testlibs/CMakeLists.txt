@@ -1,35 +1,32 @@
-
-set(TargetName qcoro_testlib)
-add_library(${TargetName})
-
-target_sources(${TargetName} PRIVATE
+add_library(qcoro_testlib STATIC
         testobject.cpp
         testobject.hpp
         testloop.cpp
-        testloop.hpp)
+        testloop.hpp
+        testmacros.hpp
+)
 
-target_include_directories(${TargetName} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(qcoro_testlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-#[[
 target_link_libraries(qcoro_testlib PUBLIC
-        QCoro${QT_VERSION_MAJOR}Core
-        QCoro${QT_VERSION_MAJOR}Test
+        ${PROJECT_NAME}
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Test
 )
-]]
 
 if (QCORO_WITH_QTDBUS)
-    add_executable(testdbusserver EXCLUDE_FROM_ALL testdbusserver.cpp testdbusserver.hpp)
 
-    #[[
+    add_executable(testdbusserver EXCLUDE_FROM_ALL testdbusserver.cpp testdbusserver.hpp)
+    qt_helper_load(testdbusserver)
+
     target_link_libraries(testdbusserver
+            ${PROJECT_NAME}
             Qt${QT_VERSION_MAJOR}::Core
             Qt${QT_VERSION_MAJOR}::DBus
     )
-    ]]
 
     set(qcoro_test_dbus_SRCS)
+
     if (${QT_VERSION_MAJOR} EQUAL 5)
         qt5_add_dbus_interface(qcoro_test_dbus_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
     else()
@@ -37,31 +34,33 @@ if (QCORO_WITH_QTDBUS)
     endif()
 
     add_library(qcoro_test_dbus OBJECT ${qcoro_test_dbus_SRCS})
+
     target_include_directories(qcoro_test_dbus PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_BINARY_DIR}
     )
 
-    #[[
     target_link_libraries(qcoro_test_dbus PUBLIC
+            ${PROJECT_NAME}
             Qt${QT_VERSION_MAJOR}::Core
             Qt${QT_VERSION_MAJOR}::DBus
     )
-    ]]
 
 endif()
 
 if (QCORO_WITH_QTWEBSOCKETS)
-    set(qcoro_test_ws_SRCS testwsserver.cpp)
+
+    set(qcoro_test_ws_SRCS testwsserver.cpp testwsserver.hpp)
+
     add_library(qcoro_test_ws OBJECT ${qcoro_test_ws_SRCS})
+
     target_include_directories(qcoro_test_ws PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-    #[[
     target_link_libraries(qcoro_test_ws PUBLIC
             Qt${QT_VERSION_MAJOR}::Core
             Qt${QT_VERSION_MAJOR}::Test
             Qt${QT_VERSION_MAJOR}::WebSockets
+            ${PROJECT_NAME}
     )
-    ]]
 
 endif()

@@ -1,6 +1,20 @@
 include_guard()
 function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
 
+    function(target_links_qt_module target module result)
+        get_target_property(_libs ${target} LINK_LIBRARIES)
+        get_target_property(_iface_libs ${target} INTERFACE_LINK_LIBRARIES)
+
+        set(_all_libs ${_libs} ${_iface_libs})
+
+        list(FIND _all_libs Qt::${module} _idx)
+        if(_idx GREATER -1)
+            set(${result} TRUE PARENT_SCOPE)
+        else()
+            set(${result} FALSE PARENT_SCOPE)
+        endif()
+    endfunction()
+
     if (NOT TARGET Qt${QT_VERSION_MAJOR}::Core)
         message(WARNING "QT not found!")
         return()
@@ -18,7 +32,6 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
     endif()
 
     if (TARGET Qt${QT_VERSION_MAJOR}::Qml)
-
         if (NOT TARGET Qt${QT_VERSION_MAJOR}::QmlPrivate)
             message(WARNING "Please link to the QmlPrivate module")
         endif ()
@@ -27,14 +40,13 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
         list(APPEND HELPER_HEADER "${QML}")
     endif ()
 
-    if (TARGET Qt${QT_VERSION_MAJOR}::Quick)
+    if (TARGET Qt${QT_VERSION_MAJOR}::Quick AND Qt${QT_VERSION_MAJOR}::QuickPrivate)
         file(GLOB_RECURSE Quick "${XQtHelper_INCLUDE_DIRS}/qcoro/quick/*.h*")
         list(APPEND HELPER_HEADER "${Quick}")
     endif ()
 
     if (TARGET Qt${QT_VERSION_MAJOR}::Network AND TARGET Qt${QT_VERSION_MAJOR}::WebSockets)
         file(GLOB_RECURSE WebSockets "${XQtHelper_INCLUDE_DIRS}/qcoro/websockets/*.h*")
-        message(WARNING "WebSockets = ${WebSockets}")
         list(APPEND HELPER_HEADER ${WebSockets})
     endif ()
 
