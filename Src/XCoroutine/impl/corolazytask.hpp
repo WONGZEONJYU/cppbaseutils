@@ -13,17 +13,11 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-namespace detail {
-
-    template <typename T>
-    constexpr XCoroLazyTask<T> LazyTaskPromise<T>::get_return_object() noexcept
-    { return { std::coroutine_handle<LazyTaskPromise>::from_promise(*this) }; }
-
-    template <typename T>
-    constexpr std::suspend_always LazyTaskPromise<T>::initial_suspend() noexcept
-    { return {}; }
-
-}
+#if 0
+template <typename T>
+constexpr XCoroLazyTask<T> detail::LazyTaskPromise<T>::get_return_object() noexcept
+{ return { std::coroutine_handle<LazyTaskPromise>::from_promise(*this) }; }
+#endif
 
 template<typename T>
 XCoroLazyTask<T>::~XCoroLazyTask() {

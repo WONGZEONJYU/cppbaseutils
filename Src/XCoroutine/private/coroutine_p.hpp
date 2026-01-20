@@ -13,7 +13,7 @@
 
 #ifndef Q_MOC_RUN
 
-#include <XCoroutine/private/concepts_p.hpp>
+//#include <XCoroutine/private/concepts_p.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

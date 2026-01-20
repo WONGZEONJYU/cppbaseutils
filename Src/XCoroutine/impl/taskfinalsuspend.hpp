@@ -10,19 +10,13 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-namespace detail {
-    constexpr TaskFinalSuspend::TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
-        : m_awaitingCoroutines_ {std::move(awaitingCoroutines ) }
-    {}
-
-    template<typename Promise>
-    void TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> const finishedCoroutine) noexcept {
-        auto && promise{ finishedCoroutine.promise() };
-        for (auto && awaiter : m_awaitingCoroutines_)
-        { awaiter.resume(); }
-        m_awaitingCoroutines_.clear();
-        promise.derefCoroutine();
-    }
+template<typename Promise>
+void detail::TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> const finishedCoroutine) noexcept {
+    auto && promise{ finishedCoroutine.promise() };
+    for (auto && awaiter : m_awaitingCoroutines_)
+    { awaiter.resume(); }
+    m_awaitingCoroutines_.clear();
+    promise.derefCoroutine();
 }
 
 XTD_INLINE_NAMESPACE_END

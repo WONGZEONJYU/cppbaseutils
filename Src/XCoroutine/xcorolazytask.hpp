@@ -8,8 +8,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename = void>
-class XCoroLazyTask;
+template<typename = void> class XCoroLazyTask;
 
 namespace detail {
 
@@ -22,9 +21,11 @@ namespace detail {
 
         using TaskPromise<T>::TaskPromise;
 
-        constexpr XCoroLazyTask<T> get_return_object() noexcept;
+        constexpr XCoroLazyTask<T> get_return_object() noexcept
+        { return { std::coroutine_handle<LazyTaskPromise>::from_promise(*this) }; }
 
-        static constexpr std::suspend_always initial_suspend() noexcept;
+        static constexpr auto initial_suspend() noexcept
+        { return std::suspend_always {}; }
     };
 
 }
@@ -51,6 +52,8 @@ public:
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
+#define X_COROUTINE_
 #include <XCoroutine/impl/corolazytask.hpp>
+#undef X_COROUTINE_
 
 #endif

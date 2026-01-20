@@ -19,8 +19,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename T = void>
-class XCoroTask;
+template<typename T = void> class XCoroTask;
 
 namespace detail {
 
@@ -29,7 +28,9 @@ namespace detail {
     class TaskFinalSuspend {
         coroutine_handle_vector m_awaitingCoroutines_ {};
     public:
-        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && );
+        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
+            : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
+        {   }
 
         static constexpr bool await_ready() noexcept { return {}; };
 
@@ -45,35 +46,51 @@ namespace detail {
         XAtomicInteger<uint32_t> m_ref_ {1};
 
     public:
-        static constexpr std::suspend_never initial_suspend() noexcept
-        { return {}; }
+        static constexpr auto initial_suspend() noexcept
+        { return std::suspend_never {}; }
 
-        constexpr TaskFinalSuspend final_suspend() noexcept;
+        constexpr TaskFinalSuspend final_suspend() noexcept
+        { return {std::move(m_awaitingCoroutines_) }; }
 
-        constexpr void addAwaitingCoroutine(std::coroutine_handle<>);
-        constexpr bool hasAwaitingCoroutine() const noexcept;
+        constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
+        { m_awaitingCoroutines_.push_back(awaitingCoroutine); }
 
-        void derefCoroutine();
-        void refCoroutine() noexcept;
+        constexpr bool hasAwaitingCoroutine() const noexcept
+        { return !m_awaitingCoroutines_.empty(); }
+
+        void derefCoroutine()
+        { if (!m_ref_.deref()) { destroyCoroutine(); } }
+
+        void refCoroutine() noexcept
+        { m_ref_.ref(); }
+
         void destroyCoroutine();
 
         constexpr virtual ~TaskPromiseAbstract() = default;
 
     protected:
-        explicit(false) constexpr TaskPromiseAbstract() = default;
+        constexpr TaskPromiseAbstract() noexcept = default;
     };
 
     template<typename T>
     class TaskPromise: public TaskPromiseAbstract {
         std::variant<std::monostate, T, std::exception_ptr> m_value_ {};
     public:
-        constexpr XCoroTask<T> get_return_object() noexcept;
-        void unhandled_exception();
+        constexpr XCoroTask<T> get_return_object() noexcept
+        { return { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
-        constexpr void return_value(T && value) noexcept;
-        constexpr void return_value(T const & value) noexcept;
+        void unhandled_exception()
+        { m_value_ = std::current_exception(); }
+
+        constexpr void return_value(T && value) noexcept
+        { m_value_.template emplace<T>(std::forward<T>(value)); }
+
+        constexpr void return_value(T const & value) noexcept
+        { m_value_ = value; }
+
         template<typename U> requires std::constructible_from<T, U>
-        constexpr void return_value(U && value) noexcept;
+        constexpr void return_value(U && value) noexcept
+        { m_value_ = T(std::forward<U>(value)); }
 
         constexpr T & result() &;
         constexpr T && result() &&;
@@ -86,9 +103,15 @@ namespace detail {
         std::exception_ptr m_exception_ {};
     public:
         XCoroTask<> get_return_object() noexcept;
-        void unhandled_exception();
+
+        void unhandled_exception()
+        { m_exception_ = std::current_exception(); }
+
         static constexpr void return_void() noexcept {}
-        void result() const;
+
+        void result() const
+        { if (m_exception_) { std::rethrow_exception(m_exception_); } }
+
         constexpr ~TaskPromise() override = default;
     };
 
@@ -99,11 +122,15 @@ namespace detail {
         coroutine_handle m_awaitedCoroutine_ {};
 
     public:
-        [[nodiscard]] constexpr bool await_ready() const noexcept;
+        [[nodiscard]] constexpr bool await_ready() const noexcept
+        { return m_awaitedCoroutine_ && m_awaitedCoroutine_.done(); }
+
         constexpr void await_suspend(std::coroutine_handle<>) noexcept;
 
     protected:
-       explicit(false) constexpr TaskAwaiterAbstract(coroutine_handle) noexcept;
+       explicit(false) constexpr TaskAwaiterAbstract(coroutine_handle const h) noexcept
+        : m_awaitedCoroutine_ { h }
+        {   }
     };
 
     template<typename T>
@@ -126,17 +153,22 @@ namespace detail {
         coroutine_handle m_coroutine_ {};
 
     public:
-        constexpr XCoroTaskAbstract(XCoroTaskAbstract &&) noexcept;
+        constexpr XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
+            : m_coroutine_ { std::move(o.m_coroutine_) }
+        { o.m_coroutine_ = {}; }
 
         constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && ) noexcept;
 
-        virtual ~XCoroTaskAbstract();
+        virtual ~XCoroTaskAbstract()
+        { if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); } }
 
-        [[nodiscard]] constexpr bool isReady() const;
+        [[nodiscard]] constexpr bool isReady() const
+        { return !m_coroutine_ || m_coroutine_.done(); }
 
         auto operator co_await() const noexcept;
 
-        constexpr void swap(XCoroTaskAbstract &) noexcept;
+        constexpr void swap(XCoroTaskAbstract & o) noexcept
+        { std::swap(m_coroutine_, o.m_coroutine_); }
 
         template<typename ThenCallback> requires (
             std::is_invocable_v<ThenCallback>
@@ -199,7 +231,11 @@ namespace detail {
 
     protected:
         constexpr XCoroTaskAbstract() noexcept = default;
-        explicit(false) constexpr XCoroTaskAbstract(coroutine_handle) noexcept;
+
+        explicit(false) constexpr XCoroTaskAbstract(coroutine_handle const h) noexcept
+            : m_coroutine_ { h }
+        { m_coroutine_.promise().refCoroutine(); }
+
         X_DISABLE_COPY(XCoroTaskAbstract)
     };
 

@@ -14,27 +14,6 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    template<typename T>
-    constexpr XCoroTask<T> TaskPromise<T>::get_return_object() noexcept
-    { return { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
-
-    template<typename T>
-    void TaskPromise<T>::unhandled_exception()
-    { m_value_ = std::current_exception(); }
-
-    template<typename T>
-    constexpr void TaskPromise<T>::return_value(T && value) noexcept
-    { m_value_.template emplace<T>(std::forward<T>(value)); }
-
-    template<typename T>
-    constexpr void TaskPromise<T>::return_value(T const & value) noexcept
-    { m_value_ = value; }
-
-    template<typename T>
-    template<typename U> requires std::constructible_from<T, U>
-    constexpr void TaskPromise<T>::return_value(U && value) noexcept
-    { m_value_ = T(std::forward<U>(value)); }
-
 #define HAS_EXCEPTION() do { \
     if (std::holds_alternative<std::exception_ptr>(m_value_)) { \
         assert(std::get<std::exception_ptr>(m_value_)); \
@@ -53,12 +32,6 @@ namespace detail {
 
     inline XCoroTask<> TaskPromise<void>::get_return_object() noexcept
     { return { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
-
-    inline void TaskPromise<void>::unhandled_exception()
-    { m_exception_ = std::current_exception(); }
-
-    inline void TaskPromise<void>::result() const
-    { if (m_exception_) { std::rethrow_exception(m_exception_); } }
 
 }
 

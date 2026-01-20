@@ -24,11 +24,6 @@ namespace detail {
     XCoroTaskAbstract<T,TaskImpl,PromiseType>::
 
     XCoroTaskAbstractClassTemplate
-    constexpr XCoroTaskAbstractClass XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
-        : m_coroutine_ { o.m_coroutine_ }
-    { o.m_coroutine_ = {}; }
-
-    XCoroTaskAbstractClassTemplate
     constexpr auto XCoroTaskAbstractClass operator=(XCoroTaskAbstract && o) noexcept
         -> XCoroTaskAbstract &
     {
@@ -40,18 +35,6 @@ namespace detail {
         XCoroTaskAbstract {std::move(o)}.swap(*this);
         return *this;
     }
-
-    XCoroTaskAbstractClassTemplate
-    constexpr void XCoroTaskAbstractClass swap(XCoroTaskAbstract & o) noexcept
-    { std::swap(m_coroutine_, o.m_coroutine_); }
-
-    XCoroTaskAbstractClassTemplate
-    XCoroTaskAbstractClass ~XCoroTaskAbstract()
-    { if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); } }
-
-    XCoroTaskAbstractClassTemplate
-    constexpr bool XCoroTaskAbstractClass isReady() const
-    { return !m_coroutine_ || m_coroutine_.done(); }
 
     XCoroTaskAbstractClassTemplate
     auto XCoroTaskAbstractClass operator co_await() const noexcept {
@@ -160,11 +143,6 @@ namespace detail {
             else { co_return invokeCb(thenCb , std::move(*value)); }
         }
     }
-
-    XCoroTaskAbstractClassTemplate
-    constexpr XCoroTaskAbstractClass XCoroTaskAbstract(std::coroutine_handle<PromiseType> const coroutine) noexcept
-        : m_coroutine_ { coroutine }
-    { m_coroutine_.promise().refCoroutine(); }
 
 #undef XCoroTaskAbstractClass
 #undef XCoroTaskAbstractClassTemplate
