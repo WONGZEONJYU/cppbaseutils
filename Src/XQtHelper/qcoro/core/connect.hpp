@@ -2,7 +2,9 @@
 #define XUTILS2_CONNECT_HPP
 
 #pragma once
+
 #include <XCoroutine/xcoroutinetask.hpp>
+#include <XQtHelper/qcoro/core/waitfor.hpp>
 #include <QPointer>
 
 XTD_NAMESPACE_BEGIN

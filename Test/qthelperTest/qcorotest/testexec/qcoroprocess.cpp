@@ -35,8 +35,8 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
         Q_UNUSED(context);
 #endif
 
-        QProcess process;
-        const bool ok = co_await XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
+        QProcess process{};
+        auto const ok{ co_await XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS)};
 
         QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -45,14 +45,17 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
     }
 
     static void testThenStartTriggers_coro(TestLoop & el) {
-        QProcess process;
-        bool called = false;
-        XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS).then([&](bool started) {
+        QProcess process {};
+        bool called {};
+
+        auto const f { [&](bool const started){
             called = true;
             el.quit();
             QVERIFY(started);
             QCOMPARE(process.state(), QProcess::Running);
-        });
+        } };
+
+        XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS).then(f);
         el.exec();
         QVERIFY(called);
 
@@ -66,11 +69,11 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
         Q_UNUSED(context);
 #endif
 
-        QProcess process;
+        QProcess process{};
         process.setProgram(DUMMY_EXEC);
         process.setArguments(DUMMY_ARGS);
 
-        const bool ok = co_await XUtils::qCoro(process).start();
+        auto const ok{ co_await XUtils::qCoro(process).start()};
 
         QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -79,17 +82,20 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
     }
 
     static void testThenStartNoArgsTriggers_coro(TestLoop &el) {
-        QProcess process;
+        QProcess process{};
         process.setProgram(DUMMY_EXEC);
         process.setArguments(DUMMY_ARGS);
 
-        bool called = false;
-        XUtils::qCoro(process).start().then([&](bool started) {
+        bool called {};
+
+        auto const f{ [&](bool const started) {
             called = true;
             el.quit();
             QVERIFY(started);
             QCOMPARE(process.state(), QProcess::Running);
-        });
+        } };
+
+        XUtils::qCoro(process).start().then(f);
         el.exec();
         QVERIFY(called);
 
@@ -100,8 +106,8 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
         using namespace std::chrono_literals;
         QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
 
-        QProcess process;
-        const bool ok = co_await XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
+        QProcess process{};
+        auto const ok{ co_await XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS) };
 
         QCORO_VERIFY(ok);
         QCORO_VERIFY(eventLoopResponsive);
@@ -110,7 +116,7 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
     }
 
     XUtils::XCoroTask<> testStartDoesntCoAwaitRunningProcess_coro(QCoro::TestContext ctx) {
-        QProcess process;
+        QProcess process{};
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma message "Workaround for GCC ICE!"
         // Workaround GCC bug https://bugzilla.redhat.com/1952671
@@ -118,7 +124,7 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
         process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 #else
-        const bool ok = co_await XUtils::qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
+        auto const ok { co_await XUtils::qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1)) };
         QCORO_VERIFY(ok);
 #endif
 
@@ -133,58 +139,61 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
     }
 
     XUtils::XCoroTask<> testFinishTriggers_coro(QCoro::TestContext) {
-        QProcess process;
+        QProcess process{};
         process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
-        const auto ok = co_await XUtils::qCoro(process).waitForFinished();
+        auto const ok{ co_await XUtils::qCoro(process).waitForFinished() };
 
         QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::NotRunning);
     }
 
     static void testThenFinishTriggers_coro(TestLoop &el) {
-        QProcess process;
+        QProcess process{};
         process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 
         QCOMPARE(process.state(), QProcess::Running);
 
-        bool called = false;
-        XUtils::qCoro(process).waitForFinished().then([&](bool finished) {
+        bool called {};
+
+        auto const f { [&](bool const finished) {
             called = true;
             el.quit();
             QVERIFY(finished);
 
             QCOMPARE(process.state(), QProcess::NotRunning);
             QCOMPARE(process.exitStatus(), QProcess::NormalExit);
-        });
+        } };
+
+        XUtils::qCoro(process).waitForFinished().then(f);
         el.exec();
         QVERIFY(called);
     }
 
     XUtils::XCoroTask<> testFinishDoesntCoAwaitFinishedProcess_coro(QCoro::TestContext ctx) {
-        QProcess process;
+        QProcess process {};
         process.start(DUMMY_EXEC, QStringList DUMMY_ARGS);
         process.waitForFinished();
 
         ctx.setShouldNotSuspend();
 
-        const auto ok = co_await XUtils::qCoro(process).waitForFinished();
+        auto const ok{ co_await XUtils::qCoro(process).waitForFinished() };
         QCORO_VERIFY(!ok);
     }
 
     XUtils::XCoroTask<> testFinishCoAwaitTimeout_coro(QCoro::TestContext) {
-        QProcess process;
+        QProcess process{};
 
         process.start(SLEEP_EXEC, SLEEP_ARGS(2));
         process.waitForStarted();
 
         QCORO_COMPARE(process.state(), QProcess::Running);
         using namespace std::chrono_literals;
-        const auto ok = co_await XUtils::qCoro(process).waitForFinished(1s);
+        auto const ok{ co_await XUtils::qCoro(process).waitForFinished(1s) };
 
         QCORO_VERIFY(!ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -192,19 +201,22 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
         process.waitForFinished();
     }
 
-    void testThenFinishCoAwaitTimeout_coro(TestLoop &el) {
-        QProcess process;
+    static void testThenFinishCoAwaitTimeout_coro(TestLoop &el) {
+        QProcess process{};
         process.start(SLEEP_EXEC, SLEEP_ARGS(2));
         process.waitForStarted();
 
         QCOMPARE(process.state(), QProcess::Running);
-        bool called = false;
-        using namespace std::chrono_literals;
-        XUtils::qCoro(process).waitForFinished(1s).then([&](bool finished) {
+        bool called {};
+
+        auto const f { [&](bool const finished){
             called = true;
             el.quit();
             QVERIFY(!finished);
-        });
+        } };
+
+        using namespace std::chrono_literals;
+        XUtils::qCoro(process).waitForFinished(1s).then(f);
         el.exec();
         QVERIFY(called);
 
