@@ -43,19 +43,21 @@ namespace detail {
 
         WaitContext context {};
 
-        auto const f { [&context]{
-            if (!context.m_coroutineFinished) { context.m_loop.exec(); }
-            if (context.m_exception) { std::rethrow_exception(context.m_exception); }
-        } };
+        auto const wait {
+            [&context]{
+                if (!context.m_coroutineFinished) { context.m_loop.exec(); }
+                if (context.m_exception) { std::rethrow_exception(context.m_exception); }
+            }
+        };
 
         if constexpr (std::is_void_v<T>) {
             runCoroutine(context,std::forward<Awaitable>(awaitable));
-            f();
+            wait();
             return;
         } else {
             std::optional<T> result {};
             runCoroutine(context,result,std::forward<Awaitable>(awaitable));
-            f();
+            wait();
             return *result;
         }
     }

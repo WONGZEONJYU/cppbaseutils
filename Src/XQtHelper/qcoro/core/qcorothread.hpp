@@ -15,8 +15,8 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail { class QCoroThread; }
 
-inline detail::QCoroThread qCoro(QThread * );
-inline detail::QCoroThread qCoro(QThread & );
+inline detail::QCoroThread qCoro(QThread * ) noexcept;
+inline detail::QCoroThread qCoro(QThread & ) noexcept;
 
 namespace detail {
 
@@ -28,7 +28,7 @@ namespace detail {
     public:
         inline static const auto eventType { static_cast<QEvent::Type>(QEvent::registerEventType()) };
 
-        explicit ContextHelper(std::coroutine_handle<> const awaiter, QThread * const thread)
+        explicit ContextHelper(std::coroutine_handle<> const awaiter, QThread * const thread) noexcept
             : m_thread_ {thread} , m_awaiter_ {awaiter} {   }
 
         bool event(QEvent * const e) override {
@@ -40,7 +40,7 @@ namespace detail {
     };
 
     struct ThreadContextPrivate {
-        explicit(false) constexpr ThreadContextPrivate(QThread * const thread)
+        explicit(false) constexpr ThreadContextPrivate(QThread * const thread) noexcept
             : m_thread { thread } {}
         QThread * m_thread {};
         std::unique_ptr<ContextHelper> m_context;
@@ -49,8 +49,8 @@ namespace detail {
     class QCoroThread {
         QPointer<QThread> m_thread_{};
     public:
-        explicit(false) QCoroThread(QThread * const thread)
-            : m_thread_ { thread } {}
+        explicit(false) QCoroThread(QThread * const thread) noexcept
+            : m_thread_ { thread } {    }
 
         using milliseconds = std::chrono::milliseconds;
 
@@ -108,10 +108,10 @@ public:
 inline ThreadContext moveToThread(QThread * const thread)
 { return {thread}; }
 
-inline detail::QCoroThread qCoro(QThread * const thread)
+inline detail::QCoroThread qCoro(QThread * const thread) noexcept
 { return { thread }; }
 
-inline detail::QCoroThread qCoro(QThread & thread)
+inline detail::QCoroThread qCoro(QThread & thread) noexcept
 { return { std::addressof(thread) }; }
 
 XTD_INLINE_NAMESPACE_END

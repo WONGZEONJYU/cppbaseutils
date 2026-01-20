@@ -18,8 +18,8 @@ namespace detail {
     { using return_type = XCoroLazyTask<T>::value_type; };
 
     template<typename T>
-    class LazyTaskPromise : public TaskPromise<T> {
-    public:
+    struct LazyTaskPromise : TaskPromise<T> {
+
         using TaskPromise<T>::TaskPromise;
 
         constexpr XCoroLazyTask<T> get_return_object() noexcept;
@@ -44,7 +44,7 @@ public:
 
     constexpr XCoroLazyTask() noexcept = default;
 
-    explicit(false) constexpr XCoroLazyTask(Base::coroutine_handle h)
+    explicit(false) constexpr XCoroLazyTask(Base::coroutine_handle const h)
         : Base { h } {}
 };
 

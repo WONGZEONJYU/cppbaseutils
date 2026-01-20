@@ -354,7 +354,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     }
 
     static void testReturnValueImplicitConversion(QCoro::TestContext) {
-        [[maybe_unused]] auto constexpr testcoro { []-> XUtils::XCoroTask<int> { co_return 42; } };
+        [[maybe_unused]] auto constexpr testcoro { []-> XUtils::XCoroTask<int> { co_return 42LL; } };
     }
 
     XUtils::XCoroTask<> testMultipleAwaiters_coro(QCoro::TestContext) {

@@ -59,9 +59,10 @@ namespace detail {
         class TaskAwaiter final : public TaskAwaiterAbstract<PromiseType> {
             using Base = TaskAwaiterAbstract<PromiseType>;
         public:
-            explicit(false) constexpr TaskAwaiter(Base::coroutine_handle const h) : Base {h} {}
+            explicit(false) constexpr TaskAwaiter(Base::coroutine_handle const h)
+                : Base {h} {    }
 
-            constexpr auto await_resume() const{
+            constexpr auto await_resume() const {
                 assert(this->m_awaitedCoroutine_);
                 if constexpr (std::is_void_v<T>) { this->m_awaitedCoroutine_.promise().result(); }
                 else { return std::move(this->m_awaitedCoroutine_.promise().result()); }
@@ -149,7 +150,6 @@ namespace detail {
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb); }
             else { co_return invokeCb(thenCb); }
-
         } else {
             std::optional<T> value {};
 

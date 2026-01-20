@@ -91,18 +91,18 @@ namespace detail {
         std::coroutine_handle<> m_producerCoroutine_ {};
 
     public:
-        static constexpr bool await_ready() noexcept
-        { return {}; }
+        static constexpr bool await_ready() noexcept { return {}; }
 
         [[nodiscard]] constexpr auto await_suspend(std::coroutine_handle<> const h) const noexcept
         { m_promise_->m_consumerCoroutine_ = h; return m_producerCoroutine_; }
 
     protected:
-        constexpr XIteratorAwaitableAbstract() = default;
+        constexpr XIteratorAwaitableAbstract() noexcept = default;
+
         explicit(false) constexpr XIteratorAwaitableAbstract( XAsyncGeneratorPromiseAbstract & promise
                                             ,std::coroutine_handle<> const h) noexcept
             : m_promise_ { std::addressof(promise) } , m_producerCoroutine_ { h }
-        { }
+        {   }
     };
 
     template<typename T>
@@ -162,7 +162,7 @@ class XAsyncGeneratorIterator final {
     public:
         explicit(false) constexpr IncrementIteratorAwaitable(XAsyncGeneratorIterator & iterator) noexcept
             : Base { iterator.m_coroutine_.promise(), iterator.m_coroutine_ },
-              m_iterator_ { std::addressof(iterator) } {}
+              m_iterator_ { std::addressof(iterator) } {    }
 
         XAsyncGeneratorIterator & await_resume() {
             if (m_promise_->finished()) {
@@ -222,11 +222,11 @@ public:
         : XAsyncGenerator { *promise } { }
 
     constexpr XAsyncGenerator(XAsyncGenerator && o) noexcept
-        : m_coroutine_ { o.m_coroutine_ }
+        : m_coroutine_ { std::move(o.m_coroutine_) }
     { o.m_coroutine_ = {}; }
 
     XAsyncGenerator& operator=(XAsyncGenerator && o) noexcept
-    { XAsyncGenerator{o}.swap(*this); return *this; }
+    { XAsyncGenerator{ std::move(o) }.swap(*this); return *this; }
 
     ~XAsyncGenerator()
     { if (m_coroutine_) { m_coroutine_.destroy(); } }
@@ -256,8 +256,7 @@ public:
         return m_coroutine_ ? BeginIteratorAwaitable { m_coroutine_ } : BeginIteratorAwaitable { };
     }
 
-    static constexpr auto end() noexcept
-    { return iterator {}; }
+    static constexpr iterator end() noexcept { return {}; }
 
     constexpr void swap(XAsyncGenerator & other) noexcept
     { std::swap(m_coroutine_, other.m_coroutine_); }
@@ -278,7 +277,6 @@ template<typename T>
 constexpr XAsyncGenerator<T> detail::XAsyncGeneratorPromise<T&&>::get_return_object() noexcept
 { return { this }; }
 #endif
-
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

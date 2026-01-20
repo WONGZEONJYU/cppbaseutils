@@ -110,14 +110,14 @@ private:
     coroutine_handle m_generatorCoroutine_ { };
 
 public:
-    explicit(false) constexpr XGenerator() = default;
+    constexpr XGenerator() = default;
 
     constexpr XGenerator(XGenerator && o) noexcept
         : m_generatorCoroutine_ { std::move(o.m_generatorCoroutine_) }
     { o.m_generatorCoroutine_ = {}; }
 
     constexpr XGenerator &operator=(XGenerator && o) noexcept
-    { XGenerator {std::move(o)}.swap(*this); return *this; }
+    { XGenerator {std::move(o) }.swap(*this); return *this; }
 
     ~XGenerator()
     { if (m_generatorCoroutine_)  { m_generatorCoroutine_.destroy(); } }
@@ -125,24 +125,24 @@ public:
     constexpr void swap(XGenerator & o) noexcept
     { std::swap(m_generatorCoroutine_,o.m_generatorCoroutine_); }
 
-    auto begin(){
+    iterator begin(){
         m_generatorCoroutine_.resume(); // generate first value
         if (m_generatorCoroutine_.promise().finished()) { // did not yield anything
             m_generatorCoroutine_.promise().rethrowIfException();
-            return iterator {};
+            return {};
         }
-        return iterator { m_generatorCoroutine_ } ;
+        return { m_generatorCoroutine_ } ;
     }
 
-    static constexpr auto end() noexcept
-    { return iterator {}; }
+    static constexpr iterator end() noexcept
+    { return {}; }
 
 private:
     friend XGenerator detail::XGeneratorPromise<T>::get_return_object();
 
     explicit(false) constexpr XGenerator(coroutine_handle const h)
         : m_generatorCoroutine_ { h }
-    {}
+    {   }
 
     X_DISABLE_COPY(XGenerator)
 };

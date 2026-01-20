@@ -16,7 +16,7 @@ namespace detail {
 
     template<typename T>
     constexpr XCoroTask<T> TaskPromise<T>::get_return_object() noexcept
-    { return XCoroTask<T> { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
+    { return { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
     template<typename T>
     void TaskPromise<T>::unhandled_exception()
@@ -33,7 +33,7 @@ namespace detail {
     template<typename T>
     template<typename U> requires std::constructible_from<T, U>
     constexpr void TaskPromise<T>::return_value(U && value) noexcept
-    { m_value_ = T { std::forward<U>(value) }; }
+    { m_value_ = T(std::forward<U>(value)); }
 
 #define HAS_EXCEPTION() do { \
     if (std::holds_alternative<std::exception_ptr>(m_value_)) { \
@@ -52,12 +52,10 @@ namespace detail {
 #undef HAS_EXCEPTION
 
     inline XCoroTask<> TaskPromise<void>::get_return_object() noexcept
-    { return XCoroTask { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
+    { return { std::coroutine_handle<TaskPromise>::from_promise(*this) }; }
 
     inline void TaskPromise<void>::unhandled_exception()
     { m_exception_ = std::current_exception(); }
-
-    constexpr void TaskPromise<void>::return_void() noexcept {}
 
     inline void TaskPromise<void>::result() const
     { if (m_exception_) { std::rethrow_exception(m_exception_); } }

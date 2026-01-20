@@ -29,14 +29,14 @@ namespace detail {
     class TaskFinalSuspend {
         coroutine_handle_vector m_awaitingCoroutines_ {};
     public:
-        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines);
+        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && );
 
-        static constexpr bool await_ready() noexcept;
+        static constexpr bool await_ready() noexcept { return {}; };
 
         template<typename Promise>
-        void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<Promise>) noexcept;
 
-        static constexpr void await_resume() noexcept;
+        static constexpr void await_resume() noexcept {};
     };
 
     class TaskPromiseAbstract : public AwaitTransformMixin {
@@ -45,7 +45,9 @@ namespace detail {
         XAtomicInteger<uint32_t> m_ref_ {1};
 
     public:
-        static constexpr std::suspend_never initial_suspend() noexcept;
+        static constexpr std::suspend_never initial_suspend() noexcept
+        { return {}; }
+
         constexpr TaskFinalSuspend final_suspend() noexcept;
 
         constexpr void addAwaitingCoroutine(std::coroutine_handle<>);
@@ -85,7 +87,7 @@ namespace detail {
     public:
         XCoroTask<> get_return_object() noexcept;
         void unhandled_exception();
-        static constexpr void return_void() noexcept;
+        static constexpr void return_void() noexcept {}
         void result() const;
         constexpr ~TaskPromise() override = default;
     };
@@ -98,10 +100,10 @@ namespace detail {
 
     public:
         [[nodiscard]] constexpr bool await_ready() const noexcept;
-        constexpr void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
+        constexpr void await_suspend(std::coroutine_handle<>) noexcept;
 
     protected:
-       explicit constexpr TaskAwaiterAbstract(coroutine_handle promise) noexcept;
+       explicit(false) constexpr TaskAwaiterAbstract(coroutine_handle) noexcept;
     };
 
     template<typename T>
@@ -140,63 +142,63 @@ namespace detail {
             std::is_invocable_v<ThenCallback>
             || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
-        constexpr auto then(ThenCallback && callback) &;
+        constexpr auto then(ThenCallback && ) &;
 
         template<typename ThenCallback> requires (
             std::is_invocable_v<ThenCallback>
             || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
-        constexpr auto then(ThenCallback && callback) &&;
+        constexpr auto then(ThenCallback && ) &&;
 
         template<typename ThenCallback, typename ErrorCallback>
         requires (
             ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
             && std::is_invocable_v<ErrorCallback, std::exception const &>
         )
-        auto then(ThenCallback && callback, ErrorCallback &&errorCallback) &;
+        auto then(ThenCallback && , ErrorCallback &&) &;
 
         template<typename ThenCallback, typename ErrorCallback>
         requires (
             ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
             && std::is_invocable_v<ErrorCallback, std::exception const &>
         )
-        auto then(ThenCallback && callback, ErrorCallback && errorCallback) &&;
+        auto then(ThenCallback && , ErrorCallback && ) &&;
 
     private:
         template<typename ThenCallback, typename ... Args>
-        static constexpr auto invokeCb(ThenCallback && callback, [[maybe_unused]] Args && ... args)
+        static constexpr auto invokeCb(ThenCallback && , [[maybe_unused]] Args && ... )
             noexcept(std::is_nothrow_invocable_v<ThenCallback,decltype(std::declval<Args>())...>);
 
         template<typename R, typename ErrorCallback , typename U = is_task_rt<R>>
-        static constexpr U handleException(ErrorCallback && errCb, const std::exception &exception);
+        static constexpr U handleException(ErrorCallback && , std::exception const &);
 
         template<typename ThenCallback, typename ...Arg>
-        struct cb_invoke_result: std::conditional_t<
+        struct cb_invoke_result : std::conditional_t<
             std::is_invocable_v<ThenCallback>,
                 std::invoke_result<ThenCallback>,
                 std::invoke_result<ThenCallback, Arg...>
             > {};
 
         template<typename ThenCallback>
-        struct cb_invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
+        struct cb_invoke_result<ThenCallback, void> : std::invoke_result<ThenCallback> {};
 
         template<typename ThenCallback, typename ...Arg>
         using cb_invoke_result_t = cb_invoke_result<ThenCallback, Arg...>::type;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static constexpr auto thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        static constexpr auto thenImpl(TaskT , ThenCallback && , ErrorCallback && )
             -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static constexpr auto thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        static constexpr auto thenImplRef(TaskT & , ThenCallback && , ErrorCallback && )
             -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static auto thenImplCore(TaskT && , ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        static auto thenImplCore(TaskT && , ThenCallback && , ErrorCallback && )
             -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
 
     protected:
-        constexpr XCoroTaskAbstract() = default;
+        constexpr XCoroTaskAbstract() noexcept = default;
         explicit(false) constexpr XCoroTaskAbstract(coroutine_handle) noexcept;
         X_DISABLE_COPY(XCoroTaskAbstract)
     };
@@ -209,21 +211,21 @@ namespace detail {
     struct awaitable_return_type
     { using type = std::decay_t< decltype(std::declval<T>().await_resume()) >; };
 
+    template<Awaitable Awaitable>
+    using awaitable_return_type_t = awaitable_return_type<Awaitable>::type;
+
     template<has_member_operator_coawait T>
     struct awaitable_return_type<T>
-    { using type = std::decay_t< typename awaitable_return_type< decltype(std::declval<T>().operator co_await()) >::type >; };
+    { using type = std::decay_t< awaitable_return_type_t< decltype(std::declval<T>().operator co_await()) > >; };
 
     template<has_nonmember_operator_coawait T>
     struct awaitable_return_type<T>
-    { using type = std::decay_t< typename awaitable_return_type< decltype(operator co_await(std::declval<T>())) >::type >; };
-
-    template<Awaitable Awaitable>
-    using awaitable_return_type_t = awaitable_return_type<Awaitable>::type;
+    { using type = std::decay_t< awaitable_return_type_t< decltype(operator co_await(std::declval<T>())) > >; };
 
     template <typename Awaitable> requires TaskConvertible<Awaitable>
     using convertible_awaitable_return_type_t = awaitable_return_type_t< decltype(std::declval<TaskPromiseAbstract>().await_transform(std::declval<Awaitable>())) >;
 
-}/* namespace detail */
+}
 
 template<typename T>
 class XCoroTask final :
@@ -233,15 +235,12 @@ class XCoroTask final :
     using coroutine_handle = Base::coroutine_handle;
 
 public:
-    //! Promise type of the coroutine. This is required by the C++ standard.
-    using promise_type = detail::TaskPromise<T>;
-    //! The type of the coroutine return value.
     using value_type = T;
+    using promise_type = detail::TaskPromise<value_type>;
 
     constexpr XCoroTask() noexcept = default;
-
-    explicit(false) constexpr XCoroTask(std::coroutine_handle<detail::TaskPromise<T>> coroutine)
-        : Base(coroutine) {}
+    explicit(false) constexpr XCoroTask(coroutine_handle const coroutine)
+        : Base { coroutine } {    }
 };
 
 XTD_INLINE_NAMESPACE_END

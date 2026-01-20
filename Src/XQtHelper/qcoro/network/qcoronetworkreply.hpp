@@ -17,7 +17,7 @@ namespace detail {
 
     public:
         explicit(false) ReplyWaitSignalHelper(const QNetworkReply * const reply, signalFunc<> const signal)
-            : WaitSignalHelper{reply, signal}
+            : WaitSignalHelper {reply, signal}
             , m_error_{ connect_(reply,&QNetworkReply::errorOccurred,this, [this]{ emitReady(false); },Qt::QueuedConnection) }
             , m_finished_{ connect_(reply,&QNetworkReply::finished,this, [this]{ emitReady(true); },Qt::QueuedConnection) }
         {   }
@@ -75,7 +75,8 @@ namespace detail {
             void await_suspend(std::coroutine_handle<> const h) const {
                 if (!m_d_->m_reply) { h.resume(); return; }
                 QObject::connect(m_d_->m_reply.data(), &QNetworkReply::finished, std::addressof(m_d_->m_dummy),
-                 [h]{ h.resume(); },Qt::QueuedConnection);
+                    [h]{ h.resume(); },Qt::QueuedConnection
+                );
             }
 
             [[nodiscard]] QNetworkReply * await_resume() const noexcept
@@ -84,6 +85,7 @@ namespace detail {
 
     public:
         using QCoroIODevice::QCoroIODevice;
+
         XCoroTask<bool> waitForFinished(milliseconds const timeout =milliseconds{-1}) const {
             auto const reply { qobject_cast<QNetworkReply *>(m_device_.data()) };
             if (reply->isFinished()) { co_return true; }
@@ -95,7 +97,7 @@ namespace detail {
         XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) const override {
             auto const reply { qobject_cast<QNetworkReply *>(m_device_.data()) };
             if (reply->isFinished()) { co_return true; }
-            ReplyWaitSignalHelper helper{ reply, &QNetworkReply::readyRead };
+            ReplyWaitSignalHelper helper { reply, &QNetworkReply::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&ReplyWaitSignalHelper::ready), timeout);
         }
 
@@ -113,10 +115,10 @@ namespace detail {
 }
 
 inline auto qCoro(QNetworkReply & s) noexcept
-{ return detail::QCoroNetworkReply{std::addressof(s)}; }
+{ return detail::QCoroNetworkReply { std::addressof(s) }; }
 
 inline auto qCoro(QNetworkReply * const s) noexcept
-{ return detail::QCoroNetworkReply{s}; }
+{ return detail::QCoroNetworkReply { s }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

@@ -17,7 +17,7 @@ namespace detail {
 
     template <typename T>
     constexpr XCoroLazyTask<T> LazyTaskPromise<T>::get_return_object() noexcept
-    { return XCoroLazyTask<T> { std::coroutine_handle<LazyTaskPromise>::from_promise(*this) }; }
+    { return { std::coroutine_handle<LazyTaskPromise>::from_promise(*this) }; }
 
     template <typename T>
     constexpr std::suspend_always LazyTaskPromise<T>::initial_suspend() noexcept
@@ -40,16 +40,16 @@ auto XCoroLazyTask<T>::operator co_await() const noexcept{
         explicit(false) constexpr TaskAwaiter(Base::coroutine_handle const h) noexcept
             : Base { h } {  }
 
-        constexpr auto await_suspend(std::coroutine_handle<> const awaitingCoroutine) noexcept{
-            Base::await_suspend(awaitingCoroutine);
+        constexpr auto await_suspend(std::coroutine_handle<> const h) noexcept{
+            Base::await_suspend(h);
             // Return handle to the lazy task, so that it gets automatically resumed.
             return this->m_awaitedCoroutine_;
         }
 
         constexpr auto await_resume(){
             assert(this->m_awaitedCoroutine_);
-            if constexpr (std::is_void_v<T>) { this->mAwaitedCoroutine.promise().result(); }
-            else { return this->m_awaitedCoroutine_.promise().result(); }
+            if constexpr (std::is_void_v<T>) { this->m_awaitedCoroutine_.promise().result(); }
+            else { return std::move(this->m_awaitedCoroutine_.promise().result()); }
         }
     };
 

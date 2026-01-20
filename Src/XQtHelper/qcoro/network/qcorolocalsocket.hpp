@@ -67,7 +67,7 @@ namespace detail {
 
         explicit(false) QCoroLocalSocket(QLocalSocket * const socket) noexcept
             : QCoroIODevice { socket }
-        {}
+        {   }
 
         XCoroTask<bool> waitForConnected(int const timeout_msecs = 30'000) const
         { return waitForConnected(milliseconds{timeout_msecs}); }
@@ -76,7 +76,7 @@ namespace detail {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::ConnectedState == socket->state()) { co_return true; }
             SocketConnectedHelper helper(socket, &QLocalSocket::connected);
-            auto const result { co_await qCoro(&helper, &SocketConnectedHelper::ready, timeout) };
+            auto const result { co_await qCoro(std::addressof(helper), &SocketConnectedHelper::ready, timeout) };
             co_return result.value_or(false);
         }
 

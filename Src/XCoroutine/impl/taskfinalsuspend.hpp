@@ -15,9 +15,6 @@ namespace detail {
         : m_awaitingCoroutines_ {std::move(awaitingCoroutines ) }
     {}
 
-    constexpr bool TaskFinalSuspend::await_ready() noexcept
-    { return {}; }
-
     template<typename Promise>
     void TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> const finishedCoroutine) noexcept {
         auto && promise{ finishedCoroutine.promise() };
@@ -26,9 +23,6 @@ namespace detail {
         m_awaitingCoroutines_.clear();
         promise.derefCoroutine();
     }
-
-    constexpr void TaskFinalSuspend::await_resume() noexcept {}
-
 }
 
 XTD_INLINE_NAMESPACE_END

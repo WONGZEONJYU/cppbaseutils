@@ -7,7 +7,6 @@
 #include <XGlobal/xversion.hpp>
 #include <XCoroutine/xcoroutinetask.hpp>
 #include <memory>
-
 #include <QFuture>
 #include <QFutureWatcher>
 
@@ -44,7 +43,7 @@ namespace detail {
 
         protected:
             explicit(false) constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const & future)
-                : m_future_ { future }  {}
+                : m_future_ { future }  {   }
         };
 
         struct WaitForFinishedOperationType : WaitForFinishedOperationAbstract<T> {
@@ -56,7 +55,7 @@ namespace detail {
         struct WaitForFinishedOperationVoid : WaitForFinishedOperationAbstract<void> {
             explicit(false) constexpr WaitForFinishedOperationVoid(QFuture<void> const & future)
                 : WaitForFinishedOperationAbstract<void> { future } {  }
-            void await_resume() noexcept(false) {
+            void await_resume() {
                 // This won't block, since we know for sure that the QFuture is already finished.
                 // The weird side-effect of this function is that it will re-throw the stored
                 // exception.
@@ -74,11 +73,14 @@ namespace detail {
 #endif
 
         using WaitForFinishedOperation = std::conditional_t<
-            std::is_void_v<T>, WaitForFinishedOperationVoid, WaitForFinishedOperationType>;
+            std::is_void_v<T>
+            , WaitForFinishedOperationVoid
+            , WaitForFinishedOperationType
+        >;
 
     public:
         explicit(false) constexpr QCoroFuture(QFuture<T> const & future)
-            : m_future_ {future} { }
+            : m_future_ {future} {  }
 
         XCoroTask<T> waitForFinished() const
         { co_return co_await WaitForFinishedOperation { m_future_ }; }

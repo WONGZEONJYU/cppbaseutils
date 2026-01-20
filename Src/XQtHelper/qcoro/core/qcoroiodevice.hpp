@@ -37,7 +37,8 @@ namespace detail {
 
         protected:
             explicit(false) OperationAbstract(QIODevice * const device)
-                : m_device_ { device } {  }
+                : m_device_ { device }
+            {    }
 
             virtual void finish(std::coroutine_handle<> const h) {
                 QObject::disconnect(m_conn_);
@@ -56,7 +57,8 @@ namespace detail {
 
         public:
             explicit(false) ReadOperation(QIODevice * const device, callback_t && resultCb)
-                : Base { device } , m_resultCb_ { std::move(resultCb) } { }
+                : Base { device } , m_resultCb_ { std::move(resultCb) }
+            {   }
 
             Q_DISABLE_COPY(ReadOperation);
             X_DEFAULT_MOVE(ReadOperation)
@@ -66,7 +68,7 @@ namespace detail {
 
             virtual void await_suspend(std::coroutine_handle<> const h) noexcept {
                 Q_ASSERT(m_device_);
-                auto const slotF { [this, h]() noexcept{ finish(h); } };
+                auto const slotF { [this, h] noexcept{ finish(h); } };
                 m_conn_ = QObject::connect(m_device_, &QIODevice::readyRead,slotF);
                 m_closeConn_ = QObject::connect(m_device_, &QIODevice::aboutToClose,slotF);
             }
@@ -76,15 +78,18 @@ namespace detail {
 
         struct ReadAllOperation final : ReadOperation {
             explicit(false) ReadAllOperation(QIODevice * const device)
-                : ReadOperation { device,[](QIODevice * const d){ return d->readAll(); } } { }
+                : ReadOperation { device,[](QIODevice * const d){ return d->readAll(); } }
+            {   }
 
             explicit(false) ReadAllOperation(QIODevice & device)
-                : ReadAllOperation { std::addressof(device) } { }
+                : ReadAllOperation { std::addressof(device) }
+            {   }
         };
 
     public:
-        explicit(false) QCoroIODevice(QIODevice * const device)
-            : m_device_ { device } {}
+        explicit(false) QCoroIODevice(QIODevice * const device) noexcept
+            : m_device_ { device }
+        {   }
 
         virtual ~QCoroIODevice() = default;
 
@@ -139,7 +144,7 @@ namespace detail {
         }
 
         XCoroTask<std::optional<qint64>> waitForBytesWritten(int const timeout_msecs) const
-        { return waitForBytesWritten(milliseconds{timeout_msecs}); }
+        { return waitForBytesWritten(milliseconds{ timeout_msecs }); }
 
     protected:
         virtual XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) const {

@@ -24,10 +24,12 @@ namespace detail {
             QPointer<QTimer> m_timer_{};
         public:
             explicit(false) WaitForTimeoutOperation(QTimer * const timer) noexcept
-                : m_timer_ {timer} { }
+                : m_timer_ {timer}
+            {    }
 
             explicit(false) WaitForTimeoutOperation(QTimer & timer) noexcept
-                : m_timer_ { std::addressof(timer) } {  }
+                : m_timer_ { std::addressof(timer) }
+            {   }
 
             [[nodiscard]] bool await_ready() const noexcept
             { return !m_timer_ || !m_timer_->isActive(); }
@@ -44,7 +46,8 @@ namespace detail {
 
     public:
         explicit(false) QCoroTimer(QTimer * const timer) noexcept
-            : m_timer_ {timer} { }
+            : m_timer_ {timer}
+        {   }
 
         [[nodiscard]] XCoroTask<> waitForTimeout() const
         { if (m_timer_->isActive()) { co_await qCoro(m_timer_.data(), &QTimer::timeout); } }

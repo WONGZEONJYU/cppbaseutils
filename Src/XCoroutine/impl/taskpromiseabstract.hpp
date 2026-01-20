@@ -12,11 +12,8 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    constexpr std::suspend_never TaskPromiseAbstract::initial_suspend() noexcept
-    { return {}; }
-
     constexpr TaskFinalSuspend TaskPromiseAbstract::final_suspend() noexcept
-    { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
+    { return {std::move(m_awaitingCoroutines_) }; }
 
     constexpr void TaskPromiseAbstract::addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
     { m_awaitingCoroutines_.push_back(awaitingCoroutine); }
@@ -35,6 +32,7 @@ namespace detail {
         auto const handle { std::coroutine_handle<TaskPromiseAbstract>::from_promise(*this) };
         handle.destroy();
     }
+
 }
 
 XTD_INLINE_NAMESPACE_END

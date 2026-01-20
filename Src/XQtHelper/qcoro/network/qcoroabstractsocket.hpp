@@ -45,7 +45,9 @@ namespace detail {
 
     struct QCoroAbstractSocket final : QCoroIODevice {
 
-        explicit(false) QCoroAbstractSocket(QAbstractSocket * const socket) : QCoroIODevice {socket} { }
+        explicit(false) QCoroAbstractSocket(QAbstractSocket * const socket) noexcept
+            : QCoroIODevice { socket }
+        {   }
 
         XCoroTask<bool> waitForConnected(int const timeout_msecs = 30'000) const
         { return waitForConnected(milliseconds{ timeout_msecs }); }
