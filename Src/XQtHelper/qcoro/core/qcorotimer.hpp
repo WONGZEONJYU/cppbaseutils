@@ -19,6 +19,8 @@ namespace detail {
         friend struct awaiter_type<QTimer>;
         friend struct awaiter_type<QTimer*>;
 
+        QPointer<QTimer> m_timer_{};
+
         class WaitForTimeoutOperation {
             QMetaObject::Connection m_conn_{};
             QPointer<QTimer> m_timer_{};
@@ -41,8 +43,6 @@ namespace detail {
 
             static constexpr void await_resume() noexcept {}
         };
-
-        QPointer<QTimer> m_timer_{};
 
     public:
         explicit(false) QCoroTimer(QTimer * const timer) noexcept
