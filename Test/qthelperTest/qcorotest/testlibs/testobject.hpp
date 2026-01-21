@@ -61,8 +61,7 @@ protected:
             QTimer::singleShot(5s,std::addressof(el),[&el]{ el.exit(1); });
         }
 
-        (static_cast<TestClass *>(this)->*testFunction)(el);
-        //std::invoke(testFunction,static_cast<TestClass *>(this),el);
+        std::invoke(testFunction,static_cast<TestClass *>(this),el);
 
         auto testFinished{ el.property("testFinished").toBool() };
         auto const shouldNotSuspend { el.property("shouldNotSuspend").toBool() };

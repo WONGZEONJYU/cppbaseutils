@@ -21,14 +21,11 @@ XUtils::XCoroTask<> timer(std::chrono::milliseconds const timeout = 10ms) {
 }
 
 template<typename T>
-XUtils::XCoroTask<T> timerWithValue(T value, std::chrono::milliseconds const timeout = 10ms) {
-    co_await timer(timeout);
-    co_return value;
-}
+XUtils::XCoroTask<T> timerWithValue(T value, std::chrono::milliseconds const timeout = 10ms)
+{ co_await timer(timeout); co_return value; }
 
-auto thenScopeTestFunc(QEventLoop *el){
-    return timer().then([el] {el->quit();});
-}
+XUtils::XCoroTask<> thenScopeTestFunc(QEventLoop *el)
+{ return timer().then([el] {el->quit();}); }
 
 template<typename T>
 XUtils::XCoroTask<T> thenScopeTestFuncWithValue(T && value)
@@ -103,7 +100,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
 
     template<typename Coro>
     void ignoreCoroutineResult(QEventLoop & el, Coro && coro) {
-        QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });
+        QTimer::singleShot(5s, &el, [&el] { el.exit(1); });
 
         std::forward<Coro>(coro)();
         const int timeout = el.exec();
@@ -269,8 +266,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     XUtils::XCoroTask<> testThenReturnValueSync_coro(QCoro::TestContext context) {
         context.setShouldNotSuspend();
         auto task {
-            []-> XUtils::XCoroTask<int> {co_return 42;
-            }().then([](int const param){ return param * 2; })
+            []-> XUtils::XCoroTask<int> {co_return 42;}().then([](int const param){ return param * 2; })
         };
         auto const result{ co_await task };
         QCORO_COMPARE(result, 84);
@@ -427,7 +423,7 @@ private Q_SLOTS:
     addThenTest(ImplicitArgumentConversion)
     addTest(MultipleAwaiters)
     addTest(MultipleAwaitersSync)
-
+#if 1
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
     {
@@ -669,6 +665,7 @@ private Q_SLOTS:
 
         QVERIFY(!called);
     }
+#endif
 
 };
 
