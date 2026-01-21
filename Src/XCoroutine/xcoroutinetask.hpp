@@ -155,7 +155,7 @@ namespace detail {
 
     public:
         constexpr XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
-            : m_coroutine_ { std::move(o.m_coroutine_) }
+            : m_coroutine_ { o.m_coroutine_ }
         { o.m_coroutine_ = {}; }
 
         constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && ) noexcept;
@@ -189,14 +189,14 @@ namespace detail {
             ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
             && std::is_invocable_v<ErrorCallback, std::exception const &>
         )
-        auto then(ThenCallback && callback, ErrorCallback && errorCallback) &
+        constexpr auto then(ThenCallback && callback, ErrorCallback && errorCallback) &
         { return thenImplRef(*this, std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback)); }
 
         template<typename ThenCallback, typename ErrorCallback> requires (
             ( std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>) )
             && std::is_invocable_v<ErrorCallback, std::exception const &>
         )
-        auto then(ThenCallback && callback, ErrorCallback && errorCallback) &&
+        constexpr auto then(ThenCallback && callback, ErrorCallback && errorCallback) &&
         { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback)); }
 
     private:
@@ -222,17 +222,11 @@ namespace detail {
         using cb_invoke_result_t = cb_invoke_result<ThenCallback, Arg...>::type;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static constexpr auto thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
-            -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >
-        { return thenImplCore(std::move(task), std::forward<ThenCallback>(thenCallback), std::forward<ErrorCallback>(errorCallback)); }
+        static auto thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+            -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static constexpr auto thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
-            -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
-        { return thenImplCore(task, std::forward<ThenCallback>(thenCallback), std::forward<ErrorCallback>(errorCallback)); }
-
-        template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static auto thenImplCore(TaskT && , ThenCallback && , ErrorCallback && )
+        static auto thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
             -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
 
     protected:

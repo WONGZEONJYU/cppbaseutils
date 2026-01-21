@@ -27,13 +27,15 @@ namespace detail {
     constexpr auto XCoroTaskAbstractClass operator=(XCoroTaskAbstract && o) noexcept
         -> XCoroTaskAbstract &
     {
+#if 0
         // if (this == std::addressof(o)) { return *this; }
         // if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); }
         // m_coroutine_ = o.m_coroutine_;
         // o.m_coroutine_ = {};
-
-        XCoroTaskAbstract {std::move(o)}.swap(*this);
+#else
+        XCoroTaskAbstract { std::move(o) }.swap(*this);
         return *this;
+#endif
     }
 
     XCoroTaskAbstractClassTemplate
@@ -69,8 +71,34 @@ namespace detail {
     }
 
     XCoroTaskAbstractClassTemplate
+    template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R >
+    auto XCoroTaskAbstractClass thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >
+    {
+        auto thenCb { std::forward<ThenCallback>(thenCallback) };
+        auto errCb { std::forward<ErrorCallback>(errorCallback) };
+        auto && taskImpl { static_cast< TaskImpl<T> const & >(task) };
+
+        if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
+            try { co_await taskImpl; }
+            catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+
+            if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb); }
+            else { co_return invokeCb(thenCb); }
+        } else {
+            std::optional<T> value {};
+
+            try { value.emplace(std::move(co_await taskImpl)); }
+            catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+
+            if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb , std::move(*value)); }
+            else { co_return invokeCb(thenCb , std::move(*value)); }
+        }
+    }
+
+    XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
-    auto XCoroTaskAbstractClass thenImplCore(TaskT && task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+    auto XCoroTaskAbstractClass thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
     {
         auto thenCb { std::forward<ThenCallback>(thenCallback) };
