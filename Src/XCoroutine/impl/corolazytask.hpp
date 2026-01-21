@@ -21,14 +21,16 @@ constexpr XCoroLazyTask<T> detail::LazyTaskPromise<T>::get_return_object() noexc
 
 template<typename T>
 XCoroLazyTask<T>::~XCoroLazyTask() {
+#ifndef NDEBUG
     if (this->m_coroutine_ && !this->m_coroutine_.done())
     { std::cerr << "XCoroLazyTask destroyed before it was awaited!"; }
+#endif
 }
 
 template<typename T>
 auto XCoroLazyTask<T>::operator co_await() const noexcept{
 
-    struct TaskAwaiter final: detail::TaskAwaiterAbstract<promise_type> {
+    struct TaskAwaiter : detail::TaskAwaiterAbstract<promise_type> {
         using Base = detail::TaskAwaiterAbstract<promise_type>;
 
         explicit(false) constexpr TaskAwaiter(Base::coroutine_handle const h) noexcept
