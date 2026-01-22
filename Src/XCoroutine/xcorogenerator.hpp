@@ -24,9 +24,9 @@ namespace detail {
         std::exception_ptr m_exception_ { };
 
     public:
-        XGenerator<T> get_return_object();
+        constexpr XGenerator<T> get_return_object() { return { this }; }
 
-        static constexpr auto initial_suspend()noexcept
+        static constexpr auto initial_suspend() noexcept
         { return std::suspend_always {}; }
 
         constexpr auto final_suspend() noexcept
@@ -56,7 +56,7 @@ namespace detail {
         { if (m_exception_) { std::rethrow_exception(m_exception_); } }
 
         template<typename U>
-        constexpr std::suspend_never await_transform(U &&) = delete;
+        constexpr auto await_transform(U &&) = delete;
     };
 
 }
@@ -86,23 +86,27 @@ public:
     constexpr reference operator *() const noexcept
     { return m_GeneratorCoroutine_.promise().value(); }
 
+    constexpr pointer operator->() const noexcept
+    { return std::addressof(**this); }
+
     friend constexpr bool operator==(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept = default;
     friend constexpr std::strong_ordering operator<=>(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept
     { return lhs.m_GeneratorCoroutine_ <=> rhs.m_GeneratorCoroutine_; }
 
 private:
-    template<typename> friend struct XGenerator;
+    template<typename > friend struct XGenerator;
 
-    explicit(false) constexpr XGeneratorIterator(std::nullptr_t) noexcept {}
+    constexpr XGeneratorIterator() noexcept = default;
 
     explicit(false) constexpr XGeneratorIterator(std::coroutine_handle<promise_type> const h)
         : m_GeneratorCoroutine_ { h }
-    { }
+    {   }
 };
 
 template<typename T>
 struct XGenerator {
     using promise_type = detail::XGeneratorPromise<T>;
+    friend promise_type;
     using iterator = XGeneratorIterator<T>;
 
 private:
@@ -110,7 +114,7 @@ private:
     coroutine_handle m_generatorCoroutine_ { };
 
 public:
-    constexpr XGenerator() = default;
+    constexpr XGenerator() noexcept = default;
 
     constexpr XGenerator(XGenerator && o) noexcept
         : m_generatorCoroutine_ { std::move(o.m_generatorCoroutine_) }
@@ -125,7 +129,7 @@ public:
     constexpr void swap(XGenerator & o) noexcept
     { std::swap(m_generatorCoroutine_,o.m_generatorCoroutine_); }
 
-    iterator begin(){
+    iterator begin() const {
         m_generatorCoroutine_.resume(); // generate first value
         if (m_generatorCoroutine_.promise().finished()) { // did not yield anything
             m_generatorCoroutine_.promise().rethrowIfException();
@@ -138,18 +142,16 @@ public:
     { return {}; }
 
 private:
-    friend XGenerator detail::XGeneratorPromise<T>::get_return_object();
+    explicit(false) constexpr XGenerator(promise_type * const promise)
+        : m_generatorCoroutine_ { coroutine_handle::from_promise(*promise) }
+    {   }
 
-    explicit(false) constexpr XGenerator(coroutine_handle const h)
-        : m_generatorCoroutine_ { h }
+    explicit(false) constexpr XGenerator(promise_type & promise)
+        : m_generatorCoroutine_ { coroutine_handle::from_promise(promise) }
     {   }
 
     X_DISABLE_COPY(XGenerator)
 };
-
-template<typename T>
-XGenerator<T> detail::XGeneratorPromise<T>::get_return_object()
-{ return { typename XGenerator<T>::coroutine_handle::from_promise(*this) }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

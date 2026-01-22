@@ -99,6 +99,10 @@ namespace detail {
 
 }
 
+template<typename T>
+auto qCoro(QFuture<T> const & f) noexcept
+{ return detail::QCoroFuture<T>{f}; }
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
