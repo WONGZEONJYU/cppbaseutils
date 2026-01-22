@@ -106,10 +106,10 @@ private:
 template<typename T>
 struct XGenerator {
     using promise_type = detail::XGeneratorPromise<T>;
-    friend promise_type;
     using iterator = XGeneratorIterator<T>;
 
 private:
+    friend promise_type;
     using coroutine_handle = std::coroutine_handle<promise_type>;
     coroutine_handle m_generatorCoroutine_ { };
 
@@ -123,13 +123,13 @@ public:
     constexpr XGenerator &operator=(XGenerator && o) noexcept
     { XGenerator {std::move(o) }.swap(*this); return *this; }
 
-    ~XGenerator()
+    constexpr ~XGenerator()
     { if (m_generatorCoroutine_)  { m_generatorCoroutine_.destroy(); } }
 
     constexpr void swap(XGenerator & o) noexcept
     { std::swap(m_generatorCoroutine_,o.m_generatorCoroutine_); }
 
-    iterator begin() const {
+    constexpr iterator begin() const {
         m_generatorCoroutine_.resume(); // generate first value
         if (m_generatorCoroutine_.promise().finished()) { // did not yield anything
             m_generatorCoroutine_.promise().rethrowIfException();
@@ -142,12 +142,12 @@ public:
     { return {}; }
 
 private:
-    explicit(false) constexpr XGenerator(promise_type * const promise)
-        : m_generatorCoroutine_ { coroutine_handle::from_promise(*promise) }
+    explicit(false) constexpr XGenerator(promise_type & promise) noexcept
+        : m_generatorCoroutine_ { coroutine_handle::from_promise(promise) }
     {   }
 
-    explicit(false) constexpr XGenerator(promise_type & promise)
-        : m_generatorCoroutine_ { coroutine_handle::from_promise(promise) }
+    explicit(false) constexpr XGenerator(promise_type * const promise) noexcept
+        : XGenerator { *promise }
     {   }
 
     X_DISABLE_COPY(XGenerator)

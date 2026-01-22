@@ -225,13 +225,13 @@ public:
         : m_coroutine_ { std::move(o.m_coroutine_) }
     { o.m_coroutine_ = {}; }
 
-    XAsyncGenerator& operator=(XAsyncGenerator && o) noexcept
+    constexpr XAsyncGenerator& operator=(XAsyncGenerator && o) noexcept
     { XAsyncGenerator{ std::move(o) }.swap(*this); return *this; }
 
-    ~XAsyncGenerator()
+    constexpr ~XAsyncGenerator()
     { if (m_coroutine_) { m_coroutine_.destroy(); } }
 
-    constexpr auto begin() noexcept {
+    constexpr auto begin() const noexcept {
 
         class BeginIteratorAwaitable final
             : public detail::XIteratorAwaitableAbstract

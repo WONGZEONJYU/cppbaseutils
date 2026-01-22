@@ -116,9 +116,9 @@ qcoro_add_test(qcorolazytask)
 qcoro_add_test(testconstraints)
 qcoro_add_test(qfuture LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Concurrent)
 qcoro_add_test(qcorogenerator)
-#qcoro_add_test(qcoroasyncgenerator LINK_LIBRARIES QCoro${QT_VERSION_MAJOR}Network Qt${QT_VERSION_MAJOR}::Network)
-#qcoro_add_test(qcorowaitfor)
-#
+qcoro_add_test(qcoroasyncgenerator LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)
+qcoro_add_test(qcorowaitfor)
+
 #if (QCORO_WITH_QTDBUS)
 #    qcoro_add_dbus_test(qdbuspendingcall)
 #    qcoro_add_dbus_test(qdbuspendingreply)
@@ -133,18 +133,16 @@ qcoro_add_test(qcorogenerator)
 #    # Tests for test utilities
 #    qcoro_add_network_test(testhttpserver)
 #endif()
-#
+
 #if (QCORO_WITH_QTWEBSOCKETS)
 #    qcoro_add_websockets_test(qcorowebsocket)
 #    qcoro_add_websockets_test(qcorowebsocketserver)
 #endif()
-#
+
 #if (QCORO_WITH_QML)
 #    qcoro_add_qml_test(qcoroqmltask)
 #endif()
-#
+
 #if (QCORO_WITH_QTQUICK)
 #    qcoro_add_quick_test(qcoroimageprovider)
 #endif()
-
-
