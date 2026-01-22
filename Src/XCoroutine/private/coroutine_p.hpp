@@ -11,10 +11,6 @@
 #include <coroutine>
 #include <XGlobal/xversion.hpp>
 
-#ifndef Q_MOC_RUN
-
-//#include <XCoroutine/private/concepts_p.hpp>
-
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
@@ -54,5 +50,4 @@ concept Awaitable = detail::has_member_operator_coawait<T>
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
-#endif
 #endif

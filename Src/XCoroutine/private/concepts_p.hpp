@@ -7,8 +7,6 @@
 
 #pragma once
 
-#ifndef Q_MOC_RUN
-
 #include <concepts>
 #include <XGlobal/xversion.hpp>
 
@@ -27,5 +25,4 @@ namespace concepts {
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
-#endif
 #endif

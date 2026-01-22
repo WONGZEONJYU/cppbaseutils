@@ -44,12 +44,13 @@ function(qcoro_add_network_test _name)
     target_link_libraries(
             test-${_name}
             PRIVATE
-            QCoro${QT_VERSION_MAJOR}Network
+#            QCoro${QT_VERSION_MAJOR}Network
             Qt${QT_VERSION_MAJOR}::Network
     )
     if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB)
-        target_link_libraries(test-${_name} PRIVATE atomic)
+        #target_link_libraries(test-${_name} PRIVATE atomic)
     endif()
+    qt_helper_load(test-${_name})
 endfunction()
 
 function(qcoro_add_dbus_test _name)
@@ -58,9 +59,10 @@ function(qcoro_add_dbus_test _name)
     target_link_libraries(
             test-${_name}
             PRIVATE
-            QCoro${QT_VERSION_MAJOR}DBus
+            #QCoro${QT_VERSION_MAJOR}DBus
             qcoro_test_dbus
     )
+    qt_helper_load(test-${_name})
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
     if (APPLE)
         # On MacOS dbus-launch doesn't work, so we rely on the session dbus running
@@ -77,10 +79,11 @@ function(qcoro_add_websockets_test _name)
     target_link_libraries(
             test-${_name}
             PRIVATE
-            QCoro${QT_VERSION_MAJOR}WebSockets
+            #QCoro${QT_VERSION_MAJOR}WebSockets
             Qt${QT_VERSION_MAJOR}::WebSockets
             qcoro_test_ws
     )
+    qt_helper_load(test-${_name})
 endfunction()
 
 function(qcoro_add_qml_test _name)
@@ -88,9 +91,10 @@ function(qcoro_add_qml_test _name)
     target_link_libraries(
             test-${_name}
             PRIVATE
-            QCoro${QT_VERSION_MAJOR}Qml
+            #QCoro${QT_VERSION_MAJOR}Qml
             Qt${QT_VERSION_MAJOR}::Qml
     )
+    qt_helper_load(test-${_name})
 endfunction()
 
 function(qcoro_add_quick_test _name)
@@ -98,10 +102,11 @@ function(qcoro_add_quick_test _name)
     target_link_libraries(
             test-${_name}
             PRIVATE
-            QCoro${QT_VERSION_MAJOR}Quick
+            #QCoro${QT_VERSION_MAJOR}Quick
             Qt${QT_VERSION_MAJOR}::Quick
             Qt${QT_VERSION_MAJOR}::QuickPrivate
     )
+    qt_helper_load(test-${_name})
     get_test_property(test-${_name} ENVIRONMENT _env)
     list(APPEND _env QT_QPA_PLATFORM=offscreen)
     set_tests_properties(test-${_name} PROPERTIES ENVIRONMENT "${_env}")
@@ -119,20 +124,20 @@ qcoro_add_test(qcorogenerator)
 qcoro_add_test(qcoroasyncgenerator LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)
 qcoro_add_test(qcorowaitfor)
 
-#if (QCORO_WITH_QTDBUS)
-#    qcoro_add_dbus_test(qdbuspendingcall)
-#    qcoro_add_dbus_test(qdbuspendingreply)
-#endif()
-#
-#if (QCORO_WITH_QTNETWORK)
-#    qcoro_add_network_test(qcorolocalsocket)
-#    qcoro_add_network_test(qcoroabstractsocket)
-#    qcoro_add_network_test(qcoronetworkreply)
-#    qcoro_add_network_test(qcorotcpserver)
-#
-#    # Tests for test utilities
-#    qcoro_add_network_test(testhttpserver)
-#endif()
+if (QCORO_WITH_QTDBUS)
+    qcoro_add_dbus_test(qdbuspendingcall)
+    qcoro_add_dbus_test(qdbuspendingreply)
+endif()
+
+if (QCORO_WITH_QTNETWORK)
+    qcoro_add_network_test(qcorolocalsocket)
+    qcoro_add_network_test(qcoroabstractsocket)
+    qcoro_add_network_test(qcoronetworkreply)
+    qcoro_add_network_test(qcorotcpserver)
+
+    # Tests for test utilities
+    qcoro_add_network_test(testhttpserver)
+endif()
 
 #if (QCORO_WITH_QTWEBSOCKETS)
 #    qcoro_add_websockets_test(qcorowebsocket)

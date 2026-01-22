@@ -1,8 +1,8 @@
-#ifndef XUTILS2_MIXNS_P_HPP
-#define XUTILS2_MIXNS_P_HPP 1
+#ifndef XUTILS2_MIXNS_HPP
+#define XUTILS2_MIXNS_HPP 1
 
 #ifndef X_COROUTINE_
-#error Do not mixns_p.hpp directly
+#error Do not mixns.hpp directly
 #endif
 
 #pragma once

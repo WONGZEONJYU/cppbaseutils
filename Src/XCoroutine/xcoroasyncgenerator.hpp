@@ -3,7 +3,7 @@
 
 #include <XGlobal/xclasshelpermacros.hpp>
 #define X_COROUTINE_
-#include <XCoroutine/private/mixns_p.hpp>
+#include <XCoroutine/private/mixns.hpp>
 #undef X_COROUTINE_
 
 #include <coroutine>
