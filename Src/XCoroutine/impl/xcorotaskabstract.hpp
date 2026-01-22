@@ -16,12 +16,10 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
 #undef XCoroTaskAbstractClassTemplate
-# define XCoroTaskAbstractClassTemplate \
-    template< typename T, template<typename> class TaskImpl, typename PromiseType >
+#define XCoroTaskAbstractClassTemplate template< typename T, template<typename> class TaskImpl, typename PromiseType >
 
 #undef XCoroTaskAbstractClass
-#define XCoroTaskAbstractClass \
-    XCoroTaskAbstract<T,TaskImpl,PromiseType>::
+#define XCoroTaskAbstractClass XCoroTaskAbstract<T,TaskImpl,PromiseType>::
 
     XCoroTaskAbstractClassTemplate
     constexpr auto XCoroTaskAbstractClass operator=(XCoroTaskAbstract && o) noexcept
@@ -72,7 +70,7 @@ namespace detail {
 
     XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R >
-    auto XCoroTaskAbstractClass thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+    auto XCoroTaskAbstractClass thenImpl(TaskT const task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >
     {
         auto thenCb { std::forward<ThenCallback>(thenCallback) };
@@ -98,7 +96,7 @@ namespace detail {
 
     XCoroTaskAbstractClassTemplate
     template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R>
-    auto XCoroTaskAbstractClass thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+    auto XCoroTaskAbstractClass thenImplRef(TaskT const & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
         -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>
     {
         auto thenCb { std::forward<ThenCallback>(thenCallback) };

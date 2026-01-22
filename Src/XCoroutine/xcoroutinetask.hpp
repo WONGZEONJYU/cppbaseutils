@@ -201,7 +201,7 @@ namespace detail {
 
     private:
         template<typename ThenCallback, typename ... Args>
-        static constexpr auto invokeCb(ThenCallback && , [[maybe_unused]] Args && ... )
+        static constexpr auto invokeCb(ThenCallback && , Args && ... )
             noexcept(std::is_nothrow_invocable_v<ThenCallback,Args...>);
 
         template<typename R, typename ErrorCallback , typename U = is_task_rt<R>>
@@ -222,11 +222,11 @@ namespace detail {
         using cb_invoke_result_t = cb_invoke_result<ThenCallback, Arg...>::type;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static auto thenImpl(TaskT task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        static auto thenImpl(TaskT, ThenCallback && , ErrorCallback && )
             -> std::conditional_t< is_task_v<R>, R, TaskImpl<R> >;
 
         template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-        static auto thenImplRef(TaskT & task, ThenCallback && thenCallback, ErrorCallback && errorCallback)
+        static auto thenImplRef(TaskT const &, ThenCallback && , ErrorCallback && )
             -> std::conditional_t<is_task_v<R>, R, TaskImpl<R>>;
 
     protected:
