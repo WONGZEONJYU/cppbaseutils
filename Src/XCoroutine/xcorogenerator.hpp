@@ -64,7 +64,8 @@ namespace detail {
 template<typename T>
 class XGeneratorIterator {
     using promise_type = detail::XGeneratorPromise<T>;
-    std::coroutine_handle<promise_type> m_GeneratorCoroutine_ { };
+    using coroutine_handle = std::coroutine_handle<promise_type>;
+    coroutine_handle m_GeneratorCoroutine_ { };
 
 public:
     using iterator_category = std::input_iterator_tag;
@@ -89,8 +90,11 @@ public:
     constexpr pointer operator->() const noexcept
     { return std::addressof(**this); }
 
-    friend constexpr bool operator==(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept = default;
-    friend constexpr std::strong_ordering operator<=>(XGeneratorIterator const & lhs,XGeneratorIterator const & rhs) noexcept
+    friend constexpr bool operator==(XGeneratorIterator const &
+        ,XGeneratorIterator const & ) noexcept = default;
+
+    friend constexpr std::strong_ordering operator<=>(XGeneratorIterator const & lhs
+        ,XGeneratorIterator const & rhs) noexcept
     { return lhs.m_GeneratorCoroutine_ <=> rhs.m_GeneratorCoroutine_; }
 
 private:
@@ -98,7 +102,7 @@ private:
 
     constexpr XGeneratorIterator() noexcept = default;
 
-    explicit(false) constexpr XGeneratorIterator(std::coroutine_handle<promise_type> const h)
+    explicit(false) constexpr XGeneratorIterator(coroutine_handle const h)
         : m_GeneratorCoroutine_ { h }
     {   }
 };

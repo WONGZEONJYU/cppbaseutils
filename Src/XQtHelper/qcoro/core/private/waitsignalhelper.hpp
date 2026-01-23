@@ -34,13 +34,13 @@ namespace detail {
         using signalFunc = std::conditional_t<b,void(QIODevice::*)(qint64),void(QIODevice::*)()>;
 
         explicit(false) WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
-            : m_ready_ { connect_(device, signalFunc, this,[this]{ Q_EMIT emitReady(true); }) }
-            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this ,[this]{ Q_EMIT emitReady(false); }) }
+            : m_ready_ { connect_(device, signalFunc, this,[this]{ emitReady(true); }) }
+            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this ,[this]{ emitReady(false); }) }
         {   }
 
         explicit(false) WaitSignalHelper(const QIODevice * const device, signalFunc<true> const signalFunc)
             : m_ready_ { connect_(device, signalFunc, this, &WaitSignalHelper::emitReady<qint64>) }
-            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this,[this]{ Q_EMIT emitReady( qint64{} ); }) }
+            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this,[this]{ emitReady( qint64{} ); }) }
         {   }
 
         ~WaitSignalHelper() override = default;

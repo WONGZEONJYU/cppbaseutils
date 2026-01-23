@@ -22,9 +22,8 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
 namespace concepts {
-    //! Simplistic QObject concept.
     template<typename T>
-    concept QObject = requires(T * obj) {
+    concept QObject = requires(T * const obj) {
         requires std::is_base_of_v<::QObject, T>;
         requires std::is_same_v<decltype(T::staticMetaObject), const QMetaObject>;
     };
@@ -105,7 +104,7 @@ namespace concepts {
         void handleTimeout(std::coroutine_handle<> const h) const {
             if (!m_timeoutTimer_) { return; }
             auto slot { [this,h]{ QObject::disconnect(m_conn_); h.resume(); } };
-            m_timeoutTimer_->callOnTimeout(m_obj_.get(),std::move(slot),Qt::DirectConnection);
+            m_timeoutTimer_->callOnTimeout(m_obj_.data(),std::move(slot),Qt::DirectConnection);
             // force coro to be resumed on our thread, not mObj's thread
             m_timeoutTimer_->start();
         }
@@ -151,7 +150,6 @@ namespace concepts {
     template<concepts::QObject T, typename FuncPtr>
     class QCoroSignal : public QCoroSignalAbstract<T, FuncPtr> {
         using Base = QCoroSignalAbstract<T, FuncPtr>;
-
         Base::result_type m_result_ {};
         std::unique_ptr<QObject> m_dummyReceiver_ {};
         std::coroutine_handle<> m_awaitingCoroutine_ {};
@@ -162,7 +160,8 @@ namespace concepts {
 
         explicit(false) constexpr QCoroSignal(T * const obj, FuncPtr && ptr, milliseconds const timeout)
             : Base { obj, std::forward<FuncPtr>(ptr), timeout }
-            , m_dummyReceiver_ { std::make_unique<QObject>() } {}
+            , m_dummyReceiver_ { std::make_unique<QObject>() }
+        {   }
 
         Q_DISABLE_COPY(QCoroSignal);
 
@@ -264,15 +263,16 @@ namespace concepts {
                     m_queue_->setAwaiter(h);
                 }
 
-                result_type await_resume() { return m_queue_->dequeue(); }
+                result_type await_resume()
+                { return m_queue_->dequeue(); }
             };
 
             return Awaiter { this };
         }
 
     private:
-        [[nodiscard]] bool isValid() const noexcept
-        { return !this->m_obj_.isNull(); }
+        [[nodiscard]] auto isValid() const noexcept
+        { return static_cast<bool>(this->m_obj_); }
 
         [[nodiscard]] bool empty() const noexcept
         { return m_queue_.empty(); }
@@ -312,7 +312,7 @@ namespace concepts {
 
 template<detail::concepts::QObject T, typename FuncPtr>
 auto qCoro(T * const obj, FuncPtr && ptr, std::chrono::milliseconds const timeout)
-    -> XCoroTask<typename detail::QCoroSignal<T, FuncPtr>::result_type>
+    -> XCoroTask< typename detail::QCoroSignal<T, FuncPtr>::result_type >
 {
     auto result { co_await detail::QCoroSignal(obj,std::forward<FuncPtr>(ptr), timeout) };
     co_return std::move(result);
@@ -331,11 +331,13 @@ auto qCoroSignalListener(T * const obj, FuncPtr && ptr,std::chrono::milliseconds
     -> XAsyncGenerator<typename detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type>
 {
     using SignalQueue = detail::QCoroSignalQueue<T, FuncPtr>;
+    using SignalQueuePtr = std::unique_ptr<SignalQueue>;
     // The actual generator is in a wrapper function, so that we can perform
     // some initialization (constructing signalQueue) in the qCoroSignalListener()
     // function before the generator gets initially suspended.
-    constexpr auto innerGenerator { [](std::unique_ptr<SignalQueue> signalQueue)
-        -> XAsyncGenerator<typename SignalQueue::result_type::value_type>
+    auto constexpr innerGenerator {
+        [](SignalQueuePtr signalQueue)
+            -> XAsyncGenerator<typename SignalQueue::result_type::value_type>
         {
             while (true) {
                 auto result { co_await *signalQueue };

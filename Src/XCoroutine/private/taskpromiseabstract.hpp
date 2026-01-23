@@ -9,12 +9,36 @@
 
 #include <XAtomic/xatomic.hpp>
 #include <XCoroutine/private/mixns.hpp>
-#include <XCoroutine/private/taskfinalsuspend.hpp>
+#include <coroutine>
+#include <vector>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
+
+    using coroutine_handle_vector = std::vector<std::coroutine_handle<>>;
+
+    class TaskFinalSuspend final {
+        coroutine_handle_vector m_awaitingCoroutines_ {};
+    public:
+        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
+            : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
+        {   }
+
+        static constexpr bool await_ready() noexcept { return {}; }
+
+        template<typename Promise>
+        void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
+            auto && promise{ h.promise() };
+            for (auto && awaiter : m_awaitingCoroutines_)
+            { awaiter.resume(); }
+            m_awaitingCoroutines_.clear();
+            promise.derefCoroutine();
+        }
+
+        static constexpr void await_resume() noexcept {}
+    };
 
     class TaskPromiseAbstract : public AwaitTransformMixin {
         friend class TaskFinalSuspend;
@@ -26,7 +50,7 @@ namespace detail {
         { return std::suspend_never {}; }
 
         constexpr auto final_suspend() noexcept
-        { return TaskFinalSuspend{std::move(m_awaitingCoroutines_) }; }
+        { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
 
         constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
         { m_awaitingCoroutines_.push_back(awaitingCoroutine); }

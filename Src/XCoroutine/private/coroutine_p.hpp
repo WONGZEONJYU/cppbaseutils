@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include <XGlobal/xversion.hpp>
 #include <utility>
 #include <coroutine>
-#include <XGlobal/xversion.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

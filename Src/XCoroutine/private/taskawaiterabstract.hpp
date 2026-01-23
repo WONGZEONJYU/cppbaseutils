@@ -16,7 +16,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     template<typename Promise>
-    class TaskAwaiterAbstract {
+    struct TaskAwaiterAbstract {
     protected:
         using coroutine_handle = std::coroutine_handle<Promise>;
         coroutine_handle m_awaitedCoroutine_ {};

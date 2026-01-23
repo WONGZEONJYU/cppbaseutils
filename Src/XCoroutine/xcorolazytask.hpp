@@ -71,21 +71,26 @@ public:
             }
         };
 
-        return TaskAwaiter { this->m_coroutine_ };}
+        return TaskAwaiter { this->m_coroutine_ };
+    }
 
     constexpr XCoroLazyTask() noexcept = default;
 
-    explicit(false) constexpr XCoroLazyTask(coroutine_handle const h)
-        : Base { h } {}
+#undef IMPLICIT
+#define IMPLICIT explicit(false)
 
-    explicit(false) constexpr XCoroLazyTask(promise_type & promise)
+    IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h)
+        : Base { h }
+    {   }
+
+    IMPLICIT constexpr XCoroLazyTask(promise_type & promise)
         : XCoroLazyTask { coroutine_handle::from_promise(promise) }
     {   }
 
-    explicit(false) constexpr XCoroLazyTask(promise_type * const promise)
+    IMPLICIT constexpr XCoroLazyTask(promise_type * const promise)
         : XCoroLazyTask { *promise }
     {   }
-
+#undef IMPLICIT
 };
 
 XTD_INLINE_NAMESPACE_END

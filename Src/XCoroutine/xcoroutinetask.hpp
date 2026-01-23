@@ -26,6 +26,7 @@ public:
 
     constexpr XCoroTask() noexcept = default;
 
+#undef IMPLICIT
 #define IMPLICIT explicit(false)
 
     IMPLICIT constexpr XCoroTask(coroutine_handle const coroutine) noexcept

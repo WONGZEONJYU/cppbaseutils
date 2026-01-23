@@ -16,51 +16,56 @@ namespace detail {
     auto toTask(Awaitable && future) -> XCoroTask< convertible_awaitable_return_type_t<Awaitable> >
     { co_return co_await std::forward<Awaitable>(future); }
 
-    struct WaitContext {
-        QEventLoop m_loop {};
-        bool m_coroutineFinished {};
-        std::exception_ptr m_exception {};
+    class WaitContext {
+        QEventLoop m_loop_ {};
+        bool m_coroutineFinished_ {};
+        std::exception_ptr m_exception_ {};
+
         void quit() noexcept
-        { m_coroutineFinished = true; m_loop.quit(); }
+        { m_coroutineFinished_ = true; m_loop_.quit(); }
+
+        void wait() {
+            if (!m_coroutineFinished_) { m_loop_.exec(); }
+            if (m_exception_) { std::rethrow_exception(m_exception_); }
+        }
+
+        template<Awaitable Awaitable> friend XCoroTask<> runCoroutine(WaitContext & , Awaitable && );
+
+        template<typename T, Awaitable Awaitable> friend
+        XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & , Awaitable && );
+
+        template<typename T, Awaitable Awaitable> friend constexpr T waitFor(Awaitable && );
     };
 
     template<Awaitable Awaitable>
     XCoroTask<> runCoroutine(WaitContext & context, Awaitable && awaitable) {
         try { co_await std::forward<Awaitable>(awaitable); }
-        catch (...) { context.m_exception = std::current_exception(); }
+        catch (...) { context.m_exception_ = std::current_exception(); }
         context.quit();
     }
 
     template<typename T, Awaitable Awaitable>
     XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & result, Awaitable && awaitable) {
         try { result.emplace(co_await std::forward<Awaitable>(awaitable)); }
-        catch (...) { context.m_exception = std::current_exception(); }
+        catch (...) { context.m_exception_ = std::current_exception(); }
         context.quit();
     }
 
     template<typename T, Awaitable Awaitable>
     constexpr T waitFor(Awaitable && awaitable) {
-
         WaitContext context {};
-
-        auto const wait {
-            [&context]{
-                if (!context.m_coroutineFinished) { context.m_loop.exec(); }
-                if (context.m_exception) { std::rethrow_exception(context.m_exception); }
-            }
-        };
-
         if constexpr (std::is_void_v<T>) {
             runCoroutine(context,std::forward<Awaitable>(awaitable));
-            wait();
+            context.wait();
             return;
         } else {
             std::optional<T> result {};
             runCoroutine(context,result,std::forward<Awaitable>(awaitable));
-            wait();
+            context.wait();
             return *result;
         }
     }
+
 }
 
 template<typename T>

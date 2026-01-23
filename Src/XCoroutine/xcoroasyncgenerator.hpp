@@ -25,7 +25,7 @@ namespace detail {
 
         friend class XAsyncGeneratorYieldOperation;
         friend class XAsyncGeneratorAdvanceOperation;
-        friend class XIteratorAwaitableAbstract;
+        friend struct XIteratorAwaitableAbstract;
 
         std::exception_ptr m_exception_ {};
         std::coroutine_handle<> m_consumerCoroutine_ {};
@@ -51,7 +51,7 @@ namespace detail {
         void rethrow_if_unhandled_exception() const
         { if (m_exception_) { std::rethrow_exception(m_exception_); } }
 
-        virtual ~XAsyncGeneratorPromiseAbstract() = default;
+        constexpr virtual ~XAsyncGeneratorPromiseAbstract() = default;
 
         X_DISABLE_COPY(XAsyncGeneratorPromiseAbstract)
         X_DEFAULT_MOVE(XAsyncGeneratorPromiseAbstract)
@@ -85,7 +85,7 @@ namespace detail {
         -> XAsyncGeneratorYieldOperation
     { return { m_consumerCoroutine_ }; }
 
-    class XIteratorAwaitableAbstract {
+    struct XIteratorAwaitableAbstract {
     protected:
         XAsyncGeneratorPromiseAbstract * m_promise_ {};
         std::coroutine_handle<> m_producerCoroutine_ {};
@@ -267,16 +267,6 @@ public:
 template<typename T>
 constexpr void swap(XAsyncGenerator<T> & arg1, XAsyncGenerator<T> & arg2) noexcept
 { arg1.swap(arg2); }
-
-#if 0
-template<typename T>
-constexpr XAsyncGenerator<T> detail::XAsyncGeneratorPromise<T>::get_return_object() noexcept
-{ return { this }; }
-
-template<typename T>
-constexpr XAsyncGenerator<T> detail::XAsyncGeneratorPromise<T&&>::get_return_object() noexcept
-{ return { this }; }
-#endif
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
