@@ -93,6 +93,7 @@ function(qcoro_add_qml_test _name)
             PRIVATE
             #QCoro${QT_VERSION_MAJOR}Qml
             Qt${QT_VERSION_MAJOR}::Qml
+            Qt${QT_VERSION_MAJOR}::QmlPrivate
     )
     qt_helper_load(test-${_name})
 endfunction()
@@ -141,13 +142,13 @@ endif()
 
 if (QCORO_WITH_QTWEBSOCKETS)
     qcoro_add_websockets_test(qcorowebsocket)
-    #qcoro_add_websockets_test(qcorowebsocketserver)
+    qcoro_add_websockets_test(qcorowebsocketserver)
 endif()
 
-#if (QCORO_WITH_QML)
-#    qcoro_add_qml_test(qcoroqmltask)
-#endif()
+if (QCORO_WITH_QML)
+    qcoro_add_qml_test(qcoroqmltask)
+endif()
 
-#if (QCORO_WITH_QTQUICK)
-#    qcoro_add_quick_test(qcoroimageprovider)
-#endif()
+if (QCORO_WITH_QTQUICK)
+    qcoro_add_quick_test(qcoroimageprovider)
+endif()

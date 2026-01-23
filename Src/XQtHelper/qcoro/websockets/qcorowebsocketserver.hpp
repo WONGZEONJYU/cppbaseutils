@@ -4,6 +4,7 @@
 #pragma once
 
 #include <XCoroutine/xcoroutinetask.hpp>
+#include <XQtHelper/qcoro/core/qcorosignal.hpp>
 #include <chrono>
 #include <QWebSocketServer>
 
@@ -12,7 +13,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    class QCoroWebSocketServerSignalListener : public QObject {
+    struct QCoroWebSocketServerSignalListener : QObject {
         Q_OBJECT
     public:
         explicit(false) QCoroWebSocketServerSignalListener(QWebSocketServer * const server) {

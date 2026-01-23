@@ -4,7 +4,7 @@
 #pragma once
 
 #include <XCoroutine/xcoroutinetask.hpp>
-#include <XQtHelper/qcoro/core/impl/waitfor.hpp>
+#include <XQtHelper/qcoro/core/waitfor.hpp>
 #include <type_traits>
 #include <optional>
 

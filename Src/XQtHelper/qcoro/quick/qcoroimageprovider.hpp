@@ -24,8 +24,8 @@ namespace detail {
 
 struct ImageProvider : QQuickAsyncImageProvider {
 
-    constexpr ImageProvider() = default;
-    virtual XCoroTask<QImage> asyncRequestImage(QString const & id,  QSize const & requestedSize) = 0;
+    constexpr ImageProvider() noexcept = default;
+    virtual XCoroTask<QImage> asyncRequestImage(QString const & , QSize const & ) = 0;
 
 private:
     QQuickImageResponse * requestImageResponse(QString const & id,  QSize const & requestedSize) override {
