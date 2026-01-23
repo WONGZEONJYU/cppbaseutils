@@ -165,6 +165,10 @@ private:
     }
 };
 
+TestWsServer::TestWsServer() = default;
+
+TestWsServer::~TestWsServer() = default;
+
 void TestWsServer::start() {
     m_thread_ = std::make_unique<QThread>();
     m_thread_->start();

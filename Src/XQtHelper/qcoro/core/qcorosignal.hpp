@@ -207,13 +207,13 @@ namespace concepts {
             setupConnection();
         }
 
-        result_type await_resume()
+        result_type await_resume() noexcept
         { return std::move(m_result_); }
 
     private:
         void setupConnection() {
             Q_ASSERT(!this->m_conn_);
-            auto slot {
+            auto const slot {
                 [this]<typename ...A1>(A1 && ...a1) {
                     if (this->m_timeoutTimer_) { this->m_timeoutTimer_->stop(); }
                     QObject::disconnect(this->m_conn_);
@@ -223,7 +223,7 @@ namespace concepts {
                 }
             };
             this->m_conn_ = QObject::connect(this->m_obj_, this->m_funcPtr_
-                , this->m_dummyReceiver_.get(),std::move(slot),Qt::QueuedConnection);
+                , this->m_dummyReceiver_.get(),slot,Qt::QueuedConnection);
         }
     };
 
@@ -250,24 +250,24 @@ namespace concepts {
         ~QCoroSignalQueue() override = default;
 
         auto operator co_await() noexcept {
-            class Awaiter {
+            class Awaiter final {
                 QCoroSignalQueue * m_queue_ {};
             public:
-                explicit(false) constexpr Awaiter(QCoroSignalQueue & queue) noexcept
-                    : m_queue_ { std::addressof(queue) } {}
+                explicit(false) constexpr Awaiter(QCoroSignalQueue * const queue) noexcept
+                    : m_queue_ { queue } {}
 
                 [[nodiscard]] bool await_ready() const noexcept
                 { return !m_queue_->isValid() || !m_queue_->empty(); }
 
-                void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
-                    m_queue_->handleTimeout(awaitingCoroutine);
-                    m_queue_->setAwaiter(awaitingCoroutine);
+                void await_suspend(std::coroutine_handle<> const h) noexcept {
+                    m_queue_->handleTimeout(h);
+                    m_queue_->setAwaiter(h);
                 }
 
                 result_type await_resume() { return m_queue_->dequeue(); }
             };
 
-            return Awaiter {*this};
+            return Awaiter { this };
         }
 
     private:

@@ -18,13 +18,14 @@ if (QCORO_WITH_QTDBUS)
 
     add_executable(testdbusserver EXCLUDE_FROM_ALL testdbusserver.cpp testdbusserver.hpp)
 
-
     target_link_libraries(testdbusserver
             ${PROJECT_NAME}
             Qt${QT_VERSION_MAJOR}::Core
             Qt${QT_VERSION_MAJOR}::DBus
     )
+
     qt_helper_load(testdbusserver)
+
     set(qcoro_test_dbus_SRCS)
 
     if (${QT_VERSION_MAJOR} EQUAL 5)
@@ -45,6 +46,7 @@ if (QCORO_WITH_QTDBUS)
             Qt${QT_VERSION_MAJOR}::Core
             Qt${QT_VERSION_MAJOR}::DBus
     )
+
     qt_helper_load(qcoro_test_dbus)
 
 endif()
@@ -64,6 +66,6 @@ if (QCORO_WITH_QTWEBSOCKETS)
             Qt${QT_VERSION_MAJOR}::WebSockets
     )
 
-    qt_helper_load(qcoro_test_ws)
+    #qt_helper_load(qcoro_test_ws)
 
 endif()

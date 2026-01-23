@@ -4,7 +4,7 @@
 #pragma once
 
 #include <XCoroutine/xcoroutinetask.hpp>
-#include <XQtHelper/qcoro/core/private/waitoperationabstract_p.hpp>
+#include <XQtHelper/qcoro/core/private/waitoperationabstract.hpp>
 #include <XQtHelper/qcoro/core/qcorosignal.hpp>
 #include <QTcpServer>
 

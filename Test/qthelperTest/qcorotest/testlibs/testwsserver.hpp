@@ -16,13 +16,13 @@ class TestWsServer {
     QUrl m_url_{};
 
 public:
-    constexpr TestWsServer() = default;
-    ~TestWsServer() = default;
+    explicit(false) TestWsServer();
+    ~TestWsServer();
 
     void start();
     void stop();
-    QUrl url() const noexcept;
-    bool waitForConnection() const;
+    [[nodiscard]] QUrl url() const noexcept;
+    [[nodiscard]] bool waitForConnection() const;
     void setExpectTimeout() const noexcept;
 };
 

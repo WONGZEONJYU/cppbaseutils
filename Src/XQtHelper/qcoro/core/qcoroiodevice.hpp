@@ -2,7 +2,7 @@
 #define XUTILS2_Q_CORO_IO_DEVICE_HPP 1
 
 #include <XCoroutine/xcoroutinetask.hpp>
-#include <XQtHelper/qcoro/core/private/waitoperationabstract_p.hpp>
+#include <XQtHelper/qcoro/core/private/waitoperationabstract.hpp>
 #include <XQtHelper/qcoro/core/private/waitsignalhelper.hpp>
 #include <XQtHelper/qcoro/core/qcorosignal.hpp>
 #include <optional>

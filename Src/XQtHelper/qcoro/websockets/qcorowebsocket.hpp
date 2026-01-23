@@ -83,7 +83,7 @@ namespace detail {
         Q_OBJECT
     public:
         template<typename Signal>
-        explicit(false) WebSocketSignalWatcher(QWebSocket * const socket, Signal && signal) {
+        explicit(false) WebSocketSignalWatcher(QWebSocket * const socket, Signal const signal) {
 
             qRegisterMetaType< std::optional< TupleQInt64QByteArray > >();
             qRegisterMetaType< std::optional< TupleQByteArrayBool> >();
@@ -91,7 +91,7 @@ namespace detail {
             qRegisterMetaType< std::optional< TupleQStringBool > >();
             qRegisterMetaType< std::optional< TupleQString > >();
 
-            connect(socket, std::forward<Signal>(signal), this, [this]<typename ...Args>(Args && ... args)
+            connect(socket, signal, this, [this]<typename ...Args>(Args && ... args)
                 { Q_EMIT this->ready(std::make_optional(std::make_tuple(std::forward<Args>(args) ...))); }
             );
 
@@ -116,10 +116,10 @@ namespace detail {
     using milliseconds = std::chrono::milliseconds;
 
     template<typename Signal>
-    static auto watcherGenerator(QWebSocket * const ws, Signal && signal, milliseconds const timeout) ->
+    static auto watcherGenerator(QWebSocket * const ws, Signal const signal, milliseconds const timeout) ->
         XAsyncGenerator<unwrapped_signal_args_t<signal_args_t<Signal>>>
     {
-        WebSocketSignalWatcher watcher { ws, std::forward<Signal>(signal) };
+        WebSocketSignalWatcher watcher { ws, signal };
         using signalType = std::optional<signal_args_t<Signal>>;
         auto signalListener {
             qCoroSignalListener(std::addressof(watcher), qOverload<signalType>(&WebSocketSignalWatcher::ready), timeout)
@@ -137,10 +137,10 @@ namespace detail {
     }
 
     class QCoroWebSocket {
-        QWebSocket *m_webSocket_{};
+        QWebSocket * m_webSocket_{};
     public:
         explicit(false) QCoroWebSocket(QWebSocket * const websocket)
-            : m_webSocket_ {websocket} {   }
+            : m_webSocket_ { websocket } {   }
 
         using milliseconds = std::chrono::milliseconds;
         using CoroTaskBool = XCoroTask<bool>;
@@ -157,7 +157,7 @@ namespace detail {
             m_webSocket_->ping(payload);
             auto const result { co_await qCoro(std::addressof(watcher)
                 , qOverload< std::optional< TupleQInt64QByteArray > >(&WebSocketSignalWatcher::ready), timeout) };
-            if (result.has_value() && (*result).has_value()) { co_return milliseconds{std::get<0>(**result)}; }
+            if (result.has_value() && result->has_value()) { co_return milliseconds{std::get<0>(**result)}; }
             co_return std::nullopt;
         }
 
@@ -174,12 +174,12 @@ namespace detail {
         { return watcherGenerator(m_webSocket_, &QWebSocket::textMessageReceived, timeout); }
 
     private:
-        template<typename U>
+        template<typename U> // 如果CoroTaskBool 是惰性协程,这样设计会可能有bug,非惰性没有问题
         [[nodiscard]] CoroTaskBool openHelper(U && u, milliseconds const timeout = milliseconds{-1}) const {
             if (QAbstractSocket::ConnectedState == m_webSocket_->state()) { co_return true; }
             WebSocketStateWatcher watcher { m_webSocket_, QAbstractSocket::ConnectedState };
             m_webSocket_->open(std::forward<U>(u));
-            const auto result { co_await qCoro(std::addressof(watcher), &WebSocketStateWatcher::ready, timeout)};
+            auto const result { co_await qCoro(std::addressof(watcher), &WebSocketStateWatcher::ready, timeout)};
             co_return result.value_or(false);
         }
     };
