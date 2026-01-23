@@ -152,7 +152,7 @@ namespace detail {
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&WaitSignalHelper::ready), timeout);
         }
 
-        virtual XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) const{
+        virtual XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) const {
             WaitSignalHelper helper {m_device_.data(), &QIODevice::bytesWritten };
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&WaitSignalHelper::ready), timeout);
         }

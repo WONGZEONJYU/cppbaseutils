@@ -1,7 +1,3 @@
-include(GNUInstallDirs)
-include(CTest)
-include(FeatureSummary)
-
 set(SRC_CMAKE_PATH ${PROJECT_SOURCE_DIR}/Src/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${SRC_CMAKE_PATH})
 
@@ -20,6 +16,7 @@ endif()
 option(QCORO_BUILD_EXAMPLES "Build examples" ON)
 add_feature_info(Examples QCORO_BUILD_EXAMPLES "Build examples")
 option(QCORO_BUILD_TESTING "Build QCoro tests" ${BUILD_TESTING})
+#message(WARNING "BUILD_TESTING = ${BUILD_TESTING}")
 add_feature_info(Testing QCORO_BUILD_TESTING "Build QCoro tests")
 option(QCORO_ENABLE_ASAN "Build with AddressSanitizer" OFF)
 add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
@@ -96,9 +93,13 @@ qcoro_find_qt(
 
 include(CodeCoverage)
 add_code_coverage()
-add_code_coverage_all_targets(EXCLUDE "${CMAKE_BINARY_DIR}" tests/utils/*)
+add_code_coverage_all_targets(EXCLUDE "${CMAKE_BINARY_DIR}" "Test/qthelperTest/qcorotest/testexec/*")
 
 include(AddQCoroLibrary)
+
+if (QCORO_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 if (QCORO_BUILD_TESTING)
     add_subdirectory(testlibs)

@@ -65,7 +65,4 @@ if (QCORO_WITH_QTWEBSOCKETS)
             Qt${QT_VERSION_MAJOR}::Test
             Qt${QT_VERSION_MAJOR}::WebSockets
     )
-
-    #qt_helper_load(qcoro_test_ws)
-
 endif()

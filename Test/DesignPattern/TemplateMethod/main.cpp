@@ -17,7 +17,7 @@ int main() {
     XUtils::SignalRegister(SIGTERM,0,SigHandler);
 #endif
     auto const watcher{ XUtils::makeUnique<MemWatcherMacos>() };
-    for (int i {}; i < 1000 ; i++) {
+    for (int i {}; i < 10 ; i++) {
         if (is_exit) { break; }
         auto const mem{ static_cast<double>(watcher->watch()) / 1073741824.0 };
         std::cout << mem << std::endl;

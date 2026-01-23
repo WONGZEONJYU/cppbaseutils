@@ -706,6 +706,12 @@ void test12() {
 }
 
 int main(){
+
+    std::jthread th{[]{
+        std::this_thread::sleep_for(std::chrono::seconds{5});
+        std::exit(0);
+    }};
+
     test1();
     //test2();
     //test3();

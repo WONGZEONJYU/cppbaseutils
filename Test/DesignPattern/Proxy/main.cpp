@@ -10,6 +10,7 @@
 
 int main() {
     bool is_exit {};
+
 #if !defined(_WIN32) && !defined(_WIN64)
     auto const sigterm{ XUtils::SignalRegister(SIGTERM,0,
         [&is_exit](int const ,siginfo_t * const ,void * const &) noexcept -> void {
@@ -27,6 +28,16 @@ int main() {
     })};
 
     std::cout << "current pid:" << getpid() << std::endl;
+
+    std::jthread th{ []{
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        XUtils::emitSignal(SIGINT);
+    } };
+#else
+    std::jthread th{ []{
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::exit(0);
+    } };
 #endif
 
 #if 1

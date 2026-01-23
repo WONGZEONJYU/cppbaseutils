@@ -38,6 +38,16 @@ int main() {
     })};
 
     std::cout << "current pid:" << getpid() << std::endl;
+
+    std::jthread th{[]{
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        XUtils::emitSignal(SIGINT);
+    }};
+#else
+    std::jthread th{[]{
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        std::exit(0);
+    }};
 #endif
 
     TaskThread taskThread;

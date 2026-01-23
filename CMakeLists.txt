@@ -8,6 +8,10 @@ project(XUtils2
     HOMEPAGE_URL "https://github.com/WONGZEONJYU/cppbaseutils"
 )
 
+include(GNUInstallDirs)
+include(CTest)
+include(FeatureSummary)
+
 # 设置C++标准
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_CXX_STANDARD 23)

@@ -34,20 +34,20 @@ namespace detail {
         using signalFunc = std::conditional_t<b,void(QIODevice::*)(qint64),void(QIODevice::*)()>;
 
         explicit(false) WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
-            : m_ready_ { connect_(device, signalFunc, [this]{ this->emitReady(true); }) }
-            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, [this]{ this->emitReady(false); }) }
-        { }
+            : m_ready_ { connect_(device, signalFunc, this,[this]{ Q_EMIT emitReady(true); }) }
+            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this ,[this]{ Q_EMIT emitReady(false); }) }
+        {   }
 
         explicit(false) WaitSignalHelper(const QIODevice * const device, signalFunc<true> const signalFunc)
             : m_ready_ { connect_(device, signalFunc, this, &WaitSignalHelper::emitReady<qint64>) }
-            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, [this]{ this->emitReady(static_cast<qint64>(0)); }) }
-        { }
+            , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this,[this]{ Q_EMIT emitReady( qint64{} ); }) }
+        {   }
 
         ~WaitSignalHelper() override = default;
 
     Q_SIGNALS:
-        void ready(bool result);
-        void ready(qint64 result);
+        void ready(bool);
+        void ready(qint64);
 
     protected:
         template<typename T> void emitReady(T const result)

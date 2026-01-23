@@ -1,0 +1,10 @@
+add_executable(iodevice-example main.cpp)
+target_link_libraries(iodevice-example
+#    QCoro${QT_VERSION_MAJOR}Core
+#    QCoro${QT_VERSION_MAJOR}Network
+    ${PROJECT_NAME}
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Network
+)
+qt_helper_load(iodevice-example)
+set_target_defaults(iodevice-example)

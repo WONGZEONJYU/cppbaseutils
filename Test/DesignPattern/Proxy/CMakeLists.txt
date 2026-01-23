@@ -26,7 +26,6 @@ set_target_properties(${targetName} PROPERTIES
 
 # 添加测试
 if(BUILD_TESTING)
-    enable_testing()
     add_test(NAME ${targetName} COMMAND ${targetName})
 endif()
 

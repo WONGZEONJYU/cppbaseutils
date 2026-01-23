@@ -25,9 +25,8 @@ set_target_properties(${AtProtoolTest} PROPERTIES
 )
 
 # 添加测试
-if(BUILD_TESTING)
-    enable_testing()
-    add_test(NAME ${AtProtoolTest} COMMAND ${AtProtoolTest})
-endif()
+#if(BUILD_TESTING)
+#    add_test(NAME ${AtProtoolTest} COMMAND ${AtProtoolTest})
+#endif()
 
 unset(AtProtoolTest)

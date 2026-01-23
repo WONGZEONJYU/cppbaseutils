@@ -36,7 +36,8 @@ function(qcoro_add_test _name)
         _enable_supressions(${_name})
     endif()
 
-    target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "tests/testlibs/*")
+    #target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "tests/testlibs/*")
+    target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "Test/qthelperTest/qcorotest/testlibs/*")
 endfunction()
 
 function(qcoro_add_network_test _name)
@@ -47,9 +48,9 @@ function(qcoro_add_network_test _name)
 #            QCoro${QT_VERSION_MAJOR}Network
             Qt${QT_VERSION_MAJOR}::Network
     )
-    if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB)
-        #target_link_libraries(test-${_name} PRIVATE atomic)
-    endif()
+#    if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB)
+#        target_link_libraries(test-${_name} PRIVATE atomic)
+#    endif()
     qt_helper_load(test-${_name})
 endfunction()
 
@@ -94,6 +95,7 @@ function(qcoro_add_qml_test _name)
             #QCoro${QT_VERSION_MAJOR}Qml
             Qt${QT_VERSION_MAJOR}::Qml
             Qt${QT_VERSION_MAJOR}::QmlPrivate
+            ${PROJECT_NAME}
     )
     qt_helper_load(test-${_name})
 endfunction()
@@ -106,6 +108,7 @@ function(qcoro_add_quick_test _name)
             #QCoro${QT_VERSION_MAJOR}Quick
             Qt${QT_VERSION_MAJOR}::Quick
             Qt${QT_VERSION_MAJOR}::QuickPrivate
+            ${PROJECT_NAME}
     )
     qt_helper_load(test-${_name})
     get_test_property(test-${_name} ENVIRONMENT _env)
