@@ -68,10 +68,10 @@ struct QCoroAbstractSocketTest : QCoro::TestObject<QCoroAbstractSocketTest> {
 
             QCORO_DELAY(socket.disconnectFromHost());
 
-            XUtils::qCoro(socket).waitForDisconnected().then([&](bool const connected) {
+            XUtils::qCoro(socket).waitForDisconnected().then([&](bool const connected_) {
                 called = true;
                 el.quit();
-                QVERIFY(connected);
+                QVERIFY(connected_);
             });
         });
         el.exec();
@@ -105,10 +105,10 @@ struct QCoroAbstractSocketTest : QCoro::TestObject<QCoroAbstractSocketTest> {
             QVERIFY(connected);
             QCOMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
-            XUtils::qCoro(socket).waitForConnected().then([&](bool const connected) {
+            XUtils::qCoro(socket).waitForConnected().then([&](bool const connected_) {
                 called = true;
                 el.quit();
-                QVERIFY(connected);
+                QVERIFY(connected_);
             });
         });
         el.exec();
