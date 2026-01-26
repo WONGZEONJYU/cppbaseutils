@@ -35,7 +35,7 @@ function(copy_qt_windows_dlls TARGET_NAME)
         foreach (QT_LIB ${ARG_Qt_MODULES})
             add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy
-                    "${QT_INSTALL_PATH}/bin/Qt${QT_VERSION_MAJOR}${QT_LIB}${DEBUG_SUFFIX}.dll"
+                    "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
                     "$<TARGET_FILE_DIR:${TARGET_NAME}>")
         endforeach (QT_LIB)
     endif ()
