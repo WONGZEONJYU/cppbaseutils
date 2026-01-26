@@ -6,29 +6,33 @@
 #include <thread>
 #include <mutex>
 
-using namespace std::chrono_literals;
+
 
 class Client {
     std::thread m_thread_{};
 public:
-    Client(uint16_t serverPort, std::mutex & mutex, bool & ok)
-        : m_thread_([serverPort, &mutex, &ok] {
-            std::this_thread::sleep_for(500ms);
+    explicit(false) Client(uint16_t serverPort, std::mutex & mutex, bool & ok)
+        : m_thread_{[serverPort, &mutex, &ok]{
+                {
+                    using namespace std::chrono_literals;
+                    std::this_thread::sleep_for(500ms);
+                }
 
-            std::unique_lock lock{mutex};
-            QTcpSocket socket{};
-            socket.connectToHost(QHostAddress::LocalHost, serverPort);
-            if (!socket.waitForConnected(10'000)) {
-                qWarning() << "Not connected within timeout" << socket.errorString();
-                ok = false;
-                return;
+                std::unique_lock lock{mutex};
+                QTcpSocket socket{};
+                socket.connectToHost(QHostAddress::LocalHost, serverPort);
+                if (!socket.waitForConnected(10'000)) {
+                    qWarning() << "Not connected within timeout" << socket.errorString();
+                    ok = false;
+                    return;
+                }
+                socket.write("Hello World!");
+                socket.flush();
+                socket.close();
+                ok = true;
             }
-            socket.write("Hello World!");
-            socket.flush();
-            socket.close();
-            ok = true;
-        })
-    {}
+        }
+    {   }
 
     ~Client() { m_thread_.join(); }
 };
@@ -40,13 +44,13 @@ class QCoroTcpServerTest: public QCoro::TestObject<QCoroTcpServerTest> {
         QTcpServer server{};
         QCORO_VERIFY(server.listen(QHostAddress::LocalHost));
         QCORO_VERIFY(server.isListening());
-        auto const serverPort { server.serverPort()};
+        auto const serverPort { server.serverPort() };
 
         std::mutex mutex{};
         bool ok {};
-        Client client(serverPort, mutex, ok);
-
-        auto const connection{ co_await XUtils::qCoro(server).waitForNewConnection(10s)};
+        Client client{serverPort, mutex, ok};
+        using namespace std::chrono_literals;
+        auto const connection{ co_await XUtils::qCoro(server).waitForNewConnection(10s) };
         QCORO_VERIFY(connection != nullptr);
         auto const data{ co_await XUtils::qCoro(connection).readAll()};
         QCORO_COMPARE(data, QByteArray{"Hello World!"});
@@ -65,20 +69,17 @@ class QCoroTcpServerTest: public QCoro::TestObject<QCoroTcpServerTest> {
         Client client(serverPort, mutex, ok);
 
         bool called {};
-        XUtils::qCoro(server).waitForNewConnection(10s).then([&](QTcpSocket *socket) -> XUtils::XCoroTask<> {
+        using namespace std::chrono_literals;
+        XUtils::qCoro(server).waitForNewConnection(10s).then([&](QTcpSocket * const socket) -> XUtils::XCoroTask<> {
             called = true;
-            if (!socket) {
-                el.quit();
-                co_return;
-            }
-
+            if (!socket) { el.quit();co_return; }
             auto const data{ co_await XUtils::qCoro(socket).readAll()};
             QCORO_COMPARE(data, QByteArray("Hello World!"));
             el.quit();
         });
         el.exec();
 
-        std::lock_guard lock{mutex};
+        std::unique_lock lock{mutex};
         QVERIFY(called);
         QVERIFY(ok);
     }
@@ -95,7 +96,7 @@ class QCoroTcpServerTest: public QCoro::TestObject<QCoroTcpServerTest> {
         Client client(serverPort, mutex, ok);
 
         QCORO_VERIFY(server.waitForNewConnection(10'000));
-
+        using namespace std::chrono_literals;
         auto const connection{ co_await XUtils::qCoro(server).waitForNewConnection(10s)};
 
         connection->waitForReadyRead(); // can't use coroutine, it might suspend or not, depending on how eventloop
