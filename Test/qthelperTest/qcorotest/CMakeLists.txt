@@ -96,6 +96,7 @@ add_code_coverage()
 add_code_coverage_all_targets(EXCLUDE "${CMAKE_BINARY_DIR}" "Test/qthelperTest/qcorotest/testexec/*")
 
 include(AddQCoroLibrary)
+include(CopyQtDll)
 
 if (QCORO_BUILD_EXAMPLES)
     add_subdirectory(examples)

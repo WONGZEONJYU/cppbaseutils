@@ -38,7 +38,6 @@ function(addQtTestExecutable TargetName SRC_FILES HEADER_FILES)
     )
 
     if(BUILD_TESTING)
-        enable_testing()
         add_test(NAME ${TargetName} COMMAND ${TargetName})
     endif()
 

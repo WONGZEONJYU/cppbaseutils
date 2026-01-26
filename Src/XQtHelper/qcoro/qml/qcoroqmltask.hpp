@@ -86,7 +86,7 @@ public:
 
     template <typename = void>
     explicit(false) QmlTask(XCoroTask<> && task)
-        : QmlTask { task.then([]-> XCoroTask<QVariant> { co_return QVariant{ }; }) }
+        : QmlTask { task.then([]()-> XCoroTask<QVariant> { co_return QVariant{ }; }) }
     {   }
 
     Q_INVOKABLE void then(QJSValue func) {

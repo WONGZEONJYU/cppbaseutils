@@ -95,7 +95,7 @@ namespace detail {
 
     private:
         template<typename ThenCallback, typename ... Args>
-        static constexpr auto invokeCb(ThenCallback && callback, Args && ... args)
+        static constexpr auto invokeCb(ThenCallback && callback,[[maybe_unused]] Args && ... args)
             noexcept(std::is_nothrow_invocable_v<ThenCallback,Args...>)
         {
             if constexpr (std::is_invocable_v<ThenCallback,Args...>)

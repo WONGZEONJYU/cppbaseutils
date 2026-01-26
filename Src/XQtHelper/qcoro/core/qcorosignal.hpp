@@ -237,7 +237,7 @@ namespace concepts {
         std::coroutine_handle<> m_awaitingCoroutine_ {};
 
     public:
-        using typename Base::result_type;
+        using result_type = Base::result_type;
         using typename Base::milliseconds;
 
         explicit(false) constexpr QCoroSignalQueue(T * const obj, FuncPtr && ptr, milliseconds const timeout)

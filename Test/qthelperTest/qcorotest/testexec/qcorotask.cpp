@@ -43,7 +43,7 @@ struct ImplicitConversionFoo {
 };
 
 struct TestAwaitableBase {
-    [[nodiscard]] auto delay() const noexcept { return m_delay_; }
+    [[nodiscard]] auto delay() const noexcept{ return m_delay_; }
 private:
     std::chrono::milliseconds m_delay_ { 100ms };
 };
@@ -69,7 +69,7 @@ struct TestAwaitable<void> : TestAwaitableBase {
 
     static constexpr bool await_ready() noexcept { return {}; }
 
-    static constexpr void await_suspend(std::coroutine_handle<> const h) noexcept
+    static void await_suspend(std::coroutine_handle<> const h) noexcept
     { QTimer::singleShot(100ms, [h] { h.resume(); }); }
 
     static constexpr void await_resume() noexcept {}
@@ -136,14 +136,14 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
 
     XUtils::XCoroTask<> testSyncCoroutine_coro(QCoro::TestContext context) {
         context.setShouldNotSuspend();
-        auto constexpr coro { []-> XUtils::XCoroTask<int>{ co_return 42; } };
+        auto constexpr coro { []()-> XUtils::XCoroTask<int>{ co_return 42; } };
         const auto result{ co_await coro()};
         QCORO_COMPARE(result, 42);
     }
 
     XUtils::XCoroTask<> testCoroutineWithException_coro(QCoro::TestContext) {
         auto constexpr coro {
-            []-> XUtils::XCoroTask<int> {
+            []()-> XUtils::XCoroTask<int> {
                 co_await timer();
                 throw std::runtime_error("Invalid result");
                 co_return 42;
@@ -164,7 +164,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
 
     XUtils::XCoroTask<> testVoidCoroutineWithException_coro(QCoro::TestContext) {
         auto constexpr coro {
-            [] -> XUtils::XCoroTask<> { co_await timer(); throw std::runtime_error("Error"); }
+            []() -> XUtils::XCoroTask<> { co_await timer(); throw std::runtime_error("Error"); }
         };
 
         try {
@@ -181,7 +181,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     XUtils::XCoroTask<> testCoroutineFrameDestroyed_coro(QCoro::TestContext) {
         bool destroyed {};
         auto const coro {
-            [&destroyed] -> XUtils::XCoroTask<> {
+            [&destroyed]() -> XUtils::XCoroTask<> {
                 auto const guard { qScopeGuard([&destroyed]{destroyed = true; }) };
                 QCORO_VERIFY(!destroyed);
                 co_await timer();
@@ -195,25 +195,25 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
 
     XUtils::XCoroTask<> testExceptionPropagation_coro(QCoro::TestContext) {
         QCORO_VERIFY_EXCEPTION_THROWN(
-            co_await [] -> XUtils::XCoroTask<int> {
+            co_await []() -> XUtils::XCoroTask<int> {
                 throw std::runtime_error("Test!");
                 co_return 42;
             }(),std::runtime_error);
 
         QCORO_VERIFY_EXCEPTION_THROWN(
-            co_await [] -> XUtils::XCoroTask<> {
+            co_await []() -> XUtils::XCoroTask<> {
                 throw std::runtime_error("Test!");
             }(),std::runtime_error);
 
         QCORO_VERIFY_EXCEPTION_THROWN(
-            co_await [] -> XUtils::XCoroTask<int> {
+            co_await []() -> XUtils::XCoroTask<int> {
                 co_await timer();
                 throw std::runtime_error("Test!");
                 co_return 42;
             }(),std::runtime_error);
 
         QCORO_VERIFY_EXCEPTION_THROWN(
-            co_await [] -> XUtils::XCoroTask<> {
+            co_await []() -> XUtils::XCoroTask<> {
                 co_await timer();
                 throw std::runtime_error("Test!");
             }(),std::runtime_error);
@@ -235,7 +235,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     }
 
     XUtils::XCoroTask<> testThenReturnTaskVoidNoArgument_coro(QCoro::TestContext) {
-        auto task { timer().then([]-> XUtils::XCoroTask<> { co_await timer(); }) };
+        auto task { timer().then([]()-> XUtils::XCoroTask<> { co_await timer(); }) };
         static_assert(std::is_same_v<decltype(task), XUtils::XCoroTask<>>);
         co_await task;
     }
@@ -248,7 +248,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     }
 
     XUtils::XCoroTask<> testThenReturnTaskTNoArgument_coro(QCoro::TestContext) {
-        auto constexpr f { [] -> XUtils::XCoroTask<int> { co_await timer(); co_return 42; } };
+        auto constexpr f { []() -> XUtils::XCoroTask<int> { co_await timer(); co_return 42; } };
         auto task { timer().then(f)};
         static_assert(std::is_same_v<decltype(task), XUtils::XCoroTask<int>>);
         auto const result{ co_await task };
@@ -266,7 +266,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     XUtils::XCoroTask<> testThenReturnValueSync_coro(QCoro::TestContext context) {
         context.setShouldNotSuspend();
         auto task {
-            []-> XUtils::XCoroTask<int> {co_return 42;}().then([](int const param){ return param * 2; })
+            []()-> XUtils::XCoroTask<int> {co_return 42;}().then([](int const param){ return param * 2; })
         };
         auto const result{ co_await task };
         QCORO_COMPARE(result, 84);
@@ -292,7 +292,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
 
     XUtils::XCoroTask<>  testThenError_coro(QCoro::TestContext) {
         bool exceptionThrown {};
-        co_await [] -> XUtils::XCoroTask<int> {
+        co_await []() -> XUtils::XCoroTask<int> {
             co_await timer();
             throw std::runtime_error("Test!");
             co_return 42;
@@ -329,7 +329,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
         QTimer test {};
         QString result {};
 
-        auto constexpr coroF { [] -> XUtils::XCoroTask<ImplicitConversionBar> {
+        auto constexpr coroF { []() -> XUtils::XCoroTask<ImplicitConversionBar> {
             ImplicitConversionBar constexpr bar{42};
             co_await timer(10ms);
             co_return bar;
@@ -350,7 +350,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     }
 
     static void testReturnValueImplicitConversion(QCoro::TestContext) {
-        [[maybe_unused]] auto constexpr testcoro { []-> XUtils::XCoroTask<int> { co_return 42LL; } };
+        [[maybe_unused]] auto constexpr testcoro { []()-> XUtils::XCoroTask<int> { co_return 42LL; } };
     }
 
     XUtils::XCoroTask<> testMultipleAwaiters_coro(QCoro::TestContext) {
@@ -364,7 +364,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
 
     XUtils::XCoroTask<> testMultipleAwaitersSync_coro(QCoro::TestContext ctx) {
         ctx.setShouldNotSuspend();
-        auto task { []-> XUtils::XCoroTask<> { co_return; } () };
+        auto task { []()-> XUtils::XCoroTask<> { co_return; } () };
         bool called {};
         task.then([&called]{ called = true; });
         co_await task;
@@ -392,10 +392,10 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
 
         // Test that the code still compiles if the value of the coroutine is not used by the function.
-        auto constexpr nonVoidCoroutine { [] -> XUtils::XCoroTask<QString> { co_await timer(); co_return QStringLiteral("Hello World!"); } };
+        auto constexpr nonVoidCoroutine { []() -> XUtils::XCoroTask<QString> { co_await timer(); co_return QStringLiteral("Hello World!"); } };
         XUtils::connect(nonVoidCoroutine(), this, [this] { Q_EMIT callbackCalled(); });
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
-        XUtils::connect(nonVoidCoroutine(), this, [this](QString){Q_EMIT callbackCalled(); });
+        XUtils::connect(nonVoidCoroutine(), this, [this](QString const &){Q_EMIT callbackCalled(); });
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
     }
 
@@ -438,20 +438,20 @@ private Q_SLOTS:
         bool immediateResult{},delayedResult {};
 
         auto const testImmediate {
-            [&] ->XUtils::XCoroTask<> { immediateResult = co_await testReturn(true); }
+            [&]() ->XUtils::XCoroTask<> { immediateResult = co_await testReturn(true); }
         };
 
         auto const testDelayed {
-            [&] -> XUtils::XCoroTask<> {
+            [&]() -> XUtils::XCoroTask<> {
                 delayedResult = co_await testReturn(false);
                 loop.quit();
             }
         };
 
         QMetaObject::invokeMethod(
-            &loop, [&] { testImmediate(); }, Qt::QueuedConnection);
+            &loop, [&]{ testImmediate(); }, Qt::QueuedConnection);
         QMetaObject::invokeMethod(
-            &loop, [&] { testDelayed(); }, Qt::QueuedConnection);
+            &loop, [&]{ testDelayed(); }, Qt::QueuedConnection);
 
         loop.exec();
 
@@ -464,7 +464,7 @@ private Q_SLOTS:
 
     // TODO: Test timeout
     static void testWaitForWithValue() {
-            auto const result { XUtils::waitFor([] -> XUtils::XCoroTask<int> {
+            auto const result { XUtils::waitFor([]() -> XUtils::XCoroTask<int> {
                 co_await timer();
                 co_return 42;
             }())
@@ -473,11 +473,11 @@ private Q_SLOTS:
     }
 
     static void testEarlyReturnWaitFor()
-    { XUtils::waitFor([]-> XUtils::XCoroTask<> { co_return; }()); }
+    { XUtils::waitFor([]() -> XUtils::XCoroTask<> { co_return; }()); }
 
     static void testEarlyReturnWaitForWithValue() {
         auto const result{
-            XUtils::waitFor([]-> XUtils::XCoroTask<int> {
+            XUtils::waitFor([]() -> XUtils::XCoroTask<int> {
                 co_return 42;
             }())
         };
@@ -526,7 +526,7 @@ private Q_SLOTS:
     }
 
     static void testWaitForWithValueRethrowsException() {
-        auto constexpr coro { [] -> XUtils::XCoroTask<int> {
+        auto constexpr coro { []() -> XUtils::XCoroTask<int> {
                 co_await timer();
                 throw std::runtime_error("Exception");
                 co_return 42;
@@ -542,7 +542,7 @@ private Q_SLOTS:
 
     void testWaitForRethrowsException() {
         auto constexpr coro {
-            [] -> XUtils::XCoroTask<> { co_await timer(); throw std::runtime_error("Exception"); }
+            []() -> XUtils::XCoroTask<> { co_await timer(); throw std::runtime_error("Exception"); }
         };
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)
@@ -554,7 +554,7 @@ private Q_SLOTS:
 
     void testIgnoredVoidTaskResult() {
         QEventLoop el{};
-        ignoreCoroutineResult(el, [&el] -> XUtils::XCoroTask<> {
+        ignoreCoroutineResult(el, [&el]() -> XUtils::XCoroTask<> {
             co_await timer();
             el.quit();
         });
@@ -562,7 +562,7 @@ private Q_SLOTS:
 
     void testIgnoredValueTaskResult() {
         QEventLoop el{};
-        ignoreCoroutineResult(el, [&el]-> XUtils::XCoroTask<QString> {
+        ignoreCoroutineResult(el, [&el]() -> XUtils::XCoroTask<QString> {
             co_await timer(); el.quit();
             co_return QStringLiteral("Result");
         });
@@ -570,14 +570,14 @@ private Q_SLOTS:
 
     static void testThenVoidNoArgument() {
         QEventLoop el{};
-        { timer().then([&el] { el.quit(); }); }
+        { timer().then([&el]{ el.quit(); }); }
         el.exec();
     }
 
     static void testThenDiscardsReturnValue() {
         QEventLoop el{};
         bool called {};
-        timerWithValue(42).then([&] { el.quit(); called = true; });
+        timerWithValue(42).then([&]{ el.quit(); called = true; });
         el.exec();
         QVERIFY(called);
     }
@@ -604,7 +604,7 @@ private Q_SLOTS:
 
     static void testThenVoidWithFunction() {
         QEventLoop el{};
-        timerWithValue(10ms).then(timer).then([&el] { el.quit(); });
+        timerWithValue(10ms).then(timer).then([&el]{ el.quit(); });
         el.exec();
     }
 
@@ -612,7 +612,7 @@ private Q_SLOTS:
         QEventLoop el{};
         QTimer::singleShot(5s, &el, [&el]{ el.quit(); QFAIL("Timeout waiting for coroutine"); });
 
-        [] -> XUtils::XCoroTask<> {
+        []() -> XUtils::XCoroTask<> {
             co_await timer();
         }().then([] {
             throw std::runtime_error("Test!");
@@ -631,7 +631,7 @@ private Q_SLOTS:
         QEventLoop el{};
         QTimer::singleShot(5s, &el, [&el]{el.quit(); QFAIL("Timeout waiting for coroutine"); });
 
-        []-> XUtils::XCoroTask<> {
+        []() -> XUtils::XCoroTask<> {
             co_await timer();
             throw std::runtime_error("Test!");
         }().then([] {

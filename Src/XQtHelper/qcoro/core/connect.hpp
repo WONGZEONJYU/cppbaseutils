@@ -15,12 +15,12 @@ requires std::is_invocable_v<Callback>
     || std::is_invocable_v<Callback, T>
     || std::is_invocable_v<Callback, QObjectSubclass *>
     || std::is_invocable_v<Callback, QObjectSubclass *, T>
-void connect(XCoroTask<T> && task, QObjectSubclass * const context, Callback && func) {
+void connect(XCoroTask<T> && task, QObjectSubclass * const context, Callback && func_) {
 
     QPointer ctxWatcher { context };
 
     if constexpr (std::is_void_v<T>) {
-        task.then([ctxWatcher, func = std::forward<Callback>(func)]{
+        task.then([ctxWatcher, func = std::forward<Callback>(func_)]{
             if (ctxWatcher) {
                 if constexpr (std::is_member_function_pointer_v<Callback>)
                 { std::invoke(func,ctxWatcher.data()); /*(ctxWatcher->*func)();*/  }
@@ -28,7 +28,7 @@ void connect(XCoroTask<T> && task, QObjectSubclass * const context, Callback && 
             }
         });
     } else {
-        task.then([ctxWatcher, func = std::forward<Callback>(func)]<typename Tp>(Tp && value) {
+        task.then([ctxWatcher, func = std::forward<Callback>(func_)]<typename Tp>([[maybe_unused]] Tp && value) {
             if (ctxWatcher) {
                 if constexpr (std::is_invocable_v<Callback, QObjectSubclass, T>)
                 { std::invoke(func,ctxWatcher.data(),std::forward<Tp>(value)); /*(ctxWatcher->*func)(std::forward<Tp>(value));*/ }

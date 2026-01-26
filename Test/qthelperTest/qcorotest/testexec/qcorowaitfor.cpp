@@ -7,14 +7,14 @@ struct QCoroWaitForTest : QCoro::TestObject<QCoroWaitForTest> {
 
     XUtils::XCoroTask<> testPrimitiveType_coro(QCoro::TestContext ctx) {
         ctx.setShouldNotSuspend();
-        auto constexpr task_test { [] -> XUtils::XCoroTask<int> { co_return 7;} };
+        auto constexpr task_test { []() -> XUtils::XCoroTask<int> { co_return 7;} };
         auto const ret{ XUtils::waitFor(task_test()) };
         QCORO_VERIFY(ret == 7);
     }
 
     XUtils::XCoroTask<> testDefaultConstructible_coro(QCoro::TestContext ctx) {
         ctx.setShouldNotSuspend();
-        auto constexpr task_test { [] -> XUtils::XCoroTask<std::string> { co_return "seven"; } };
+        auto constexpr task_test { []() -> XUtils::XCoroTask<std::string> { co_return "seven"; } };
         auto const ret{ XUtils::waitFor(task_test())};
         QCORO_VERIFY(ret == "seven");
     }
@@ -27,7 +27,7 @@ struct QCoroWaitForTest : QCoro::TestObject<QCoroWaitForTest> {
             int m_i{};
         };
 
-        auto constexpr task_test { [] -> XUtils::XCoroTask<test_struct> {
+        auto constexpr task_test { []() -> XUtils::XCoroTask<test_struct> {
             co_return test_struct(7);
         }};
 

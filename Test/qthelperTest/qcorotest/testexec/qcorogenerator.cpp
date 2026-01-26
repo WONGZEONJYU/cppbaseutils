@@ -26,7 +26,7 @@ struct GeneratorTest : QObject {
 private Q_SLOTS:
 
     static void testImmediateGenerator() {
-        auto constexpr createGenerator { [] -> XUtils::XGenerator<int>
+        auto constexpr createGenerator { []() -> XUtils::XGenerator<int>
         { for (int value {}; value < 10; ++value)  { co_yield value; } }};
 
         auto const generator { createGenerator()};
@@ -43,10 +43,11 @@ private Q_SLOTS:
         bool destroyed {};
 
         {
-            auto const createGenerator = [&destroyed] -> XUtils::XGenerator<int> {
-                auto const guard { qScopeGuard([&destroyed]{ destroyed = true; })};
-                auto const pointer { std::make_unique<QString>(QStringLiteral("This should get destroyed. If not, ASAN will catch it."))};
-                while (true) { co_yield 42; }
+            auto const createGenerator { [&destroyed]() -> XUtils::XGenerator<int> {
+                    auto const guard { qScopeGuard([&destroyed]{ destroyed = true; })};
+                    auto const pointer { std::make_unique<QString>(QStringLiteral("This should get destroyed. If not, ASAN will catch it."))};
+                    while (true) { co_yield 42; }
+                }
             };
 
             auto const generator { createGenerator()};
@@ -58,8 +59,8 @@ private Q_SLOTS:
     }
 
     void testEmptyGenerator() {
-        auto constexpr createGenerator { [] -> XUtils::XGenerator<int> {
-            if constexpr (false) { // NOLINT(readability-simplify-boolean-expr)
+        auto constexpr createGenerator { []() -> XUtils::XGenerator<int> {
+            if (false) { // NOLINT(readability-simplify-boolean-expr)
                 co_yield 42; // Make it a coroutine, except it never gets invoked.
             }
         }};
@@ -70,10 +71,8 @@ private Q_SLOTS:
     }
 
     static void testConstReferenceGenerator() {
-        auto constexpr createGenerator { [] -> XUtils::XGenerator<NoCopyMove const &> {
-                for (int i {}; i < 4; ++i)
-                { NoCopyMove const val { i }; co_yield val; }
-            }
+        auto constexpr createGenerator { []() -> XUtils::XGenerator<NoCopyMove const &>
+            { for (int i {}; i < 4; ++i) { NoCopyMove const val { i }; co_yield val; } }
         };
 
         auto const generator { createGenerator()};
@@ -86,7 +85,7 @@ private Q_SLOTS:
     }
 
     static void testReferenceGenerator() {
-        auto constexpr createGenerator { [] -> XUtils::XGenerator<NoCopyMove &> {
+        auto constexpr createGenerator { []() -> XUtils::XGenerator<NoCopyMove &> {
                 for (int i {}; i < 8; i += 2) {
                     NoCopyMove val(i); co_yield val;
                     QCORO_COMPARE(val.m_val, i + 1);
@@ -105,9 +104,8 @@ private Q_SLOTS:
     }
 
     static void testMoveonlyGenerator() {
-        auto constexpr createGenerator { [] -> XUtils::XGenerator<MoveOnly &&> {
-                for (int i {}; i < 4; ++i) { co_yield MoveOnly{i}; }
-            }
+        auto constexpr createGenerator { []() -> XUtils::XGenerator<MoveOnly &&>
+            { for (int i {}; i < 4; ++i) { co_yield MoveOnly{i}; } }
         };
 
         auto const generator { createGenerator() };
@@ -122,7 +120,7 @@ private Q_SLOTS:
 
     static void testMovedGenerator() {
         auto constexpr createGenerator {
-            [] -> XUtils::XGenerator<int> { for (int i {}; i < 4; ++i) { co_yield i;} }
+            []() -> XUtils::XGenerator<int> { for (int i {}; i < 4; ++i) { co_yield i;} }
         };
 
         auto originalGenerator { createGenerator() };
@@ -139,7 +137,7 @@ private Q_SLOTS:
     static void testException(){
 
         auto constexpr createGenerator {
-            [] -> XUtils::XGenerator<int> {
+            []() -> XUtils::XGenerator<int> {
                 for (int i {}; i < 10; ++i) {
                     if (2 == i) { throw std::runtime_error("Two?! I can't handle two!!"); }
                     co_yield i;
@@ -164,7 +162,7 @@ private Q_SLOTS:
     }
 
     static void testExceptionInBegin() {
-        auto const generator { [] -> XUtils::XGenerator<int> {
+        auto const generator { []() -> XUtils::XGenerator<int> {
             throw std::runtime_error("Zero is too small!");
             co_yield 1;
         }()};

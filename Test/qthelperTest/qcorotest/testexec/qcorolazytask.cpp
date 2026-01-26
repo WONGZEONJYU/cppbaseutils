@@ -79,8 +79,8 @@ struct QCoroLazyTaskTest : QCoro::TestObject<QCoroLazyTaskTest>
     }
 
     XUtils::XCoroTask<> testEagerInsideLazy_coro(QCoro::TestContext) {
-        auto constexpr coro { [] -> XUtils::XCoroLazyTask<int> {
-            auto constexpr interCoro { [] -> XUtils::XCoroTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; } };
+        auto constexpr coro { []() -> XUtils::XCoroLazyTask<int> {
+            auto constexpr interCoro { []() -> XUtils::XCoroTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; } };
             co_return co_await interCoro();
         }};
         auto const task { coro()};
@@ -91,7 +91,7 @@ struct QCoroLazyTaskTest : QCoro::TestObject<QCoroLazyTaskTest>
     XUtils::XCoroTask<> testThenLazyContinuation_coro(QCoro::TestContext) {
 
         auto constexpr coro {
-            [] -> XUtils::XCoroLazyTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; }
+            []() -> XUtils::XCoroLazyTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; }
         };
 
         auto const task = coro().then(
@@ -105,7 +105,7 @@ struct QCoroLazyTaskTest : QCoro::TestObject<QCoroLazyTaskTest>
 
     XUtils::XCoroTask<> testThenEagerContinuation_coro(QCoro::TestContext) {
         auto constexpr coro {
-            [] -> XUtils::XCoroLazyTask<int> {
+            []() -> XUtils::XCoroLazyTask<int> {
                 co_await XUtils::sleepFor(1ms);
                 co_return 42;
             }
@@ -122,8 +122,8 @@ struct QCoroLazyTaskTest : QCoro::TestObject<QCoroLazyTaskTest>
     }
 
     XUtils::XCoroTask<> testThenNonCoroutineContinuation_coro(QCoro::TestContext) {
-        constexpr auto coro {
-            []-> XUtils::XCoroLazyTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; }
+        auto constexpr coro {
+            []()-> XUtils::XCoroLazyTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; }
         };
 
         auto const task { coro().then([](int const result){
@@ -148,7 +148,7 @@ private Q_SLOTS:
     addTest(ThenNonCoroutineContinuation)
 
     void testWaitFor() {
-        auto constexpr coro { [] -> XUtils::XCoroLazyTask<int> {
+        auto constexpr coro { []() -> XUtils::XCoroLazyTask<int> {
                 co_await XUtils::sleepFor(1ms);
                 co_return 42;
             }

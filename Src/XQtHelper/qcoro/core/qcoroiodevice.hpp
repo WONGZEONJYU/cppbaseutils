@@ -68,7 +68,7 @@ namespace detail {
 
             virtual void await_suspend(std::coroutine_handle<> const h) noexcept {
                 Q_ASSERT(m_device_);
-                auto const slotF { [this, h] noexcept{ finish(h); } };
+                auto const slotF { [this, h]{ finish(h); } };
                 m_conn_ = QObject::connect(m_device_, &QIODevice::readyRead,slotF);
                 m_closeConn_ = QObject::connect(m_device_, &QIODevice::aboutToClose,slotF);
             }

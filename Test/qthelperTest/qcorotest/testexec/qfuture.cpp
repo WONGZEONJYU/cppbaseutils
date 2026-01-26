@@ -42,28 +42,28 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
     Q_OBJECT
 
     XUtils::XCoroTask<> testTriggers_coro(QCoro::TestContext) {
-        auto const future { QtConcurrent::run([]constexpr { std::this_thread::sleep_for(100ms); }) };
+        auto const future { QtConcurrent::run([]()noexcept{ std::this_thread::sleep_for(100ms); }) };
         co_await future;
         QCORO_VERIFY(future.isFinished());
     }
 
     XUtils::XCoroTask<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
-        auto const future { QtConcurrent::run([]constexpr { std::this_thread::sleep_for(100ms); }) };
+        auto const future { QtConcurrent::run([]()noexcept{ std::this_thread::sleep_for(100ms); }) };
         co_await XUtils::qCoro(future).waitForFinished();
         QCORO_VERIFY(future.isFinished());
     }
 
     static void testThenQCoroWrapperTriggers_coro(TestLoop & el) {
-        auto const future { QtConcurrent::run([]constexpr { std::this_thread::sleep_for(100ms); }) };
+        auto const future { QtConcurrent::run([]()noexcept{ std::this_thread::sleep_for(100ms); }) };
 
         bool called {};
-        XUtils::qCoro(future).waitForFinished().then([&]constexpr { called = true;el.quit();});
+        XUtils::qCoro(future).waitForFinished().then([&]()noexcept{ called = true;el.quit();});
         el.exec();
         QVERIFY(called);
     }
 
     XUtils::XCoroTask<> testReturnsResult_coro(QCoro::TestContext) {
-        auto const result{ co_await QtConcurrent::run([]{
+        auto const result{ co_await QtConcurrent::run([]()noexcept{
                 std::this_thread::sleep_for(100ms);
                 return QStringLiteral("42");
             })
@@ -87,12 +87,12 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 
     XUtils::XCoroTask<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker const eventLoopResponsive {};
-        co_await QtConcurrent::run([] constexpr { std::this_thread::sleep_for(500ms); });
+        co_await QtConcurrent::run([]()noexcept{ std::this_thread::sleep_for(500ms); });
         QCORO_VERIFY(eventLoopResponsive);
     }
 
     XUtils::XCoroTask<> testDoesntCoAwaitFinishedFuture_coro(QCoro::TestContext test) {
-        auto const future { QtConcurrent::run([] constexpr { std::this_thread::sleep_for(100ms); }) };
+        auto const future { QtConcurrent::run([]()noexcept { std::this_thread::sleep_for(100ms); }) };
         co_await future;
         QCORO_VERIFY(future.isFinished());
         test.setShouldNotSuspend();
@@ -100,12 +100,12 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
     }
 
     void testThenDoesntCoAwaitFinishedFuture_coro(TestLoop & el) {
-        auto const future { QtConcurrent::run([]constexpr { std::this_thread::sleep_for(1ms); }) };
+        auto const future { QtConcurrent::run([]()noexcept { std::this_thread::sleep_for(1ms); }) };
         QTest::qWait((100ms).count());
         QVERIFY(future.isFinished());
 
         bool called {};
-        XUtils::qCoro(future).waitForFinished().then([&]{
+        XUtils::qCoro(future).waitForFinished().then([&]()noexcept{
             called = true; el.quit();
         });
         el.exec();
@@ -121,7 +121,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
     static void testThenDoesntCoAwaitCanceledFuture_coro(TestLoop &el) {
         QFuture<void> const future {};
         bool called {};
-        XUtils::qCoro(future).waitForFinished().then([&]constexpr {
+        XUtils::qCoro(future).waitForFinished().then([&]()noexcept{
             called = true;
             el.quit();
         });
@@ -130,7 +130,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
     }
 
     XUtils::XCoroTask<> testPropagateQExceptionFromVoidConcurrent_coro(QCoro::TestContext) {
-        auto const future { QtConcurrent::run([]constexpr {
+        auto const future { QtConcurrent::run([]{
             std::this_thread::sleep_for(100ms);
             throw TestException(QStringLiteral("Ooops"));
         })};
@@ -139,7 +139,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 
     XUtils::XCoroTask<> testPropagateQExceptionFromNonvoidConcurrent_coro(QCoro::TestContext) {
         auto throwException {true};
-        auto const future { QtConcurrent::run([throwException] constexpr -> int {
+        auto const future { QtConcurrent::run([throwException]{
                 std::this_thread::sleep_for(100ms);
                 if (throwException) { // Workaround MSVC reporting the "return" stmt as unreachablet
                     throw TestException(QStringLiteral("Ooops"));
@@ -153,7 +153,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 #if QT_VERSION_MAJOR >= 6
     XUtils::XCoroTask<> testPropagateQExceptionFromVoidPromise_coro(QCoro::TestContext) {
         QPromise<void> promise{};
-        QTimer::singleShot(100ms, this, [&promise]constexpr {
+        QTimer::singleShot(100ms, this, [&promise]{
             promise.start();
             promise.setException(TestException(QStringLiteral("Booom")));
             promise.finish();
@@ -164,7 +164,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 
     XUtils::XCoroTask<> testPropagateQExceptionFromNonvoidPromise_coro(QCoro::TestContext) {
         QPromise<int> promise{};
-        QTimer::singleShot(100ms, this, [&promise]constexpr {
+        QTimer::singleShot(100ms, this, [&promise]{
             promise.start();
             promise.setException(TestException(QStringLiteral("Booom")));
             promise.finish();
@@ -175,7 +175,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 
     XUtils::XCoroTask<> testPropagateStdExceptionFromVoidPromise_coro(QCoro::TestContext) {
         QPromise<void> promise{};
-        QTimer::singleShot(100ms, this, [&promise]constexpr {
+        QTimer::singleShot(100ms, this, [&promise]{
             promise.start();
             promise.setException(std::make_exception_ptr(std::runtime_error("Booom")));
             promise.finish();
@@ -186,7 +186,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 
     XUtils::XCoroTask<> testPropagateStdExceptionFromNonvoidPromise_coro(QCoro::TestContext) {
         QPromise<void> promise{};
-        QTimer::singleShot(100ms, this, [&promise]constexpr {
+        QTimer::singleShot(100ms, this, [&promise] {
             promise.start();
             promise.setException(std::make_exception_ptr(std::runtime_error("Booom")));
             promise.finish();
@@ -196,7 +196,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
     }
 
     XUtils::XCoroTask<> testTakeResult_coro(QCoro::TestContext) {
-        auto const future { QtConcurrent::run([]constexpr -> MoveOnly {
+        auto const future { QtConcurrent::run([]{
             std::this_thread::sleep_for(10ms);
             return MoveOnly(42);
         })};
@@ -205,7 +205,7 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
         QCORO_COMPARE(result.m_value, 42);
 
         QPromise<MoveOnly> promise{};
-        QTimer::singleShot(10ms, this, [&promise]constexpr {
+        QTimer::singleShot(10ms, this, [&promise]{
             promise.start();
             promise.addResult(MoveOnly(84));
             promise.finish();
@@ -216,14 +216,14 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 
     static void testThenTakeResult_coro(TestLoop & el) {
         auto const future{
-            QtConcurrent::run([]constexpr -> MoveOnly {
+            QtConcurrent::run([]{
                 std::this_thread::sleep_for(10ms);
                 return MoveOnly(42);
             })
         };
 
         bool called {};
-        XUtils::qCoro(future).takeResult().then([&](MoveOnly const result)constexpr {
+        XUtils::qCoro(future).takeResult().then([&](MoveOnly const result) {
             called = true;
             QCOMPARE(result.m_value, 42);
             el.quit();
@@ -238,12 +238,10 @@ struct QCoroFutureTest : QCoro::TestObject<QCoroFutureTest> {
 // Qt 6.3.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
     XUtils::XCoroTask<> testUnfinishedPromiseDestroyed_coro(QCoro::TestContext) {
-        const auto future { [this]constexpr{
+        const auto future { [this]{
                 auto promise { std::make_shared<QPromise<int>>()};
                 auto future_ { promise->future()};
-                QTimer::singleShot(400ms, this, [p = promise] {
-                    p->addResult(42);
-                });
+                QTimer::singleShot(400ms, this, [p = promise] {p->addResult(42);});
                 return future_;
             }()
         };

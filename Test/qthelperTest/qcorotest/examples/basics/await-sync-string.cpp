@@ -25,21 +25,21 @@
 class StringAwaiter {
     std::string m_value_{};
 public:
-    explicit(false) constexpr StringAwaiter(std::string const & value) noexcept : m_value_{value}
+    explicit(false) StringAwaiter(std::string const & value) noexcept : m_value_{value}
     { std::cout << "StringAwaiter constructed with value '" << value << "'." << std::endl; }
 
-    constexpr ~StringAwaiter()
+    ~StringAwaiter()
     { std::cout << "StringAwaiter destroyed." << std::endl; }
 
-    static constexpr bool await_ready() noexcept {
+    static bool await_ready() noexcept {
         std::cout << "StringAwaiter::await_ready() called." << std::endl;
         return {};
     }
 
-    static constexpr void await_suspend(std::coroutine_handle<>) noexcept
+    static void await_suspend(std::coroutine_handle<>) noexcept
     { std::cout << "StringAwaiter::await_suspend() called." << std::endl; }
 
-    constexpr auto await_resume() const noexcept{
+    [[nodiscard]] auto await_resume() const noexcept{
         std::cout << "StringAwaiter::await_resume() called." << std::endl;
         return m_value_;
     }
@@ -49,14 +49,14 @@ class StringAwaitable {
     std::string m_str_{};
 
 public:
-    explicit(false) constexpr StringAwaitable(std::string str) noexcept
+    explicit(false) StringAwaitable(std::string str) noexcept
         : m_str_{std::move(str) }
     { std::cout << "StringAwaitable constructored with value '" << m_str_ << "'." << std::endl; }
 
-    constexpr ~StringAwaitable()
+    ~StringAwaitable()
     { std::cout << "StringAwaitable destroyed." << std::endl; }
 
-    constexpr auto operator co_await() const noexcept{
+    auto operator co_await() const noexcept{
         std::cout << "StringAwaitable::operator co_await() called." << std::endl;
         return StringAwaiter {m_str_};
     }
@@ -64,18 +64,18 @@ public:
 
 struct VoidPromise {
 
-    explicit(false) constexpr VoidPromise()
+    explicit(false) VoidPromise()
     { std::cout << "VoidPromise constructed." << std::endl; }
 
-    constexpr ~VoidPromise()
+    ~VoidPromise()
     { std::cout << "VoidPromise destroyed." << std::endl; }
 
     struct promise_type {
 
-        explicit(false) constexpr promise_type()
+        explicit(false) promise_type()
         { std::cout << "VoidPromise::promise_type constructed." << std::endl; }
 
-        constexpr ~promise_type()
+        ~promise_type()
         { std::cout << "VoidPromise::promise_type destroyed." << std::endl; }
 
         // Says whether the coroutine body should be executed immediately (`suspend_never`)
@@ -91,7 +91,7 @@ struct VoidPromise {
         // Called by the compiler during initial coroutine setup to obtain the object that
         // will be returned from the coroutine when it is suspended.
         // Sicne this is a promise type for VoidPromise, we return a VoidPromise.
-        static constexpr auto get_return_object() noexcept{
+        static auto get_return_object() noexcept{
             std::cout << "VoidPromise::get_return_object() called." << std::endl;
             return VoidPromise {};
         }
@@ -99,7 +99,7 @@ struct VoidPromise {
         // Called by the compiler when an exception propagates from the coroutine.
         // Alternatively, we could declare `set_exception()` which the compiler would
         // call instead to let us handle the exception (e.g. propagate it)
-        static constexpr void unhandled_exception() noexcept
+        static void unhandled_exception() noexcept
         { std::terminate(); }
 
         // The result of the promise. Since our promise is void, we must implement `return_void()`.
@@ -107,7 +107,7 @@ struct VoidPromise {
         // instead.
         static constexpr void return_void() noexcept {}
 
-        static constexpr auto await_transform(std::string str)noexcept{
+        static auto await_transform(std::string str)noexcept{
             std::cout << "VoidPromise::await_transform for string '" << str << "' called."
                       << std::endl;
             return StringAwaitable{std::move(str)};

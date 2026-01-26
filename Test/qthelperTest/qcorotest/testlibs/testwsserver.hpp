@@ -12,7 +12,7 @@ class Server;
 class TestWsServer {
 
     std::unique_ptr<QThread> m_thread_{};
-    std::unique_ptr<Server> m_server_{};
+    std::unique_ptr<Server> m_server_;
     QUrl m_url_{};
 
 public:

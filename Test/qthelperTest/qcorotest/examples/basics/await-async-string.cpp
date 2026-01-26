@@ -100,18 +100,18 @@ public:
 
 struct VoidPromise {
 
-    explicit(false) constexpr VoidPromise()
+    explicit(false) VoidPromise()
     { std::cout << "VoidPromise constructed." << std::endl; }
 
-    constexpr ~VoidPromise()
+    ~VoidPromise()
     { std::cout << "VoidPromise destroyed." << std::endl; }
 
     struct promise_type {
 
-        explicit(false) constexpr  promise_type()
+        explicit(false)  promise_type()
         { std::cout << "VoidPromise::promise_type constructed." << std::endl; }
 
-        constexpr ~promise_type()
+        ~promise_type()
         { std::cout << "VoidPromise::promise_type destroyed." << std::endl; }
 
         // Says whether the coroutine body should be executed immediately (`suspend_never`)
@@ -127,7 +127,7 @@ struct VoidPromise {
         // Called by the compiler during initial coroutine setup to obtain the object that
         // will be returned from the coroutine when it is suspended.
         // Sicne this is a promise type for VoidPromise, we return a VoidPromise.
-        static auto constexpr get_return_object() noexcept{
+        static auto get_return_object() noexcept{
             std::cout << "VoidPromise::get_return_object() called." << std::endl;
             return VoidPromise{};
         }
@@ -135,7 +135,7 @@ struct VoidPromise {
         // Called by the compiler when an exception propagates from the coroutine.
         // Alternatively, we could declare `set_exception()` which the compiler would
         // call instead to let us handle the exception (e.g. propagate it)
-        static constexpr void unhandled_exception() noexcept
+        static void unhandled_exception() noexcept
         { std::terminate(); }
 
         // The result of the promise. Since our promise is void, we must implement `return_void()`.
@@ -143,14 +143,14 @@ struct VoidPromise {
         // instead.
         static constexpr void return_void() noexcept {}
 
-        static constexpr auto await_transform(std::shared_ptr<FutureString> const & future)noexcept {
+        static auto await_transform(std::shared_ptr<FutureString> const & future)noexcept {
             std::cout << "VoidPromise::await_transform called." << std::endl;
             return FutureStringAwaitable{future};
         }
     };
 };
 
-static constexpr std::shared_ptr<FutureString> regularFunction()
+static std::shared_ptr<FutureString> regularFunction()
 { return std::make_shared<FutureString>(QStringLiteral("Hello World!")); }
 
 // This function co_awaits, therefore it's a co-routine and must
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
     QCoreApplication app{argc, argv};
     QMetaObject::invokeMethod(&app, myCoroutine);
     QTimer t{};
-    t.callOnTimeout(std::addressof(app),[]constexpr { std::cout << "Tick" << std::endl; });
+    t.callOnTimeout(std::addressof(app),[]()noexcept{ std::cout << "Tick" << std::endl; });
     using namespace std::chrono_literals;
     t.start(100ms);
     return app.exec();
