@@ -10,7 +10,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename> class XCoroLazyTask;
+template<typename T> class XCoroLazyTask;
 
 namespace detail {
 
@@ -55,7 +55,7 @@ public:
         struct TaskAwaiter : detail::TaskAwaiterAbstract<promise_type> {
             using Base = detail::TaskAwaiterAbstract<promise_type>;
 
-            explicit(false) constexpr TaskAwaiter(Base::coroutine_handle const h) noexcept
+            X_IMPLICIT constexpr TaskAwaiter(Base::coroutine_handle const h) noexcept
                 : Base { h } {  }
 
             constexpr auto await_suspend(std::coroutine_handle<> const h) noexcept{
@@ -76,21 +76,17 @@ public:
 
     constexpr XCoroLazyTask() noexcept = default;
 
-#undef IMPLICIT
-#define IMPLICIT explicit(false)
-
-    IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h)
+    X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h)
         : Base { h }
     {   }
 
-    IMPLICIT constexpr XCoroLazyTask(promise_type & promise)
+    X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise)
         : XCoroLazyTask { coroutine_handle::from_promise(promise) }
     {   }
 
-    IMPLICIT constexpr XCoroLazyTask(promise_type * const promise)
+    X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise)
         : XCoroLazyTask { *promise }
     {   }
-#undef IMPLICIT
 };
 
 XTD_INLINE_NAMESPACE_END

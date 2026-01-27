@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <XGlobal/xclasshelpermacros.hpp>
 #include <XAtomic/xatomic.hpp>
 #include <XCoroutine/private/mixns.hpp>
 #include <coroutine>
@@ -22,7 +23,7 @@ namespace detail {
     class TaskFinalSuspend final {
         coroutine_handle_vector m_awaitingCoroutines_ {};
     public:
-        explicit(false) constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
+        X_IMPLICIT constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
         {   }
 

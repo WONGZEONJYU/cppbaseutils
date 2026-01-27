@@ -26,27 +26,24 @@ public:
 
     constexpr XCoroTask() noexcept = default;
 
-#undef IMPLICIT
-#define IMPLICIT explicit(false)
-
-    IMPLICIT constexpr XCoroTask(coroutine_handle const coroutine) noexcept
+    X_IMPLICIT constexpr XCoroTask(coroutine_handle const coroutine) noexcept
         : Base { coroutine }
     {    }
 
-    IMPLICIT constexpr XCoroTask(promise_type & promise) noexcept
+    X_IMPLICIT constexpr XCoroTask(promise_type & promise) noexcept
         : XCoroTask { coroutine_handle::from_promise(promise) }
     {    }
 
-    IMPLICIT constexpr XCoroTask(promise_type * const promise) noexcept
+    X_IMPLICIT constexpr XCoroTask(promise_type * const promise) noexcept
         : XCoroTask { *promise }
     {    }
-
-#undef IMPLICIT
 };
+
+using XCoroTaskVoid = XCoroTask<>;
 
 namespace detail {
 
-    inline XCoroTask<> TaskPromise<void>::get_return_object() noexcept
+    inline XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
     { return { this }; }
 
     template <typename T>

@@ -36,8 +36,12 @@ namespace detail {
             virtual ~OperationAbstract() = default;
 
         protected:
-            explicit(false) OperationAbstract(QIODevice * const device)
+            X_IMPLICIT OperationAbstract(QIODevice * const device) noexcept
                 : m_device_ { device }
+            {    }
+
+            X_IMPLICIT OperationAbstract(QIODevice & device) noexcept
+                : m_device_ { std::addressof(device) }
             {    }
 
             virtual void finish(std::coroutine_handle<> const h) {
@@ -56,8 +60,12 @@ namespace detail {
             callback_t m_resultCb_{};
 
         public:
-            explicit(false) ReadOperation(QIODevice * const device, callback_t && resultCb)
+            X_IMPLICIT ReadOperation(QIODevice * const device, callback_t && resultCb)
                 : Base { device } , m_resultCb_ { std::move(resultCb) }
+            {   }
+
+            X_IMPLICIT ReadOperation(QIODevice & device, callback_t && resultCb)
+                : ReadOperation { std::addressof(device) , std::move(resultCb) }
             {   }
 
             Q_DISABLE_COPY(ReadOperation);
@@ -73,47 +81,57 @@ namespace detail {
                 m_closeConn_ = QObject::connect(m_device_, &QIODevice::aboutToClose,slotF);
             }
 
-            [[nodiscard]] QByteArray await_resume() const { return m_resultCb_(m_device_); }
+            [[nodiscard]] QByteArray await_resume() const
+            { return m_resultCb_(m_device_); }
         };
 
         struct ReadAllOperation final : ReadOperation {
-            explicit(false) ReadAllOperation(QIODevice * const device)
+            X_IMPLICIT ReadAllOperation(QIODevice * const device)
                 : ReadOperation { device,[](QIODevice * const d){ return d->readAll(); } }
             {   }
 
-            explicit(false) ReadAllOperation(QIODevice & device)
+            X_IMPLICIT ReadAllOperation(QIODevice & device)
                 : ReadAllOperation { std::addressof(device) }
             {   }
         };
 
     public:
-        explicit(false) QCoroIODevice(QIODevice * const device) noexcept
+        X_IMPLICIT QCoroIODevice(QIODevice * const device) noexcept
             : m_device_ { device }
+        {   }
+
+        X_IMPLICIT QCoroIODevice(QIODevice & device) noexcept
+            : m_device_ { std::addressof(device) }
         {   }
 
         virtual ~QCoroIODevice() = default;
 
         using milliseconds = std::chrono::milliseconds;
+        using TaskQByteArray = XCoroTask<QByteArray>;
+        using TaskQInt64 = XCoroTask<qint64>;
+        using TaskBool = XCoroTask<bool>;
+        using TaskOptionalBool = XCoroTask<std::optional<bool>>;
+        using TaskOptionalQInt64 = XCoroTask<std::optional<qint64>>;
 
-        XCoroTask<QByteArray> readAll(milliseconds const timeout = milliseconds{-1}) const {
+        TaskQByteArray readAll(milliseconds const timeout = milliseconds{-1}) const {
             auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray{}; }
             co_return d->readAll();
         }
 
-        XCoroTask<QByteArray> read(qint64 const maxSize, milliseconds const timeout = milliseconds{-1}) const {
+        TaskQByteArray read(qint64 const maxSize, milliseconds const timeout = milliseconds{-1}) const {
             auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray{}; }
             co_return d->read(maxSize);
         }
 
-        XCoroTask<QByteArray> readLine(qint64 const maxSize = {} ,milliseconds const timeout = milliseconds{-1}) const {
+        TaskQByteArray readLine(qint64 const maxSize = {} ,milliseconds const timeout = milliseconds{-1}) const {
             auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray {}; }
             co_return d->readLine(maxSize);
         }
 
-        XCoroTask<qint64> write(QByteArray const & buffer) const {
+        TaskQInt64 write(QByteArray const & buffer) const {
             qint64 bytesConfirmed {};
             auto const bytesWritten{ m_device_->write(buffer) };
             while (bytesConfirmed < bytesWritten) {
@@ -126,14 +144,14 @@ namespace detail {
             co_return bytesConfirmed;
         }
 
-        XCoroTask<bool> waitForReadyRead(milliseconds const timeout) const {
+        TaskBool waitForReadyRead(milliseconds const timeout) const {
             if (!m_device_->isReadable()) { co_return false; }
             if (m_device_->bytesAvailable() > 0) { co_return true; }
             auto const result{ co_await waitForReadyReadImpl(timeout) };
             co_return result.has_value();
         }
 
-        XCoroTask<bool> waitForReadyRead(int const timeout_msecs) const
+        TaskBool waitForReadyRead(int const timeout_msecs) const
         { return waitForReadyRead(milliseconds{timeout_msecs}); }
 
         XCoroTask<std::optional<qint64>> waitForBytesWritten(milliseconds const timeout) const {
@@ -147,12 +165,12 @@ namespace detail {
         { return waitForBytesWritten(milliseconds{ timeout_msecs }); }
 
     protected:
-        virtual XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) const {
+        virtual TaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const {
             WaitSignalHelper helper {m_device_.data(), &QIODevice::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&WaitSignalHelper::ready), timeout);
         }
 
-        virtual XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) const {
+        virtual TaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const {
             WaitSignalHelper helper {m_device_.data(), &QIODevice::bytesWritten };
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&WaitSignalHelper::ready), timeout);
         }
@@ -167,10 +185,10 @@ namespace detail {
 }
 
 inline auto qCoro(QIODevice & d) noexcept
-{ return detail::QCoroIODevice {std::addressof(d) }; }
+{ return detail::QCoroIODevice{d }; }
 
-inline auto qCoro(QIODevice * d) noexcept
-{ return detail::QCoroIODevice{d}; }
+inline auto qCoro(QIODevice * const d) noexcept
+{ return detail::QCoroIODevice{ d }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

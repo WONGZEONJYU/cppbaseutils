@@ -8,7 +8,6 @@
 #pragma once
 
 #include <XCoroutine/private/taskpromiseabstract.hpp>
-
 #include <cassert>
 #include <variant>
 #include <exception>
@@ -16,7 +15,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename> class XCoroTask;
+template<typename T> class XCoroTask;
 
 namespace detail {
 
@@ -61,7 +60,7 @@ namespace detail {
     class TaskPromise<void> : public TaskPromiseAbstract {
         std::exception_ptr m_exception_ {};
     public:
-        auto get_return_object() noexcept ->XCoroTask<void> ;
+        XCoroTask<void> get_return_object() noexcept;
 
         void unhandled_exception()
         { m_exception_ = std::current_exception(); }
@@ -73,6 +72,8 @@ namespace detail {
 
         constexpr ~TaskPromise() override = default;
     };
+
+    using TaskPromiseVoid = TaskPromise<void>;
 
 }
 

@@ -12,25 +12,31 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    class AbstractSocketReadySignalHelper : public WaitSignalHelper {
+    struct AbstractSocketReadySignalHelper : WaitSignalHelper {
         Q_OBJECT
         QMetaObject::Connection m_stateChanged_{};
 
     public:
-        explicit(false) AbstractSocketReadySignalHelper(const QAbstractSocket * const socket, signalFunc<> const readySignal)
+        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const * const socket, signalFunc<> const readySignal)
             : WaitSignalHelper { socket, readySignal }
             , m_stateChanged_ { connect_(socket, &QAbstractSocket::stateChanged, this,
-                        [this]<typename Tp>(Tp && state)
-                        { handleStateChange(std::forward<Tp>(state),false); })
+                [this]<typename Tp>(Tp && state){ handleStateChange(std::forward<Tp>(state),false); })
             }
         {   }
 
-        explicit(false) AbstractSocketReadySignalHelper(const QAbstractSocket * const socket, signalFunc<true> const readySignal)
-            : WaitSignalHelper(socket, readySignal)
+        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const & socket, signalFunc<> const readySignal)
+            : AbstractSocketReadySignalHelper { std::addressof(socket),readySignal }
+        {   }
+
+        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const * const socket, signalFunc<qint64> const readySignal)
+            : WaitSignalHelper { socket, readySignal }
             , m_stateChanged_{ connect_(socket, &QAbstractSocket::stateChanged, this,
-                            [this]<typename Tp>(Tp && state){
-                                handleStateChange(std::forward<Tp>(state), static_cast<qint64>(0)); })
+                [this]<typename Tp>(Tp && state){ handleStateChange(std::forward<Tp>(state), static_cast<qint64>(0)); })
             }
+        {   }
+
+        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const & socket, signalFunc<qint64> const readySignal)
+            : AbstractSocketReadySignalHelper { std::addressof(socket),readySignal }
         {   }
 
     private:
@@ -45,31 +51,35 @@ namespace detail {
 
     struct QCoroAbstractSocket final : QCoroIODevice {
 
-        explicit(false) QCoroAbstractSocket(QAbstractSocket * const socket) noexcept
+        X_IMPLICIT QCoroAbstractSocket(QAbstractSocket * const socket) noexcept
             : QCoroIODevice { socket }
         {   }
 
-        XCoroTask<bool> waitForConnected(int const timeout_msecs = 30'000) const
+        X_IMPLICIT QCoroAbstractSocket(QAbstractSocket & socket) noexcept
+            : QCoroIODevice { socket }
+        {   }
+
+        TaskBool waitForConnected(int const timeout_msecs = 30'000) const
         { return waitForConnected(milliseconds{ timeout_msecs }); }
 
-        XCoroTask<bool> waitForConnected(milliseconds const timeout) const {
+        TaskBool waitForConnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() == QAbstractSocket::ConnectedState) { co_return true; }
             auto const result{ co_await qCoro(socket, &QAbstractSocket::connected, timeout) };
             co_return result.has_value();
         }
 
-        XCoroTask<bool> waitForDisconnected(int const timeout_msecs = 30'000) const
+        TaskBool waitForDisconnected(int const timeout_msecs = 30'000) const
         { return waitForDisconnected(milliseconds{ timeout_msecs }); }
 
-        XCoroTask<bool> waitForDisconnected(milliseconds const timeout) const {
+        TaskBool waitForDisconnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() == QAbstractSocket::UnconnectedState) { co_return false; }
             const auto result{ co_await qCoro(socket, &QAbstractSocket::disconnected, timeout) };
             co_return result.has_value();
         }
 
-        XCoroTask<bool> connectToHost(QString const & hostName, quint16 const port,
+        TaskBool connectToHost(QString const & hostName, quint16 const port,
                              QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                              QAbstractSocket::NetworkLayerProtocol const protocol = QAbstractSocket::AnyIPProtocol,
                              milliseconds const timeout = std::chrono::seconds{30}) const
@@ -78,7 +88,7 @@ namespace detail {
             return waitForConnected(timeout);
         }
 
-        XCoroTask<bool> connectToHost(QHostAddress const & address, quint16 const port,
+        TaskBool connectToHost(QHostAddress const & address, quint16 const port,
                              QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                              milliseconds const timeout = std::chrono::seconds{30}) const
         {
@@ -87,14 +97,14 @@ namespace detail {
         }
 
     private:
-        XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) const override {
+        TaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() != QAbstractSocket::ConnectedState) { co_return false; }
             AbstractSocketReadySignalHelper helper { socket, &QIODevice::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&WaitSignalHelper::ready), timeout);
         }
 
-        XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) const override {
+        TaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QAbstractSocket *>(m_device_.data()) };
             if (socket->state() != QAbstractSocket::ConnectedState) { co_return std::nullopt; }
             AbstractSocketReadySignalHelper helper { socket, &QIODevice::bytesWritten };
@@ -105,7 +115,7 @@ namespace detail {
 }
 
 inline auto qCoro(QAbstractSocket & s) noexcept
-{ return detail::QCoroAbstractSocket{ std::addressof(s) }; }
+{ return detail::QCoroAbstractSocket{s }; }
 
 inline auto qCoro(QAbstractSocket * const s) noexcept
 { return detail::QCoroAbstractSocket{ s }; }

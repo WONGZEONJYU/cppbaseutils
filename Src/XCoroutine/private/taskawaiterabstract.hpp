@@ -34,7 +34,7 @@ namespace detail {
         }
 
     protected:
-        explicit(false) constexpr TaskAwaiterAbstract(coroutine_handle const h) noexcept
+        X_IMPLICIT constexpr TaskAwaiterAbstract(coroutine_handle const h) noexcept
          : m_awaitedCoroutine_ { h }
         {   }
     };

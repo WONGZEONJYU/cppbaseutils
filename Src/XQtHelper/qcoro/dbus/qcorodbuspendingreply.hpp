@@ -28,8 +28,13 @@ namespace detail {
         class WaitForFinishedOperation {
             QDBusPendingReply<Args ...> m_reply_{};
         public:
-            explicit(false) constexpr WaitForFinishedOperation(QDBusPendingReply<Args ...> const & reply)
-                : m_reply_ {reply} {}
+            Implicit_ WaitForFinishedOperation(QDBusPendingReply<Args ...> const & reply)
+                : m_reply_ {reply}
+            {   }
+
+            Implicit_ WaitForFinishedOperation(QDBusPendingReply<Args ...> const * const reply)
+                : m_reply_ { *reply }
+            {   }
 
             [[nodiscard]] bool await_ready() const noexcept
             { return m_reply_.isFinished(); }
@@ -45,8 +50,13 @@ namespace detail {
         };
 
     public:
-        explicit(false) constexpr QCoroDBusPendingReply(QDBusPendingReply<Args ...> const & reply)
-            : m_reply_ {reply} {}
+        Implicit_ QCoroDBusPendingReply(QDBusPendingReply<Args ...> const & reply)
+            : m_reply_ { reply }
+        {   }
+
+        Implicit_ QCoroDBusPendingReply(QDBusPendingReply<Args ...> const * const reply)
+            : m_reply_ { *reply }
+        {   }
 
         XCoroTask<QDBusPendingReply<Args ...>> waitForFinished() const {
             if (m_reply_.isFinished()) { co_return m_reply_; }
@@ -64,6 +74,10 @@ namespace detail {
 template<typename ... Args>
 auto qCoro(QDBusPendingReply<Args ...> const & reply) noexcept
 { return detail::QCoroDBusPendingReply<Args ...> {reply}; }
+
+template<typename ... Args>
+auto qCoro(QDBusPendingReply<Args ...> const * const reply) noexcept
+{ return detail::QCoroDBusPendingReply<Args ...> { reply }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

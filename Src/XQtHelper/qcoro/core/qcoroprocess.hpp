@@ -21,15 +21,20 @@ namespace detail {
 
         using milliseconds = std::chrono::milliseconds;
 
-        explicit(false) QCoroProcess(QProcess * const process) noexcept
-            : QCoroIODevice { process } { }
+        X_IMPLICIT QCoroProcess(QProcess * const process) noexcept
+            : QCoroIODevice { process }
+        {   }
+
+        X_IMPLICIT QCoroProcess(QProcess & process) noexcept
+            : QCoroIODevice { process }
+        {   }
 
         ~QCoroProcess() override = default;
 
-        [[nodiscard]] XCoroTask<bool> waitForStarted(int const timeout_msecs = 30'000) const
+        [[nodiscard]] TaskBool waitForStarted(int const timeout_msecs = 30'000) const
         { return waitForStarted(milliseconds {timeout_msecs}); }
 
-        [[nodiscard]] XCoroTask<bool> waitForStarted(milliseconds const timeout) const {
+        [[nodiscard]] TaskBool waitForStarted(milliseconds const timeout) const {
             auto const process { qobject_cast<QProcess *>(m_device_.data()) };
             if (process->state() == QProcess::Starting) {
                 auto const started { co_await qCoro(process, &QProcess::started, timeout) };
@@ -38,24 +43,24 @@ namespace detail {
             co_return process->state() == QProcess::Running;
         }
 
-        [[nodiscard]] XCoroTask<bool> waitForFinished(int const timeout_msecs = 30'000) const
+        [[nodiscard]] TaskBool waitForFinished(int const timeout_msecs = 30'000) const
         { return waitForFinished(milliseconds { timeout_msecs }); }
 
-        [[nodiscard]] XCoroTask<bool> waitForFinished(milliseconds const timeout) const {
+        [[nodiscard]] TaskBool waitForFinished(milliseconds const timeout) const {
             auto const process { qobject_cast<QProcess *>(m_device_.data()) };
             if (process->state() == QProcess::NotRunning) { co_return false; }
             auto const finished { co_await qCoro(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), timeout) };
             co_return finished.has_value();
         }
 
-        [[nodiscard]] XCoroTask<bool> start(QIODevice::OpenMode const mode = QIODevice::ReadWrite
+        [[nodiscard]] TaskBool start(QIODevice::OpenMode const mode = QIODevice::ReadWrite
             ,milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QProcess *>(m_device_.data())->start(mode);
             return waitForStarted(timeout);
         }
 
-        [[nodiscard]] XCoroTask<bool> start(QString const & program, QStringList const & arguments,
+        [[nodiscard]] TaskBool start(QString const & program, QStringList const & arguments,
                          QIODevice::OpenMode const mode = QIODevice::ReadWrite,
                          milliseconds const timeout = std::chrono::seconds{30}) const
         {
@@ -67,10 +72,10 @@ namespace detail {
 }
 
 inline auto qCoro(QProcess & p) noexcept
-{ return detail::QCoroProcess {std::addressof(p)}; }
+{ return detail::QCoroProcess {p }; }
 
 inline auto qCoro(QProcess * const p) noexcept
-{ return detail::QCoroProcess{p}; }
+{ return detail::QCoroProcess{ p }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

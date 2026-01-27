@@ -51,12 +51,8 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
     XUtils::XCoroTask<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker const eventLoopResponsive{};
         QNetworkAccessManager nam{};
-
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("block")))) };
-
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("block")))) };
         (void)co_await reply.get();
-
         QCORO_VERIFY(eventLoopResponsive);
         QCORO_VERIFY(reply->isFinished());
         QCORO_COMPARE(reply->error(), QNetworkReply::NoError);
@@ -66,83 +62,61 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
     XUtils::XCoroTask<> testDoesntCoAwaitNullReply_coro(QCoro::TestContext test) {
         test.setShouldNotSuspend();
         m_server_.setExpectTimeout(true);
-
         QNetworkReply *reply {};
-
         (void)co_await reply;
-
         delete reply;
     }
 
     XUtils::XCoroTask<> testDoesntCoAwaitFinishedReply_coro(QCoro::TestContext test) {
         QNetworkAccessManager nam{};
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest())) };
-
         (void)co_await reply.get();
-
         QCORO_VERIFY(reply->isFinished());
-
         test.setShouldNotSuspend();
         (void)co_await reply.get();
     }
 
     XUtils::XCoroTask<> testReadAllTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam{};
-
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("stream")))) };
-
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("stream")))) };
         using namespace XUtils;
         QCORO_TEST_IODEVICE_READALL(*reply);
-
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
 
     void testThenReadAllTriggers_coro(TestLoop &el) {
         QNetworkAccessManager nam{};
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("block")))) };
-
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("block")))) };
         bool called {};
-        XUtils::qCoro(reply.get()).readAll().then([&](QByteArray const & data) {
-            called = true;
-            el.quit();
-            QVERIFY(!data.isEmpty());
-        });
+        XUtils::qCoro(reply.get()).readAll().then(
+        [&](QByteArray const & data){called = true;el.quit();QVERIFY(!data.isEmpty());}
+        );
         el.exec();
         QVERIFY(called);
     }
 
     XUtils::XCoroTask<> testReadTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam{};
-
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("stream"))))};
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("stream"))))};
         using namespace XUtils;
         QCORO_TEST_IODEVICE_READ(*reply);
-
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
 
     void testThenReadTriggers_coro(TestLoop &el) {
         QNetworkAccessManager nam{};
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("block")))) };
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("block")))) };
         bool called {};
-        XUtils::qCoro(reply.get()).read(1).then([&](QByteArray const & data) {
-            called = true;
-            el.quit();
-            QCOMPARE(data.size(), 1);
-        });
+        XUtils::qCoro(reply.get()).read(1).then(
+        [&](QByteArray const & data){ called = true;el.quit();QCOMPARE(data.size(), 1); }
+        );
         el.exec();
         QVERIFY(called);
     }
 
     XUtils::XCoroTask<> testReadLineTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("stream")))) };
-
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("stream")))) };
         using namespace XUtils;
         QCORO_TEST_IODEVICE_READLINE(*reply);
         QCORO_COMPARE(lines.size(), 10);
@@ -150,15 +124,11 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
 
     void testThenReadLineTriggers_coro(TestLoop &el) {
         QNetworkAccessManager nam{};
-        auto const reply { std::unique_ptr<QNetworkReply>(
-            nam.get(buildRequest(QStringLiteral("block")))) };
-
+        auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("block")))) };
         bool called {};
-        XUtils::qCoro(reply.get()).readLine().then([&](QByteArray const & data) {
-            called = true;
-            el.quit();
-            QVERIFY(!data.isEmpty());
-        });
+        XUtils::qCoro(reply.get()).readLine().then(
+            [&](QByteArray const & data) {called = true;el.quit();QVERIFY(!data.isEmpty());}
+        );
         el.exec();
         QVERIFY(called);
     }
@@ -178,13 +148,9 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
     }
 
 private Q_SLOTS:
-    void init() {
-        m_server_.start(QHostAddress::LocalHost);
-    }
+    void init() { m_server_.start(QHostAddress::LocalHost); }
 
-    void cleanup() {
-        m_server_.stop();
-    }
+    void cleanup() { m_server_.stop(); }
 
     addTest(Triggers)
     addCoroAndThenTests(QCoroWrapperTriggers)
@@ -197,11 +163,8 @@ private Q_SLOTS:
     addTest(AbortOnTimeout)
 
 private:
-    QNetworkRequest buildRequest(const QString &path = QString()) {
-        return QNetworkRequest{
-            QUrl{QStringLiteral("http://127.0.0.1:%1/%2").arg(m_server_.port()).arg(path)}
-        };
-    }
+    QNetworkRequest buildRequest(QString const & path = {}) const
+    { return QNetworkRequest{ QUrl{QStringLiteral("http://127.0.0.1:%1/%2").arg(m_server_.port()).arg(path)} }; }
 };
 
 QTEST_GUILESS_MAIN(QCoroNetworkReplyTest)

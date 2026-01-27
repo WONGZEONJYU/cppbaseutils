@@ -24,12 +24,12 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    class WebSocketStateWatcher : public QObject {
+    struct WebSocketStateWatcher : QObject {
         Q_OBJECT
         QMetaObject::Connection m_state_{},m_error_{};
 
     public:
-        explicit(false) WebSocketStateWatcher(const QWebSocket * const socket, QAbstractSocket::SocketState const desiredState)
+        X_IMPLICIT WebSocketStateWatcher(QWebSocket const * const socket, QAbstractSocket::SocketState const desiredState)
             : m_state_ { connect(socket,&QWebSocket::stateChanged,this,
                 [this, desiredState]<typename Tp>(Tp && newState){
                 if (std::forward<Tp>(newState) == desiredState) { emitReady(true); }
@@ -44,6 +44,10 @@ namespace detail {
                 qWarning() << "QWebSocket failed to connect to a websocket server: " << std::forward<Tp>(error);
                 emitReady(false);
             }) }
+        {   }
+
+        X_IMPLICIT WebSocketStateWatcher(QWebSocket const & socket, QAbstractSocket::SocketState const desiredState)
+            : WebSocketStateWatcher { std::addressof(socket) ,desiredState }
         {   }
 
     Q_SIGNALS:
@@ -79,11 +83,16 @@ namespace detail {
     template<typename ... Args>
     using unwrapped_signal_args_t = unwrapped_signal_args<Args ...>::type;
 
-    class WebSocketSignalWatcher : public QObject {
+    struct WebSocketSignalWatcher : QObject {
         Q_OBJECT
     public:
         template<typename Signal>
-        explicit(false) WebSocketSignalWatcher(QWebSocket * const socket, Signal const signal) {
+        X_IMPLICIT WebSocketSignalWatcher(QWebSocket & socket, Signal const signal)
+            : WebSocketSignalWatcher { std::addressof(socket) , signal }
+        {   }
+
+        template<typename Signal>
+        X_IMPLICIT WebSocketSignalWatcher(QWebSocket * const socket, Signal const signal) {
 
             qRegisterMetaType< std::optional< TupleQInt64QByteArray > >();
             qRegisterMetaType< std::optional< TupleQByteArrayBool> >();
@@ -139,8 +148,12 @@ namespace detail {
     class QCoroWebSocket {
         QWebSocket * m_webSocket_{};
     public:
-        explicit(false) QCoroWebSocket(QWebSocket * const websocket)
+        X_IMPLICIT QCoroWebSocket(QWebSocket * const websocket)
             : m_webSocket_ { websocket } {   }
+
+        X_IMPLICIT QCoroWebSocket(QWebSocket & websocket)
+            : m_webSocket_ { std::addressof(websocket) }
+        {   }
 
         using milliseconds = std::chrono::milliseconds;
         using CoroTaskBool = XCoroTask<bool>;
@@ -190,7 +203,7 @@ auto inline qCoro(QWebSocket * const websocket) noexcept
 { return detail::QCoroWebSocket{websocket}; }
 
 auto inline qCoro(QWebSocket & websocket) noexcept
-{ return detail::QCoroWebSocket{std::addressof(websocket)}; }
+{ return detail::QCoroWebSocket{websocket}; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

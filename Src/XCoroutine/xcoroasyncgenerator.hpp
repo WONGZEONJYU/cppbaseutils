@@ -13,7 +13,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename> struct XAsyncGenerator;
+template<typename T> struct XAsyncGenerator;
 
 namespace detail {
 
@@ -65,8 +65,9 @@ namespace detail {
     class XAsyncGeneratorYieldOperation final {
         std::coroutine_handle<> m_consume_ {};
     public:
-        explicit(false) constexpr XAsyncGeneratorYieldOperation(std::coroutine_handle<> const h) noexcept
-            : m_consume_ { h } { }
+        X_IMPLICIT constexpr XAsyncGeneratorYieldOperation(std::coroutine_handle<> const h) noexcept
+            : m_consume_ { h }
+        {   }
 
         static constexpr bool await_ready() noexcept
         { return {}; }
@@ -99,9 +100,12 @@ namespace detail {
     protected:
         constexpr XIteratorAwaitableAbstract() noexcept = default;
 
-        explicit(false) constexpr XIteratorAwaitableAbstract( XAsyncGeneratorPromiseAbstract & promise
-                                            ,std::coroutine_handle<> const h) noexcept
-            : m_promise_ { std::addressof(promise) } , m_producerCoroutine_ { h }
+        X_IMPLICIT constexpr XIteratorAwaitableAbstract(XAsyncGeneratorPromiseAbstract * const promise,std::coroutine_handle<> const h) noexcept
+            : m_promise_ { promise } , m_producerCoroutine_ { h }
+        {   }
+
+        X_IMPLICIT constexpr XIteratorAwaitableAbstract(XAsyncGeneratorPromiseAbstract & promise,std::coroutine_handle<> const h) noexcept
+            : XIteratorAwaitableAbstract { std::addressof(promise),h }
         {   }
     };
 
@@ -160,7 +164,7 @@ class XAsyncGeneratorIterator final {
         XAsyncGeneratorIterator * m_iterator_ {};
 
     public:
-        explicit(false) constexpr IncrementIteratorAwaitable(XAsyncGeneratorIterator & iterator) noexcept
+        X_IMPLICIT constexpr IncrementIteratorAwaitable(XAsyncGeneratorIterator & iterator) noexcept
             : Base { iterator.m_coroutine_.promise(), iterator.m_coroutine_ },
               m_iterator_ { std::addressof(iterator) } {    }
 
@@ -182,8 +186,9 @@ public:
 
     constexpr XAsyncGeneratorIterator() noexcept = default;
 
-    explicit(false) constexpr XAsyncGeneratorIterator(coroutine_handle const h) noexcept
-        : m_coroutine_ { h } { }
+    X_IMPLICIT constexpr XAsyncGeneratorIterator(coroutine_handle const h) noexcept
+        : m_coroutine_ { h }
+    {   }
 
     constexpr auto operator++() noexcept
     { return IncrementIteratorAwaitable { *this }; }
@@ -215,11 +220,13 @@ private:
 public:
     constexpr XAsyncGenerator() noexcept = default;
 
-    explicit(false) constexpr XAsyncGenerator(promise_type & promise) noexcept
-        : m_coroutine_ { coroutine_handle::from_promise(promise) } { }
+    X_IMPLICIT constexpr XAsyncGenerator(promise_type & promise) noexcept
+        : m_coroutine_ { coroutine_handle::from_promise(promise) }
+    {   }
 
-    explicit(false) constexpr XAsyncGenerator(promise_type * const promise) noexcept
-        : XAsyncGenerator { *promise } { }
+    X_IMPLICIT constexpr XAsyncGenerator(promise_type * const promise) noexcept
+        : XAsyncGenerator { *promise }
+    {   }
 
     constexpr XAsyncGenerator(XAsyncGenerator && o) noexcept
         : m_coroutine_ { std::move(o.m_coroutine_) }
@@ -240,8 +247,9 @@ public:
         public:
             constexpr BeginIteratorAwaitable() noexcept = default;
 
-            explicit(false) constexpr BeginIteratorAwaitable(coroutine_handle const h) noexcept
-                : Base { h.promise(), h } {}
+            X_IMPLICIT constexpr BeginIteratorAwaitable(coroutine_handle const h) noexcept
+                : Base { h.promise(), h }
+            {   }
 
             [[nodiscard]] constexpr bool await_ready() const noexcept
             { return !m_promise_; }

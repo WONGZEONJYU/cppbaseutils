@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <XGlobal/xclasshelpermacros.hpp>
 #include <XGlobal/xversion.hpp>
 #include <QIODevice>
 #include <type_traits>
@@ -24,23 +25,31 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    class WaitSignalHelper : public QObject {
+    struct WaitSignalHelper : QObject {
         Q_OBJECT
     protected:
         QMetaObject::Connection m_ready_ {},m_aboutToClose_ {};
 
     public:
-        template<bool b = false>
-        using signalFunc = std::conditional_t<b,void(QIODevice::*)(qint64),void(QIODevice::*)()>;
+        template<typename ...Args>
+        using signalFunc = void(QIODevice::*)(Args...);
 
-        explicit(false) WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
+        X_IMPLICIT WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
             : m_ready_ { connect_(device, signalFunc, this,[this]{ emitReady(true); }) }
             , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this ,[this]{ emitReady(false); }) }
         {   }
 
-        explicit(false) WaitSignalHelper(const QIODevice * const device, signalFunc<true> const signalFunc)
+        X_IMPLICIT WaitSignalHelper(QIODevice const & device , signalFunc<> const signalFunc)
+            : WaitSignalHelper { std::addressof(device) , signalFunc }
+        {   }
+
+        X_IMPLICIT WaitSignalHelper(const QIODevice * const device, signalFunc<qint64> const signalFunc)
             : m_ready_ { connect_(device, signalFunc, this, &WaitSignalHelper::emitReady<qint64>) }
             , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this,[this]{ emitReady( qint64{} ); }) }
+        {   }
+
+        X_IMPLICIT WaitSignalHelper(QIODevice const & device, signalFunc<qint64> const signalFunc)
+            : WaitSignalHelper { std::addressof(device) , signalFunc }
         {   }
 
         ~WaitSignalHelper() override = default;

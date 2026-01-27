@@ -12,8 +12,8 @@ class TestImageProvider final: public XUtils::ImageProvider {
     QString m_error_{};
 
 public:
-    explicit(false) TestImageProvider(bool const async, QString const & error)
-        : m_async_{async}, m_error_{error}
+    Q_IMPLICIT TestImageProvider(bool const async, QString  error)
+        : m_async_{async}, m_error_{std::move(error) }
     {   }
 
 protected:
@@ -45,7 +45,7 @@ private Q_SLOTS:
     }
 
     static void testImageProvider() {
-        QFETCH(QString, id);
+        QFETCH(QString,id);
         QFETCH(bool, async);
         QFETCH(QString, error);
         auto const source { QStringLiteral("image://qcorotest/%1.jpg").arg(id)};

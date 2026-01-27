@@ -19,8 +19,12 @@ namespace detail {
         struct WaitForNewConnectionOperation final
             : WaitOperationAbstract<QTcpServer>
         {
-            explicit(false) WaitForNewConnectionOperation(QTcpServer * const server, int const timeout_msecs = 30'000)
+            X_IMPLICIT WaitForNewConnectionOperation(QTcpServer * const server, int const timeout_msecs = 30'000)
                 : WaitOperationAbstract { server, timeout_msecs }
+            {   }
+
+            X_IMPLICIT WaitForNewConnectionOperation(QTcpServer & server, int const timeout_msecs = 30'000)
+                : WaitOperationAbstract { std::addressof(server), timeout_msecs }
             {   }
 
             bool await_ready() const noexcept
@@ -32,14 +36,21 @@ namespace detail {
                 startTimeoutTimer(h);
             }
 
-            QTcpSocket * await_resume() const
+            [[nodiscard]] QTcpSocket * await_resume() const
             { return m_timedOut_ ? nullptr : m_QObject_->nextPendingConnection(); }
         };
 
     public:
-        explicit(false) QCoroTcpServer(QTcpServer * const server) : m_server_ { server } { }
+        X_IMPLICIT QCoroTcpServer(QTcpServer * const server)
+            : m_server_ { server }
+        {   }
+
+        X_IMPLICIT QCoroTcpServer(QTcpServer & server)
+            : m_server_ { std::addressof(server) }
+        {   }
 
         using milliseconds = std::chrono::milliseconds;
+
         XCoroTask<QTcpSocket *> waitForNewConnection(int const timeout_msecs = 30'000) const
         { return waitForNewConnection(milliseconds{ timeout_msecs }); }
 
@@ -57,7 +68,7 @@ namespace detail {
 }
 
 inline auto qCoro(QTcpServer & s) noexcept
-{ return detail::QCoroTcpServer{std::addressof(s)}; }
+{ return detail::QCoroTcpServer{s}; }
 
 inline auto qCoro(QTcpServer * const s) noexcept
 { return detail::QCoroTcpServer{s}; }

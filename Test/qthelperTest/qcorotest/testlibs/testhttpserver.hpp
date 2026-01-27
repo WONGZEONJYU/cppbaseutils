@@ -1,5 +1,7 @@
 #pragma once
 
+#include <XGlobal/xclasshelpermacros.hpp>
+#include <XAtomic/xatomic.hpp>
 #include <QDebug>
 #include <QThread>
 #include <QTest>
@@ -7,7 +9,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-#include <XAtomic/xatomic.hpp>
+
 
 class QTcpServer;
 class QTcpSocket;
@@ -18,7 +20,7 @@ template<typename Func>
 class Thread : public QThread {
     Func m_func_ {};
 public:
-    explicit Thread(Func && f) : m_func_ {std::forward<Func>(f)} {   }
+    Q_IMPLICIT Thread(Func && f) : m_func_ {std::forward<Func>(f)} {   }
     ~Thread() override = default;
     void run() override { m_func_(); }
 };
@@ -83,7 +85,7 @@ public:
 
 private:
     template<typename T>
-    void run(const T &name) {
+    void run(T const & name) {
         using namespace std::chrono_literals;
 
         ServerType server{};
@@ -129,7 +131,7 @@ private:
 
                 auto const len {
                     std::accumulate(lines.cbegin(), lines.cend(), 0,
-                                    [](int l, const QString &s) { return l + s.size(); }) };
+                                    [](int const l, QString const & s) { return l + s.size(); }) };
                 conn->write("HTTP/1.1 200 OK\r\n"
                             "Content-Type: text/plain\r\n"
                             "Content-Length: " +
@@ -156,14 +158,9 @@ private:
             conn->close();
         } else if (!m_stop_) {
             if (conn->state() == std::remove_cvref_t<decltype(*conn)>::ConnectedState) {
-                if (!m_expectTimeout_) {
-                    QFAIL("No request within 10 seconds");
-                }
-            } else {
-                qDebug() << "Client disconnected without sending request";
-            }
+                if (!m_expectTimeout_) { QFAIL("No request within 10 seconds"); }
+            } else { qDebug() << "Client disconnected without sending request"; }
         }
-
         delete conn;
         m_port_ = 0;
     }

@@ -42,19 +42,29 @@ namespace detail {
             }
 
         protected:
-            explicit(false) constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const & future)
-                : m_future_ { future }  {   }
+            X_IMPLICIT constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const & future)
+                : m_future_ { future }
+            {   }
+
+            X_IMPLICIT constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const * const future)
+                : m_future_ { *future }
+            {   }
         };
 
         struct WaitForFinishedOperationType : WaitForFinishedOperationAbstract<T> {
-            explicit(false) constexpr WaitForFinishedOperationType(QFuture<T> const & future)
-                : WaitForFinishedOperationAbstract<T> { future } {}
-            T await_resume() const { return this->m_future_.result(); }
+            X_IMPLICIT constexpr WaitForFinishedOperationType(QFuture<T> const & future)
+                : WaitForFinishedOperationAbstract<T> { future }
+            {   }
+
+            T await_resume() const
+            { return this->m_future_.result(); }
         };
 
         struct WaitForFinishedOperationVoid : WaitForFinishedOperationAbstract<void> {
-            explicit(false) constexpr WaitForFinishedOperationVoid(QFuture<void> const & future)
-                : WaitForFinishedOperationAbstract<void> { future } {  }
+            X_IMPLICIT constexpr WaitForFinishedOperationVoid(QFuture<void> const & future)
+                : WaitForFinishedOperationAbstract<void> { future }
+            {   }
+
             void await_resume() {
                 // This won't block, since we know for sure that the QFuture is already finished.
                 // The weird side-effect of this function is that it will re-throw the stored
@@ -66,9 +76,12 @@ namespace detail {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         template<typename Tp = T> requires (!std::is_void_v<Tp>)
         struct TakeResultOperation : WaitForFinishedOperationAbstract<Tp> {
-            explicit(false) constexpr TakeResultOperation(QFuture<Tp> const & future)
-                : WaitForFinishedOperationAbstract<Tp> { future } {}
-            Tp await_resume() { return this->m_future_.takeResult(); }
+            X_IMPLICIT constexpr TakeResultOperation(QFuture<Tp> const & future)
+                : WaitForFinishedOperationAbstract<Tp> { future }
+            {   }
+
+            Tp await_resume()
+            { return this->m_future_.takeResult(); }
         };
 #endif
 
@@ -79,8 +92,13 @@ namespace detail {
         >;
 
     public:
-        explicit(false) constexpr QCoroFuture(QFuture<T> const & future)
-            : m_future_ {future} {  }
+        X_IMPLICIT constexpr QCoroFuture(QFuture<T> const & future)
+            : m_future_ {future}
+        {   }
+
+        X_IMPLICIT constexpr QCoroFuture(QFuture<T> const * const future)
+            : m_future_ { *future }
+        {   }
 
         XCoroTask<T> waitForFinished() const
         { co_return co_await WaitForFinishedOperation { m_future_ }; }
@@ -101,7 +119,11 @@ namespace detail {
 
 template<typename T>
 auto qCoro(QFuture<T> const & f) noexcept
-{ return detail::QCoroFuture<T>{f}; }
+{ return detail::QCoroFuture<T>{ f }; }
+
+template<typename T>
+auto qCoro(QFuture<T> const * const f) noexcept
+{ return detail::QCoroFuture<T>{ f }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

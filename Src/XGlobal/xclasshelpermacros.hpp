@@ -59,4 +59,10 @@ template <typename Ptr> constexpr auto xGetPtrHelper(Ptr const &ptr) noexcept ->
     #define FUNC_SIGNATURE __PRETTY_FUNCTION__
 #endif
 
+#ifdef __cpp_conditional_explicit
+#define X_IMPLICIT explicit(false)
+#else
+#define X_IMPLICIT
+#endif
+
 #endif

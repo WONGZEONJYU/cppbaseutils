@@ -93,7 +93,7 @@ struct QCoroLocalSocketTest : QCoro::TestObject<QCoroLocalSocketTest> {
         socket.connectToServer(getSocketName());
         QCOMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        bool called = false;
+        bool called {};
         XUtils::qCoro(socket).waitForConnected().then([&](bool const connected) {
             called = true;
             el.quit();
@@ -119,7 +119,7 @@ struct QCoroLocalSocketTest : QCoro::TestObject<QCoroLocalSocketTest> {
 
         QLocalSocket socket;
         QCOMPARE(socket.state(), QLocalSocket::UnconnectedState);
-        bool called = false;
+        bool called {};
         XUtils::qCoro(socket).waitForDisconnected().then([&](bool const disconnected) {
             called = true;
             el.quit();
@@ -234,7 +234,6 @@ struct QCoroLocalSocketTest : QCoro::TestObject<QCoroLocalSocketTest> {
         QLocalSocket socket{};
         socket.connectToServer(getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
-
         auto const written{ co_await XUtils::qCoro(socket).write(streamRequest)};
         QCORO_COMPARE(written, streamRequest.size());
         using namespace XUtils;
@@ -312,15 +311,12 @@ struct QCoroLocalSocketTest : QCoro::TestObject<QCoroLocalSocketTest> {
         socket.connectToServer(getSocketName());
         QCOMPARE(socket.state(), QLocalSocket::ConnectedState);
         bool called {};
-        XUtils::qCoro(socket).readLine().then([&](QByteArray const & data) {
-            called = true;
-            el.quit();
-            QVERIFY(!data.isEmpty());
-        });
+        XUtils::qCoro(socket).readLine().then(
+        [&](QByteArray const & data){ called = true;el.quit();QVERIFY(!data.isEmpty()); }
+        );
 
-        XUtils::qCoro(socket).write(blockRequest).then([&](qint64 written) {
-            QCOMPARE(written, blockRequest.size());
-        });
+        XUtils::qCoro(socket).write(blockRequest).then([&](qint64 const written)
+        { QCOMPARE(written, blockRequest.size()); });
 
         el.exec();
 
@@ -329,13 +325,8 @@ struct QCoroLocalSocketTest : QCoro::TestObject<QCoroLocalSocketTest> {
     }
 
 private Q_SLOTS:
-    void init() {
-        m_server_.start(QCoroLocalSocketTest::getSocketName());
-    }
-
-    void cleanup() {
-        m_server_.stop();
-    }
+    void init() { m_server_.start(getSocketName()); }
+    void cleanup() { m_server_.stop(); }
 
     addCoroAndThenTests(WaitForConnectedTriggers)
     addCoroAndThenTests(WaitForConnectedTimeout)
@@ -355,7 +346,6 @@ private:
             .arg(QCoreApplication::applicationName())
             .arg(QCoreApplication::applicationPid());
     }
-
 };
 
 QTEST_GUILESS_MAIN(QCoroLocalSocketTest)

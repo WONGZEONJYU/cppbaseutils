@@ -21,8 +21,13 @@ namespace detail {
         class WaitForFinishedOperation {
             QDBusPendingCall const * m_call_ {};
         public:
-            explicit(false) constexpr WaitForFinishedOperation(QDBusPendingCall const & call)
-                : m_call_ { std::addressof(call) } {}
+            Implicit_ constexpr WaitForFinishedOperation(QDBusPendingCall const * const call)
+                : m_call_ { call }
+            {   }
+
+            Implicit_ constexpr WaitForFinishedOperation(QDBusPendingCall const & call)
+                : m_call_ { std::addressof(call) }
+            {   }
 
             [[nodiscard]] bool await_ready() const noexcept
             { return m_call_->isFinished(); }
@@ -38,8 +43,13 @@ namespace detail {
         };
 
     public:
-        explicit(false) QCoroDBusPendingCall(QDBusPendingCall const & call)
-            : m_call_ { std::addressof(call) } {}
+        Implicit_ QCoroDBusPendingCall(QDBusPendingCall const * const call)
+            : m_call_ { call }
+        {   }
+
+        Implicit_ QCoroDBusPendingCall(QDBusPendingCall const & call)
+            : m_call_ { std::addressof(call) }
+        {   }
 
         [[nodiscard]] XCoroTask<QDBusMessage> waitForFinished() const {
             QDBusPendingCallWatcher watcher {*m_call_};
@@ -53,6 +63,9 @@ namespace detail {
 }
 
 inline auto qCoro(QDBusPendingCall const & call) noexcept
+{ return detail::QCoroDBusPendingCall{call}; }
+
+inline auto qCoro(QDBusPendingCall const * const call) noexcept
 { return detail::QCoroDBusPendingCall{call}; }
 
 XTD_INLINE_NAMESPACE_END

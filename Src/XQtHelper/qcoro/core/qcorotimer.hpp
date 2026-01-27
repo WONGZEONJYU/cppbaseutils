@@ -25,11 +25,11 @@ namespace detail {
             QMetaObject::Connection m_conn_{};
             QPointer<QTimer> m_timer_{};
         public:
-            explicit(false) WaitForTimeoutOperation(QTimer * const timer) noexcept
-                : m_timer_ {timer}
+            X_IMPLICIT WaitForTimeoutOperation(QTimer * const timer) noexcept
+                : m_timer_ { timer }
             {    }
 
-            explicit(false) WaitForTimeoutOperation(QTimer & timer) noexcept
+            X_IMPLICIT WaitForTimeoutOperation(QTimer & timer) noexcept
                 : m_timer_ { std::addressof(timer) }
             {   }
 
@@ -45,8 +45,12 @@ namespace detail {
         };
 
     public:
-        explicit(false) QCoroTimer(QTimer * const timer) noexcept
+        X_IMPLICIT QCoroTimer(QTimer * const timer) noexcept
             : m_timer_ {timer}
+        {   }
+
+        X_IMPLICIT QCoroTimer(QTimer & timer) noexcept
+            : QCoroTimer { std::addressof(timer) }
         {   }
 
         [[nodiscard]] XCoroTask<> waitForTimeout() const
@@ -78,7 +82,7 @@ inline auto qCoro(QTimer * const timer) noexcept
 { return detail::QCoroTimer{ timer }; }
 
 inline auto qCoro(QTimer & timer) noexcept
-{ return detail::QCoroTimer{ std::addressof(timer) }; }
+{ return detail::QCoroTimer{ timer }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

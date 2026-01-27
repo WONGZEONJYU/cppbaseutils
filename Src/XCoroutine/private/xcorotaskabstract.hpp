@@ -112,7 +112,8 @@ namespace detail {
             std::is_invocable_v<ThenCallback>,
                 std::invoke_result<ThenCallback>,
                 std::invoke_result<ThenCallback, Arg...>
-            > {};
+            >
+        {   };
 
         template<typename ThenCallback>
         struct cb_invoke_result<ThenCallback, void> : std::invoke_result<ThenCallback> {};
@@ -131,7 +132,7 @@ namespace detail {
     protected:
         constexpr XCoroTaskAbstract() noexcept = default;
 
-        explicit(false) constexpr XCoroTaskAbstract(coroutine_handle const h) noexcept
+        X_IMPLICIT constexpr XCoroTaskAbstract(coroutine_handle const h) noexcept
             : m_coroutine_ { h }
         { m_coroutine_.promise().refCoroutine(); }
 
@@ -148,7 +149,7 @@ namespace detail {
 
         struct TaskAwaiter final : TaskAwaiterAbstract<PromiseType> {
 
-            explicit(false) constexpr TaskAwaiter(coroutine_handle const h)
+            X_IMPLICIT constexpr TaskAwaiter(coroutine_handle const h)
                 : TaskAwaiterAbstract<PromiseType> { h }
             {    }
 
@@ -174,9 +175,12 @@ namespace detail {
         auto errCb { std::forward<ErrorCallback>(errorCallback) };
         auto && taskImpl { static_cast< TaskImpl<T> const & >(task) };
 
+#undef CATCH_TASK_EXP
+#define CATCH_TASK_EXP catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+
         if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
             try { co_await taskImpl; }
-            catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+            CATCH_TASK_EXP
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb); }
             else { co_return invokeCb(thenCb); }
@@ -184,7 +188,7 @@ namespace detail {
             std::optional<T> value {};
 
             try { value.emplace(std::move(co_await taskImpl)); }
-            catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+            CATCH_TASK_EXP
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb , std::move(*value)); }
             else { co_return invokeCb(thenCb , std::move(*value)); }
@@ -202,7 +206,7 @@ namespace detail {
 
         if constexpr (std::is_void_v<typename TaskImpl<T>::value_type>) {
             try { co_await taskImpl; }
-            catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+            CATCH_TASK_EXP
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb); }
             else { co_return invokeCb(thenCb); }
@@ -210,13 +214,14 @@ namespace detail {
             std::optional<T> value {};
 
             try { value.emplace(std::move(co_await taskImpl)); }
-            catch (std::exception const & e) { co_return handleException<R>(errCb, e); }
+            CATCH_TASK_EXP
 
             if constexpr (is_task_v<R>) { co_return co_await invokeCb(thenCb , std::move(*value)); }
             else { co_return invokeCb(thenCb , std::move(*value)); }
         }
     }
 
+#undef CATCH_TASK_EXP
 #undef XCoroTaskAbstractClass
 #undef XCoroTaskAbstractClassTemplate
 

@@ -32,7 +32,7 @@ namespace detail {
         { return !m_timedOut_; }
 
     protected:
-        explicit(false) constexpr WaitOperationAbstract(T * const obj, int const timeout_msecs)
+        X_IMPLICIT constexpr WaitOperationAbstract(T * const obj, int const timeout_msecs)
             : m_QObject_ { obj }
         {
             if (timeout_msecs < 0) { return; }

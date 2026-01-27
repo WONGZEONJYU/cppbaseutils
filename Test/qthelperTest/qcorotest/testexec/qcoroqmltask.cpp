@@ -20,9 +20,7 @@ public:
         timer->setSingleShot(true);
         using namespace std::chrono_literals;
         timer->start(1s);
-        return [timer]() -> XUtils::XCoroTask<> {
-            co_await timer;
-        }();
+        return [timer]() -> XUtils::XCoroTaskVoid { co_await timer; }();
     }
 
     Q_INVOKABLE XUtils::QmlTask qmlTaskFromTimer() {
@@ -96,7 +94,7 @@ QtObject {
 )");
         auto const object { engine.singletonInstance<QmlObject *>(qmlTypeId("qcoro.test", 0, 1, "QmlObject"))};
 
-        auto const timeout { std::make_unique<QTimer>(this).release() };
+        auto const timeout{ std::make_unique<QTimer>(this).release() };
         timeout->setSingleShot(true);
         using namespace std::chrono_literals;
         timeout->setInterval(2s);
@@ -104,13 +102,13 @@ QtObject {
 
         auto running { true };
         // End the event loop normally
-        connect(object, &QmlObject::success, this, [&] {
+        connect(object, &QmlObject::success, this, [&]{
             timeout->stop();
             running = false;
         });
 
         // Crash the test in case the timeout was reachaed without the callback being called
-        connect(timeout, &QTimer::timeout, this, [&] {
+        connect(timeout, &QTimer::timeout, this, [&]{
 #if defined(Q_CC_CLANG) && defined(Q_OS_WINDOWS)
             running = false;
             QEXPECT_FAIL("", "QTBUG-91768", Abort);
@@ -120,9 +118,7 @@ QtObject {
             QFAIL("Timeout waiting for QML continuation to be called");
 #endif
         });
-        while (running) {
-            QCoreApplication::processEvents();
-        }
+        while (running) { QCoreApplication::processEvents(); }
     }
 };
 

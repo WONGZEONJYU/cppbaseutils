@@ -28,8 +28,12 @@ namespace detail {
     public:
         inline static const auto eventType { static_cast<QEvent::Type>(QEvent::registerEventType()) };
 
-        explicit(false) ContextHelper(std::coroutine_handle<> const awaiter, QThread * const thread) noexcept
-            : m_thread_ {thread} , m_awaiter_ {awaiter}
+        X_IMPLICIT ContextHelper(std::coroutine_handle<> const awaiter, QThread * const thread) noexcept
+            : m_thread_ { thread } , m_awaiter_ { awaiter }
+        {   }
+
+        X_IMPLICIT ContextHelper(std::coroutine_handle<> const awaiter, QThread & thread) noexcept
+            : ContextHelper { awaiter , std::addressof(thread) }
         {   }
 
         bool event(QEvent * const e) override {
@@ -43,21 +47,25 @@ namespace detail {
     class QCoroThread {
         QPointer<QThread> m_thread_{};
     public:
-        explicit(false) QCoroThread(QThread * const thread) noexcept
+        X_IMPLICIT QCoroThread(QThread * const thread) noexcept
             : m_thread_ { thread }
         {    }
 
-        using milliseconds = std::chrono::milliseconds;
-        using XCoroTaskBool = XCoroTask<bool>;
+        X_IMPLICIT QCoroThread(QThread & thread) noexcept
+            : QCoroThread { std::addressof(thread) }
+        {    }
 
-        XCoroTaskBool waitForStarted(milliseconds const timeout = milliseconds{-1}) const {
+        using milliseconds = std::chrono::milliseconds;
+        using TaskBool = XCoroTask<bool>;
+
+        TaskBool waitForStarted(milliseconds const timeout = milliseconds{-1}) const {
             if (m_thread_->isRunning()) { co_return true; }
             if (m_thread_->isFinished()) { co_return false; }
             auto const result { co_await qCoro(m_thread_.data(), &QThread::started, timeout) };
             co_return result.has_value();
         }
 
-        XCoroTaskBool waitForFinished(milliseconds const timeout = milliseconds{-1}) const {
+        TaskBool waitForFinished(milliseconds const timeout = milliseconds{-1}) const {
             if (m_thread_->isFinished()) { co_return true; }
             if (!m_thread_->isRunning()) { co_return false; }
             auto const result { co_await qCoro(m_thread_.data(), &QThread::finished, timeout) };
@@ -73,7 +81,7 @@ class ThreadContext {
         QThread * m_thread {};
         std::unique_ptr<detail::ContextHelper> m_context {};
         constexpr Data() noexcept = default;
-        explicit(false) constexpr Data(QThread * const thread) noexcept
+        X_IMPLICIT constexpr Data(QThread * const thread) noexcept
             : m_thread { thread } {}
         Q_DISABLE_COPY_MOVE(Data)
     };
@@ -81,8 +89,12 @@ class ThreadContext {
     std::unique_ptr<Data> m_d_ {};
 
 public:
-    explicit(false) constexpr ThreadContext(QThread * const thread)
+    X_IMPLICIT constexpr ThreadContext(QThread * const thread)
         : m_d_{ std::make_unique<Data>(thread) }
+    {   }
+
+    X_IMPLICIT constexpr ThreadContext(QThread & thread)
+        : ThreadContext { std::addressof(thread) }
     {   }
 
     virtual ~ThreadContext() = default;
@@ -115,11 +127,14 @@ public:
 inline ThreadContext moveToThread(QThread * const thread)
 { return { thread }; }
 
+inline ThreadContext moveToThread(QThread & thread)
+{ return {thread }; }
+
 inline detail::QCoroThread qCoro(QThread * const thread) noexcept
 { return { thread }; }
 
 inline detail::QCoroThread qCoro(QThread & thread) noexcept
-{ return { std::addressof(thread) }; }
+{ return {thread }; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

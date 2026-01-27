@@ -14,7 +14,7 @@ class TestLoop : public QObject {
     QTimer m_timer_{};
 
 public:
-    explicit(false) TestLoop(QObject * = nullptr);
+    Q_IMPLICIT TestLoop(QObject * = nullptr);
     void exec();
     void quit();
 };

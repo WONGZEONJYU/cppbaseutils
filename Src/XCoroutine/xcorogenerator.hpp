@@ -13,7 +13,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename> struct XGenerator;
+template<typename T> struct XGenerator;
 
 namespace detail {
 
@@ -98,11 +98,11 @@ public:
     { return lhs.m_GeneratorCoroutine_ <=> rhs.m_GeneratorCoroutine_; }
 
 private:
-    template<typename > friend struct XGenerator;
+    template<typename> friend struct XGenerator;
 
     constexpr XGeneratorIterator() noexcept = default;
 
-    explicit(false) constexpr XGeneratorIterator(coroutine_handle const h)
+    X_IMPLICIT constexpr XGeneratorIterator(coroutine_handle const h)
         : m_GeneratorCoroutine_ { h }
     {   }
 };
@@ -146,11 +146,11 @@ public:
     { return {}; }
 
 private:
-    explicit(false) constexpr XGenerator(promise_type & promise) noexcept
+    X_IMPLICIT constexpr XGenerator(promise_type & promise) noexcept
         : m_generatorCoroutine_ { coroutine_handle::from_promise(promise) }
     {   }
 
-    explicit(false) constexpr XGenerator(promise_type * const promise) noexcept
+    X_IMPLICIT constexpr XGenerator(promise_type * const promise) noexcept
         : XGenerator { *promise }
     {   }
 

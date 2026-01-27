@@ -16,19 +16,27 @@ namespace detail {
     struct QCoroWebSocketServerSignalListener : QObject {
         Q_OBJECT
     public:
-        explicit(false) QCoroWebSocketServerSignalListener(QWebSocketServer * const server) {
+        X_IMPLICIT QCoroWebSocketServerSignalListener(QWebSocketServer * const server) {
             connect(server, &QWebSocketServer::closed, this, [this]{ Q_EMIT ready({});});
             connect(server, &QWebSocketServer::newConnection, [this, server]{ Q_EMIT ready(server->nextPendingConnection()); });
         }
+
+        X_IMPLICIT QCoroWebSocketServerSignalListener(QWebSocketServer & server)
+            : QCoroWebSocketServerSignalListener { std::addressof(server) }
+        {   }
 
         Q_SIGNAL void ready(QWebSocket *);
     };
 
     class QCoroWebSocketServer {
-        QWebSocketServer *m_server_{};
+        QWebSocketServer * m_server_{};
     public:
-        explicit(false) QCoroWebSocketServer(QWebSocketServer * const server)
+        X_IMPLICIT QCoroWebSocketServer(QWebSocketServer * const server) noexcept
             : m_server_(server)
+        {   }
+
+        X_IMPLICIT QCoroWebSocketServer(QWebSocketServer & server) noexcept
+            : m_server_{ std::addressof(server) }
         {   }
 
         using milliseconds = std::chrono::milliseconds;
@@ -44,10 +52,10 @@ namespace detail {
 }
 
 inline auto qCoro(QWebSocketServer * const server) noexcept
-{return detail::QCoroWebSocketServer{server}; }
+{return detail::QCoroWebSocketServer{ server }; }
 
 inline auto qCoro(QWebSocketServer & server) noexcept
-{ return detail::QCoroWebSocketServer {std::addressof(server)}; }
+{ return detail::QCoroWebSocketServer {server}; }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

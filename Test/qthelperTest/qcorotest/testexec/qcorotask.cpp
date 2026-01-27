@@ -36,7 +36,7 @@ struct ImplicitConversionBar
 
 struct ImplicitConversionFoo {
     constexpr ImplicitConversionFoo() = default;
-    explicit(false) ImplicitConversionFoo(ImplicitConversionBar const bar)
+    Q_IMPLICIT ImplicitConversionFoo(ImplicitConversionBar const bar)
         : m_string_(QString::number(bar.m_number)) {}
 
     QString m_string_{};

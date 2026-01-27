@@ -60,14 +60,15 @@ private Q_SLOTS:
 
     void testEmptyGenerator() {
         auto constexpr createGenerator { []() -> XUtils::XGenerator<int> {
-            if (false) { // NOLINT(readability-simplify-boolean-expr)
-                co_yield 42; // Make it a coroutine, except it never gets invoked.
-            }
+#undef IF_FALSE
+#define IF_FALSE if (false) { co_yield 42; } // Make it a coroutine, except it never gets invoked.
+            IF_FALSE // NOLINT(readability-simplify-boolean-expr)
         }};
 
         auto const generator { createGenerator()};
         auto const begin { generator.begin() };
         QCOMPARE(begin, generator.end());
+#undef IF_FALSE
     }
 
     static void testConstReferenceGenerator() {
@@ -85,7 +86,8 @@ private Q_SLOTS:
     }
 
     static void testReferenceGenerator() {
-        auto constexpr createGenerator { []() -> XUtils::XGenerator<NoCopyMove &> {
+        auto constexpr createGenerator {
+            []() -> XUtils::XGenerator<NoCopyMove &> {
                 for (int i {}; i < 8; i += 2) {
                     NoCopyMove val(i); co_yield val;
                     QCORO_COMPARE(val.m_val, i + 1);
@@ -95,7 +97,7 @@ private Q_SLOTS:
 
         auto const generator { createGenerator()};
         int testVal {};
-        for (auto it = generator.begin();it != decltype(generator)::end();++it) {
+        for (auto it { generator.begin()};it != decltype(generator)::end();++it) {
             auto && value{ *it };
             QCOMPARE(value.m_val, testVal);
             value.m_val += 1;
@@ -127,7 +129,7 @@ private Q_SLOTS:
         auto const generator { std::move(originalGenerator) };
 
         int testVal {};
-        for (auto it = generator.begin();it != decltype(generator)::end();++it) {
+        for (auto it { generator.begin() };it != decltype(generator)::end();++it) {
             auto const value{ *it };
             QCOMPARE(value, testVal++);
         }
@@ -162,8 +164,8 @@ private Q_SLOTS:
     }
 
     static void testExceptionInBegin() {
-        auto const generator { []() -> XUtils::XGenerator<int> {
-            throw std::runtime_error("Zero is too small!");
+        auto const generator { [is_throw = true]() -> XUtils::XGenerator<int> {
+            if (is_throw) { throw std::runtime_error("Zero is too small!"); }
             co_yield 1;
         }()};
 

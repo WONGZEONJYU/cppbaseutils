@@ -62,30 +62,31 @@ struct QmlTask {
     QSharedDataPointer<QmlPrivate::QmlTaskPrivate> m_d_{};
 
 public:
-    explicit(false) QmlTask() noexcept
-        :m_d_ { std::make_unique<QmlPrivate::QmlTaskPrivate>().release() }
+    X_IMPLICIT QmlTask() noexcept
+        : m_d_ { std::make_unique<QmlPrivate::QmlTaskPrivate>().release() }
     {   }
 
     X_DEFAULT_COPY(QmlTask)
 
     ~QmlTask() = default;
 
-    explicit(false) QmlTask(XCoroTask<QVariant> && task) :QmlTask{}
+    X_IMPLICIT QmlTask(XCoroTask<QVariant> && task)
+        : QmlTask {}
     { m_d_->m_task = std::move(task); }
 
     template <typename T>
-    explicit(false) QmlTask(XCoroTask<T> && task)
+    X_IMPLICIT QmlTask(XCoroTask<T> && task)
         : QmlTask { task.then([]<typename Tp>(Tp && result) -> XCoroTask<QVariant> {
             co_return QVariant::fromValue(std::forward<Tp>(result));
         }) }
     { qMetaTypeId<T>(); }
 
     template <typename T> requires (detail::TaskConvertible<T> && !std::is_same_v<T, QmlTask>)
-    explicit(false) QmlTask(T && future) : QmlTask { detail::toTask(std::forward<T>(future)) }
+    X_IMPLICIT QmlTask(T && future) : QmlTask { detail::toTask(std::forward<T>(future)) }
     {   }
 
     template <typename = void>
-    explicit(false) QmlTask(XCoroTask<> && task)
+    X_IMPLICIT QmlTask(XCoroTask<> && task)
         : QmlTask { task.then([]()-> XCoroTask<QVariant> { co_return QVariant{ }; }) }
     {   }
 

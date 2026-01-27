@@ -10,18 +10,18 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    class SocketConnectedHelper : public QObject {
+    struct SocketConnectedHelper : QObject {
         Q_OBJECT
         QMetaObject::Connection m_signal_{},m_stateChange_{};
-
     public:
         using signal = void(QLocalSocket::*)();
         explicit(false) SocketConnectedHelper(const QLocalSocket * const local_socket, signal const signal )
             : m_signal_{ connect_(local_socket, signal, this, [this]{ emitReady(true); }) }
             , m_stateChange_{ connect_(local_socket, &QLocalSocket::stateChanged
                 , [this]<typename Tp>(Tp && state){
-                    if (std::forward<Tp>(state) == QLocalSocket::UnconnectedState) { emitReady(false); }
-                } ) } {}
+                    if (std::forward<Tp>(state) == QLocalSocket::UnconnectedState) { emitReady(false); } } )
+            }
+        {   }
 
         Q_SIGNALS:
             void ready(bool);
@@ -35,23 +35,31 @@ namespace detail {
         { return connect(std::forward<Args>(args)...); }
     };
 
-    class LocalSocketReadySignalHelper : public WaitSignalHelper {
+    struct LocalSocketReadySignalHelper : WaitSignalHelper {
         Q_OBJECT
         QMetaObject::Connection m_stateChange_{};
 
     public:
-        explicit(false) LocalSocketReadySignalHelper(const QLocalSocket * const socket, signalFunc<> const signal)
-            : WaitSignalHelper{socket, signal}
+        X_IMPLICIT LocalSocketReadySignalHelper(const QLocalSocket * const socket, signalFunc<> const signal)
+            : WaitSignalHelper { socket, signal }
             , m_stateChange_{ connect_(socket, &QLocalSocket::stateChanged, this,
                                [this]<typename Tp>(Tp && state){ stateChanged(std::forward<Tp>(state), false); })
             }
-        {  }
+        {   }
 
-        explicit(false) LocalSocketReadySignalHelper(const QLocalSocket * const socket, signalFunc<true> const signal)
+        X_IMPLICIT LocalSocketReadySignalHelper(QLocalSocket const & socket, signalFunc<> const signal)
+            : LocalSocketReadySignalHelper { std::addressof(socket) , signal }
+        {   }
+
+        X_IMPLICIT LocalSocketReadySignalHelper(const QLocalSocket * const socket, signalFunc<qint64> const signal)
             : WaitSignalHelper { socket, signal }
             , m_stateChange_{ connect_(socket, &QLocalSocket::stateChanged, this,
                                 [this]<typename Tp>(Tp && state){ stateChanged(std::forward<Tp>(state), static_cast<qint64>(0)); })
             }
+        {   }
+
+        X_IMPLICIT LocalSocketReadySignalHelper(QLocalSocket const & socket, signalFunc<qint64> const signal)
+            : LocalSocketReadySignalHelper { std::addressof(socket) , signal }
         {   }
 
     private:
@@ -65,14 +73,18 @@ namespace detail {
 
     struct QCoroLocalSocket : QCoroIODevice {
 
-        explicit(false) QCoroLocalSocket(QLocalSocket * const socket) noexcept
+        X_IMPLICIT QCoroLocalSocket(QLocalSocket * const socket) noexcept
             : QCoroIODevice { socket }
         {   }
 
-        XCoroTask<bool> waitForConnected(int const timeout_msecs = 30'000) const
+        X_IMPLICIT QCoroLocalSocket(QLocalSocket & socket) noexcept
+            : QCoroLocalSocket { std::addressof(socket) }
+        {   }
+
+        TaskBool waitForConnected(int const timeout_msecs = 30'000) const
         { return waitForConnected(milliseconds{timeout_msecs}); }
 
-        XCoroTask<bool> waitForConnected(milliseconds const timeout) const{
+        TaskBool waitForConnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::ConnectedState == socket->state()) { co_return true; }
             SocketConnectedHelper helper(socket, &QLocalSocket::connected);
@@ -80,24 +92,24 @@ namespace detail {
             co_return result.value_or(false);
         }
 
-        XCoroTask<bool> waitForDisconnected(int const timeout_msecs = 30'000) const
+        TaskBool waitForDisconnected(int const timeout_msecs = 30'000) const
         { return waitForDisconnected(milliseconds{timeout_msecs}); }
 
-        XCoroTask<bool> waitForDisconnected(milliseconds const timeout) const {
+        TaskBool waitForDisconnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::UnconnectedState == socket->state() ) { co_return false; }
             auto const result{ co_await qCoro(socket, &QLocalSocket::disconnected, timeout) };
             co_return result.has_value();
         }
 
-        XCoroTask<bool> connectToServer(QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
+        TaskBool connectToServer(QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                                    milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QLocalSocket *>(m_device_.data())->connectToServer(openMode);
             return waitForConnected(timeout);
         }
 
-        XCoroTask<bool> connectToServer(QString const & name, QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
+        TaskBool connectToServer(QString const & name, QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                                    milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QLocalSocket *>(m_device_.data())->connectToServer(name, openMode);
@@ -105,14 +117,14 @@ namespace detail {
         }
 
     private:
-        XCoroTask<std::optional<bool>> waitForReadyReadImpl(milliseconds const timeout) const override {
+        TaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::ConnectedState != socket->state() ) { co_return false; }
             LocalSocketReadySignalHelper helper {socket, &QLocalSocket::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&LocalSocketReadySignalHelper::ready), timeout);
         }
 
-        XCoroTask<std::optional<qint64>> waitForBytesWrittenImpl(milliseconds const timeout) const override {
+        TaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (socket->state() != QLocalSocket::ConnectedState) { co_return std::nullopt; }
             LocalSocketReadySignalHelper helper { socket, &QLocalSocket::bytesWritten };
@@ -123,7 +135,7 @@ namespace detail {
 }
 
 inline auto qCoro(QLocalSocket & s) noexcept
-{ return detail::QCoroLocalSocket {std::addressof(s)}; }
+{ return detail::QCoroLocalSocket {s }; }
 
 inline auto qCoro(QLocalSocket * const s) noexcept
 { return detail::QCoroLocalSocket {s}; }

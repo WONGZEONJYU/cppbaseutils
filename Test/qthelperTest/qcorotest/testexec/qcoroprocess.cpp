@@ -104,7 +104,7 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
 
     XUtils::XCoroTask<> testStartDoesntBlock_coro(QCoro::TestContext) {
         using namespace std::chrono_literals;
-        QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
+        QCoro::EventLoopChecker const eventLoopResponsive{1, 0ms};
 
         QProcess process{};
         auto const ok{ co_await XUtils::qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS) };
@@ -124,7 +124,7 @@ struct QCoroProcessTest : QCoro::TestObject<QCoroProcessTest> {
         process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 #else
-        auto const ok { co_await XUtils::qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1)) };
+        auto const ok{ co_await XUtils::qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1)) };
         QCORO_VERIFY(ok);
 #endif
 
