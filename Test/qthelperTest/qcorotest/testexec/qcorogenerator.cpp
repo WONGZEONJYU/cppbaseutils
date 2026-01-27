@@ -164,8 +164,8 @@ private Q_SLOTS:
     }
 
     static void testExceptionInBegin() {
-        auto const generator { [is_throw = true]() -> XUtils::XGenerator<int> {
-            if (is_throw) { throw std::runtime_error("Zero is too small!"); }
+        auto const generator { []() -> XUtils::XGenerator<int> {
+            throw std::runtime_error("Zero is too small!");
             co_yield 1;
         }()};
 
