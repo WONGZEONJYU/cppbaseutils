@@ -50,10 +50,11 @@ struct QCoroQmlTaskTest : QObject {
     Q_OBJECT
 
     Q_SLOT void testQmlCallback() {
-        QQmlApplicationEngine engine;
-        qmlRegisterSingletonType<QmlObject>("qcoro.test", 0, 1, "QmlObject", [](QQmlEngine *, QJSEngine *) {
-            return new QmlObject();
-        });
+        QQmlApplicationEngine engine {};
+
+        qmlRegisterSingletonType<QmlObject>("qcoro.test", 0, 1, "QmlObject",
+        [](QQmlEngine *, QJSEngine *){ return std::make_unique<QmlObject>().release(); }
+        );
 
         XUtils::Qml::registerTypes();
 
@@ -92,32 +93,39 @@ QtObject {
     }
 }
 )");
+
         auto const object { engine.singletonInstance<QmlObject *>(qmlTypeId("qcoro.test", 0, 1, "QmlObject"))};
 
         auto const timeout{ std::make_unique<QTimer>(this).release() };
         timeout->setSingleShot(true);
-        using namespace std::chrono_literals;
-        timeout->setInterval(2s);
+        {
+            using namespace std::chrono_literals;
+            timeout->setInterval(2s);
+        }
         timeout->start();
 
         auto running { true };
         // End the event loop normally
-        connect(object, &QmlObject::success, this, [&]{
-            timeout->stop();
-            running = false;
-        });
+        connect(object, &QmlObject::success,this,[&]{ timeout->stop();running = false;});
 
         // Crash the test in case the timeout was reachaed without the callback being called
-        connect(timeout, &QTimer::timeout, this, [&]{
+
+        {
+            auto slotF {
+                [&]{
 #if defined(Q_CC_CLANG) && defined(Q_OS_WINDOWS)
-            running = false;
-            QEXPECT_FAIL("", "QTBUG-91768", Abort);
-            QVERIFY(false);
-            return;
+                    running = false;
+                    QEXPECT_FAIL("", "QTBUG-91768", Abort);
+                    QVERIFY(false);
+                    return;
 #else
-            QFAIL("Timeout waiting for QML continuation to be called");
+                    QFAIL("Timeout waiting for QML continuation to be called");
 #endif
-        });
+                }
+            };
+            timeout->callOnTimeout(this,std::move(slotF));
+        }
+
         while (running) { QCoreApplication::processEvents(); }
     }
 };
