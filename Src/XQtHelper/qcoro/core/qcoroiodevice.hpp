@@ -18,7 +18,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    class QCoroIODevice {
+    struct QCoroIODevice {
     protected:
         QPointer<QIODevice> m_device_ {};
 

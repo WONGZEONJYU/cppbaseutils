@@ -17,10 +17,7 @@ namespace detail {
 
     template<typename T>
     class QCoroFuture final {
-
         QFuture<T> m_future_ {};
-
-        friend struct awaiter_type<QFuture<T>>;
 
         template<typename Tp>
         struct WaitForFinishedOperationAbstract {
@@ -56,12 +53,20 @@ namespace detail {
                 : WaitForFinishedOperationAbstract<T> { future }
             {   }
 
+            Q_IMPLICIT constexpr WaitForFinishedOperationType(QFuture<T> const * const future)
+                : WaitForFinishedOperationAbstract<T> { future }
+            {   }
+
             T await_resume() const
             { return this->m_future_.result(); }
         };
 
         struct WaitForFinishedOperationVoid : WaitForFinishedOperationAbstract<void> {
             Q_IMPLICIT constexpr WaitForFinishedOperationVoid(QFuture<void> const & future)
+                : WaitForFinishedOperationAbstract<void> { future }
+            {   }
+
+            Q_IMPLICIT constexpr WaitForFinishedOperationVoid(QFuture<void> const * const future)
                 : WaitForFinishedOperationAbstract<void> { future }
             {   }
 
@@ -110,10 +115,17 @@ namespace detail {
         XCoroTask<T> takeResult() const requires (!std::is_void_v<T>)
         { co_return std::move(co_await TakeResultOperation<> { m_future_ }); }
 #endif
+
+        template<typename _> friend struct awaiter_type;
     };
 
     template<typename T>
-    struct awaiter_type<QFuture<T>> { using type = QCoroFuture<T>::WaitForFinishedOperation; };
+    struct awaiter_type<QFuture<T>>
+    { using type = QCoroFuture<T>::WaitForFinishedOperation; };
+
+    template<typename T>
+    struct awaiter_type<QFuture<T> *>
+    { using type = QCoroFuture<T>::WaitForFinishedOperation; };
 
 }
 

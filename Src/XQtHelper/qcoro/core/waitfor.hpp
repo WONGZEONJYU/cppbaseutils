@@ -29,12 +29,14 @@ namespace detail {
             if (m_exception_) { std::rethrow_exception(m_exception_); }
         }
 
-        template<Awaitable Awaitable> friend XCoroTask<> runCoroutine(WaitContext & , Awaitable && );
+        template<Awaitable Awaitable>
+        friend XCoroTask<> runCoroutine(WaitContext & , Awaitable && );
 
-        template<typename T, Awaitable Awaitable> friend
-        XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & , Awaitable && );
+        template<typename T, Awaitable Awaitable>
+        friend XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & , Awaitable && );
 
-        template<typename T, Awaitable Awaitable> friend constexpr T waitFor(Awaitable && );
+        template<typename T, Awaitable Awaitable>
+        friend constexpr T waitFor(Awaitable && );
     };
 
     template<Awaitable Awaitable>
