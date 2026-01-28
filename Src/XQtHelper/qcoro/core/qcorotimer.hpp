@@ -15,21 +15,17 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     class QCoroTimer {
-
-        friend struct awaiter_type<QTimer>;
-        friend struct awaiter_type<QTimer*>;
-
         QPointer<QTimer> m_timer_{};
 
         class WaitForTimeoutOperation {
             QMetaObject::Connection m_conn_{};
             QPointer<QTimer> m_timer_{};
         public:
-            X_IMPLICIT WaitForTimeoutOperation(QTimer * const timer) noexcept
+            Q_IMPLICIT WaitForTimeoutOperation(QTimer * const timer) noexcept
                 : m_timer_ { timer }
             {    }
 
-            X_IMPLICIT WaitForTimeoutOperation(QTimer & timer) noexcept
+            Q_IMPLICIT WaitForTimeoutOperation(QTimer & timer) noexcept
                 : m_timer_ { std::addressof(timer) }
             {   }
 
@@ -45,16 +41,18 @@ namespace detail {
         };
 
     public:
-        X_IMPLICIT QCoroTimer(QTimer * const timer) noexcept
+        Q_IMPLICIT QCoroTimer(QTimer * const timer) noexcept
             : m_timer_ {timer}
         {   }
 
-        X_IMPLICIT QCoroTimer(QTimer & timer) noexcept
+        Q_IMPLICIT QCoroTimer(QTimer & timer) noexcept
             : QCoroTimer { std::addressof(timer) }
         {   }
 
         [[nodiscard]] XCoroTask<> waitForTimeout() const
         { if (m_timer_->isActive()) { co_await qCoro(m_timer_.data(), &QTimer::timeout); } }
+
+        template<typename T> friend struct awaiter_type;
     };
 
     template<>

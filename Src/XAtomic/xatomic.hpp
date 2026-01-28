@@ -9,7 +9,7 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 class XAtomicBool : public XBasicAtomic<bool>{
     using Base_ = XBasicAtomic;
 public:
-    explicit(false) constexpr XAtomicBool(bool const value = {}) noexcept
+    X_IMPLICIT constexpr XAtomicBool(bool const value = {}) noexcept
         : Base_ {value} {}
 
     XAtomicBool(XAtomicBool const & other) noexcept : Base_ {{}}
@@ -25,7 +25,7 @@ class XAtomicInteger : public XBasicAtomicInteger<T> {
     using Base_ = XBasicAtomicInteger<T>;
 public:
     // Non-atomic API
-    explicit(false) constexpr XAtomicInteger(T const value = {}) noexcept
+    X_IMPLICIT constexpr XAtomicInteger(T const value = {}) noexcept
         : Base_ {value} {}
 
     constexpr XAtomicInteger(XAtomicInteger const & other) noexcept : Base_ {{}}
@@ -116,7 +116,7 @@ public:
     // Non-atomic API
     // We could use QT_COMPILER_INHERITING_CONSTRUCTORS, but we need only one;
     // the implicit definition for all the others is fine.
-    explicit(false) constexpr XAtomicInt(int const value = {}) noexcept
+    X_IMPLICIT constexpr XAtomicInt(int const value = {}) noexcept
         : Base_ {value} {}
 };
 
@@ -125,7 +125,7 @@ template <typename T>
 class XAtomicPointer : public XBasicAtomicPointer<T> {
     using Base_ = XBasicAtomicPointer<T>;
 public:
-    explicit(false) constexpr XAtomicPointer(T * const value = {}) noexcept
+    X_IMPLICIT constexpr XAtomicPointer(T * const value = {}) noexcept
         : Base_ {value} {}
 
     constexpr XAtomicPointer(XAtomicPointer const & other) noexcept : Base_ {{}}

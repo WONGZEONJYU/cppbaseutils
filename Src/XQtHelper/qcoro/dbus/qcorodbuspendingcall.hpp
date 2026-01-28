@@ -15,17 +15,16 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     class QCoroDBusPendingCall {
-        friend struct awaiter_type<QDBusPendingCall>;
         QDBusPendingCall const * m_call_ {};
 
         class WaitForFinishedOperation {
             QDBusPendingCall const * m_call_ {};
         public:
-            Implicit_ constexpr WaitForFinishedOperation(QDBusPendingCall const * const call)
+            Q_IMPLICIT constexpr WaitForFinishedOperation(QDBusPendingCall const * const call)
                 : m_call_ { call }
             {   }
 
-            Implicit_ constexpr WaitForFinishedOperation(QDBusPendingCall const & call)
+            Q_IMPLICIT constexpr WaitForFinishedOperation(QDBusPendingCall const & call)
                 : m_call_ { std::addressof(call) }
             {   }
 
@@ -43,11 +42,11 @@ namespace detail {
         };
 
     public:
-        Implicit_ QCoroDBusPendingCall(QDBusPendingCall const * const call)
+        Q_IMPLICIT QCoroDBusPendingCall(QDBusPendingCall const * const call)
             : m_call_ { call }
         {   }
 
-        Implicit_ QCoroDBusPendingCall(QDBusPendingCall const & call)
+        Q_IMPLICIT QCoroDBusPendingCall(QDBusPendingCall const & call)
             : m_call_ { std::addressof(call) }
         {   }
 
@@ -56,9 +55,15 @@ namespace detail {
             co_await qCoro(std::addressof(watcher), &QDBusPendingCallWatcher::finished);
             co_return watcher.reply();
         }
+
+        template<typename T> friend struct awaiter_type;
     };
 
-    template<> struct awaiter_type<QDBusPendingCall> { using type = QCoroDBusPendingCall::WaitForFinishedOperation; };
+    template<> struct awaiter_type<QDBusPendingCall>
+    { using type = QCoroDBusPendingCall::WaitForFinishedOperation; };
+
+    template<> struct awaiter_type<QDBusPendingCall *>
+    { using type = QCoroDBusPendingCall::WaitForFinishedOperation; };
 
 }
 

@@ -2,6 +2,7 @@
 #define X_BASIC_ATOMIC_HPP 1
 
 #include <XAtomic/xatomic_cxx11.hpp>
+#include <XGlobal/xclasshelpermacros.hpp>
 #include <XGlobal/xversion.hpp>
 
 XTD_NAMESPACE_BEGIN
@@ -20,7 +21,7 @@ public:
 
     Type loadAcquire() const noexcept { return Ops::loadAcquire(m_x_value); }
     void storeRelease(Type const & newValue) noexcept { Ops::storeRelease(m_x_value, newValue); }
-    explicit(false) operator Type() const noexcept { return loadAcquire(); }
+    X_IMPLICIT operator Type() const noexcept { return loadAcquire(); }
     Type operator=(Type const & newValue) noexcept { storeRelease(newValue); return newValue; }
 
     static constexpr bool isTestAndSetNative() noexcept { return Ops::isTestAndSetNative(); }
@@ -56,7 +57,7 @@ public:
     T fetchAndStoreOrdered(T const & newValue) noexcept
     { return Ops::fetchAndStoreOrdered(m_x_value, newValue); }
 
-    explicit(false) constexpr XBasicAtomic(T const & value = {}) noexcept
+    X_IMPLICIT constexpr XBasicAtomic(T const & value = {}) noexcept
         : m_x_value {value} { }
     XBasicAtomic(XBasicAtomic const &) = delete;
     XBasicAtomic &operator=(XBasicAtomic const &) = delete;
@@ -144,7 +145,7 @@ public:
     { return fetchAndXorOrdered(v) ^ v; }
 
     constexpr XBasicAtomicInteger() = default;
-    explicit(false) constexpr XBasicAtomicInteger(T const & value ) noexcept
+    X_IMPLICIT constexpr XBasicAtomicInteger(T const & value ) noexcept
         : Base_ {value} { }
     XBasicAtomicInteger(XBasicAtomicInteger const &) = delete;
     XBasicAtomicInteger &operator=(XBasicAtomicInteger const &) = delete;
@@ -164,7 +165,7 @@ public:
     Type loadRelaxed() const noexcept { return Ops::loadRelaxed(m_x_value); }
     void storeRelaxed(Type const & newValue) noexcept { Ops::storeRelaxed(m_x_value, newValue); }
 
-    explicit(false) operator Type() const noexcept { return loadAcquire(); }
+    X_IMPLICIT operator Type() const noexcept { return loadAcquire(); }
     Type operator=(Type const & newValue) noexcept { storeRelease(newValue); return newValue; }
 
     // Atomic API, implemented in qatomic_XXX.h
@@ -239,7 +240,7 @@ public:
     { return fetchAndSubOrdered(valueToSub) - valueToSub; }
 
     constexpr XBasicAtomicPointer() = default;
-    explicit(false) constexpr XBasicAtomicPointer(Type const & value) noexcept
+    X_IMPLICIT constexpr XBasicAtomicPointer(Type const & value) noexcept
         : m_x_value {value} { }
     XBasicAtomicPointer(XBasicAtomicPointer const &) = delete;
     XBasicAtomicPointer &operator=(XBasicAtomicPointer const &) = delete;

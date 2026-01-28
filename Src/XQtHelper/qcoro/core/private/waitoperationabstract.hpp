@@ -23,7 +23,7 @@ namespace detail {
         bool m_timedOut_ {};
 
     public:
-        X_DISABLE_COPY(WaitOperationAbstract)
+        Q_DISABLE_COPY(WaitOperationAbstract)
         X_DEFAULT_MOVE(WaitOperationAbstract)
 
         virtual ~WaitOperationAbstract() = default;
@@ -32,7 +32,7 @@ namespace detail {
         { return !m_timedOut_; }
 
     protected:
-        X_IMPLICIT constexpr WaitOperationAbstract(T * const obj, int const timeout_msecs)
+        Q_IMPLICIT constexpr WaitOperationAbstract(T * const obj, int const timeout_msecs)
             : m_QObject_ { obj }
         {
             if (timeout_msecs < 0) { return; }
@@ -40,6 +40,10 @@ namespace detail {
             m_timeoutTimer_->setInterval(timeout_msecs);
             m_timeoutTimer_->setSingleShot(true);
         }
+
+        Q_IMPLICIT constexpr WaitOperationAbstract(T & obj, int const timeout_msecs)
+            : WaitOperationAbstract { std::addressof(obj),timeout_msecs }
+        {   }
 
         void startTimeoutTimer(std::coroutine_handle<> const h) {
             if (!m_timeoutTimer_) { return; }

@@ -42,17 +42,17 @@ namespace detail {
             }
 
         protected:
-            X_IMPLICIT constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const & future)
+            Q_IMPLICIT constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const & future)
                 : m_future_ { future }
             {   }
 
-            X_IMPLICIT constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const * const future)
+            Q_IMPLICIT constexpr WaitForFinishedOperationAbstract(QFuture<Tp> const * const future)
                 : m_future_ { *future }
             {   }
         };
 
         struct WaitForFinishedOperationType : WaitForFinishedOperationAbstract<T> {
-            X_IMPLICIT constexpr WaitForFinishedOperationType(QFuture<T> const & future)
+            Q_IMPLICIT constexpr WaitForFinishedOperationType(QFuture<T> const & future)
                 : WaitForFinishedOperationAbstract<T> { future }
             {   }
 
@@ -61,7 +61,7 @@ namespace detail {
         };
 
         struct WaitForFinishedOperationVoid : WaitForFinishedOperationAbstract<void> {
-            X_IMPLICIT constexpr WaitForFinishedOperationVoid(QFuture<void> const & future)
+            Q_IMPLICIT constexpr WaitForFinishedOperationVoid(QFuture<void> const & future)
                 : WaitForFinishedOperationAbstract<void> { future }
             {   }
 
@@ -76,7 +76,7 @@ namespace detail {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         template<typename Tp = T> requires (!std::is_void_v<Tp>)
         struct TakeResultOperation : WaitForFinishedOperationAbstract<Tp> {
-            X_IMPLICIT constexpr TakeResultOperation(QFuture<Tp> const & future)
+            Q_IMPLICIT constexpr TakeResultOperation(QFuture<Tp> const & future)
                 : WaitForFinishedOperationAbstract<Tp> { future }
             {   }
 
@@ -92,11 +92,11 @@ namespace detail {
         >;
 
     public:
-        X_IMPLICIT constexpr QCoroFuture(QFuture<T> const & future)
+        Q_IMPLICIT constexpr QCoroFuture(QFuture<T> const & future)
             : m_future_ {future}
         {   }
 
-        X_IMPLICIT constexpr QCoroFuture(QFuture<T> const * const future)
+        Q_IMPLICIT constexpr QCoroFuture(QFuture<T> const * const future)
             : m_future_ { *future }
         {   }
 

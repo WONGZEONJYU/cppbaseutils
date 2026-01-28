@@ -49,6 +49,7 @@ namespace detail {
             co_return result.value_or(nullptr);
         }
     };
+
 }
 
 inline auto qCoro(QWebSocketServer * const server) noexcept

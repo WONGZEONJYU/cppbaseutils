@@ -14,25 +14,24 @@ namespace detail {
     struct ReplyWaitSignalHelper : WaitSignalHelper {
         Q_OBJECT
         QMetaObject::Connection m_error_{},m_finished_{};
-
     public:
-        X_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const * const reply, signalFunc<> const signal)
-            : WaitSignalHelper {reply, signal}
+        Q_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const * const reply, signalFunc<> const signal)
+            : WaitSignalHelper { reply, signal }
             , m_error_{ connect_(reply,&QNetworkReply::errorOccurred,this, [this]{ emitReady(false); },Qt::QueuedConnection) }
             , m_finished_{ connect_(reply,&QNetworkReply::finished,this, [this]{ emitReady(true); },Qt::QueuedConnection) }
         {   }
 
-        X_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const & reply, signalFunc<> const signal)
+        Q_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const & reply, signalFunc<> const signal)
             : ReplyWaitSignalHelper { std::addressof(reply) , signal }
         {   }
 
-        X_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const * const reply, signalFunc<qint64> const signal)
+        Q_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const * const reply, signalFunc<qint64> const signal)
             : WaitSignalHelper { reply, signal }
             , m_error_{ connect_(reply, &QNetworkReply::errorOccurred,this,[this]{ emitReady(0LL); },Qt::QueuedConnection) }
             , m_finished_{ connect_(reply, &QNetworkReply::finished,this, [this]{ emitReady(0LL); },Qt::QueuedConnection) }
         {   }
 
-        X_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const & reply, signalFunc<qint64> const signal)
+        Q_IMPLICIT ReplyWaitSignalHelper(QNetworkReply const & reply, signalFunc<qint64> const signal)
             : ReplyWaitSignalHelper { std::addressof(reply) , signal }
         {   }
 
@@ -43,8 +42,6 @@ namespace detail {
 
     class QCoroNetworkReply final : public QCoroIODevice {
 
-        friend struct awaiter_type<QNetworkReply *>;
-
         class WaitForFinishedOperation final {
 
             struct Private {
@@ -54,7 +51,7 @@ namespace detail {
                 QPointer<QNetworkReply> m_reply{};
                 QObject m_dummy{};
 
-                X_IMPLICIT Private(QPointer<QNetworkReply> const & reply)
+                Q_IMPLICIT Private(QPointer<QNetworkReply> const & reply)
                     : m_reply { reply }
                 { if (reply) { m_dummy.moveToThread(reply->thread()); } }
             };
@@ -86,7 +83,7 @@ namespace detail {
 
             void await_suspend(std::coroutine_handle<> const h) const {
                 if (!m_d_->m_reply) { h.resume(); return; }
-                QObject::connect(m_d_->m_reply.data(), &QNetworkReply::finished, std::addressof(m_d_->m_dummy),
+                QObject::connect(m_d_->m_reply.data(),&QNetworkReply::finished,std::addressof(m_d_->m_dummy),
                     [h]{ h.resume(); },Qt::QueuedConnection
                 );
             }
@@ -119,10 +116,12 @@ namespace detail {
             ReplyWaitSignalHelper helper { reply, &QNetworkReply::bytesWritten };
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&ReplyWaitSignalHelper::ready), timeout);
         }
+
+        template<typename T> friend struct awaiter_type;
     };
 
-    template<>
-    struct awaiter_type<QNetworkReply *> { using type = QCoroNetworkReply::WaitForFinishedOperation; };
+    template<> struct awaiter_type<QNetworkReply *>
+    { using type = QCoroNetworkReply::WaitForFinishedOperation; };
 
 }
 

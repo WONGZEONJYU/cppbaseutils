@@ -28,11 +28,11 @@ namespace detail {
     public:
         inline static const auto eventType { static_cast<QEvent::Type>(QEvent::registerEventType()) };
 
-        X_IMPLICIT ContextHelper(std::coroutine_handle<> const awaiter, QThread * const thread) noexcept
+        Q_IMPLICIT ContextHelper(std::coroutine_handle<> const awaiter, QThread * const thread) noexcept
             : m_thread_ { thread } , m_awaiter_ { awaiter }
         {   }
 
-        X_IMPLICIT ContextHelper(std::coroutine_handle<> const awaiter, QThread & thread) noexcept
+        Q_IMPLICIT ContextHelper(std::coroutine_handle<> const awaiter, QThread & thread) noexcept
             : ContextHelper { awaiter , std::addressof(thread) }
         {   }
 
@@ -47,11 +47,11 @@ namespace detail {
     class QCoroThread {
         QPointer<QThread> m_thread_{};
     public:
-        X_IMPLICIT QCoroThread(QThread * const thread) noexcept
+        Q_IMPLICIT QCoroThread(QThread * const thread) noexcept
             : m_thread_ { thread }
         {    }
 
-        X_IMPLICIT QCoroThread(QThread & thread) noexcept
+        Q_IMPLICIT QCoroThread(QThread & thread) noexcept
             : QCoroThread { std::addressof(thread) }
         {    }
 
@@ -81,19 +81,20 @@ class ThreadContext {
         QThread * m_thread {};
         std::unique_ptr<detail::ContextHelper> m_context {};
         constexpr Data() noexcept = default;
-        X_IMPLICIT constexpr Data(QThread * const thread) noexcept
-            : m_thread { thread } {}
+        Q_IMPLICIT constexpr Data(QThread * const thread) noexcept
+            : m_thread { thread }
+        {   }
         Q_DISABLE_COPY_MOVE(Data)
     };
 
     std::unique_ptr<Data> m_d_ {};
 
 public:
-    X_IMPLICIT constexpr ThreadContext(QThread * const thread)
+    Q_IMPLICIT constexpr ThreadContext(QThread * const thread)
         : m_d_{ std::make_unique<Data>(thread) }
     {   }
 
-    X_IMPLICIT constexpr ThreadContext(QThread & thread)
+    Q_IMPLICIT constexpr ThreadContext(QThread & thread)
         : ThreadContext { std::addressof(thread) }
     {   }
 

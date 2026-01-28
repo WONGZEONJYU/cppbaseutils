@@ -10,7 +10,7 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-template<typename> class XRingBufferIterator;
+template<typename T> class XRingBufferIterator;
 
 template<typename ,std::size_t N = 1024> requires(N > 0) class XRingBuffer;
 
@@ -161,7 +161,7 @@ public:
     constexpr XRingBufferIterator() = default;
 
     template<typename OtherIter>
-    explicit(false) constexpr XRingBufferIterator(XRingBufferIterator<OtherIter> const & other)
+    X_IMPLICIT constexpr XRingBufferIterator(XRingBufferIterator<OtherIter> const & other)
         :m_ref_ { other.m_ref_ },m_index_ { other.m_index_ } {}
 
     constexpr self_type & operator++() {

@@ -113,7 +113,7 @@ namespace concepts {
 
         constexpr QCoroSignalAbstract() = default;
 
-        X_IMPLICIT constexpr QCoroSignalAbstract(T * const obj, FuncPtr && funcPtr, milliseconds const timeout)
+        Q_IMPLICIT constexpr QCoroSignalAbstract(T * const obj, FuncPtr && funcPtr, milliseconds const timeout)
             : m_obj_{ obj }, m_funcPtr_ { std::forward<FuncPtr>(funcPtr) }
         {
             if (timeout.count() > -1) {
@@ -158,7 +158,7 @@ namespace concepts {
         using result_type = Base::result_type;
         using typename Base::milliseconds;
 
-        X_IMPLICIT constexpr QCoroSignal(T * const obj, FuncPtr && ptr, milliseconds const timeout)
+        Q_IMPLICIT constexpr QCoroSignal(T * const obj, FuncPtr && ptr, milliseconds const timeout)
             : Base { obj, std::forward<FuncPtr>(ptr), timeout }
             , m_dummyReceiver_ { std::make_unique<QObject>() }
         {   }
@@ -240,7 +240,7 @@ namespace concepts {
         using result_type = Base::result_type;
         using typename Base::milliseconds;
 
-        X_IMPLICIT constexpr QCoroSignalQueue(T * const obj, FuncPtr && ptr, milliseconds const timeout)
+        Q_IMPLICIT constexpr QCoroSignalQueue(T * const obj, FuncPtr && ptr, milliseconds const timeout)
             : Base { obj, std::forward<FuncPtr>(ptr), timeout }
         { setupConnection(); }
 
@@ -252,7 +252,7 @@ namespace concepts {
             class Awaiter final {
                 QCoroSignalQueue * m_queue_ {};
             public:
-                X_IMPLICIT constexpr Awaiter(QCoroSignalQueue * const queue) noexcept
+                Q_IMPLICIT constexpr Awaiter(QCoroSignalQueue * const queue) noexcept
                     : m_queue_ { queue }
                 {   }
 

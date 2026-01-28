@@ -7,6 +7,7 @@
 #include <XQtHelper/qcoro/core/waitfor.hpp>
 #include <type_traits>
 #include <optional>
+#include <QObject>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 QT_WARNING_PUSH
@@ -62,7 +63,7 @@ struct QmlTask {
     QSharedDataPointer<QmlPrivate::QmlTaskPrivate> m_d_{};
 
 public:
-    X_IMPLICIT QmlTask() noexcept
+    Q_IMPLICIT QmlTask() noexcept
         : m_d_ { std::make_unique<QmlPrivate::QmlTaskPrivate>().release() }
     {   }
 
@@ -70,25 +71,25 @@ public:
 
     ~QmlTask() = default;
 
-    X_IMPLICIT QmlTask(XCoroTask<QVariant> && task)
+    Q_IMPLICIT QmlTask(XCoroTask<QVariant> && task)
         : QmlTask {}
     { m_d_->m_task = std::move(task); }
 
     template <typename T>
-    X_IMPLICIT QmlTask(XCoroTask<T> && task)
+    Q_IMPLICIT QmlTask(XCoroTask<T> && task)
         : QmlTask { task.then([]<typename Tp>(Tp && result) -> XCoroTask<QVariant> {
             co_return QVariant::fromValue(std::forward<Tp>(result));
         }) }
     { qMetaTypeId<T>(); }
 
     template <typename T> requires (detail::TaskConvertible<T> && !std::is_same_v<T, QmlTask>)
-    X_IMPLICIT QmlTask(T && future) : QmlTask { detail::toTask(std::forward<T>(future)) }
+    Q_IMPLICIT QmlTask(T && future) : QmlTask { detail::toTask(std::forward<T>(future)) }
     {   }
 
-    template <typename = void>
-    X_IMPLICIT QmlTask(XCoroTask<> && task)
+    template <typename T = void>
+    Q_IMPLICIT QmlTask(XCoroTask<> && task)
         : QmlTask { task.then([]()-> XCoroTask<QVariant> { co_return QVariant{ }; }) }
-    {   }
+    { using type [[maybe_unused]] = T; }
 
     Q_INVOKABLE void then(QJSValue func) {
         if (!m_d_->m_task) {

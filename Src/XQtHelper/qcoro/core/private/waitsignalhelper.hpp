@@ -34,21 +34,21 @@ namespace detail {
         template<typename ...Args>
         using signalFunc = void(QIODevice::*)(Args...);
 
-        X_IMPLICIT WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
+        Q_IMPLICIT WaitSignalHelper(const QIODevice * const device , signalFunc<> const signalFunc)
             : m_ready_ { connect_(device, signalFunc, this,[this]{ emitReady(true); }) }
             , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this ,[this]{ emitReady(false); }) }
         {   }
 
-        X_IMPLICIT WaitSignalHelper(QIODevice const & device , signalFunc<> const signalFunc)
+        Q_IMPLICIT WaitSignalHelper(QIODevice const & device , signalFunc<> const signalFunc)
             : WaitSignalHelper { std::addressof(device) , signalFunc }
         {   }
 
-        X_IMPLICIT WaitSignalHelper(const QIODevice * const device, signalFunc<qint64> const signalFunc)
+        Q_IMPLICIT WaitSignalHelper(const QIODevice * const device, signalFunc<qint64> const signalFunc)
             : m_ready_ { connect_(device, signalFunc, this, &WaitSignalHelper::emitReady<qint64>) }
             , m_aboutToClose_ { connect_(device, &QIODevice::aboutToClose, this,[this]{ emitReady( qint64{} ); }) }
         {   }
 
-        X_IMPLICIT WaitSignalHelper(QIODevice const & device, signalFunc<qint64> const signalFunc)
+        Q_IMPLICIT WaitSignalHelper(QIODevice const & device, signalFunc<qint64> const signalFunc)
             : WaitSignalHelper { std::addressof(device) , signalFunc }
         {   }
 

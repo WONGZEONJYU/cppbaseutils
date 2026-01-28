@@ -19,11 +19,11 @@ namespace detail {
         struct WaitForNewConnectionOperation final
             : WaitOperationAbstract<QTcpServer>
         {
-            X_IMPLICIT WaitForNewConnectionOperation(QTcpServer * const server, int const timeout_msecs = 30'000)
+            Q_IMPLICIT WaitForNewConnectionOperation(QTcpServer * const server, int const timeout_msecs = 30'000)
                 : WaitOperationAbstract { server, timeout_msecs }
             {   }
 
-            X_IMPLICIT WaitForNewConnectionOperation(QTcpServer & server, int const timeout_msecs = 30'000)
+            Q_IMPLICIT WaitForNewConnectionOperation(QTcpServer & server, int const timeout_msecs = 30'000)
                 : WaitOperationAbstract { std::addressof(server), timeout_msecs }
             {   }
 
@@ -41,20 +41,21 @@ namespace detail {
         };
 
     public:
-        X_IMPLICIT QCoroTcpServer(QTcpServer * const server)
+        Q_IMPLICIT QCoroTcpServer(QTcpServer * const server)
             : m_server_ { server }
         {   }
 
-        X_IMPLICIT QCoroTcpServer(QTcpServer & server)
+        Q_IMPLICIT QCoroTcpServer(QTcpServer & server)
             : m_server_ { std::addressof(server) }
         {   }
 
         using milliseconds = std::chrono::milliseconds;
+        using TaskQTcpSocket = XCoroTask<QTcpSocket *>;
 
-        XCoroTask<QTcpSocket *> waitForNewConnection(int const timeout_msecs = 30'000) const
+        TaskQTcpSocket waitForNewConnection(int const timeout_msecs = 30'000) const
         { return waitForNewConnection(milliseconds{ timeout_msecs }); }
 
-        XCoroTask<QTcpSocket *> waitForNewConnection(milliseconds const timeout) const {
+        TaskQTcpSocket waitForNewConnection(milliseconds const timeout) const {
             auto && server{ m_server_ };
             if (!server->isListening()) { co_return nullptr; }
             if (server->hasPendingConnections()) { co_return server->nextPendingConnection(); }
@@ -63,7 +64,15 @@ namespace detail {
             { co_return server->nextPendingConnection(); }
             co_return nullptr;
         }
+
+        template<typename T> friend struct awaiter_type;
     };
+
+    template<> struct awaiter_type<QTcpServer>
+    { using type = QCoroTcpServer::WaitForNewConnectionOperation; };
+
+    template<> struct awaiter_type<QTcpServer *>
+    { using type = QCoroTcpServer::WaitForNewConnectionOperation; };
 
 }
 

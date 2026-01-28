@@ -14,8 +14,6 @@ namespace detail {
 
     template<typename ... Args>
     class QCoroDBusPendingReply {
-
-        friend struct awaiter_type<QDBusPendingReply<Args ...>>;
         QDBusPendingReply<Args ...> m_reply_ {};
 
     #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -28,11 +26,11 @@ namespace detail {
         class WaitForFinishedOperation {
             QDBusPendingReply<Args ...> m_reply_{};
         public:
-            Implicit_ WaitForFinishedOperation(QDBusPendingReply<Args ...> const & reply)
+            Q_IMPLICIT WaitForFinishedOperation(QDBusPendingReply<Args ...> const & reply)
                 : m_reply_ {reply}
             {   }
 
-            Implicit_ WaitForFinishedOperation(QDBusPendingReply<Args ...> const * const reply)
+            Q_IMPLICIT WaitForFinishedOperation(QDBusPendingReply<Args ...> const * const reply)
                 : m_reply_ { *reply }
             {   }
 
@@ -50,11 +48,11 @@ namespace detail {
         };
 
     public:
-        Implicit_ QCoroDBusPendingReply(QDBusPendingReply<Args ...> const & reply)
+        Q_IMPLICIT QCoroDBusPendingReply(QDBusPendingReply<Args ...> const & reply)
             : m_reply_ { reply }
         {   }
 
-        Implicit_ QCoroDBusPendingReply(QDBusPendingReply<Args ...> const * const reply)
+        Q_IMPLICIT QCoroDBusPendingReply(QDBusPendingReply<Args ...> const * const reply)
             : m_reply_ { *reply }
         {   }
 
@@ -64,11 +62,17 @@ namespace detail {
             co_await qCoro(std::addressof(watcher), &QDBusPendingCallWatcher::finished);
             co_return watcher.reply();
         }
+
+        template<typename T> friend struct awaiter_type;
     };
 
     template<typename ... Args>
-    struct awaiter_type<QDBusPendingReply<Args ...>> { using type = QCoroDBusPendingReply<Args ...>::WaitForFinishedOperation; };
+    struct awaiter_type<QDBusPendingReply<Args ...>>
+    { using type = QCoroDBusPendingReply<Args ...>::WaitForFinishedOperation; };
 
+    template<typename ... Args>
+    struct awaiter_type<QDBusPendingReply<Args ...> *>
+    { using type = QCoroDBusPendingReply<Args ...>::WaitForFinishedOperation; };
 }
 
 template<typename ... Args>

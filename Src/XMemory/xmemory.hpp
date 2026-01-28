@@ -178,7 +178,7 @@ namespace XPrivate {
         constexpr Allocator_() = default;
 
         template<typename U>
-        explicit(false) constexpr Allocator_(Allocator_<U> const & o) noexcept {
+        X_IMPLICIT constexpr Allocator_(Allocator_<U> const & o) noexcept {
             m_waitTime_.store(o.m_waitTime_.load(),std::memory_order_release);
             m_retryCount_.storeRelease(o.m_retryCount_.loadAcquire());
         }
@@ -288,7 +288,7 @@ protected:
         constexpr Destructor_() = default;
 
         template<typename U > requires (std::is_constructible_v<U*,value_type *>)
-        explicit(false) constexpr Destructor_(Destructor_<U> const &) {}
+        X_IMPLICIT constexpr Destructor_(Destructor_<U> const &) {}
 
         static constexpr void cleanup(value_type * const pointer) noexcept {
             static_assert(sizeof(Object_t) > static_cast<std::size_t>(0)

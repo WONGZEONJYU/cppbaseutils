@@ -21,11 +21,11 @@ namespace detail {
 
         using milliseconds = std::chrono::milliseconds;
 
-        X_IMPLICIT QCoroProcess(QProcess * const process) noexcept
+        Q_IMPLICIT QCoroProcess(QProcess * const process) noexcept
             : QCoroIODevice { process }
         {   }
 
-        X_IMPLICIT QCoroProcess(QProcess & process) noexcept
+        Q_IMPLICIT QCoroProcess(QProcess & process) noexcept
             : QCoroIODevice { process }
         {   }
 

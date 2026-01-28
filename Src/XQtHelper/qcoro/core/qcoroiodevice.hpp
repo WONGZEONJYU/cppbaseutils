@@ -19,7 +19,6 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     class QCoroIODevice {
-        template<typename> friend struct awaiter_type;
     protected:
         QPointer<QIODevice> m_device_ {};
 
@@ -36,11 +35,11 @@ namespace detail {
             virtual ~OperationAbstract() = default;
 
         protected:
-            X_IMPLICIT OperationAbstract(QIODevice * const device) noexcept
+            Q_IMPLICIT OperationAbstract(QIODevice * const device) noexcept
                 : m_device_ { device }
             {    }
 
-            X_IMPLICIT OperationAbstract(QIODevice & device) noexcept
+            Q_IMPLICIT OperationAbstract(QIODevice & device) noexcept
                 : m_device_ { std::addressof(device) }
             {    }
 
@@ -60,11 +59,11 @@ namespace detail {
             callback_t m_resultCb_{};
 
         public:
-            X_IMPLICIT ReadOperation(QIODevice * const device, callback_t && resultCb)
+            Q_IMPLICIT ReadOperation(QIODevice * const device, callback_t && resultCb)
                 : Base { device } , m_resultCb_ { std::move(resultCb) }
             {   }
 
-            X_IMPLICIT ReadOperation(QIODevice & device, callback_t && resultCb)
+            Q_IMPLICIT ReadOperation(QIODevice & device, callback_t && resultCb)
                 : ReadOperation { std::addressof(device) , std::move(resultCb) }
             {   }
 
@@ -82,25 +81,25 @@ namespace detail {
             }
 
             [[nodiscard]] QByteArray await_resume() const
-            { return m_resultCb_(m_device_); }
+            { return m_resultCb_(m_device_.data()); }
         };
 
         struct ReadAllOperation final : ReadOperation {
-            X_IMPLICIT ReadAllOperation(QIODevice * const device)
+            Q_IMPLICIT ReadAllOperation(QIODevice * const device)
                 : ReadOperation { device,[](QIODevice * const d){ return d->readAll(); } }
             {   }
 
-            X_IMPLICIT ReadAllOperation(QIODevice & device)
+            Q_IMPLICIT ReadAllOperation(QIODevice & device)
                 : ReadAllOperation { std::addressof(device) }
             {   }
         };
 
     public:
-        X_IMPLICIT QCoroIODevice(QIODevice * const device) noexcept
+        Q_IMPLICIT QCoroIODevice(QIODevice * const device) noexcept
             : m_device_ { device }
         {   }
 
-        X_IMPLICIT QCoroIODevice(QIODevice & device) noexcept
+        Q_IMPLICIT QCoroIODevice(QIODevice & device) noexcept
             : m_device_ { std::addressof(device) }
         {   }
 
@@ -174,6 +173,8 @@ namespace detail {
             WaitSignalHelper helper {m_device_.data(), &QIODevice::bytesWritten };
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&WaitSignalHelper::ready), timeout);
         }
+
+        template<typename T> friend struct awaiter_type;
     };
 
     template<typename T> requires std::is_base_of_v<QIODevice, T>

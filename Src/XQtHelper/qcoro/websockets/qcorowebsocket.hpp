@@ -27,31 +27,32 @@ namespace detail {
     struct WebSocketStateWatcher : QObject {
         Q_OBJECT
         QMetaObject::Connection m_state_{},m_error_{};
-
     public:
-        X_IMPLICIT WebSocketStateWatcher(QWebSocket const * const socket, QAbstractSocket::SocketState const desiredState)
+        Q_IMPLICIT WebSocketStateWatcher(QWebSocket const * const socket, QAbstractSocket::SocketState const desiredState)
             : m_state_ { connect(socket,&QWebSocket::stateChanged,this,
                 [this, desiredState]<typename Tp>(Tp && newState){
-                if (std::forward<Tp>(newState) == desiredState) { emitReady(true); }
-            }) }
-            , m_error_ {connect(socket, qOverload<QAbstractSocket::SocketError>(
+                    if (std::forward<Tp>(newState) == desiredState) { emitReady(true); }
+                })
+            }
+            , m_error_ { connect(socket, qOverload<QAbstractSocket::SocketError>(
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
                                          &QWebSocket::errorOccurred
     #else
                                          &QWebSocket::error
     #endif
-                                         ), this,[this]<typename Tp>(Tp && error) {
-                qWarning() << "QWebSocket failed to connect to a websocket server: " << std::forward<Tp>(error);
-                emitReady(false);
-            }) }
+                                         ), this,
+                    [this]<typename Tp>(Tp && error){
+                            qWarning() << "QWebSocket failed to connect to a websocket server: " << std::forward<Tp>(error);
+                            emitReady(false);
+                        })
+            }
         {   }
 
-        X_IMPLICIT WebSocketStateWatcher(QWebSocket const & socket, QAbstractSocket::SocketState const desiredState)
+        Q_IMPLICIT WebSocketStateWatcher(QWebSocket const & socket, QAbstractSocket::SocketState const desiredState)
             : WebSocketStateWatcher { std::addressof(socket) ,desiredState }
         {   }
 
-    Q_SIGNALS:
-        void ready(bool);
+    Q_SIGNAL void ready(bool);
 
     private:
         void emitReady(bool const result) {
@@ -87,12 +88,7 @@ namespace detail {
         Q_OBJECT
     public:
         template<typename Signal>
-        X_IMPLICIT WebSocketSignalWatcher(QWebSocket & socket, Signal const signal)
-            : WebSocketSignalWatcher { std::addressof(socket) , signal }
-        {   }
-
-        template<typename Signal>
-        X_IMPLICIT WebSocketSignalWatcher(QWebSocket * const socket, Signal const signal) {
+        Q_IMPLICIT WebSocketSignalWatcher(QWebSocket * const socket, Signal const signal) {
 
             qRegisterMetaType< std::optional< TupleQInt64QByteArray > >();
             qRegisterMetaType< std::optional< TupleQByteArrayBool> >();
@@ -100,19 +96,32 @@ namespace detail {
             qRegisterMetaType< std::optional< TupleQStringBool > >();
             qRegisterMetaType< std::optional< TupleQString > >();
 
-            connect(socket, signal, this, [this]<typename ...Args>(Args && ... args)
-                { Q_EMIT this->ready(std::make_optional(std::make_tuple(std::forward<Args>(args) ...))); }
-            );
+            {
+                auto slotF {
+                    [this]<typename ...Args>(Args && ... args) {
+                        Q_EMIT this->ready(std::make_optional(std::make_tuple(std::forward<Args>(args) ...)));
+                    }
+                };
+                connect(socket, signal, this,std::move(slotF));
+            }
 
-            connect(socket, &QWebSocket::stateChanged, this,
-                [this]<typename Tp>(Tp && state) {
+            {
+                auto slotF {
+                    [this]<typename Tp>(Tp && state) {
                     // In theory, WebSocketSignalWatcher should never be used on
                     // unconnected socket, so maybe the check is redundant
-                    if ( QAbstractSocket::ConnectedState != std::forward<Tp>(state) )
-                    { Q_EMIT this->ready(std::optional<signal_args_t<Signal>>{}); }
-                }
-            );
+                        if ( QAbstractSocket::ConnectedState != std::forward<Tp>(state) )
+                        { Q_EMIT this->ready(std::optional<signal_args_t<Signal>>{}); }
+                    }
+                };
+                connect(socket, &QWebSocket::stateChanged,this,std::move(slotF));
+            }
         }
+
+        template<typename Signal>
+        Q_IMPLICIT WebSocketSignalWatcher(QWebSocket & socket, Signal const signal)
+            : WebSocketSignalWatcher { std::addressof(socket) , signal }
+        {   }
 
     Q_SIGNALS:
         void ready(std::optional<TupleQInt64QByteArray>); // ping
@@ -125,8 +134,8 @@ namespace detail {
     using milliseconds = std::chrono::milliseconds;
 
     template<typename Signal>
-    static auto watcherGenerator(QWebSocket * const ws, Signal const signal, milliseconds const timeout) ->
-        XAsyncGenerator<unwrapped_signal_args_t<signal_args_t<Signal>>>
+    static auto watcherGenerator(QWebSocket * const ws, Signal const signal, milliseconds const timeout)
+        ->XAsyncGenerator<unwrapped_signal_args_t<signal_args_t<Signal>>>
     {
         WebSocketSignalWatcher watcher { ws, signal };
         using signalType = std::optional<signal_args_t<Signal>>;
@@ -134,9 +143,7 @@ namespace detail {
             qCoroSignalListener(std::addressof(watcher), qOverload<signalType>(&WebSocketSignalWatcher::ready), timeout)
         };
 
-        for (auto it { co_await signalListener.begin() };
-            it != signalListener.end();co_await ++it)
-        {
+        for (auto it { co_await signalListener.begin() }; it != signalListener.end(); co_await ++it) {
             if (!it->has_value()) { break; }
             // If the signal is a single-value tuple, we unwrap it from the tuple, otherwise we yield the whole tuple.
             if constexpr (1 == std::tuple_size_v<typename signalType::value_type>)
@@ -148,10 +155,11 @@ namespace detail {
     class QCoroWebSocket {
         QWebSocket * m_webSocket_{};
     public:
-        X_IMPLICIT QCoroWebSocket(QWebSocket * const websocket)
-            : m_webSocket_ { websocket } {   }
+        Q_IMPLICIT QCoroWebSocket(QWebSocket * const websocket) noexcept
+            : m_webSocket_ { websocket }
+        {   }
 
-        X_IMPLICIT QCoroWebSocket(QWebSocket & websocket)
+        Q_IMPLICIT QCoroWebSocket(QWebSocket & websocket) noexcept
             : m_webSocket_ { std::addressof(websocket) }
         {   }
 

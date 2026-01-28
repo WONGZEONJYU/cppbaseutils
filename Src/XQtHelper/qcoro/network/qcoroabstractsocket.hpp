@@ -15,27 +15,26 @@ namespace detail {
     struct AbstractSocketReadySignalHelper : WaitSignalHelper {
         Q_OBJECT
         QMetaObject::Connection m_stateChanged_{};
-
     public:
-        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const * const socket, signalFunc<> const readySignal)
+        Q_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const * const socket, signalFunc<> const readySignal)
             : WaitSignalHelper { socket, readySignal }
             , m_stateChanged_ { connect_(socket, &QAbstractSocket::stateChanged, this,
                 [this]<typename Tp>(Tp && state){ handleStateChange(std::forward<Tp>(state),false); })
             }
         {   }
 
-        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const & socket, signalFunc<> const readySignal)
+        Q_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const & socket, signalFunc<> const readySignal)
             : AbstractSocketReadySignalHelper { std::addressof(socket),readySignal }
         {   }
 
-        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const * const socket, signalFunc<qint64> const readySignal)
+        Q_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const * const socket, signalFunc<qint64> const readySignal)
             : WaitSignalHelper { socket, readySignal }
             , m_stateChanged_{ connect_(socket, &QAbstractSocket::stateChanged, this,
                 [this]<typename Tp>(Tp && state){ handleStateChange(std::forward<Tp>(state), static_cast<qint64>(0)); })
             }
         {   }
 
-        X_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const & socket, signalFunc<qint64> const readySignal)
+        Q_IMPLICIT AbstractSocketReadySignalHelper(QAbstractSocket const & socket, signalFunc<qint64> const readySignal)
             : AbstractSocketReadySignalHelper { std::addressof(socket),readySignal }
         {   }
 
@@ -51,11 +50,11 @@ namespace detail {
 
     struct QCoroAbstractSocket final : QCoroIODevice {
 
-        X_IMPLICIT QCoroAbstractSocket(QAbstractSocket * const socket) noexcept
+        Q_IMPLICIT QCoroAbstractSocket(QAbstractSocket * const socket) noexcept
             : QCoroIODevice { socket }
         {   }
 
-        X_IMPLICIT QCoroAbstractSocket(QAbstractSocket & socket) noexcept
+        Q_IMPLICIT QCoroAbstractSocket(QAbstractSocket & socket) noexcept
             : QCoroIODevice { socket }
         {   }
 
