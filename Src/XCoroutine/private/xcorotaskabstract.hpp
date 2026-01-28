@@ -60,7 +60,7 @@ namespace detail {
         [[nodiscard]] constexpr bool isReady() const
         { return !m_coroutine_ || m_coroutine_.done(); }
 
-        auto operator co_await() const noexcept;
+        constexpr auto operator co_await() const noexcept;
 
         constexpr void swap(XCoroTaskAbstract & o) noexcept
         { std::swap(m_coroutine_, o.m_coroutine_); }
@@ -145,7 +145,7 @@ namespace detail {
 #define XCoroTaskAbstractClass XCoroTaskAbstract<T,TaskImpl,PromiseType>::
 
     XCoroTaskAbstractClassTemplate
-    auto XCoroTaskAbstractClass operator co_await() const noexcept {
+    constexpr auto XCoroTaskAbstractClass operator co_await() const noexcept {
 
         struct TaskAwaiter final : TaskAwaiterAbstract<PromiseType> {
 
