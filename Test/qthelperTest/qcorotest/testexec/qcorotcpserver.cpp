@@ -6,12 +6,10 @@
 #include <thread>
 #include <mutex>
 
-
-
 class Client {
     std::thread m_thread_{};
 public:
-    explicit(false) Client(uint16_t serverPort, std::mutex & mutex, bool & ok)
+    Q_IMPLICIT Client(uint16_t serverPort, std::mutex & mutex, bool & ok)
         : m_thread_{[serverPort, &mutex, &ok]{
                 {
                     using namespace std::chrono_literals;

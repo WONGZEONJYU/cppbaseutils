@@ -12,7 +12,7 @@ struct Server : QObject {
     QTcpServer m_server_{};
 
 public:
-    explicit(false) Server(QHostAddress const & addr, uint16_t const port) {
+    Q_IMPLICIT Server(QHostAddress const & addr, uint16_t const port) {
         m_server_.listen(addr, port);
         connect(std::addressof(m_server_),
             &QTcpServer::newConnection, this, &Server::handleConnection);
@@ -35,7 +35,7 @@ struct Client : QObject {
     QTimer m_timer_ {};
 
 public:
-    explicit Client(QHostAddress const & addr, uint16_t const port) {
+    Q_IMPLICIT Client(QHostAddress const & addr, uint16_t const port) {
         m_socket_.connectToHost(addr, port);
         m_timer_.callOnTimeout(this, &Client::sendPing);
         m_timer_.start(300ms);

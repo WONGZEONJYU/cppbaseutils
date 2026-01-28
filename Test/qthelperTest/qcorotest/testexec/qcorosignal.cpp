@@ -7,7 +7,7 @@
 struct SignalTest : QObject {
     Q_OBJECT
 public:
-    explicit(false) SignalTest(bool const active = true) {
+    Q_IMPLICIT SignalTest(bool const active = true) {
         if (active) {
             using namespace std::chrono_literals;
             QTimer::singleShot(100ms, this, &SignalTest::emit);

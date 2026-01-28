@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <exception>
+#include <XGlobal/xclasshelpermacros.hpp>
 
 // Awaiter is a concept that provides the await_* methods below, which are used by the
 // co_await expression.
@@ -25,7 +26,7 @@
 class StringAwaiter {
     std::string m_value_{};
 public:
-    explicit(false) StringAwaiter(std::string const & value) noexcept : m_value_{value}
+    X_IMPLICIT StringAwaiter(std::string const & value) noexcept : m_value_{value}
     { std::cout << "StringAwaiter constructed with value '" << value << "'." << std::endl; }
 
     ~StringAwaiter()
@@ -49,7 +50,7 @@ class StringAwaitable {
     std::string m_str_{};
 
 public:
-    explicit(false) StringAwaitable(std::string str) noexcept
+    X_IMPLICIT StringAwaitable(std::string str) noexcept
         : m_str_{std::move(str) }
     { std::cout << "StringAwaitable constructored with value '" << m_str_ << "'." << std::endl; }
 
@@ -64,7 +65,7 @@ public:
 
 struct VoidPromise {
 
-    explicit(false) VoidPromise()
+    X_IMPLICIT VoidPromise()
     { std::cout << "VoidPromise constructed." << std::endl; }
 
     ~VoidPromise()
@@ -72,7 +73,7 @@ struct VoidPromise {
 
     struct promise_type {
 
-        explicit(false) promise_type()
+        X_IMPLICIT promise_type()
         { std::cout << "VoidPromise::promise_type constructed." << std::endl; }
 
         ~promise_type()

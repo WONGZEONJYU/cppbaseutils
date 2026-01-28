@@ -16,7 +16,7 @@ class TestWsServer {
     QUrl m_url_{};
 
 public:
-    explicit(false) TestWsServer();
+    Q_IMPLICIT TestWsServer();
     ~TestWsServer();
 
     void start();

@@ -31,7 +31,7 @@ struct EventLoopChecker : QTimer {
 public:
     using milliseconds = std::chrono::milliseconds;
 
-    explicit(false) EventLoopChecker(int const minTicks = 10,milliseconds const interval = milliseconds{5})
+    Q_IMPLICIT EventLoopChecker(int const minTicks = 10,milliseconds const interval = milliseconds{5})
         : m_minTicks_{minTicks}
     {
         callOnTimeout(this, [this]{ ++m_tick_; });
@@ -39,7 +39,7 @@ public:
         start();
     }
 
-    explicit(false) operator bool() const noexcept {
+    Q_IMPLICIT operator bool() const noexcept {
         if (m_tick_ < m_minTicks_) { qDebug() << "EventLoopChecker failed: ticks=" << m_tick_ << ", minTicks=" << m_minTicks_; }
         return m_tick_ >= m_minTicks_;
     }
@@ -49,7 +49,7 @@ template<typename TestClass>
 struct TestObject : QObject {
 
 protected:
-    explicit(false) TestObject(QObject *parent = {}): QObject{parent}
+    Q_IMPLICIT TestObject(QObject *parent = {}): QObject{parent}
     {   }
 
     using testFunction_t = XUtils::XCoroTask<> (TestClass::*)(TestContext);

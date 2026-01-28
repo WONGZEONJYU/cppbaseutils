@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 class TestException : public QException {
     QString m_msg_ {};
 public:
-    explicit(false) TestException(QString const & msg)
+    Q_IMPLICIT TestException(QString const & msg)
         : m_msg_{msg}
     {   }
 
@@ -31,7 +31,7 @@ public:
 
 struct MoveOnly {
     int m_value {};
-    explicit(false) constexpr MoveOnly(int const value)
+    Q_IMPLICIT constexpr MoveOnly(int const value)
         : m_value{value} {   }
     Q_DISABLE_COPY(MoveOnly)
     X_DEFAULT_MOVE(MoveOnly)

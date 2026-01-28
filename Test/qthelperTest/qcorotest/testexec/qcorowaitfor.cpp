@@ -23,7 +23,7 @@ struct QCoroWaitForTest : QCoro::TestObject<QCoroWaitForTest> {
         ctx.setShouldNotSuspend();
 
         struct test_struct {
-            explicit(false) constexpr test_struct(int const i) : m_i{i} {}
+            Q_IMPLICIT constexpr test_struct(int const i) : m_i{i} {}
             int m_i{};
         };
 

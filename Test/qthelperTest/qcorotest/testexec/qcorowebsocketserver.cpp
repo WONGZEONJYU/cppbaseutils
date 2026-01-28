@@ -17,7 +17,7 @@ struct QCoroWebSocketServerTest : QCoro::TestObject<QCoroWebSocketServerTest> {
     Q_OBJECT
 
 public:
-    explicit(false) QCoroWebSocketServerTest(QObject * const parent = {})
+    Q_IMPLICIT QCoroWebSocketServerTest(QObject * const parent = {})
         : TestObject{ parent } {
         // On Windows, constructing QWebSocket for the first time takes some time
         // (most likely due to loading OpenSSL), which causes the first test to

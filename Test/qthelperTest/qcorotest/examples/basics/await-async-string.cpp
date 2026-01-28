@@ -19,7 +19,7 @@ struct FutureString : QObject {
     QString m_str_ {};
 
 public:
-    explicit(false) FutureString(QString const & str)
+    Q_IMPLICIT FutureString(QString const & str)
         : m_str_{str}
     {
         using namespace std::chrono_literals;
@@ -54,7 +54,7 @@ public:
 class FutureStringAwaiter {
     std::shared_ptr<FutureString> m_future_{};
 public:
-    explicit FutureStringAwaiter(std::shared_ptr<FutureString> const & value) noexcept
+    Q_IMPLICIT FutureStringAwaiter(std::shared_ptr<FutureString> const & value) noexcept
         : m_future_{value}
     { std::cout << "FutureStringAwaiter constructed." << std::endl; }
 
@@ -85,7 +85,7 @@ public:
 class FutureStringAwaitable {
     std::shared_ptr<FutureString> m_future_{};
 public:
-    explicit(false) FutureStringAwaitable(std::shared_ptr<FutureString> const & value) noexcept
+    Q_IMPLICIT FutureStringAwaitable(std::shared_ptr<FutureString> const & value) noexcept
         : m_future_{value}
     { std::cout << "FutureStringAwaitable constructed." << std::endl; }
 
@@ -100,7 +100,7 @@ public:
 
 struct VoidPromise {
 
-    explicit(false) VoidPromise()
+    Q_IMPLICIT VoidPromise()
     { std::cout << "VoidPromise constructed." << std::endl; }
 
     ~VoidPromise()
@@ -108,7 +108,7 @@ struct VoidPromise {
 
     struct promise_type {
 
-        explicit(false)  promise_type()
+        Q_IMPLICIT promise_type()
         { std::cout << "VoidPromise::promise_type constructed." << std::endl; }
 
         ~promise_type()

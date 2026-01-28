@@ -13,7 +13,7 @@ class QCoroWebSocketTest : public QCoro::TestObject<QCoroWebSocketTest> {
     TestWsServer m_server_{};
 
 public:
-    explicit(false) QCoroWebSocketTest(QObject * const parent = {}): TestObject{parent} {
+    Q_IMPLICIT QCoroWebSocketTest(QObject * const parent = {}): TestObject{parent} {
         // On Windows, constructing QWebSocket for the first time takes some time
         // (most likely due to loading OpenSSL), which causes the first test to
         // time out on the CI.

@@ -51,7 +51,7 @@ private:
 template<typename T>
 struct TestAwaitable : TestAwaitableBase {
 
-    explicit(false) TestAwaitable(T const val) : m_result_(val) {  }
+    Q_IMPLICIT TestAwaitable(T const val) : m_result_(val) {  }
 
     static constexpr bool await_ready() noexcept { return {}; }
 
@@ -77,7 +77,7 @@ struct TestAwaitable<void> : TestAwaitableBase {
 
 template<typename T = void>
 struct TestAwaitableWithCoAwait {
-    explicit(false) TestAwaitableWithCoAwait(T const val) : m_result_(val) {    }
+    Q_IMPLICIT TestAwaitableWithCoAwait(T const val) : m_result_(val) {    }
 
     auto operator co_await()const noexcept
     { return TestAwaitable(m_result_); }
