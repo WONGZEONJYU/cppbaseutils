@@ -153,14 +153,14 @@ namespace detail {
         TaskBool waitForReadyRead(int const timeout_msecs) const
         { return waitForReadyRead(milliseconds{timeout_msecs}); }
 
-        XCoroTask<std::optional<qint64>> waitForBytesWritten(milliseconds const timeout) const {
+        TaskOptionalQInt64 waitForBytesWritten(milliseconds const timeout) const {
             if (!m_device_->isWritable()) { co_return std::nullopt; }
             if (!m_device_->bytesToWrite()) { co_return 0; }
             auto const result { co_await waitForBytesWrittenImpl(timeout) };
             co_return result;
         }
 
-        XCoroTask<std::optional<qint64>> waitForBytesWritten(int const timeout_msecs) const
+        TaskOptionalQInt64 waitForBytesWritten(int const timeout_msecs) const
         { return waitForBytesWritten(milliseconds{ timeout_msecs }); }
 
     protected:
