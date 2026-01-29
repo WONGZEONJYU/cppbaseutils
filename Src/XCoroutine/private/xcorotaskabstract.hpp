@@ -57,7 +57,7 @@ namespace detail {
         virtual ~XCoroTaskAbstract()
         { if (m_coroutine_) { m_coroutine_.promise().derefCoroutine(); } }
 
-        [[nodiscard]] constexpr bool isReady() const
+        [[nodiscard]] constexpr bool isReady() const noexcept
         { return !m_coroutine_ || m_coroutine_.done(); }
 
         constexpr auto operator co_await() const noexcept;
