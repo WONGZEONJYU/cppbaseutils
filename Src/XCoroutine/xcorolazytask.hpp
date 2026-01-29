@@ -50,7 +50,7 @@ public:
 #endif
     }
 
-    auto operator co_await() const noexcept {
+    constexpr auto operator co_await() const noexcept {
 
         struct TaskAwaiter : detail::TaskAwaiterAbstract<promise_type> {
             using Base = detail::TaskAwaiterAbstract<promise_type>;
