@@ -26,7 +26,8 @@
 class StringAwaiter {
     std::string m_value_{};
 public:
-    X_IMPLICIT StringAwaiter(std::string const & value) noexcept : m_value_{value}
+    X_IMPLICIT StringAwaiter(std::string value) noexcept
+        : m_value_{std::move(value)}
     { std::cout << "StringAwaiter constructed with value '" << value << "'." << std::endl; }
 
     ~StringAwaiter()
@@ -108,7 +109,7 @@ struct VoidPromise {
         // instead.
         static constexpr void return_void() noexcept {}
 
-        static auto await_transform(std::string str)noexcept{
+        static auto await_transform(std::string str) noexcept{
             std::cout << "VoidPromise::await_transform for string '" << str << "' called."
                       << std::endl;
             return StringAwaitable{std::move(str)};
