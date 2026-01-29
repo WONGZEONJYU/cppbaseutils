@@ -25,7 +25,7 @@ namespace detail {
         [[nodiscard]] constexpr bool await_ready() const noexcept
         { return m_awaitedCoroutine_ && m_awaitedCoroutine_.done(); }
 
-        constexpr void await_suspend(std::coroutine_handle<> const h) noexcept {
+        constexpr void await_suspend(std::coroutine_handle<> const h) {
             if (!m_awaitedCoroutine_) {
                 std::cerr << "XUtils::XCoroTask: Awaiting a default-constructed or a moved-from XUtils::XCoroTask<> - this will hang forever!\n";
                 return;
@@ -35,7 +35,7 @@ namespace detail {
 
     protected:
         X_IMPLICIT constexpr TaskAwaiterAbstract(coroutine_handle const h) noexcept
-         : m_awaitedCoroutine_ { h }
+            : m_awaitedCoroutine_ { h }
         {   }
     };
 

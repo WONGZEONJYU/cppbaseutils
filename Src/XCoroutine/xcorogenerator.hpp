@@ -98,11 +98,11 @@ public:
     { return lhs.m_GeneratorCoroutine_ <=> rhs.m_GeneratorCoroutine_; }
 
 private:
-    template<typename> friend struct XGenerator;
+    template<typename _> friend struct XGenerator;
 
     constexpr XGeneratorIterator() noexcept = default;
 
-    X_IMPLICIT constexpr XGeneratorIterator(coroutine_handle const h)
+    X_IMPLICIT constexpr XGeneratorIterator(coroutine_handle const h) noexcept
         : m_GeneratorCoroutine_ { h }
     {   }
 };
@@ -146,6 +146,10 @@ public:
     { return {}; }
 
 private:
+    X_IMPLICIT constexpr XGenerator(coroutine_handle const h) noexcept
+        : m_generatorCoroutine_ { h }
+    {   }
+
     X_IMPLICIT constexpr XGenerator(promise_type & promise) noexcept
         : m_generatorCoroutine_ { coroutine_handle::from_promise(promise) }
     {   }

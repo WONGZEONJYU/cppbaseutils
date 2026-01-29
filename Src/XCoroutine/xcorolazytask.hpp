@@ -76,15 +76,15 @@ public:
 
     constexpr XCoroLazyTask() noexcept = default;
 
-    X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h)
+    X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h) noexcept
         : Base { h }
     {   }
 
-    X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise)
+    X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise) noexcept
         : XCoroLazyTask { coroutine_handle::from_promise(promise) }
     {   }
 
-    X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise)
+    X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise) noexcept
         : XCoroLazyTask { *promise }
     {   }
 };

@@ -53,7 +53,7 @@ namespace detail {
 
 #undef HAS_EXCEPTION
 
-        constexpr ~TaskPromise() override = default;
+        ~TaskPromise() override = default;
     };
 
     template<>
@@ -70,7 +70,7 @@ namespace detail {
         void result() const
         { if (m_exception_) { std::rethrow_exception(m_exception_); } }
 
-        constexpr ~TaskPromise() override = default;
+        ~TaskPromise() override = default;
     };
 
     using TaskPromiseVoid = TaskPromise<void>;
