@@ -21,13 +21,13 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-namespace concepts {
-    template<typename T>
-    concept QObject = requires(T * const obj) {
-        requires std::is_base_of_v<::QObject, T>;
-        requires std::is_same_v<decltype(T::staticMetaObject), const QMetaObject>;
-    };
-}
+    namespace concepts {
+        template<typename T>
+        concept QObject = requires(T * const obj) {
+            requires std::is_base_of_v<::QObject, T>;
+            requires std::is_same_v<decltype(T::staticMetaObject), const QMetaObject>;
+        };
+    }
 
     template<concepts::QObject T, typename FuncPtr>
     class QCoroSignalAbstract {
