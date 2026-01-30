@@ -19,6 +19,13 @@ XTD_INLINE_NAMESPACE_BEGIN(v1)
 namespace detail {
 
     struct QCoroIODevice {
+        using milliseconds = std::chrono::milliseconds;
+        using CoroTaskQByteArray = XCoroTask<QByteArray>;
+        using CoroTaskQInt64 = XCoroTask<qint64>;
+        using CoroTaskBool = XCoroTask<bool>;
+        using CoroTaskOptionalBool = XCoroTask<std::optional<bool>>;
+        using CoroTaskOptionalQInt64 = XCoroTask<std::optional<qint64>>;
+
     protected:
         QPointer<QIODevice> m_device_ {};
 
@@ -105,32 +112,25 @@ namespace detail {
 
         virtual ~QCoroIODevice() = default;
 
-        using milliseconds = std::chrono::milliseconds;
-        using TaskQByteArray = XCoroTask<QByteArray>;
-        using TaskQInt64 = XCoroTask<qint64>;
-        using TaskBool = XCoroTask<bool>;
-        using TaskOptionalBool = XCoroTask<std::optional<bool>>;
-        using TaskOptionalQInt64 = XCoroTask<std::optional<qint64>>;
-
-        TaskQByteArray readAll(milliseconds const timeout = milliseconds{-1}) const {
+        CoroTaskQByteArray readAll(milliseconds const timeout = milliseconds{-1}) const {
             auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray{}; }
             co_return d->readAll();
         }
 
-        TaskQByteArray read(qint64 const maxSize, milliseconds const timeout = milliseconds{-1}) const {
+        CoroTaskQByteArray read(qint64 const maxSize, milliseconds const timeout = milliseconds{-1}) const {
             auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray{}; }
             co_return d->read(maxSize);
         }
 
-        TaskQByteArray readLine(qint64 const maxSize = {} ,milliseconds const timeout = milliseconds{-1}) const {
+        CoroTaskQByteArray readLine(qint64 const maxSize = {} ,milliseconds const timeout = milliseconds{-1}) const {
             auto const d{ m_device_ };
             if (!co_await waitForReadyRead(timeout)) { co_return QByteArray {}; }
             co_return d->readLine(maxSize);
         }
 
-        TaskQInt64 write(QByteArray const & buffer) const {
+        CoroTaskQInt64 write(QByteArray const & buffer) const {
             qint64 bytesConfirmed {};
             auto const bytesWritten{ m_device_->write(buffer) };
             while (bytesConfirmed < bytesWritten) {
@@ -143,33 +143,33 @@ namespace detail {
             co_return bytesConfirmed;
         }
 
-        TaskBool waitForReadyRead(milliseconds const timeout) const {
+        CoroTaskBool waitForReadyRead(milliseconds const timeout) const {
             if (!m_device_->isReadable()) { co_return false; }
             if (m_device_->bytesAvailable() > 0) { co_return true; }
             auto const result{ co_await waitForReadyReadImpl(timeout) };
             co_return result.has_value();
         }
 
-        TaskBool waitForReadyRead(int const timeout_msecs) const
+        CoroTaskBool waitForReadyRead(int const timeout_msecs) const
         { return waitForReadyRead(milliseconds{timeout_msecs}); }
 
-        TaskOptionalQInt64 waitForBytesWritten(milliseconds const timeout) const {
+        CoroTaskOptionalQInt64 waitForBytesWritten(milliseconds const timeout) const {
             if (!m_device_->isWritable()) { co_return std::nullopt; }
             if (!m_device_->bytesToWrite()) { co_return 0; }
             auto const result { co_await waitForBytesWrittenImpl(timeout) };
             co_return result;
         }
 
-        TaskOptionalQInt64 waitForBytesWritten(int const timeout_msecs) const
+        CoroTaskOptionalQInt64 waitForBytesWritten(int const timeout_msecs) const
         { return waitForBytesWritten(milliseconds{ timeout_msecs }); }
 
     protected:
-        virtual TaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const {
+        virtual CoroTaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const {
             WaitSignalHelper helper {m_device_.data(), &QIODevice::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&WaitSignalHelper::ready), timeout);
         }
 
-        virtual TaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const {
+        virtual CoroTaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const {
             WaitSignalHelper helper {m_device_.data(), &QIODevice::bytesWritten };
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&WaitSignalHelper::ready), timeout);
         }

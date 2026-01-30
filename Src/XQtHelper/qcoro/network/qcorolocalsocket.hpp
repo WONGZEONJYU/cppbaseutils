@@ -83,10 +83,10 @@ namespace detail {
             : QCoroLocalSocket { std::addressof(socket) }
         {   }
 
-        TaskBool waitForConnected(int const timeout_msecs = 30'000) const
+        CoroTaskBool waitForConnected(int const timeout_msecs = 30'000) const
         { return waitForConnected(milliseconds{ timeout_msecs }); }
 
-        TaskBool waitForConnected(milliseconds const timeout) const {
+        CoroTaskBool waitForConnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::ConnectedState == socket->state()) { co_return true; }
             SocketConnectedHelper helper { socket, &QLocalSocket::connected };
@@ -94,24 +94,24 @@ namespace detail {
             co_return result.value_or(false);
         }
 
-        TaskBool waitForDisconnected(int const timeout_msecs = 30'000) const
+        CoroTaskBool waitForDisconnected(int const timeout_msecs = 30'000) const
         { return waitForDisconnected(milliseconds{ timeout_msecs }); }
 
-        TaskBool waitForDisconnected(milliseconds const timeout) const {
+        CoroTaskBool waitForDisconnected(milliseconds const timeout) const {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::UnconnectedState == socket->state() ) { co_return false; }
             auto const result{ co_await qCoro(socket, &QLocalSocket::disconnected, timeout) };
             co_return result.has_value();
         }
 
-        TaskBool connectToServer(QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
+        CoroTaskBool connectToServer(QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                                    milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QLocalSocket *>(m_device_.data())->connectToServer(openMode);
             return waitForConnected(timeout);
         }
 
-        TaskBool connectToServer(QString const & name, QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
+        CoroTaskBool connectToServer(QString const & name, QIODevice::OpenMode const openMode = QIODevice::ReadWrite,
                                    milliseconds const timeout = std::chrono::seconds{30}) const
         {
             qobject_cast<QLocalSocket *>(m_device_.data())->connectToServer(name, openMode);
@@ -119,14 +119,14 @@ namespace detail {
         }
 
     private:
-        TaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const override {
+        CoroTaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (QLocalSocket::ConnectedState != socket->state() ) { co_return false; }
             LocalSocketReadySignalHelper helper { socket, &QLocalSocket::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&LocalSocketReadySignalHelper::ready), timeout);
         }
 
-        TaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const override {
+        CoroTaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const override {
             auto const socket { qobject_cast<QLocalSocket *>(m_device_.data()) };
             if (socket->state() != QLocalSocket::ConnectedState) { co_return std::nullopt; }
             LocalSocketReadySignalHelper helper { socket, &QLocalSocket::bytesWritten };

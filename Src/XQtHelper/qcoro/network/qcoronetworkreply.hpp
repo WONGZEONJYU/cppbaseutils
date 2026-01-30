@@ -95,7 +95,7 @@ namespace detail {
     public:
         using QCoroIODevice::QCoroIODevice;
 
-        TaskBool waitForFinished(milliseconds const timeout = milliseconds{-1}) const {
+        CoroTaskBool waitForFinished(milliseconds const timeout = milliseconds{-1}) const {
             auto const reply { qobject_cast<QNetworkReply *>(m_device_.data()) };
             if (reply->isFinished()) { co_return true; }
             auto const result{ co_await qCoro(reply, &QNetworkReply::finished, timeout) };
@@ -103,14 +103,14 @@ namespace detail {
         }
 
     private:
-        TaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const override {
+        CoroTaskOptionalBool waitForReadyReadImpl(milliseconds const timeout) const override {
             auto const reply { qobject_cast<QNetworkReply *>(m_device_.data()) };
             if (reply->isFinished()) { co_return true; }
             ReplyWaitSignalHelper helper { reply, &QNetworkReply::readyRead };
             co_return co_await qCoro(std::addressof(helper), qOverload<bool>(&ReplyWaitSignalHelper::ready), timeout);
         }
 
-        TaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const override {
+        CoroTaskOptionalQInt64 waitForBytesWrittenImpl(milliseconds const timeout) const override {
             auto const reply { qobject_cast<QNetworkReply *>(m_device_.data()) };
             if (reply->isFinished()) { co_return false; }
             ReplyWaitSignalHelper helper { reply, &QNetworkReply::bytesWritten };
