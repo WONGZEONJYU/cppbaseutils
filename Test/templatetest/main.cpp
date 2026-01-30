@@ -3,7 +3,7 @@
 #include <iostream>
 #include <list>
 #include <XHelper/xcallablehelper.hpp>
-#include "XHelper/xraii.hpp"
+#include <XHelper/xspace.hpp>
 #include <XCoroutine/xcoroutinetask.hpp>
 
 #if 0
@@ -282,7 +282,7 @@ int main()
     { std::cout << *it << "\t"; }
 #endif
 
-    XUtils::X_RAII const r { XUtils::bind([](int const v){
+    XUtils::XSpace const r { XUtils::bind([](int const v){
         std::cerr << v << std::endl;
     },1),XUtils::bind([](int const v){
         std::cerr << v << std::endl;

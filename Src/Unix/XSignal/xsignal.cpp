@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <sstream>
 #include <XHelper/xhelper.hpp>
-#include <XHelper/xraii.hpp>
+#include <XHelper/xspace.hpp>
 #include <XLog/xlog.hpp>
 
 XTD_NAMESPACE_BEGIN
@@ -89,7 +89,7 @@ XSignal::XSignal() = default;
 
 bool XSignal::registerHelper(SignalPtr const & p) {
 
-    static X_RAII const r { []() noexcept{
+    static XSpace const r { []() noexcept{
         auto const async{ XSignalPrivate::SignalAsynchronously::UniqueConstruction() };
         async->ref();
         async->startHandler();

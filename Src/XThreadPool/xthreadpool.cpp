@@ -1,7 +1,7 @@
 #include <utility>
 #include "xthreadpool_p.hpp"
 #include <iostream>
-#include <XHelper/xraii.hpp>
+#include <XHelper/xspace.hpp>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -178,7 +178,7 @@ void XThreadPoolPrivate::stop() {
 void XThreadPoolPrivate::run(XSize_t const threadId) {
     while (true){
         if (const auto task{acquireTask()}){
-            X_RAII const raii{[&]{
+            XSpace const raii{[&]{
                 m_busyThreadsSize.fetchAndAddRelease(1);
                 m_idleThreadsSize.fetchAndSubRelease(1);
             },[this]{
