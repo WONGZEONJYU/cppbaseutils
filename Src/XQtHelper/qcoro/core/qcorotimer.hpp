@@ -52,7 +52,7 @@ namespace detail {
         [[nodiscard]] XCoroTask<> waitForTimeout() const
         { if (m_timer_->isActive()) { co_await qCoro(m_timer_.data(), &QTimer::timeout); } }
 
-        template<typename T> friend struct awaiter_type;
+        template<typename > friend struct awaiter_type;
     };
 
     template<>

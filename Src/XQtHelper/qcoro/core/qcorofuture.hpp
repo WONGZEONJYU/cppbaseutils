@@ -116,7 +116,7 @@ namespace detail {
         { co_return std::move(co_await TakeResultOperation<> { m_future_ }); }
 #endif
 
-        template<typename _> friend struct awaiter_type;
+        template<typename > friend struct awaiter_type;
     };
 
     template<typename T>

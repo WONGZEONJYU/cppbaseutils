@@ -63,7 +63,7 @@ namespace detail {
             co_return watcher.reply();
         }
 
-        template<typename T> friend struct awaiter_type;
+        template<typename > friend struct awaiter_type;
     };
 
     template<typename ... Args>

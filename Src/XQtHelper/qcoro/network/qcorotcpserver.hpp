@@ -65,7 +65,7 @@ namespace detail {
             co_return nullptr;
         }
 
-        template<typename T> friend struct awaiter_type;
+        template<typename > friend struct awaiter_type;
     };
 
     template<> struct awaiter_type<QTcpServer>

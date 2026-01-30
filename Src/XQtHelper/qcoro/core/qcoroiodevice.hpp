@@ -174,7 +174,7 @@ namespace detail {
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&WaitSignalHelper::ready), timeout);
         }
 
-        template<typename T> friend struct awaiter_type;
+        template<typename > friend struct awaiter_type;
     };
 
     template<typename T> requires std::is_base_of_v<QIODevice, T>

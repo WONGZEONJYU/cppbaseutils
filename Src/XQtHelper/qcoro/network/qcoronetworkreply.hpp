@@ -117,8 +117,11 @@ namespace detail {
             co_return co_await qCoro(std::addressof(helper), qOverload<qint64>(&ReplyWaitSignalHelper::ready), timeout);
         }
 
-        template<typename T> friend struct awaiter_type;
+        template<typename > friend struct awaiter_type;
     };
+
+    template<> struct awaiter_type<QNetworkReply>
+    { using type = QCoroNetworkReply::WaitForFinishedOperation; };
 
     template<> struct awaiter_type<QNetworkReply *>
     { using type = QCoroNetworkReply::WaitForFinishedOperation; };
