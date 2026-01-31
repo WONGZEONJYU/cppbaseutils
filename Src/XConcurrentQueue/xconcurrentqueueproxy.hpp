@@ -42,11 +42,11 @@ namespace moodycamel {
 			: m_q { std::forward<Args>(args)... }
 		{}
 
-		constexpr size_t size() const noexcept { return m_count.loadRelaxed(); }
-		constexpr size_t length() const noexcept { return m_count.loadRelaxed(); }
+		constexpr size_t size() const noexcept { return m_count.loadAcquire(); }
+		constexpr size_t length() const noexcept { return m_count.loadAcquire(); }
 		constexpr size_t size_approx() const noexcept { return m_q.size_approx(); }
-		[[nodiscard]] constexpr bool empty() const noexcept { return !m_count.loadRelaxed(); }
-		[[nodiscard]] constexpr bool isEmpty() const noexcept { return !m_count.loadRelaxed(); }
+		[[nodiscard]] constexpr bool empty() const noexcept { return !m_count.loadAcquire(); }
+		[[nodiscard]] constexpr bool isEmpty() const noexcept { return !m_count.loadAcquire(); }
 
 #undef CHECK_NOEXCEPT_
 #undef NOEXCEPT_
