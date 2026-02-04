@@ -309,37 +309,41 @@ namespace detail {
 
 }
 
-template<detail::concepts::QObject T, typename FuncPtr
+template<detail::concepts::QObject T
+    , typename FuncPtr
     , typename QCoroSignal = detail::QCoroSignal<T, FuncPtr>
+    , typename Ret = XCoroTask< typename QCoroSignal::result_type >
 >
-auto qCoro(T * const obj, FuncPtr && ptr, std::chrono::milliseconds const timeout)
-    -> XCoroTask< typename QCoroSignal::result_type >
-{
+Ret qCoro(T * const obj, FuncPtr && ptr ,std::chrono::milliseconds const timeout) {
     auto result { co_await QCoroSignal(obj,std::forward<FuncPtr>(ptr), timeout) };
     co_return std::move(result);
 }
 
-template<detail::concepts::QObject T, typename FuncPtr
+template<detail::concepts::QObject T
+    , typename FuncPtr
     , typename value_type = detail::QCoroSignal<T, FuncPtr>::result_type::value_type
+    , typename Ret = XCoroTask< value_type >
 >
-auto qCoro(T * const obj, FuncPtr && ptr) -> XCoroTask< value_type > {
+Ret qCoro(T * const obj, FuncPtr && ptr) {
     auto result { co_await qCoro<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), std::chrono::milliseconds{-1}) };
     co_return std::move(*result);
 }
 
-template<detail::concepts::QObject T, typename FuncPtr>
-auto qCoroSignalListener(T * const obj, FuncPtr && ptr,std::chrono::milliseconds const timeout = std::chrono::milliseconds{-1})
-    -> XAsyncGenerator<typename detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type>
+template<detail::concepts::QObject T
+    , typename FuncPtr
+    , typename SignalQueue = detail::QCoroSignalQueue<T, FuncPtr>
+    , typename value_type = SignalQueue::result_type::value_type
+    , typename Ret = XAsyncGenerator< value_type >
+>
+Ret qCoroSignalListener(T * const obj, FuncPtr && ptr
+    , std::chrono::milliseconds const timeout = std::chrono::milliseconds{-1})
 {
-    using SignalQueue = detail::QCoroSignalQueue<T, FuncPtr>;
     using SignalQueuePtr = std::unique_ptr<SignalQueue>;
     // The actual generator is in a wrapper function, so that we can perform
     // some initialization (constructing signalQueue) in the qCoroSignalListener()
     // function before the generator gets initially suspended.
     auto constexpr innerGenerator {
-        [](SignalQueuePtr signalQueue)
-            -> XAsyncGenerator<typename SignalQueue::result_type::value_type>
-        {
+        [](SignalQueuePtr signalQueue) -> Ret {
             while (true) {
                 auto result { co_await *signalQueue };
                 if (!result.has_value()) { break; } // timeout
