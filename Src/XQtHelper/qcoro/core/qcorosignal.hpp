@@ -309,18 +309,20 @@ namespace detail {
 
 }
 
-template<detail::concepts::QObject T, typename FuncPtr>
+template<detail::concepts::QObject T, typename FuncPtr
+    , typename QCoroSignal = detail::QCoroSignal<T, FuncPtr>
+>
 auto qCoro(T * const obj, FuncPtr && ptr, std::chrono::milliseconds const timeout)
-    -> XCoroTask< typename detail::QCoroSignal<T, FuncPtr>::result_type >
+    -> XCoroTask< typename QCoroSignal::result_type >
 {
-    auto result { co_await detail::QCoroSignal(obj,std::forward<FuncPtr>(ptr), timeout) };
+    auto result { co_await QCoroSignal(obj,std::forward<FuncPtr>(ptr), timeout) };
     co_return std::move(result);
 }
 
-template<detail::concepts::QObject T, typename FuncPtr>
-auto qCoro(T * const obj, FuncPtr && ptr)
-    -> XCoroTask< typename detail::QCoroSignal<T, FuncPtr>::result_type::value_type >
-{
+template<detail::concepts::QObject T, typename FuncPtr
+    , typename value_type = detail::QCoroSignal<T, FuncPtr>::result_type::value_type
+>
+auto qCoro(T * const obj, FuncPtr && ptr) -> XCoroTask< value_type > {
     auto result { co_await qCoro<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), std::chrono::milliseconds{-1}) };
     co_return std::move(*result);
 }
