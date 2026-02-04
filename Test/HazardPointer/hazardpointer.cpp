@@ -1,8 +1,9 @@
-#include "hazardpointer.hpp"
+#include <hazardpointer.hpp>
 #include <thread>
 #include <unordered_set>
 #include <algorithm>
-#include "XGlobal/xclasshelpermacros.hpp"
+#include <stdexcept>
+#include <XGlobal/xclasshelpermacros.hpp>
 
 struct HazardPointer {
     std::atomic<std::thread::id> m_id{};
