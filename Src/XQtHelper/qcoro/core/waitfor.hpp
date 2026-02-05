@@ -30,24 +30,24 @@ namespace detail {
         }
 
         template<Awaitable Awaitable>
-        friend XCoroTask<> runCoroutine(WaitContext & , Awaitable && );
+        friend XCoroTaskVoid runCoroutine(WaitContext & , Awaitable && );
 
         template<typename T, Awaitable Awaitable>
-        friend XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & , Awaitable && );
+        friend XCoroTaskVoid runCoroutine(WaitContext & context, std::optional<T> & , Awaitable && );
 
         template<typename T, Awaitable Awaitable>
         friend T waitFor(Awaitable && );
     };
 
     template<Awaitable Awaitable>
-    XCoroTask<> runCoroutine(WaitContext & context, Awaitable && awaitable) {
+    XCoroTaskVoid runCoroutine(WaitContext & context, Awaitable && awaitable) {
         try { co_await std::forward<Awaitable>(awaitable); }
         catch (...) { context.m_exception_ = std::current_exception(); }
         context.quit();
     }
 
     template<typename T, Awaitable Awaitable>
-    XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & result, Awaitable && awaitable) {
+    XCoroTaskVoid runCoroutine(WaitContext & context, std::optional<T> & result, Awaitable && awaitable) {
         try { result.emplace(co_await std::forward<Awaitable>(awaitable)); }
         catch (...) { context.m_exception_ = std::current_exception(); }
         context.quit();

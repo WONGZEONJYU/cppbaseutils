@@ -11,7 +11,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
     Q_OBJECT
     TestHttpServer<QTcpServer> m_server_{};
 
-    XUtils::XCoroTask<> testTriggers_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam {};
         auto const reply {std::unique_ptr<QNetworkReply>(nam.get(buildRequest()))};
         (void)co_await reply.get();
@@ -20,7 +20,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         QCORO_COMPARE(reply->readAll(), "abcdef");
     }
 
-    XUtils::XCoroTask<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testQCoroWrapperTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam{};
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest())) };
 
@@ -48,7 +48,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         QVERIFY(called);
     }
 
-    XUtils::XCoroTask<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker const eventLoopResponsive{};
         QNetworkAccessManager nam{};
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("block")))) };
@@ -59,7 +59,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         QCORO_COMPARE(reply->readAll(), "abcdef");
     }
 
-    XUtils::XCoroTask<> testDoesntCoAwaitNullReply_coro(QCoro::TestContext test) {
+    XUtils::XCoroTaskVoid testDoesntCoAwaitNullReply_coro(QCoro::TestContext test) {
         test.setShouldNotSuspend();
         m_server_.setExpectTimeout(true);
         QNetworkReply *reply {};
@@ -67,7 +67,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         delete reply;
     }
 
-    XUtils::XCoroTask<> testDoesntCoAwaitFinishedReply_coro(QCoro::TestContext test) {
+    XUtils::XCoroTaskVoid testDoesntCoAwaitFinishedReply_coro(QCoro::TestContext test) {
         QNetworkAccessManager nam{};
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest())) };
         (void)co_await reply.get();
@@ -76,7 +76,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         (void)co_await reply.get();
     }
 
-    XUtils::XCoroTask<> testReadAllTriggers_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testReadAllTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam{};
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("stream")))) };
         using namespace XUtils;
@@ -95,7 +95,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         QVERIFY(called);
     }
 
-    XUtils::XCoroTask<> testReadTriggers_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testReadTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam{};
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("stream"))))};
         using namespace XUtils;
@@ -114,7 +114,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
         QVERIFY(called);
     }
 
-    XUtils::XCoroTask<> testReadLineTriggers_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testReadLineTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
         auto const reply { std::unique_ptr<QNetworkReply>(nam.get(buildRequest(QStringLiteral("stream")))) };
         using namespace XUtils;
@@ -134,7 +134,7 @@ struct QCoroNetworkReplyTest : QCoro::TestObject<QCoroNetworkReplyTest> {
     }
 
     // See https://github.com/danvratil/qcoro/issues/231
-    XUtils::XCoroTask<> testAbortOnTimeout_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testAbortOnTimeout_coro(QCoro::TestContext) {
         auto request { buildRequest(QStringLiteral("block"))};
         request.setTransferTimeout(300);
         QNetworkAccessManager nam{};

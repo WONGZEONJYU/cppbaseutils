@@ -49,7 +49,7 @@ namespace detail {
             : QCoroTimer { std::addressof(timer) }
         {   }
 
-        [[nodiscard]] XCoroTask<> waitForTimeout() const
+        [[nodiscard]] XCoroTaskVoid waitForTimeout() const
         { if (m_timer_->isActive()) { co_await qCoro(m_timer_.data(), &QTimer::timeout); } }
 
         template<typename > friend struct awaiter_type;
@@ -64,7 +64,7 @@ namespace detail {
 }
 
 template<typename Rep, typename Period>
-XCoroTask<> sleepFor(std::chrono::duration<Rep, Period> const & timeout) {
+XCoroTaskVoid sleepFor(std::chrono::duration<Rep, Period> const & timeout) {
     QTimer timer {};
     timer.setSingleShot(true);
     using namespace std::chrono;
@@ -73,7 +73,7 @@ XCoroTask<> sleepFor(std::chrono::duration<Rep, Period> const & timeout) {
 }
 
 template<typename Clock, typename Duration>
-XCoroTask<> sleepUntil(std::chrono::time_point<Clock, Duration> const & when)
+XCoroTaskVoid sleepUntil(std::chrono::time_point<Clock, Duration> const & when)
 { return sleepFor(when.time_since_epoch() - std::chrono::steady_clock::now().time_since_epoch()); }
 
 inline auto qCoro(QTimer * const timer) noexcept

@@ -52,7 +52,7 @@ protected:
     Q_IMPLICIT TestObject(QObject *parent = {}): QObject{parent}
     {   }
 
-    using testFunction_t = XUtils::XCoroTask<> (TestClass::*)(TestContext);
+    using testFunction_t = XUtils::XCoroTaskVoid (TestClass::*)(TestContext);
 
     void coroWrapper(testFunction_t const testFunction) {
         QEventLoop el{};

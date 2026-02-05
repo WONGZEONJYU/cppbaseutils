@@ -87,7 +87,7 @@ public:
     {   }
 
     template <typename T = void>
-    Q_IMPLICIT QmlTask(XCoroTask<> && task)
+    Q_IMPLICIT QmlTask(XCoroTaskVoid && task)
         : QmlTask { task.then([]()-> XCoroTask<QVariant> { co_return QVariant{ }; }) }
     { using type [[maybe_unused]] = T; }
 

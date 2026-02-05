@@ -22,7 +22,7 @@ public:
 
 private:
     template<typename T, typename SendFunc, typename RecvFunc>
-    XUtils::XCoroTask<> testReceived(T && msg, SendFunc && sendFunc, RecvFunc && recvFunc) {
+    XUtils::XCoroTaskVoid testReceived(T && msg, SendFunc && sendFunc, RecvFunc && recvFunc) {
         QWebSocket socket {};
 
         QCORO_VERIFY(connectSocket(socket));
@@ -45,7 +45,7 @@ private:
     }
 
     template<typename RecvFunc>
-    XUtils::XCoroTask<> testTimeout(RecvFunc && recvFunc) {
+    XUtils::XCoroTaskVoid testTimeout(RecvFunc && recvFunc) {
         m_server_.setExpectTimeout();
 
         QWebSocket socket{};
@@ -59,7 +59,7 @@ private:
     }
 
     template<typename RecvFunc>
-    XUtils::XCoroTask<> testGeneratorEndOnSocketClose(RecvFunc && recvFunc) {
+    XUtils::XCoroTaskVoid testGeneratorEndOnSocketClose(RecvFunc && recvFunc) {
         m_server_.setExpectTimeout();
 
         QWebSocket socket {};
@@ -72,7 +72,7 @@ private:
         QCORO_COMPARE(it, gen.end());
     }
 
-    XUtils::XCoroTask<> testWaitForOpenWithUrl_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testWaitForOpenWithUrl_coro(QCoro::TestContext) {
         QWebSocket socket{};
         auto const result{ co_await XUtils::qCoro(socket).open(m_server_.url()) };
         QCORO_VERIFY(result);
@@ -94,7 +94,7 @@ private:
         QVERIFY(m_server_.waitForConnection());
     }
 
-    XUtils::XCoroTask<> testTimeoutOpenWithUrl_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTimeoutOpenWithUrl_coro(QCoro::TestContext) {
         QWebSocket socket{};
         auto const url { m_server_.url() };
         m_server_.stop(); // stop the server so we cannot connect
@@ -118,7 +118,7 @@ private:
         QVERIFY(called);
     }
 
-    XUtils::XCoroTask<> testWaitForOpenWithNetworkRequest_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testWaitForOpenWithNetworkRequest_coro(QCoro::TestContext) {
         QWebSocket socket{};
         QNetworkRequest const request { m_server_.url() };
         auto const result{ co_await XUtils::qCoro(socket).open(request) };
@@ -141,7 +141,7 @@ private:
         QVERIFY(m_server_.waitForConnection());
     }
 
-    XUtils::XCoroTask<> testDoesntCoawaitOpenedSocket_coro(QCoro::TestContext ctx) {
+    XUtils::XCoroTaskVoid testDoesntCoawaitOpenedSocket_coro(QCoro::TestContext ctx) {
         QWebSocket socket{};
         QCORO_VERIFY(connectSocket(socket));
 
@@ -152,7 +152,7 @@ private:
         QCORO_VERIFY(connected);
     }
 
-    XUtils::XCoroTask<> testPing_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testPing_coro(QCoro::TestContext) {
         QWebSocket socket{};
         QCORO_VERIFY(connectSocket(socket));
 
@@ -177,61 +177,61 @@ private:
         QVERIFY(called);
     }
 
-    XUtils::XCoroTask<> testBinaryFrame_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testBinaryFrame_coro(QCoro::TestContext) {
         co_await testReceived(QByteArray("TEST MESSAGE"), &QWebSocket::sendBinaryMessage,
                               &XUtils::detail::QCoroWebSocket::binaryFrames);
     }
 
-    XUtils::XCoroTask<> testBinaryFrameTimeout_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testBinaryFrameTimeout_coro(QCoro::TestContext) {
         co_await testTimeout(&XUtils::detail::QCoroWebSocket::binaryFrames);
     }
 
-    XUtils::XCoroTask<> testBinaryFrameGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testBinaryFrameGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
         co_await testGeneratorEndOnSocketClose(&XUtils::detail::QCoroWebSocket::binaryFrames);
     }
 
-    XUtils::XCoroTask<> testBinaryMessage_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testBinaryMessage_coro(QCoro::TestContext) {
         co_await testReceived(QByteArray("TEST MESSAGE"), &QWebSocket::sendBinaryMessage,
                               &XUtils::detail::QCoroWebSocket::binaryMessages);
     }
 
-    XUtils::XCoroTask<> testBinaryMessageTimeout_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testBinaryMessageTimeout_coro(QCoro::TestContext) {
         co_await testTimeout(&XUtils::detail::QCoroWebSocket::binaryMessages);
     }
 
-    XUtils::XCoroTask<> testBinaryMessageGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testBinaryMessageGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
         co_await testGeneratorEndOnSocketClose(&XUtils::detail::QCoroWebSocket::binaryMessages);
     }
 
-    XUtils::XCoroTask<> testTextFrame_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTextFrame_coro(QCoro::TestContext) {
         co_await testReceived(QStringLiteral("TEST MESSAGE"), &QWebSocket::sendTextMessage,
                              &XUtils::detail::QCoroWebSocket::textFrames);
     }
 
-    XUtils::XCoroTask<> testTextFrameTimeout_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTextFrameTimeout_coro(QCoro::TestContext) {
         co_await testTimeout(&XUtils::detail::QCoroWebSocket::textFrames);
     }
 
-    XUtils::XCoroTask<> testTextFrameGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTextFrameGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
         co_await testGeneratorEndOnSocketClose(&XUtils::detail::QCoroWebSocket::textFrames);
     }
 
-    XUtils::XCoroTask<> testTextMessage_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTextMessage_coro(QCoro::TestContext) {
         co_await testReceived(QStringLiteral("TEST MESSAGE"), &QWebSocket::sendTextMessage,
                               &XUtils::detail::QCoroWebSocket::textMessages);
     }
 
-    XUtils::XCoroTask<> testTextMessageTimeout_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTextMessageTimeout_coro(QCoro::TestContext) {
         co_await testTimeout(&XUtils::detail::QCoroWebSocket::textMessages);
     }
 
-    XUtils::XCoroTask<> testTextMessageGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+    XUtils::XCoroTaskVoid testTextMessageGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
         co_await testGeneratorEndOnSocketClose(&XUtils::detail::QCoroWebSocket::textMessages);
     }
 
-    XUtils::XCoroTask<> testReadFragmentedMessage_coro(QCoro::TestContext) {
-        QWebSocket socket;
-        QUrl url = m_server_.url();
+    XUtils::XCoroTaskVoid testReadFragmentedMessage_coro(QCoro::TestContext) {
+        QWebSocket socket{};
+        auto url { m_server_.url()};
         url.setPath(QStringLiteral("/large"));
         QCORO_VERIFY(XUtils::waitFor(XUtils::qCoro(socket).open(url)));
         using namespace std::chrono_literals;
