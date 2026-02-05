@@ -21,7 +21,7 @@ class Server : public QObject {
     QUrl mUrl{};
 
 public:
-    constexpr Server() noexcept = default;
+    Server() noexcept = default;
 
     void setExpectTimeout() noexcept
     { m_expectTimeout_.storeRelaxed(true); }

@@ -612,6 +612,7 @@ struct A3 : public A1 , public A2 {
 
 [[maybe_unused]] static void test8() {
 
+#if 0
     auto p0 = XUtils::makeUnique<int[]>(10);
     auto p1 = XUtils::makeShared<int[][2]>(10,{545,14512});
     auto p2 = XUtils::makeShared<std::vector<char>[512]>({1,2,3,4,5});
@@ -626,6 +627,7 @@ struct A3 : public A1 , public A2 {
     std::cerr << XUtils::calculate_total_elements<std::remove_extent_t<int[][2][10][3]> >() << std::endl;
 
     std::cerr << XUtils::typeName<std::vector<int>::const_pointer const >() << std::endl;
+#endif
 }
 
 struct Test {

@@ -6,11 +6,11 @@
 struct Buffer;
 
 class BufferPool {
-    std::map<size_t,Buffer*> m_cache_{};
+    std::map<std::size_t,Buffer*> m_cache_{};
 public:
     constexpr BufferPool() = default;
     ~BufferPool();
-    Buffer * getBuffer(size_t len);
+    Buffer * getBuffer(std::size_t len);
     void returnBuffer(Buffer * buf);
 };
 

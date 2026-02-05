@@ -48,7 +48,7 @@ class X_CLASS_EXPORT XCallableHelper {
         constexpr void operator()() const override { m_callable_(); }
     };
 
-    template<typename Callable> XCallable(Callable) -> XCallable<Callable>;
+    //template<typename Callable> XCallable(Callable) -> XCallable<Callable>;
 
     using CallablePtr_ = std::shared_ptr<XAbstractCallable>;
 
@@ -97,7 +97,7 @@ class X_CLASS_EXPORT XCallableHelper {
         friend struct Factory;
     };
 
-    template<typename Tuple> XInvoker(Tuple) -> XInvoker<Tuple>;
+    //template<typename Tuple> XInvoker(Tuple) -> XInvoker<Tuple>;
 
     template<typename... Tp>
     using decayedTuple_ = std::tuple<std::decay_t<Tp>...>;

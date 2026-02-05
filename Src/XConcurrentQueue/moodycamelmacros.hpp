@@ -113,8 +113,8 @@ namespace moodycamel::details {
 	namespace moodycamel::details {
 		using thread_id_t = std::uintptr_t;
 		inline constexpr thread_id_t invalid_thread_id {0},		// Address can't be nullptr
-						thread_id_t invalid_thread_id2 {1};		// Member accesses off a null pointer are also generally invalid. Plus it's not aligned.
-		static constexpr thread_id_t thread_id() noexcept { static MOODYCAMEL_THREADLOCAL int x; return reinterpret_cast<thread_id_t>(std::addressof(x)); }
+									invalid_thread_id2 {1};		// Member accesses off a null pointer are also generally invalid. Plus it's not aligned.
+		static thread_id_t thread_id() noexcept { static MOODYCAMEL_THREADLOCAL int x; return reinterpret_cast<thread_id_t>(std::addressof(x)); }
 	}
 
 #endif

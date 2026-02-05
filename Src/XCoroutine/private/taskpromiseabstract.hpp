@@ -23,7 +23,7 @@ namespace detail {
     class TaskFinalSuspend final {
         coroutine_handle_vector m_awaitingCoroutines_ {};
     public:
-        X_IMPLICIT constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
+        X_IMPLICIT TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
         {   }
 
@@ -50,13 +50,13 @@ namespace detail {
         static constexpr auto initial_suspend() noexcept
         { return std::suspend_never {}; }
 
-        constexpr auto final_suspend() noexcept
+        auto final_suspend() noexcept
         { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
 
-        constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
+        void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
         { m_awaitingCoroutines_.push_back(awaitingCoroutine); }
 
-        [[nodiscard]] constexpr bool hasAwaitingCoroutine() const noexcept
+        [[nodiscard]] bool hasAwaitingCoroutine() const noexcept
         { return !m_awaitingCoroutines_.empty(); }
 
         void derefCoroutine()
@@ -71,7 +71,7 @@ namespace detail {
             handle.destroy();
         }
 
-        constexpr virtual ~TaskPromiseAbstract() = default;
+        virtual ~TaskPromiseAbstract() = default;
 
     protected:
         constexpr TaskPromiseAbstract() noexcept = default;

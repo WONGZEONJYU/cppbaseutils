@@ -18,7 +18,7 @@ class XCoroTask final :
     public detail::XCoroTaskAbstract<T,XCoroTask, detail::TaskPromise<T>>
 {
     using Base = detail::XCoroTaskAbstract<T, XCoroTask, detail::TaskPromise<T>>;
-    using coroutine_handle = Base::coroutine_handle;
+    using coroutine_handle_ = Base::coroutine_handle_;
 
 public:
     using value_type = T;
@@ -26,17 +26,20 @@ public:
 
     constexpr XCoroTask() noexcept = default;
 
-    X_IMPLICIT constexpr XCoroTask(coroutine_handle const coroutine) noexcept
+    X_IMPLICIT constexpr XCoroTask(coroutine_handle_ const coroutine) noexcept
         : Base { coroutine }
     {    }
 
     X_IMPLICIT constexpr XCoroTask(promise_type & promise) noexcept
-        : XCoroTask { coroutine_handle::from_promise(promise) }
+        : XCoroTask { coroutine_handle_::from_promise(promise) }
     {    }
 
     X_IMPLICIT constexpr XCoroTask(promise_type * const promise) noexcept
         : XCoroTask { *promise }
     {    }
+
+    X_DISABLE_COPY(XCoroTask)
+    X_DEFAULT_MOVE(XCoroTask)
 };
 
 using XCoroTaskVoid = XCoroTask<>;

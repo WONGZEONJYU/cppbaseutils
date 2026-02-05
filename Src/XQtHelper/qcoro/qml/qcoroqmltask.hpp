@@ -26,8 +26,8 @@ namespace QmlPrivate {
 
     struct QmlTaskPrivate : QSharedData {
         std::optional<XCoroTask<QVariant>> m_task;
-        constexpr QmlTaskPrivate() = default;
-        QmlTaskPrivate(QmlTaskPrivate const &)
+        QmlTaskPrivate() = default;
+        QmlTaskPrivate(QmlTaskPrivate const &):QSharedData{}
         { Q_UNREACHABLE(); }
     };
 

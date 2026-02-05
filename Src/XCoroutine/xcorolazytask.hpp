@@ -37,7 +37,7 @@ class XCoroLazyTask final
     : public detail::XCoroTaskAbstract<T, XCoroLazyTask, detail::LazyTaskPromise<T>>
 {
     using Base = detail::XCoroTaskAbstract<T, XCoroLazyTask, detail::LazyTaskPromise<T>>;
-    using coroutine_handle = Base::coroutine_handle;
+    using coroutine_handle_ = Base::coroutine_handle_;
 
 public:
     using promise_type = detail::LazyTaskPromise<T>;
@@ -76,17 +76,20 @@ public:
 
     constexpr XCoroLazyTask() noexcept = default;
 
-    X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle const h) noexcept
+    X_IMPLICIT constexpr XCoroLazyTask(coroutine_handle_ const h) noexcept
         : Base { h }
     {   }
 
     X_IMPLICIT constexpr XCoroLazyTask(promise_type & promise) noexcept
-        : XCoroLazyTask { coroutine_handle::from_promise(promise) }
+        : XCoroLazyTask { coroutine_handle_::from_promise(promise) }
     {   }
 
     X_IMPLICIT constexpr XCoroLazyTask(promise_type * const promise) noexcept
         : XCoroLazyTask { *promise }
     {   }
+
+    X_DISABLE_COPY(XCoroLazyTask)
+    X_DEFAULT_MOVE(XCoroLazyTask)
 };
 
 XTD_INLINE_NAMESPACE_END

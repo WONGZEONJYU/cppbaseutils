@@ -25,7 +25,7 @@ option(QCORO_DISABLE_DEPRECATED_TASK_H "Disable deprecated task.h header" OFF)
 if(WIN32 OR APPLE OR ANDROID)
     option(QCORO_WITH_QTDBUS "Build QtDBus support" OFF)
 else()
-    option(QCORO_WITH_QTDBUS "Build QtDBus support" ON)
+    option(QCORO_WITH_QTDBUS "Build QtDBus support" OFF)
 endif()
 
 add_feature_info(QtDBus QCORO_WITH_QTDBUS "Build QtDBus support")

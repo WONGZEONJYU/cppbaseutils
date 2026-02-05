@@ -24,7 +24,7 @@ namespace detail {
 
 struct ImageProvider : QQuickAsyncImageProvider {
 
-    constexpr ImageProvider() noexcept = default;
+    ImageProvider() noexcept = default;
     virtual XCoroTask<QImage> asyncRequestImage(QString const & , QSize const & ) = 0;
 
 private:

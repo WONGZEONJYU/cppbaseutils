@@ -28,8 +28,8 @@ XUtils::XCoroTask<> thenScopeTestFunc(QEventLoop *el)
 { return timer().then([el] {el->quit();}); }
 
 template<typename T>
-XUtils::XCoroTask<T> thenScopeTestFuncWithValue(T && value)
-{ return timer().then([value = std::forward<T>(value)]{ return value;}); }
+XUtils::XCoroTask<T> thenScopeTestFuncWithValue(T value)
+{ return timer().then([value]{ return value;}); }
 
 struct ImplicitConversionBar
 { int m_number; };
@@ -102,7 +102,7 @@ class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
     void ignoreCoroutineResult(QEventLoop & el, Coro && coro) {
         QTimer::singleShot(5s, &el, [&el] { el.exit(1); });
 
-        std::forward<Coro>(coro)();
+        coro();
         const int timeout = el.exec();
         QCOMPARE(timeout, 0);
     }

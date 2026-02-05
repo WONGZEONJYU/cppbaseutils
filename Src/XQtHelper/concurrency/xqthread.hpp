@@ -42,13 +42,6 @@ protected:
     static void terminate_on_exception(T && t) {
         try {
             std::forward<T>(t)();
-#ifdef __GLIBCXX__
-            // POSIX thread cancellation under glibc is implemented by throwing an exception
-            // of this type. Do what libstdc++ is doing and handle it specially in order not to
-            // abort the application if user's code calls a cancellation function.
-        } catch (abi::__forced_unwind &) {
-            throw;
-#endif // __GLIBCXX__
         } catch (...) {
             std::terminate();
         }

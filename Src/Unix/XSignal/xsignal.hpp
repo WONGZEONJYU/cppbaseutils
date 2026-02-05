@@ -37,7 +37,7 @@ public:
     template<typename Fn,typename... Args>
     constexpr static auto Register(int sig,int flags,Fn &&,Args && ...args) noexcept -> SignalPtr;
 
-    [[nodiscard]] [[maybe_unused]] constexpr auto sig() const noexcept
+    [[nodiscard]] [[maybe_unused]] auto sig() const noexcept
     { return m_d_ptr_->m_sig;  }
 
     [[maybe_unused]] void unregister();

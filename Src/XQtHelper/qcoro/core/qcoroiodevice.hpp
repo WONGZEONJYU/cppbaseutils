@@ -36,7 +36,7 @@ namespace detail {
             QMetaObject::Connection m_conn_ {}, m_closeConn_ {}, m_finishedConn_ {};
 
         public:
-            Q_DISABLE_COPY(OperationAbstract);
+            Q_DISABLE_COPY(OperationAbstract)
             X_DEFAULT_MOVE(OperationAbstract)
 
             virtual ~OperationAbstract() = default;
@@ -74,7 +74,7 @@ namespace detail {
                 : ReadOperation { std::addressof(device) , std::move(resultCb) }
             {   }
 
-            Q_DISABLE_COPY(ReadOperation);
+            Q_DISABLE_COPY(ReadOperation)
             X_DEFAULT_MOVE(ReadOperation)
 
             [[nodiscard]] virtual bool await_ready() const noexcept

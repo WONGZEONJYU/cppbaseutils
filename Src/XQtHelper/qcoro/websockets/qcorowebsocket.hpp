@@ -142,13 +142,14 @@ namespace detail {
         auto signalListener {
             qCoroSignalListener(std::addressof(watcher), qOverload<signalType>(&WebSocketSignalWatcher::ready), timeout)
         };
-
-        for (auto it { co_await signalListener.begin() }; it != signalListener.end(); co_await ++it) {
+        auto it { co_await signalListener.begin() };
+        while (it != signalListener.end()) {
             if (!it->has_value()) { break; }
             // If the signal is a single-value tuple, we unwrap it from the tuple, otherwise we yield the whole tuple.
             if constexpr (1 == std::tuple_size_v<typename signalType::value_type>)
             { co_yield std::get<0>(**it); }
             else { co_yield **it; }
+            co_await ++it;
         }
     }
 

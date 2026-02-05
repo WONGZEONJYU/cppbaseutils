@@ -2,7 +2,7 @@
 #define LW_SEM_UNIX_P_HPP 1
 
 #if defined(__unix__) || defined(__MVS__)
-#include <XHelper/xversion.hpp>
+#include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <memory>
 #include <cassert>
@@ -33,30 +33,30 @@ namespace moodycamel::details{
     public:
         X_DISABLE_COPY_MOVE(Semaphore)
 
-        constexpr explicit Semaphore(int const initialCount = {}) {
+        X_IMPLICIT Semaphore(int const initialCount = {}) {
             assert(initialCount >= 0);
-            [[maybe_unused]] auto const rc {sem_init(std::addressof(m_sema_), 0, static_cast<unsigned int>(initialCount))};
+            [[maybe_unused]] auto const rc { sem_init(std::addressof(m_sema_), 0, static_cast<unsigned int>(initialCount)) };
             assert(!rc);
         }
 
         virtual ~Semaphore()
         { sem_destroy(std::addressof(m_sema_)); }
 
-        constexpr bool wait() const noexcept {
+        bool wait() const noexcept {
             // http://stackoverflow.com/questions/2013181/gdb-causes-sem-wait-to-fail-with-eintr-error
             int rc{};
             do { rc = sem_wait(std::addressof(m_sema_)); } while (rc < 0 && errno == EINTR);
             return !rc;
         }
 
-        constexpr bool try_wait() const noexcept {
+        bool try_wait() const noexcept {
             int rc{};
             do { rc = sem_trywait(std::addressof(m_sema_)); } while (rc < 0 && errno == EINTR);
             return !rc;
         }
 
-        constexpr bool timed_wait(std::uint64_t const usecs) const noexcept {
-            struct timespec ts{};
+        bool timed_wait(std::uint64_t const usecs) const noexcept {
+            timespec ts{};
 #ifdef MOODYCAMEL_LIGHTWEIGHTSEMAPHORE_MONOTONIC
             clock_gettime(CLOCK_MONOTONIC, std::addressof(ts));
 #else
@@ -84,10 +84,10 @@ namespace moodycamel::details{
             return !rc;
         }
 
-        constexpr void signal() const noexcept
+        void signal() const noexcept
         { while (sem_post(std::addressof(m_sema_)) < 0); }
 
-        constexpr void signal(int count) const noexcept
+         void signal(int count) const noexcept
         { while (count-- > 0) { while (sem_post(std::addressof(m_sema_)) < 0); } }
     };
 }

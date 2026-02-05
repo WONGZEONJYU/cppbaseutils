@@ -6,7 +6,7 @@
 struct Snapshot {
     std::string m_currentStr_{};
     constexpr Snapshot() = default;
-    constexpr explicit Snapshot(std::string s)
+    explicit Snapshot(std::string s)
     { m_currentStr_.swap(s); }
 };
 

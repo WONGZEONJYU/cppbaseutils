@@ -72,11 +72,12 @@ struct LogMessage final {
 
     constexpr LogMessage() = default;
 
-    constexpr LogMessage(LogLevel const lv, std::string ts, std::string tid,
+    X_IMPLICIT LogMessage(LogLevel const lv, std::string ts, std::string tid,
                std::string f, std::uint32_t const l, std::string func, std::string msg) noexcept
         : level(lv), timestamp(std::move(ts)), thread_id(std::move(tid))
         , file(std::move(f)), function(std::move(func))
-        , message(std::move(msg)), line(l) {}
+        , message(std::move(msg)), line(l)
+    {   }
 };
 
 /**

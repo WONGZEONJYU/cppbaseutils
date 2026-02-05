@@ -619,22 +619,22 @@ public:
         return qdata();
     }
 
-    [[maybe_unused]] static constexpr auto qInstance() noexcept -> QSingletonPtr
+    [[maybe_unused]] static auto qInstance() noexcept -> QSingletonPtr
     { return qdata(); }
 
-    [[maybe_unused]] [[nodiscard]] static constexpr bool isQConstruct() noexcept
+    [[maybe_unused]] [[nodiscard]] static bool isQConstruct() noexcept
     { return static_cast<bool>(qdata()); }
 #endif
 
 private:
-    static constexpr auto initFlag() noexcept -> std::once_flag &
+    static auto initFlag() noexcept -> std::once_flag &
     { static std::once_flag flag{};return flag; }
 
-    static constexpr auto data() noexcept -> SingletonPtr &
+    static auto data() noexcept -> SingletonPtr &
     { static SingletonPtr d{}; return d; }
 
 #ifdef HAS_QT
-    static constexpr auto qdata() noexcept -> QSingletonPtr &
+    static auto qdata() noexcept -> QSingletonPtr &
     { static QSingletonPtr d{}; return d; }
 #endif
 

@@ -6,7 +6,7 @@
 
 int64_t MemWatcherLinux::getMem() {
 #ifdef X_PLATFORM_LINUX
-    sysinfo info{};
+    struct sysinfo info{};
     sysinfo(&info);
     auto const total { info.totalram * info.mem_unit };
     auto const free { info.freeram * info.mem_unit };

@@ -81,7 +81,7 @@ class ThreadContext {
         QThread * m_thread {};
         std::unique_ptr<detail::ContextHelper> m_context {};
         constexpr Data() noexcept = default;
-        Q_IMPLICIT constexpr Data(QThread * const thread) noexcept
+        Q_IMPLICIT Data(QThread * const thread) noexcept
             : m_thread { thread }
         {   }
         Q_DISABLE_COPY_MOVE(Data)
@@ -90,11 +90,11 @@ class ThreadContext {
     std::unique_ptr<Data> m_d_ {};
 
 public:
-    Q_IMPLICIT constexpr ThreadContext(QThread * const thread)
+    Q_IMPLICIT ThreadContext(QThread * const thread)
         : m_d_{ std::make_unique<Data>(thread) }
     {   }
 
-    Q_IMPLICIT constexpr ThreadContext(QThread & thread)
+    Q_IMPLICIT ThreadContext(QThread & thread)
         : ThreadContext { std::addressof(thread) }
     {   }
 

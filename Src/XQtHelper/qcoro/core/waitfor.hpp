@@ -36,7 +36,7 @@ namespace detail {
         friend XCoroTask<> runCoroutine(WaitContext & context, std::optional<T> & , Awaitable && );
 
         template<typename T, Awaitable Awaitable>
-        friend constexpr T waitFor(Awaitable && );
+        friend T waitFor(Awaitable && );
     };
 
     template<Awaitable Awaitable>
@@ -54,7 +54,7 @@ namespace detail {
     }
 
     template<typename T, Awaitable Awaitable>
-    constexpr T waitFor(Awaitable && awaitable) {
+    T waitFor(Awaitable && awaitable) {
         WaitContext context {};
         if constexpr (std::is_void_v<T>) {
             runCoroutine(context,std::forward<Awaitable>(awaitable));
@@ -64,7 +64,7 @@ namespace detail {
             std::optional<T> result {};
             runCoroutine(context,result,std::forward<Awaitable>(awaitable));
             context.wait();
-            return *result;
+            return std::move(*result);
         }
     }
 

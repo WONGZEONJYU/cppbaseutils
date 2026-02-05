@@ -20,7 +20,7 @@ class XBlockingConcurrentQueueAbstract {
 
     template<typename,typename> friend class XBlockingConcurrentQueue;
 
-    using XConcurrentQueue = XConcurrentQueue<T,Traits>;
+    using ConcurrentQueue = XConcurrentQueue<T,Traits>;
     using LightweightSemaphore = XLightweightSemaphore;
 
 #if 0
@@ -44,26 +44,26 @@ class XBlockingConcurrentQueueAbstract {
     using LightweightSemaphorePtr = std::unique_ptr<LightweightSemaphore>;
 #endif
 
-    XConcurrentQueue m_inner_{};
+    ConcurrentQueue m_inner_{};
     LightweightSemaphorePtr m_sema_{};
 
 public:
     using value_type = T;
-    using producer_token_t = XConcurrentQueue::producer_token_t;
-    using consumer_token_t = XConcurrentQueue::consumer_token_t;
+    using producer_token_t = ConcurrentQueue::producer_token_t;
+    using consumer_token_t = ConcurrentQueue::consumer_token_t;
 
-    using index_t = XConcurrentQueue::index_t;
-    using size_t = XConcurrentQueue::size_t;
+    using index_t = ConcurrentQueue::index_t;
+    using size_t = ConcurrentQueue::size_t;
     using ssize_t = std::make_signed_t<size_t>;
 
-    static constexpr auto BLOCK_SIZE{ XConcurrentQueue::BLOCK_SIZE}
-                        ,EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { XConcurrentQueue::EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD }
-                        ,EXPLICIT_INITIAL_INDEX_SIZE { XConcurrentQueue::EXPLICIT_INITIAL_INDEX_SIZE }
-                        ,IMPLICIT_INITIAL_INDEX_SIZE { XConcurrentQueue::IMPLICIT_INITIAL_INDEX_SIZE }
-                        ,INITIAL_IMPLICIT_PRODUCER_HASH_SIZE { XConcurrentQueue::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE };
+    static constexpr auto BLOCK_SIZE{ ConcurrentQueue::BLOCK_SIZE}
+                        ,EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD { ConcurrentQueue::EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD }
+                        ,EXPLICIT_INITIAL_INDEX_SIZE { ConcurrentQueue::EXPLICIT_INITIAL_INDEX_SIZE }
+                        ,IMPLICIT_INITIAL_INDEX_SIZE { ConcurrentQueue::IMPLICIT_INITIAL_INDEX_SIZE }
+                        ,INITIAL_IMPLICIT_PRODUCER_HASH_SIZE { ConcurrentQueue::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE };
 
-    static constexpr auto EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE { XConcurrentQueue::EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE };
-    static constexpr auto MAX_SUBQUEUE_SIZE { XConcurrentQueue::MAX_SUBQUEUE_SIZE };
+    static constexpr auto EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE { ConcurrentQueue::EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE };
+    static constexpr auto MAX_SUBQUEUE_SIZE { ConcurrentQueue::MAX_SUBQUEUE_SIZE };
 
     XBlockingConcurrentQueueAbstract(XBlockingConcurrentQueueAbstract && o) noexcept
     { swap_internal(o); }
@@ -82,7 +82,7 @@ public:
 private:
 
 #undef ASSERT_
-#define ASSERT_ assert( reinterpret_cast<XConcurrentQueue*>(reinterpret_cast<XBlockingConcurrentQueueAbstract*>(1)) \
+#define ASSERT_ assert( reinterpret_cast<ConcurrentQueue*>(reinterpret_cast<XBlockingConcurrentQueueAbstract*>(1)) \
                                 == std::addressof(reinterpret_cast<XBlockingConcurrentQueueAbstract*>(1)->m_inner_) \
                                 && "XBlockingConcurrentQueue must have XConcurrentQueue as its first member");
 

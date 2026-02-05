@@ -87,7 +87,7 @@ namespace detail {
         using result_type_from_tuple_t = result_type_from_tuple<Args...>::type;
 
     public:
-        Q_DISABLE_COPY(QCoroSignalAbstract);
+        Q_DISABLE_COPY(QCoroSignalAbstract)
         X_DEFAULT_MOVE(QCoroSignalAbstract)
 
         virtual ~QCoroSignalAbstract()
@@ -163,7 +163,7 @@ namespace detail {
             , m_dummyReceiver_ { std::make_unique<QObject>() }
         {   }
 
-        Q_DISABLE_COPY(QCoroSignal);
+        Q_DISABLE_COPY(QCoroSignal)
 
         void swap(QCoroSignal & other) noexcept {
             std::ranges::swap(this->m_obj_, other.m_obj_);
@@ -244,7 +244,7 @@ namespace detail {
             : Base { obj, std::forward<FuncPtr>(ptr), timeout }
         { setupConnection(); }
 
-        Q_DISABLE_COPY_MOVE(QCoroSignalQueue);
+        Q_DISABLE_COPY_MOVE(QCoroSignalQueue)
 
         ~QCoroSignalQueue() override = default;
 

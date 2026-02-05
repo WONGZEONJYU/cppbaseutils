@@ -10,7 +10,7 @@ struct HazardPointer {
     XUtils::XAtomicPointer<void> m_ptr{};
 
     constexpr HazardPointer() = default;
-    constexpr HazardPointer(std::thread::id const id,void * const ptr)
+    HazardPointer(std::thread::id const id,void * const ptr)
         : m_id{id},m_ptr{ptr} {}
 
     friend bool operator==(HazardPointer const & lhs,HazardPointer const & rhs) noexcept
