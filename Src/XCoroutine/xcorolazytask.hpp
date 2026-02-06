@@ -52,11 +52,12 @@ public:
 
     constexpr auto operator co_await() const noexcept {
 
-        struct TaskAwaiter : detail::TaskAwaiterAbstract<promise_type> {
+        class TaskAwaiter final : public detail::TaskAwaiterAbstract<promise_type> {
             using Base = detail::TaskAwaiterAbstract<promise_type>;
-
-            X_IMPLICIT constexpr TaskAwaiter(Base::coroutine_handle const h) noexcept
-                : Base { h } {  }
+        public:
+            X_IMPLICIT constexpr TaskAwaiter(Base::coroutine_handle_ const h) noexcept
+                : Base { h }
+            {   }
 
             constexpr auto await_suspend(std::coroutine_handle<> const h) noexcept{
                 Base::await_suspend(h);

@@ -64,8 +64,8 @@ namespace detail {
 template<typename T>
 class XGeneratorIterator {
     using promise_type = detail::XGeneratorPromise<T>;
-    using coroutine_handle = std::coroutine_handle<promise_type>;
-    coroutine_handle m_GeneratorCoroutine_ { };
+    using coroutine_handle_ = std::coroutine_handle<promise_type>;
+    coroutine_handle_ m_GeneratorCoroutine_ { };
 
 public:
     using iterator_category = std::input_iterator_tag;
@@ -102,7 +102,7 @@ private:
 
     constexpr XGeneratorIterator() noexcept = default;
 
-    X_IMPLICIT constexpr XGeneratorIterator(coroutine_handle const h) noexcept
+    X_IMPLICIT constexpr XGeneratorIterator(coroutine_handle_ const h) noexcept
         : m_GeneratorCoroutine_ { h }
     {   }
 };
@@ -114,8 +114,8 @@ struct XGenerator {
 
 private:
     friend promise_type;
-    using coroutine_handle = std::coroutine_handle<promise_type>;
-    coroutine_handle m_generatorCoroutine_ { };
+    using coroutine_handle_ = std::coroutine_handle<promise_type>;
+    coroutine_handle_ m_generatorCoroutine_ { };
 
 public:
     constexpr XGenerator() noexcept = default;
@@ -128,7 +128,7 @@ public:
     { XGenerator {std::move(o) }.swap(*this); return *this; }
 
     constexpr ~XGenerator()
-    { if (m_generatorCoroutine_)  { m_generatorCoroutine_.destroy(); } }
+    { if (m_generatorCoroutine_) { m_generatorCoroutine_.destroy(); } }
 
     constexpr void swap(XGenerator & o) noexcept
     { std::swap(m_generatorCoroutine_,o.m_generatorCoroutine_); }
@@ -139,19 +139,19 @@ public:
             m_generatorCoroutine_.promise().rethrowIfException();
             return {};
         }
-        return { m_generatorCoroutine_ } ;
+        return m_generatorCoroutine_ ;
     }
 
     static constexpr iterator end() noexcept
     { return {}; }
 
 private:
-    X_IMPLICIT constexpr XGenerator(coroutine_handle const h) noexcept
+    X_IMPLICIT constexpr XGenerator(coroutine_handle_ const h) noexcept
         : m_generatorCoroutine_ { h }
     {   }
 
     X_IMPLICIT constexpr XGenerator(promise_type & promise) noexcept
-        : m_generatorCoroutine_ { coroutine_handle::from_promise(promise) }
+        : m_generatorCoroutine_ { coroutine_handle_::from_promise(promise) }
     {   }
 
     X_IMPLICIT constexpr XGenerator(promise_type * const promise) noexcept

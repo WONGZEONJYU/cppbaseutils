@@ -18,8 +18,8 @@ namespace detail {
     template<typename Promise>
     struct TaskAwaiterAbstract {
     protected:
-        using coroutine_handle = std::coroutine_handle<Promise>;
-        coroutine_handle m_awaitedCoroutine_ {};
+        using coroutine_handle_ = std::coroutine_handle<Promise>;
+        coroutine_handle_ m_awaitedCoroutine_ {};
 
     public:
         [[nodiscard]] constexpr bool await_ready() const noexcept
@@ -34,7 +34,7 @@ namespace detail {
         }
 
     protected:
-        X_IMPLICIT constexpr TaskAwaiterAbstract(coroutine_handle const h) noexcept
+        X_IMPLICIT constexpr TaskAwaiterAbstract(coroutine_handle_ const h) noexcept
             : m_awaitedCoroutine_ { h }
         {   }
     };

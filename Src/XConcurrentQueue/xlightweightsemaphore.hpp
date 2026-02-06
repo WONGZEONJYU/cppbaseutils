@@ -12,6 +12,7 @@
 #include <type_traits> // For std::make_signed<T>
 #include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
+#include <cstdint>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

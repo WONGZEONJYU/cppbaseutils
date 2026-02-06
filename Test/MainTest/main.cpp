@@ -612,7 +612,7 @@ struct A3 : public A1 , public A2 {
 
 [[maybe_unused]] static void test8() {
 
-#if 0
+#if 1
     auto p0 = XUtils::makeUnique<int[]>(10);
     auto p1 = XUtils::makeShared<int[][2]>(10,{545,14512});
     auto p2 = XUtils::makeShared<std::vector<char>[512]>({1,2,3,4,5});

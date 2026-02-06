@@ -190,7 +190,7 @@ public:
         : m_coroutine_ { h }
     {   }
 
-    auto operator++() noexcept
+    constexpr auto operator++() noexcept
     { return IncrementIteratorAwaitable { *this }; }
 
     constexpr reference operator *() const noexcept
@@ -240,15 +240,13 @@ public:
 
     constexpr auto begin() const noexcept {
 
-        class BeginIteratorAwaitable final
-            : public detail::XIteratorAwaitableAbstract
+        struct BeginIteratorAwaitable final
+            : detail::XIteratorAwaitableAbstract
         {
-            using Base = XIteratorAwaitableAbstract;
-        public:
             constexpr BeginIteratorAwaitable() noexcept = default;
 
             X_IMPLICIT constexpr BeginIteratorAwaitable(coroutine_handle_ const h) noexcept
-                : Base { h.promise(), h }
+                : XIteratorAwaitableAbstract { h.promise(), h }
             {   }
 
             [[nodiscard]] constexpr bool await_ready() const noexcept

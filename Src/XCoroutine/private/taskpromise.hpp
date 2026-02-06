@@ -60,7 +60,7 @@ namespace detail {
     class TaskPromise<void> : public TaskPromiseAbstract {
         std::exception_ptr m_exception_ {};
     public:
-        XCoroTask<void> get_return_object() noexcept;
+        constexpr XCoroTask<void> get_return_object() noexcept;
 
         void unhandled_exception()
         { m_exception_ = std::current_exception(); }
