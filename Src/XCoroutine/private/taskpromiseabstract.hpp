@@ -34,7 +34,7 @@ namespace detail {
             auto && promise{ h.promise() };
             for (auto && awaiter : m_awaitingCoroutines_)
             { awaiter.resume(); }
-            m_awaitingCoroutines_.clear();
+            m_awaitingCoroutines_ = coroutine_handle_vector{};
             promise.derefCoroutine();
         }
 
