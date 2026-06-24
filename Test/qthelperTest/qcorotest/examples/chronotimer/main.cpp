@@ -1,12 +1,13 @@
-#include <XQtHelper/qcoro/core/qcorotimer.hpp>
+#include <XQtHelper/qcoro/core/qcorochronotimer.hpp>
 #include <QCoreApplication>
 #include <QDateTime>
 
-using namespace std::chrono_literals;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
 
 XUtils::XCoroTask<> runMainTimer() {
     std::cout << "runMainTimer started" << std::endl;
-    QTimer timer{};
+    QChronoTimer timer{};
+    using namespace std::chrono_literals;
     timer.setInterval(2s);
     timer.start();
 
@@ -19,12 +20,23 @@ XUtils::XCoroTask<> runMainTimer() {
 
 int main(int argc, char **argv) {
     QCoreApplication app{argc, argv};
-    QTimer ticker{};
+    QChronoTimer ticker{};
     ticker.callOnTimeout(std::addressof(app),[]{
         std::cout << QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString()
                   << " Secondary timer tick!" << std::endl;
     });
-    ticker.start(200ms);
+    using namespace std::chrono_literals;
+    ticker.setInterval(200ms);
+    ticker.start();
     QTimer::singleShot(0, runMainTimer);
     return app.exec();
 }
+
+#else
+
+int main([[maybe_unused]]int argc, [[maybe_unused]]char *argv[]) {
+    std::cout << R"(Not Support QChronoTimer!)" << std::endl;
+    return 0;
+}
+
+#endif

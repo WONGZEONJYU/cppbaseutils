@@ -26,7 +26,7 @@ namespace detail {
             {    }
 
             Q_IMPLICIT WaitForTimeoutOperation(QTimer & timer) noexcept
-                : m_timer_ { std::addressof(timer) }
+                : WaitForTimeoutOperation { std::addressof(timer) }
             {   }
 
             [[nodiscard]] bool await_ready() const noexcept
