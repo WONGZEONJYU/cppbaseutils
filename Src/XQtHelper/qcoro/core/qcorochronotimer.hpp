@@ -77,7 +77,7 @@ XCoroTaskVoid chronoSleepFor(std::chrono::duration<Rep, Period> const & timeout)
 
 template<typename Clock, typename Duration>
 XCoroTaskVoid chronoSleepUntil(std::chrono::time_point<Clock, Duration> const & when)
-{ return chronosleepFor(when.time_since_epoch() - std::chrono::steady_clock::now().time_since_epoch()); }
+{ return chronoSleepFor(when.time_since_epoch() - std::chrono::steady_clock::now().time_since_epoch()); }
 
 inline auto qCoro(QChronoTimer * const timer) noexcept
 { return detail::QCoroChronoTimer{ timer }; }

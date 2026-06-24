@@ -119,6 +119,7 @@ function(qcoro_add_quick_test _name)
 endfunction()
 
 qcoro_add_test(qtimer)
+qcoro_add_test(qchronotimer)
 qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorosignal)
 qcoro_add_test(qcorothread)

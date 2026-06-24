@@ -1,22 +1,25 @@
 #include <testobject.hpp>
-#include <XQtHelper/qcoro/core/qcorotimer.hpp>
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+
+#include <XQtHelper/qcoro/core/qcorochronotimer.hpp>
 #include <chrono>
 #include <QElapsedTimer>
 
 using namespace std::chrono_literals;
 
-struct QCoroTimerTest : QCoro::TestObject<QCoroTimerTest> {
+struct QCoroChronoTimerTest : QCoro::TestObject<QCoroChronoTimerTest> {
     Q_OBJECT
 
     XUtils::XCoroTask<> testTriggers_coro(QCoro::TestContext) {
-        QTimer timer {};
+        QChronoTimer timer {};
         timer.setInterval(100ms);
         timer.start();
         co_await timer;
     }
 
     XUtils::XCoroTask<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
-        QTimer timer{};
+        QChronoTimer timer {};
         timer.setInterval(100ms);
         timer.start();
         co_await XUtils::qCoro(timer).waitForTimeout();
@@ -25,7 +28,7 @@ struct QCoroTimerTest : QCoro::TestObject<QCoroTimerTest> {
     XUtils::XCoroTask<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker eventLoopResponsive{};
 
-        QTimer timer{};
+        QChronoTimer timer {};
         timer.setInterval(500ms);
         timer.start();
 
@@ -36,23 +39,26 @@ struct QCoroTimerTest : QCoro::TestObject<QCoroTimerTest> {
 
     XUtils::XCoroTask<> testDoesntCoAwaitInactiveTimer_coro(QCoro::TestContext ctx) {
         ctx.setShouldNotSuspend();
-
-        QTimer timer{};
+        QChronoTimer timer {};
         timer.setInterval(1s);
         // Don't start the timer!
+
         co_await timer;
     }
 
     XUtils::XCoroTask<> testDoesntCoAwaitNullTimer_coro(QCoro::TestContext ctx) {
         ctx.setShouldNotSuspend();
-        QTimer *timer {};
+
+        QChronoTimer * timer {};
+
         co_await timer;
     }
 
     void testThenTriggers_coro(TestLoop & el) {
-        QTimer timer{};
+        QChronoTimer timer {};
         bool triggered {};
-        timer.start(10ms);
+        timer.setInterval(10ms);
+        timer.start();
         XUtils::qCoro(timer).waitForTimeout().then([&el, &triggered]() {
             triggered = true;
             el.quit();
@@ -64,14 +70,14 @@ struct QCoroTimerTest : QCoro::TestObject<QCoroTimerTest> {
     XUtils::XCoroTask<> testSleepFor_coro(QCoro::TestContext) {
         QElapsedTimer elapsed{};
         elapsed.start();
-        co_await XUtils::sleepFor(100ms);
+        co_await XUtils::chronoSleepFor(100ms);
         QCORO_VERIFY(elapsed.elapsed() >= 75);
     }
 
     XUtils::XCoroTask<> testSleepUntil_coro(QCoro::TestContext) {
         QElapsedTimer elapsed{};
         elapsed.start();
-        co_await XUtils::sleepUntil(std::chrono::steady_clock::now() + 500ms);
+        co_await XUtils::chronoSleepUntil(std::chrono::steady_clock::now() + 500ms);
         QCORO_VERIFY(elapsed.elapsed() >= 475);
     }
 
@@ -86,6 +92,15 @@ private Q_SLOTS:
     addThenTest(Triggers)
 };
 
-QTEST_GUILESS_MAIN(QCoroTimerTest)
+QTEST_GUILESS_MAIN(QCoroChronoTimerTest)
 
-#include "qtimer.moc"
+#include "qchronotimer.moc"
+
+#else
+
+int main([[maybe_unused]]int argc, [[maybe_unused]] char *argv[]) {
+    qDebug() << R"(Not Support QChronoTimer!)";
+    return 0;
+}
+
+#endif
