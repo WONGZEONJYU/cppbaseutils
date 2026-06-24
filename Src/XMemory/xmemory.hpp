@@ -268,6 +268,8 @@ using Parameter = std::tuple<Args...>;
 template<typename ...Args>
 using XArgs = std::tuple<Args...>;
 
+inline constinit std::tuple noArgs{};
+
 template<typename Tp_, typename Alloc_>
 class XTwoPhaseConstruction {
 
