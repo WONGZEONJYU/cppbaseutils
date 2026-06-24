@@ -270,6 +270,14 @@ using XArgs = std::tuple<Args...>;
 
 inline constinit std::tuple noArgs{};
 
+template<typename ...Args>
+[[maybe_unused]] [[nodiscard]] constexpr auto argsRef(Args & ...args) noexcept
+{ return std::tie(args...); }
+
+template<typename ...Args>
+[[maybe_unused]] [[nodiscard]] constexpr auto argsForward(Args && ...args) noexcept
+{ return std::forward_as_tuple(std::forward<Args>(args)...); }
+
 template<typename Tp_, typename Alloc_>
 class XTwoPhaseConstruction {
 
