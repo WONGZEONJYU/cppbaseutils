@@ -11,19 +11,19 @@
 #include <XAtomic/xatomic.hpp>
 #include <XCoroutine/private/mixns.hpp>
 #include <coroutine>
-#include <vector>
+#include <deque>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
-    using coroutine_handle_vector = std::vector<std::coroutine_handle<>>;
+    using coroutine_handle_container = std::deque<std::coroutine_handle<>>;
 
     class TaskFinalSuspend final {
-        coroutine_handle_vector m_awaitingCoroutines_ {};
+        coroutine_handle_container m_awaitingCoroutines_ {};
     public:
-        X_IMPLICIT constexpr TaskFinalSuspend(coroutine_handle_vector && awaitingCoroutines)
+        X_IMPLICIT constexpr TaskFinalSuspend(coroutine_handle_container && awaitingCoroutines)
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
         {   }
 
@@ -34,7 +34,7 @@ namespace detail {
             auto && promise{ h.promise() };
             for (auto && awaiter : m_awaitingCoroutines_)
             { awaiter.resume(); }
-            m_awaitingCoroutines_ = coroutine_handle_vector{};
+            m_awaitingCoroutines_ = coroutine_handle_container{};
             promise.derefCoroutine();
         }
 
@@ -43,7 +43,7 @@ namespace detail {
 
     class TaskPromiseAbstract : public AwaitTransformMixin {
         friend class TaskFinalSuspend;
-        coroutine_handle_vector m_awaitingCoroutines_ {};
+        coroutine_handle_container m_awaitingCoroutines_ {};
         XAtomicInteger<uint32_t> m_ref_ {1};
 
     public:
