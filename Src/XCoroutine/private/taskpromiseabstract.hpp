@@ -23,14 +23,14 @@ namespace detail {
     class TaskFinalSuspend final {
         coroutine_handle_container m_awaitingCoroutines_ {};
     public:
-        X_IMPLICIT constexpr TaskFinalSuspend(coroutine_handle_container && awaitingCoroutines)
+        X_IMPLICIT TaskFinalSuspend(coroutine_handle_container && awaitingCoroutines)
             : m_awaitingCoroutines_ { std::move(awaitingCoroutines) }
         {   }
 
         static constexpr bool await_ready() noexcept { return {}; }
 
         template<typename Promise>
-        constexpr void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
+        void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
             auto && promise{ h.promise() };
             for (auto && awaiter : m_awaitingCoroutines_)
             { awaiter.resume(); }
@@ -50,13 +50,13 @@ namespace detail {
         static constexpr auto initial_suspend() noexcept
         { return std::suspend_never {}; }
 
-        constexpr auto final_suspend() noexcept
+        auto final_suspend() noexcept
         { return TaskFinalSuspend {std::move(m_awaitingCoroutines_) }; }
 
-        constexpr void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
+        void addAwaitingCoroutine(std::coroutine_handle<> const awaitingCoroutine)
         { m_awaitingCoroutines_.push_back(awaitingCoroutine); }
 
-        [[nodiscard]] constexpr bool hasAwaitingCoroutine() const noexcept
+        [[nodiscard]] bool hasAwaitingCoroutine() const noexcept
         { return !m_awaitingCoroutines_.empty(); }
 
         void derefCoroutine()
