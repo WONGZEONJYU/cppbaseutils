@@ -12,13 +12,18 @@
 #include <XCoroutine/private/mixns.hpp>
 #include <coroutine>
 #include <deque>
+#include <vector>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
 
+#if defined(X_PLATFORM_WINDOWS) && defined(X_COMPILER_MSVC)
+    using coroutine_handle_container = std::vector<std::coroutine_handle<>>;
+#else
     using coroutine_handle_container = std::deque<std::coroutine_handle<>>;
+#endif
 
     class TaskFinalSuspend final {
         coroutine_handle_container m_awaitingCoroutines_ {};

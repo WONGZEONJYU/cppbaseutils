@@ -11,13 +11,13 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
-class XCoroMutex final {
+class X_CLASS_EXPORT XCoroMutex final {
 
     std::atomic_bool mutable m_locked{};
     std::deque<std::coroutine_handle<>> mutable m_handles{};
     std::mutex mutable m_mutex{};
 
-    class AWaiter {
+    class X_CLASS_EXPORT AWaiter {
         XCoroMutex const * const m_mtx_{};
     public:
         X_IMPLICIT AWaiter(XCoroMutex const *) noexcept;
