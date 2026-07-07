@@ -1,8 +1,6 @@
-
 #ifndef XUTILS2_X_CORO_MANAGER_HPP_
 #define XUTILS2_X_CORO_MANAGER_HPP_ 1
 
-#include <algorithm>
 #include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XAtomic/xatomic.hpp>
@@ -15,18 +13,22 @@ XTD_NAMESPACE_BEGIN
     XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
-    template<typename T, template<typename> class TaskImpl, typename PromiseType>
-    class XCoroTaskAbstract;
-
+    template<typename T> class TaskPromise;
     class TaskFinalSuspend;
 }
 
+template<typename T>
+class XCoroTask;
+
 class X_CLASS_EXPORT XCoroManager final {
 
-    template<typename T, template<typename> class TaskImpl, typename PromiseType>
-    friend class detail::XCoroTaskAbstract;
+    template<typename T>
+    friend class detail::TaskPromise;
 
     friend class detail::TaskFinalSuspend;
+
+    template<typename T>
+    friend class XCoroTask;
 
     mutable std::unordered_set<std::coroutine_handle<>> m_handles_{};
     mutable std::function<void()> m_callback_{};
@@ -39,7 +41,6 @@ public:
     static XCoroManager & instance();
     [[nodiscard]] std::size_t onlineSize() const noexcept;
 
-
     template<typename Fn>
     void setCallback(Fn && fn) const {
         std::unique_lock lk{ m_fnMtx_ };
@@ -48,7 +49,6 @@ public:
 
 private:
     XCoroManager();
-    void isAllDone() const;
     bool addHandle(std::coroutine_handle<> const &) const noexcept;
     void removeHandle(std::coroutine_handle<> const &) const noexcept;
 };
