@@ -12,7 +12,7 @@
 #include <functional>
 
 XTD_NAMESPACE_BEGIN
-    XTD_INLINE_NAMESPACE_BEGIN(v1)
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 namespace detail {
     template<typename T> class TaskPromise;
@@ -53,9 +53,12 @@ public:
 
 private:
     XCoroManager();
-    bool addHandle(std::coroutine_handle<> const &) const noexcept;
+    bool addHandle(std::coroutine_handle<> const & h) const noexcept ;
     void removeHandle(std::coroutine_handle<> const &) const noexcept;
 };
+
+X_API XCoroManager * coroMgrPtr() noexcept;
+X_API XCoroManager & coroMgrRef() noexcept;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

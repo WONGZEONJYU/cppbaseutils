@@ -9,8 +9,8 @@
 
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XAtomic/xatomic.hpp>
-//#include <XCoroutine/xcoromanager.hpp>
 #include <XCoroutine/private/mixns.hpp>
+#include <XCoroutine/xcoromanager.hpp>
 #include <coroutine>
 #include <deque>
 #include <vector>
@@ -37,7 +37,7 @@ namespace detail {
 
         template<typename Promise>
         void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
-            //XCoroManager::instance().removeHandle(h);
+            coroMgrRef().removeHandle(h);
             auto && promise{ h.promise() };
             for (auto && awaiter : m_awaitingCoroutines_)
             { awaiter.resume(); }

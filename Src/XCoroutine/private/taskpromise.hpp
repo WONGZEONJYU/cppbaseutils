@@ -7,7 +7,6 @@
 
 #pragma once
 
-//#include <XCoroutine/xcoromanager.hpp>
 #include <XCoroutine/private/taskpromiseabstract.hpp>
 #include <cassert>
 #include <variant>
@@ -25,9 +24,9 @@ namespace detail {
         std::variant<std::monostate, T, std::exception_ptr> m_value_ {};
     public:
         constexpr XCoroTask<T> get_return_object() noexcept {
-            //auto const h { std::coroutine_handle<TaskPromise<T>>::from_promise(*this) };
-            //[[maybe_unused]] auto const ok{ XCoroManager::instance().addHandle(h) };
-            return { this };
+            auto const h { std::coroutine_handle<TaskPromise>::from_promise(*this) };
+            [[maybe_unused]] auto const ok{ coroMgrRef().addHandle(h) };
+            return { h };
         }
 
         void unhandled_exception()
@@ -64,7 +63,7 @@ namespace detail {
     class TaskPromise<void> : public TaskPromiseAbstract {
         std::exception_ptr m_exception_ {};
     public:
-        constexpr XCoroTask<void> get_return_object() noexcept;
+        XCoroTask<void> get_return_object() noexcept;
 
         void unhandled_exception()
         { m_exception_ = std::current_exception(); }

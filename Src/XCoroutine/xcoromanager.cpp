@@ -42,5 +42,11 @@ void XCoroManager::removeHandle(std::coroutine_handle<> const & h) const noexcep
     try { cb(); } catch (std::exception const &) {}
 }
 
+XCoroManager * coroMgrPtr() noexcept
+{ return std::addressof(XCoroManager::instance()); }
+
+XCoroManager & coroMgrRef() noexcept
+{ return XCoroManager::instance(); }
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END

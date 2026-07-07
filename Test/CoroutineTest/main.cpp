@@ -10,8 +10,10 @@ struct Awaiter {
         std::cout << FUNC_SIGNATURE << std::endl;
         return false;
     }
-    static constexpr void await_suspend(std::coroutine_handle<> ) noexcept {
+    static constexpr void await_suspend(std::coroutine_handle<> const h) noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
+        std::cout << XUtils::coroMgrRef().onlineSize() << std::endl;
+        h.resume();
     }
     static constexpr  void await_resume() noexcept {
         std::cout << FUNC_SIGNATURE << std::endl;
@@ -31,7 +33,7 @@ XUtils::XCoroTask<> f1() {
 
 XUtils::XCoroTask<> f2() {
     std::cout << FUNC_SIGNATURE << " begin" << std::endl;
-    co_await A{};
+    co_await f1();
     std::cout << FUNC_SIGNATURE << " end" << std::endl;
 }
 
@@ -42,6 +44,16 @@ void ff(T && t) {
 
 int main() {
 
-    ff([]{ std::cout << FUNC_SIGNATURE << std::endl; });
+    XUtils::coroMgrRef().setCallback([] {
+    std::cout << "COROEnd" << std::endl;
+});
+    //ff([]{ std::cout << FUNC_SIGNATURE << std::endl; });
+
+    std::cout << XUtils::coroMgrRef().onlineSize() << std::endl;
+
+    f2();
+
+    std::cout << XUtils::coroMgrRef().onlineSize() << std::endl;
+
     return 0;
 }
