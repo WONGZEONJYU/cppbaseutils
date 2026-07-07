@@ -23,8 +23,11 @@ namespace detail {
 
         using TaskPromise<T>::TaskPromise;
 
-        constexpr XCoroLazyTask<T> get_return_object() noexcept
-        { return { this }; }
+        XCoroLazyTask<T> get_return_object() noexcept {
+            //auto const h { std::coroutine_handle<LazyTaskPromise>::from_promise(*this) };
+            //[[maybe_unused]] auto const ok { XCoroManager::instance().addHandle(h) };
+            return { this };
+        }
 
         static constexpr auto initial_suspend() noexcept
         { return std::suspend_always {}; }

@@ -1,6 +1,8 @@
 #ifndef XUTILS2_X_CORO_MANAGER_HPP_
 #define XUTILS2_X_CORO_MANAGER_HPP_ 1
 
+#pragma once
+
 #include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <XAtomic/xatomic.hpp>
@@ -14,15 +16,12 @@ XTD_NAMESPACE_BEGIN
 
 namespace detail {
     template<typename T> class TaskPromise;
+
     class TaskFinalSuspend;
 
-    template<typename T> class TaskPromise;
+    template<typename T> struct LazyTaskPromise;
+
 }
-
-class XCoroManager;
-
-X_API XCoroManager & coroMgrRef() noexcept;
-X_API XCoroManager * coroMgrPtr() noexcept;
 
 class X_CLASS_EXPORT XCoroManager final {
 
@@ -32,7 +31,7 @@ class X_CLASS_EXPORT XCoroManager final {
     friend class detail::TaskFinalSuspend;
 
     template<typename T>
-    friend class detail::TaskPromise;
+    friend struct detail::LazyTaskPromise;
 
     mutable std::unordered_set<std::coroutine_handle<>> m_handles_{};
     mutable std::function<void()> m_callback_{};
@@ -41,6 +40,8 @@ class X_CLASS_EXPORT XCoroManager final {
 
 public:
     X_DISABLE_COPY_MOVE(XCoroManager)
+
+    static XCoroManager & instance();
 
     [[nodiscard]] std::size_t onlineSize() const noexcept;
 
@@ -51,12 +52,9 @@ public:
     }
 
 private:
-    static XCoroManager & instance();
     XCoroManager();
     bool addHandle(std::coroutine_handle<> const &) const noexcept;
     void removeHandle(std::coroutine_handle<> const &) const noexcept;
-
-    friend XCoroManager & coroMgrRef() noexcept;
 };
 
 XTD_INLINE_NAMESPACE_END
