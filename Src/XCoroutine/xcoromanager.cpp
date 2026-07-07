@@ -1,5 +1,8 @@
 #include <xcoromanager.hpp>
 
+XTD_NAMESPACE_BEGIN
+XTD_INLINE_NAMESPACE_BEGIN(v1)
+
 XUtils::XCoroManager & XUtils::XCoroManager::instance() {
     static XCoroManager mgr{};
     return mgr;
@@ -38,3 +41,12 @@ void XUtils::XCoroManager::removeHandle(std::coroutine_handle<> const & h) const
     if (!cb) { return; }
     try { cb(); } catch (std::exception const &) {}
 }
+
+XCoroManager & coroMgrRef() noexcept
+{ return XCoroManager::instance(); }
+
+XCoroManager * coroMgrPtr() noexcept
+{ return std::addressof(coroMgrRef()); }
+
+XTD_INLINE_NAMESPACE_END
+XTD_NAMESPACE_END

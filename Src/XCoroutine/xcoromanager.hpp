@@ -15,10 +15,14 @@ XTD_NAMESPACE_BEGIN
 namespace detail {
     template<typename T> class TaskPromise;
     class TaskFinalSuspend;
+
+    template<typename T> class TaskPromise;
 }
 
-template<typename T>
-class XCoroTask;
+class XCoroManager;
+
+X_API XCoroManager & coroMgrRef() noexcept;
+X_API XCoroManager * coroMgrPtr() noexcept;
 
 class X_CLASS_EXPORT XCoroManager final {
 
@@ -28,7 +32,7 @@ class X_CLASS_EXPORT XCoroManager final {
     friend class detail::TaskFinalSuspend;
 
     template<typename T>
-    friend class XCoroTask;
+    friend class detail::TaskPromise;
 
     mutable std::unordered_set<std::coroutine_handle<>> m_handles_{};
     mutable std::function<void()> m_callback_{};
@@ -38,7 +42,6 @@ class X_CLASS_EXPORT XCoroManager final {
 public:
     X_DISABLE_COPY_MOVE(XCoroManager)
 
-    static XCoroManager & instance();
     [[nodiscard]] std::size_t onlineSize() const noexcept;
 
     template<typename Fn>
@@ -48,9 +51,12 @@ public:
     }
 
 private:
+    static XCoroManager & instance();
     XCoroManager();
     bool addHandle(std::coroutine_handle<> const &) const noexcept;
     void removeHandle(std::coroutine_handle<> const &) const noexcept;
+
+    friend XCoroManager & coroMgrRef() noexcept;
 };
 
 XTD_INLINE_NAMESPACE_END

@@ -46,8 +46,11 @@ using XCoroTaskVoid = XCoroTask<>;
 
 namespace detail {
 
-    constexpr XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept
-    { return { this }; }
+    constexpr XCoroTaskVoid TaskPromiseVoid::get_return_object() noexcept {
+        auto const h{ std::coroutine_handle<TaskPromiseVoid>::from_promise(*this) };
+        [[maybe_unused]] auto const ok{ coroMgrRef().addHandle(h)};
+        return {h};
+    }
 
     template <typename T>
     concept TaskConvertible = requires(T val, TaskPromiseAbstract promise)
