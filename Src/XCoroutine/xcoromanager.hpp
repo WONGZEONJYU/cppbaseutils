@@ -7,10 +7,7 @@
 #include <XGlobal/xclasshelpermacros.hpp>
 #include <coroutine>
 #include <memory>
-
-namespace std {
-    template<typename> class function;
-}
+#include <functional>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)

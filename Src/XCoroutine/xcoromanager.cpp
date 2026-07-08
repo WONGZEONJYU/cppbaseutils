@@ -2,7 +2,6 @@
 #include <XAtomic/xatomic.hpp>
 #include <unordered_set>
 #include <shared_mutex>
-#include <functional>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
