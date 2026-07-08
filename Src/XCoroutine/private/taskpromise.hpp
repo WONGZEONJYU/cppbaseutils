@@ -25,7 +25,7 @@ namespace detail {
     public:
         constexpr XCoroTask<T> get_return_object() noexcept {
             auto const h { std::coroutine_handle<TaskPromise>::from_promise(*this) };
-            [[maybe_unused]] auto const ok{ coroMgrRef().addHandle(h) };
+            [[maybe_unused]] auto const ok{ coroMgrRef().add(h) };
             return { h };
         }
 

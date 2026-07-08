@@ -5,11 +5,12 @@
 
 #include <XGlobal/xversion.hpp>
 #include <XGlobal/xclasshelpermacros.hpp>
-#include <XAtomic/xatomic.hpp>
-#include <unordered_set>
 #include <coroutine>
-#include <shared_mutex>
-#include <functional>
+#include <memory>
+
+namespace std {
+    template<typename> class function;
+}
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -21,40 +22,37 @@ namespace detail {
 
     template<typename T> struct LazyTaskPromise;
 
+    using cb_t = std::function<void()>;
 }
 
-class X_CLASS_EXPORT XCoroManager final {
+class XCoroManagerPrivate;
 
-    template<typename T>
-    friend class detail::TaskPromise;
+class X_CLASS_EXPORT XCoroManager final {
 
     friend class detail::TaskFinalSuspend;
 
     template<typename T>
+    friend class detail::TaskPromise;
+
+    template<typename T>
     friend struct detail::LazyTaskPromise;
 
-    mutable std::unordered_set<std::coroutine_handle<>> m_handles_{};
-    mutable std::function<void()> m_callback_{};
-    mutable std::shared_mutex m_setMtx_{},m_fnMtx_{};
-    mutable XAtomicInteger<std::size_t> m_online_{};
+    std::unique_ptr<XCoroManagerPrivate> m_d_ptr_;
+    X_DECLARE_PRIVATE_D(m_d_ptr_,XCoroManager)
 
 public:
-    X_DISABLE_COPY_MOVE(XCoroManager)
-
-    static XCoroManager & instance();
-
     [[nodiscard]] std::size_t onlineSize() const noexcept;
-
-    template<typename Fn>
-    void setCallback(Fn && fn) const {
-        std::unique_lock lk{ m_fnMtx_ };
-        m_callback_ = std::forward<Fn>(fn);
-    }
+    void setAllExitCallback(detail::cb_t &&) const noexcept;
 
 private:
     XCoroManager();
-    bool addHandle(std::coroutine_handle<> const & h) const noexcept ;
-    void removeHandle(std::coroutine_handle<> const &) const noexcept;
+    [[nodiscard]] bool add(std::coroutine_handle<> const & h) const noexcept ;
+    void remove(std::coroutine_handle<> const &) const noexcept;
+
+public:
+    static XCoroManager & instance();
+    ~XCoroManager();
+    X_DISABLE_COPY_MOVE(XCoroManager)
 };
 
 X_API XCoroManager * coroMgrPtr() noexcept;

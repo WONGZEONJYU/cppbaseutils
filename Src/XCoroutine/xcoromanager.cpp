@@ -1,7 +1,26 @@
 #include <xcoromanager.hpp>
+#include <XAtomic/xatomic.hpp>
+#include <unordered_set>
+#include <shared_mutex>
+#include <functional>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
+
+class XCoroManagerPrivate final {
+
+public:
+    XCoroManager * m_x_ptr{};
+    mutable std::unordered_set<std::coroutine_handle<>> m_handles_{};
+    mutable detail::cb_t m_callback_{};
+    mutable std::shared_mutex m_setMtx_{},m_fnMtx_{};
+    mutable XAtomicInteger<std::size_t> m_online_{};
+
+    X_DECLARE_PUBLIC(XCoroManager)
+    explicit XCoroManagerPrivate(XCoroManager * const x) : m_x_ptr{x}
+    {   }
+    ~XCoroManagerPrivate() = default;
+};
 
 XCoroManager & XCoroManager::instance() {
     static XCoroManager mgr{};
@@ -9,37 +28,48 @@ XCoroManager & XCoroManager::instance() {
 }
 
 std::size_t XCoroManager::onlineSize() const noexcept {
-    std::shared_lock lk{ m_setMtx_ };
-    return m_handles_.size();
+    X_D(const XCoroManager);
+    std::shared_lock lk{ d->m_setMtx_ };
+    return d->m_handles_.size();
 }
 
-XCoroManager::XCoroManager() = default;
+XCoroManager::~XCoroManager() = default;
 
-bool XCoroManager::addHandle(std::coroutine_handle<> const & h) const noexcept {
-    std::unique_lock lk{ m_setMtx_ };
-    auto const ok{ m_handles_.insert(h).second };
-    if (ok) { m_online_.ref(); }
+XCoroManager::XCoroManager()
+    :m_d_ptr_{ std::make_unique<XCoroManagerPrivate>(this) }
+{   }
+
+bool XCoroManager::add(std::coroutine_handle<> const & h) const noexcept {
+    X_D(const XCoroManager);
+    std::unique_lock lk{ d->m_setMtx_ };
+    auto const ok{ d->m_handles_.insert(h).second };
+    if (ok) { d->m_online_.ref(); }
     return ok;
 }
 
-void XCoroManager::removeHandle(std::coroutine_handle<> const & h) const noexcept {
+void XCoroManager::remove(std::coroutine_handle<> const & h) const noexcept {
+    X_D(const XCoroManager);
 
-    auto const needCallBack{ [this,&h]()noexcept{
-        std::unique_lock lk{ m_setMtx_ };
-        if (m_handles_.erase(h) > 0) { m_online_.deref(); }
-        return m_handles_.empty();
-    }()};
+    if (![d,&h]() noexcept{
+        std::unique_lock lk{ d->m_setMtx_ };
+        if (d->m_handles_.erase(h) > 0) { d->m_online_.deref(); }
+        return d->m_handles_.empty();
+    }()) { return; }
 
-    if (!needCallBack) { return; }
-
-    auto const cb{ [this]() noexcept{
-        std::unique_lock lk{ m_fnMtx_ };
-        auto fn{ std::move(m_callback_) };
+    auto const cb{ [d]() noexcept{
+        std::unique_lock lk{ d->m_fnMtx_ };
+        auto fn{ std::move(d->m_callback_) };
         return fn;
     }()};
 
     if (!cb) { return; }
     try { cb(); } catch (std::exception const &) {}
+}
+
+void XCoroManager::setAllExitCallback(detail::cb_t && cb) const noexcept{
+    X_D(const XCoroManager);
+    std::unique_lock lk { d->m_fnMtx_ };
+    d->m_callback_.swap(cb);
 }
 
 XCoroManager * coroMgrPtr() noexcept

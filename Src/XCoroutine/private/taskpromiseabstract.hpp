@@ -37,7 +37,7 @@ namespace detail {
 
         template<typename Promise>
         void await_suspend(std::coroutine_handle<Promise> const h) noexcept {
-            coroMgrRef().removeHandle(h);
+            coroMgrRef().remove(h);
             auto && promise{ h.promise() };
             for (auto && awaiter : m_awaitingCoroutines_)
             { awaiter.resume(); }

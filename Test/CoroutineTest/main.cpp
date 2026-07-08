@@ -44,9 +44,9 @@ void ff(T && t) {
 
 int main() {
 
-    XUtils::coroMgrRef().setCallback([] {
-    std::cout << "COROEnd" << std::endl;
-});
+    XUtils::coroMgrRef().setAllExitCallback([] {
+        std::cout << "COROEnd" << std::endl;
+    });
     //ff([]{ std::cout << FUNC_SIGNATURE << std::endl; });
 
     std::cout << XUtils::coroMgrRef().onlineSize() << std::endl;
