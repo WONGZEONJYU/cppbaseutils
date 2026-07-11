@@ -13,11 +13,13 @@ if(BUILD_SHARED_LIBS)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set_target_properties(${PROJECT_NAME}_shared PROPERTIES
             OUTPUT_NAME "${PROJECT_NAME}d"
+            ARCHIVE_OUTPUT_NAME "${PROJECT_NAME}d_import"
             CLEAN_DIRECT_OUTPUT 1
         )
     else()
         set_target_properties(${PROJECT_NAME}_shared PROPERTIES
             OUTPUT_NAME "${PROJECT_NAME}"
+            ARCHIVE_OUTPUT_NAME "${PROJECT_NAME}_import"
             CLEAN_DIRECT_OUTPUT 1
         )
     endif()

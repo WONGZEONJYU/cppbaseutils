@@ -2,7 +2,7 @@
 
 # 库构建选项
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-option(BUILD_STATIC_LIBS "Build static libraries" OFF)
+option(BUILD_STATIC_LIBS "Build static libraries" ON)
 
 # 确保至少构建一种类型的库
 if(NOT BUILD_SHARED_LIBS AND NOT BUILD_STATIC_LIBS)
