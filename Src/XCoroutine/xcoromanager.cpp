@@ -3,8 +3,10 @@
 #include <unordered_set>
 #include <shared_mutex>
 
+#include "xlog.hpp"
+
 XTD_NAMESPACE_BEGIN
-XTD_INLINE_NAMESPACE_BEGIN(v1)
+    XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XCoroManagerPrivate final {
 
@@ -28,8 +30,12 @@ XCoroManager & XCoroManager::instance() {
 
 std::size_t XCoroManager::onlineSize() const noexcept {
     X_D(const XCoroManager);
+#if 0
     std::shared_lock lk{ d->m_setMtx_ };
     return d->m_handles_.size();
+#else
+    return d->m_online_.loadAcquire();
+#endif
 }
 
 XCoroManager::~XCoroManager() = default;
@@ -62,7 +68,8 @@ void XCoroManager::remove(std::coroutine_handle<> const & h) const noexcept {
     }()};
 
     if (!cb) { return; }
-    try { cb(); } catch (std::exception const &) {}
+    try { cb(); }
+    catch (std::exception const & e) { XLOG_FATAL(e.what()); }
 }
 
 void XCoroManager::setAllExitCallback(detail::cb_t && cb) const noexcept{
