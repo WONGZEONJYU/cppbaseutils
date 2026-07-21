@@ -96,6 +96,8 @@ public:
     X_DEFAULT_MOVE(XCoroLazyTask)
 };
 
+using XCoroLazyTaskVoid = XCoroLazyTask<>;
+
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
 
