@@ -1,12 +1,11 @@
 #include <xcoromanager.hpp>
 #include <XAtomic/xatomic.hpp>
+#include <xlog.hpp>
 #include <unordered_set>
 #include <shared_mutex>
 
-#include "xlog.hpp"
-
 XTD_NAMESPACE_BEGIN
-    XTD_INLINE_NAMESPACE_BEGIN(v1)
+XTD_INLINE_NAMESPACE_BEGIN(v1)
 
 class XCoroManagerPrivate final {
 
