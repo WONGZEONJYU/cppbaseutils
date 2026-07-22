@@ -95,14 +95,6 @@ public:
 
 class XLog;
 class XLogPrivate;
-class XLogData {
-public:
-    XLog * m_x_ptr{};
-protected:
-    constexpr XLogData() = default;
-public:
-    constexpr virtual ~XLogData() = default;
-};
 
 [[maybe_unused]] [[nodiscard]] X_API XLog * XlogHandle() noexcept;
 
@@ -119,11 +111,12 @@ public:
  * - 优雅关闭机制
  * - 现代C++特性优化
  */
-class X_CLASS_EXPORT XLog final : XSingleton<XLog> {
+class X_CLASS_EXPORT XLog final : XTwoPhaseConstruction<XLog> {
+
     X_TWO_PHASE_CONSTRUCTION_CLASS
     X_DECLARE_PRIVATE_D(m_d_ptr,XLog)
     using CrashHandlerPtr_ = std::shared_ptr<ICrashHandler>;
-    std::unique_ptr<XLogData> m_d_ptr{};
+    std::unique_ptr<XLogPrivate> m_d_ptr;
 
 public:
     using CrashHandlerPtr = CrashHandlerPtr_;
@@ -133,7 +126,7 @@ public:
      * @brief 设置日志级别
      * @param level 最低日志级别
      */
-    void setLogLevel(LogLevel const & level) noexcept;
+    void setLogLevel(LogLevel level = LogLevel::TRACE_LEVEL) noexcept;
 
     /**
      * @brief 获取当前日志级别
@@ -145,7 +138,7 @@ public:
      * @brief 设置日志输出方式
      * @param output 输出方式（控制台、文件或两者）
      */
-    void setOutput(LogOutput const & output) noexcept;
+    void setOutput(LogOutput output) noexcept;
 
     /**
      * @brief 设置日志文件配置
@@ -200,7 +193,7 @@ public:
      * @param message 日志消息
      * @param location 源代码位置信息
      */
-    void log(LogLevel const & level, std::string_view const & message,
+    void log(LogLevel level, std::string_view const & message,
              SourceLocation const & location = {});
 
     /**
@@ -212,7 +205,7 @@ public:
      * @param args 格式参数
      */
     template<typename... Args>
-    constexpr void logFormat(LogLevel const & level, const char * const format_str,
+    constexpr void logFormat(LogLevel const level, const char * const format_str,
               SourceLocation const & location, Args &&... args)
     {
         if (!shouldLog(level)) { return; }
@@ -253,14 +246,14 @@ public:
      * @param level 日志级别
      * @return 是否应该记录
      */
-    [[nodiscard]] bool shouldLog(LogLevel const & level) const noexcept;
+    [[nodiscard]] bool shouldLog(LogLevel level) const noexcept;
 
     /**
      * @brief 获取日志级别名称
      * @param level 日志级别
      * @return 级别名称
      */
-    [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel const & level) noexcept {
+    [[nodiscard]] static constexpr std::string_view getLevelName(LogLevel const level) noexcept {
         switch (level) {
             case LogLevel::TRACE_LEVEL: return "TRACE";
             case LogLevel::DEBUG_LEVEL: return "DEBUG";
@@ -291,10 +284,10 @@ public:
      */
     [[nodiscard]] static std::string getStackTrace(int skip_frames = 1);
 
-    static void xlogHelper(LogLevel const &,std::string_view const &,SourceLocation const &,bool = false);
+    static void xlogHelper(LogLevel ,std::string_view const &,SourceLocation const &,bool = false);
 
     template<typename ...Args>
-    static constexpr void xlogFormatHelper(LogLevel const & level
+    static constexpr void xlogFormatHelper(LogLevel const level
                                         ,const char * const format
                                         ,SourceLocation const & location
                                         ,bool const b
@@ -309,16 +302,16 @@ public:
 
     static void consoleOut(std::string const & ) noexcept;
 
+    static XLog * instance() noexcept;
+
 private:
-    XLog();
+    explicit XLog();
     ~XLog();
     bool construct_();
-    static auto instance() noexcept -> XLog *;
     // 格式化辅助函数 - 使用标准printf风格格式化
     template<typename... Args>
     static constexpr void formatImpl(std::ostringstream & , const char* , Args &&...);
     X_DISABLE_COPY_MOVE(XLog)
-    friend X_API XLog * XlogHandle() noexcept;
 };
 
 template<typename... Args>

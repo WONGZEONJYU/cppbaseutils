@@ -17,6 +17,9 @@
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
 
+XLogPrivate::XLogPrivate() = default;
+XLogPrivate::~XLogPrivate() = default;
+
 void XLog::consoleOut(std::string const & s) noexcept {
     if (instance()) { return; }
     std::cerr << s << std::endl << std::flush;
@@ -27,7 +30,7 @@ XLog::XLog() = default;
 XLog::~XLog() {
     X_D(XLog);
 
-    if (d->m_running_.loadRelaxed()) {
+    if (!d->m_worker_thread_.get_stop_token().stop_requested()) {
         d->m_shutdown_requested_.storeRelaxed(true);
         d->m_queue_cv_.notify_all();
 
@@ -39,12 +42,12 @@ XLog::~XLog() {
 
 bool XLog::construct_() {
 
-    if (m_d_ptr = makeUnique<XLogPrivate>();!m_d_ptr){
-        std::cerr << "XLogData create failed!\n";
-        return {};
+    {
+        auto dd{  makeUnique<XLogPrivate>() };
+        if (!dd) { std::cerr << "XLogPrivate create failed!\n"; return {}; }
+        dd->m_x_ptr = this;
+        m_d_ptr.swap(dd);
     }
-
-    m_d_ptr->m_x_ptr = this;
 
     try {
         X_D(XLog);
@@ -58,11 +61,14 @@ bool XLog::construct_() {
         cleanupOldLogFiles();
 
         // 启动异步处理线程
-        d->m_running_.storeRelease(true);
-        d->m_worker_thread_ = std::thread(&XLogPrivate::processLogQueue, d);
+
+        d->m_worker_thread_ = std::jthread {
+            [d](std::stop_token const & token){ d->processLogQueue(token); }
+        };
 
         // 设置崩溃处理器
-        if (d->m_crash_diagnostics_.loadRelaxed()) { XLogPrivate::setupCrashHandlers(); }
+        if (d->m_crash_diagnostics_.loadRelaxed())
+        { XLogPrivate::setupCrashHandlers(); }
 
         return true;
 
@@ -72,16 +78,19 @@ bool XLog::construct_() {
     }
 }
 
-auto XLog::instance() noexcept -> XLog *
-{ return XSingleton::instance().get(); }
+XLog * XLog::instance() noexcept {
+    struct Log { ObjectUPtr m_ptr{ CreateUniquePtr() }; };
+    static Log log{};
+    return log.m_ptr.get();
+}
 
-void XLog::setLogLevel(LogLevel const & level) noexcept
+void XLog::setLogLevel(LogLevel const level) noexcept
 { d_func()->m_log_level_.store(level, std::memory_order_relaxed); }
 
 LogLevel XLog::getLogLevel() const noexcept
 { return d_func()->m_log_level_.load(std::memory_order_relaxed); }
 
-void XLog::setOutput(LogOutput const & output) noexcept
+void XLog::setOutput(LogOutput const output) noexcept
 { d_func()->m_output_.store(output, std::memory_order_relaxed); }
 
 void XLog::setLogFileConfig(std::string_view const & base_name, 
@@ -89,7 +98,7 @@ void XLog::setLogFileConfig(std::string_view const & base_name,
                            std::size_t const max_size_mb, 
                            int const retention_days) {
     X_D(XLog);
-    std::unique_lock lock(d->m_config_mutex_);
+    std::unique_lock lock { d->m_config_mutex_ };
 
     d->m_log_base_name_ = base_name;
     d->m_log_directory_ = directory;
@@ -97,7 +106,7 @@ void XLog::setLogFileConfig(std::string_view const & base_name,
     d->m_retention_days_.storeRelaxed(retention_days);
 
     // 重新初始化文件
-    std::unique_lock file_lock(d->m_file_mutex_);
+    std::unique_lock file_lock { d->m_file_mutex_ };
     d->m_file_stream_.reset();
     d->m_current_file_size_.storeRelaxed({});
 
@@ -107,12 +116,12 @@ void XLog::setLogFileConfig(std::string_view const & base_name,
     cleanupOldLogFiles();
 }
 
-bool XLog::shouldLog(LogLevel const & level) const noexcept
+bool XLog::shouldLog(LogLevel const level) const noexcept
 { return level >= d_func()->m_log_level_.load(std::memory_order_relaxed); }
 
 [[maybe_unused]] std::string XLog::getCurrentLogFile() const {
     X_D(const XLog);
-    std::shared_lock lock(d->m_config_mutex_);
+    std::shared_lock lock { d->m_config_mutex_ };
     return d->m_current_log_file_;
 }
 
@@ -135,7 +144,7 @@ void XLog::cleanupOldLogFiles() const noexcept {
         std::regex const log_regex(d->getLogFilePattern());
 
         for (auto const dir_it{directory_iterator(d->m_log_directory_)}
-            ;auto const & entry : dir_it)
+            ;auto && entry : dir_it)
         {
             if (!entry.is_regular_file()) { continue; }
 
@@ -173,11 +182,11 @@ void XLog::enableCrashDiagnostics(bool const enable) {
 
 void XLog::setCrashHandler(CrashHandlerPtr && handler) {
     X_D(XLog);
-    std::unique_lock lock(d->m_config_mutex_);
+    std::unique_lock lock { d->m_config_mutex_ };
     d->m_crash_handler_ = std::move(handler);
 }
 
-void XLog::log(LogLevel const & level, std::string_view const & message, SourceLocation const & location) {
+void XLog::log(LogLevel const level, std::string_view const & message, SourceLocation const & location) {
 
     if (!shouldLog(level)) { return; }
 
@@ -194,7 +203,7 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
             std::string(message)
         };
 
-        std::unique_lock lock(d->m_queue_mutex_);
+        std::unique_lock lock { d->m_queue_mutex_ };
 
         // 检查队列大小限制
         if (const auto max_size{d->m_max_queue_size_.loadRelaxed()}
@@ -203,12 +212,12 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
             d->m_log_queue_.pop_front();
         }
         // 添加到队列
-        d->m_log_queue_.push_back(std::move(log_msg));
+        d->m_log_queue_.emplace_back(std::move(log_msg));
 
         // 通知处理线程
         d->m_queue_cv_.notify_one();
 
-    } catch (const std::exception& e) {
+    } catch (std::exception const & e) {
         // 如果日志系统本身出错，直接输出到stderr
         std::cerr << "XLog error: " << e.what() << '\n';
     }
@@ -217,21 +226,20 @@ void XLog::log(LogLevel const & level, std::string_view const & message, SourceL
 void XLog::flush() {
     // 等待队列清空
     X_D(XLog);
-    std::unique_lock lock(d->m_queue_mutex_);
+    std::unique_lock lock { d->m_queue_mutex_ };
     d->m_queue_cv_.wait(lock, [&d] { return d->m_log_queue_.empty(); });
-    
+
     // 强制刷新文件流
-    std::unique_lock file_lock(d->m_file_mutex_);
-    if (d->m_file_stream_ && d->m_file_stream_->is_open()) {
-        d->m_file_stream_->flush();
-    }
+    std::unique_lock file_lock { d->m_file_mutex_ };
+    if (d->m_file_stream_ && d->m_file_stream_->is_open())
+    { d->m_file_stream_->flush(); }
     std::cout.flush();
     std::cerr.flush();
 }
 
 [[maybe_unused]] bool XLog::waitForCompletion(std::chrono::milliseconds const & timeout) {
     X_D(XLog);
-    std::unique_lock lock(d->m_queue_mutex_);
+    std::unique_lock lock{ d->m_queue_mutex_ };
 
     auto const pred { [d]()noexcept{ return d->m_log_queue_.empty(); } };
 
@@ -244,7 +252,7 @@ void XLog::flush() {
 
 [[maybe_unused]] std::size_t XLog::getQueueSize() const {
     X_D(const XLog);
-    std::shared_lock lock(d->m_queue_mutex_);
+    std::shared_lock lock { d->m_queue_mutex_ };
     return d->m_log_queue_.size();
 }
 
@@ -435,7 +443,7 @@ std::string XLogPrivate::findLatestLogFile() const {
 
         return latest_file;
 
-    } catch (const std::exception& e) {
+    } catch (std::exception const & e) {
         std::cerr << "Failed to find latest log file: " << e.what() << '\n';
         return {};
     }
@@ -478,11 +486,11 @@ void XLogPrivate::ensureLogDirectory() const {
     }
 }
 
-void XLogPrivate::processLogQueue(){
+void XLogPrivate::processLogQueue(std::stop_token const & token) {
 
-    while (m_running_.loadAcquire() || !m_log_queue_.empty()) {
+    while (!token.stop_requested() || !m_log_queue_.empty()) {
 
-        std::unique_lock lock(m_queue_mutex_);
+        std::unique_lock lock { m_queue_mutex_ };
 
         // 等待新消息或停止信号
         m_queue_cv_.wait(lock, [this]{
@@ -544,7 +552,7 @@ void XLogPrivate::writeToConsole(const LogMessage& msg) const {
 
 void XLogPrivate::writeToFile(LogMessage const & msg) {
 
-    std::unique_lock lock(m_file_mutex_);
+    std::unique_lock lock{ m_file_mutex_ };
 
     // 检查是否需要轮转文件
     if (shouldRotateFile()) { rotateLogFile(); }
@@ -612,7 +620,7 @@ void XLogPrivate::rotateLogFile() {
         m_current_log_file_ = generateLogFileName();
         m_log_file_path_ = m_current_log_file_;
         m_current_file_size_.storeRelaxed({});
-    } catch (const std::exception& e) {
+    } catch (std::exception const & e) {
         std::cerr << "Failed to rotate log file: " << e.what() << '\n';
     }
 }
@@ -738,11 +746,11 @@ LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_in
         << ex_info->ExceptionRecord->ExceptionCode << std::dec
         << "\nStack trace:\n" << XLog::getStackTrace(0);
 
-    auto const crash_info {oss.str()};
+    auto const crash_info{ oss.str() };
 
     writeCrashLog(crash_info);
 
-    if (auto const logger{XLog::instance()}
+    if (auto const logger{ XLog::instance() }
         ;logger && logger->d_func()->m_crash_handler_)
     {
         try {
@@ -756,7 +764,7 @@ LONG WINAPI XLogPrivate::handleWindowsException(EXCEPTION_POINTERS * const ex_in
 }
 #endif
 
-void XLog::xlogHelper(LogLevel const &level
+void XLog::xlogHelper(LogLevel const level
                 ,std::string_view const &msg
                 ,SourceLocation const &location
                 ,bool const b)
@@ -770,7 +778,7 @@ void XLog::xlogHelper(LogLevel const &level
 }
 
 [[maybe_unused]] XLog * XlogHandle() noexcept
-{ return XLog::UniqueConstruction().get(); }
+{ return XLog::instance(); }
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
