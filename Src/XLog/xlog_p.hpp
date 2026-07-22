@@ -22,7 +22,7 @@ public:
     XLog * m_x_ptr{};
 
     // 配置参数
-    std::atomic<LogLevel> m_log_level_ {LogLevel::INFO_LEVEL};
+    std::atomic<LogLevel> m_log_level_ {LogLevel::TRACE_LEVEL};
     std::atomic<LogOutput> m_output_ {LogOutput::BOTH};
     XAtomicBool m_color_output_{true},m_crash_diagnostics_{true};
     XAtomicInteger<std::size_t> m_max_queue_size_ { 10000 };
