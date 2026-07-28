@@ -178,7 +178,7 @@ void XThreadPoolPrivate::stop() {
 void XThreadPoolPrivate::run(XSize_t const threadId) {
     while (true){
         if (const auto task{acquireTask()}){
-            XSpace const raii{[&]{
+            XScopeGuard const raii{[&]{
                 m_busyThreadsSize.fetchAndAddRelease(1);
                 m_idleThreadsSize.fetchAndSubRelease(1);
             },[this]{

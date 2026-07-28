@@ -25,51 +25,59 @@ auto bind(Args && ...args)
 
 #endif
 
-class XSpace;
-
+template<typename Fn>
 class AutoDestroyer {
 
-    std::function<void()> m_fn_ {};
-    mutable uint32_t m_is_destroy:1;
+    Fn m_fn_{};
+    mutable bool m_is_destroy{};
 
 public:
     /**
      * 如果需参数,请使用 XUtils::bind(...) 或 std::bind(...)
      * Destroyer d {  XUtils::bing([](int){},1)  };
      */
-    template<typename Fn_>
-    constexpr explicit AutoDestroyer(Fn_ && f)
-        : m_fn_ { std::forward<Fn_>(f) }
-        , m_is_destroy {}
-    {}
+    constexpr explicit AutoDestroyer(Fn && f) noexcept
+        : m_fn_ { std::move(f) }
+    {   }
 
-    constexpr void destroy() const {
-        if (!m_is_destroy) {
-            m_is_destroy = true;
-            m_fn_();
-        }
+    constexpr AutoDestroyer(AutoDestroyer && other) noexcept
+        :m_fn_ { std::move(other.m_fn_) }
+        ,m_is_destroy { std::exchange(other.m_is_destroy,{}) }
+    {   }
+
+    constexpr void destroy() const noexcept {
+        if (m_is_destroy) { return; }
+        m_is_destroy = true;
+        m_fn_();
     }
 
-    virtual ~AutoDestroyer() { destroy(); }
+    constexpr void dismiss() const noexcept
+    { m_is_destroy = true; }
 
-    X_DISABLE_COPY_MOVE(AutoDestroyer)
+    virtual ~AutoDestroyer() noexcept
+    { destroy(); }
+
+    X_DISABLE_COPY(AutoDestroyer)
 };
 
-class XSpace final : public AutoDestroyer {
-
+template<typename Release>
+class XScopeGuard final : public AutoDestroyer<Release> {
+    using Base = AutoDestroyer<Release>;
 public:
     /**
      * 如果需参数,请使用 XUtils::bind(...) 或 std::bind(...)
-     * X_RAII r { XUtils::bind([](int){},1) , XUtils::bind([](char){},'f') };
+     * XScopeGuard guard { XUtils::bind([](int){},1) , XUtils::bind([](char){},'f') };
      */
-    template<typename Fn1,typename Fn2>
-    explicit constexpr XSpace(Fn1 && fn1,Fn2 && fn2)
-        : AutoDestroyer { std::forward<Fn2>(fn2) }
-    { std::forward<Fn1>(fn1)(); }
+    template<typename Fn>
+    explicit constexpr XScopeGuard(Fn && fn,Release && release) noexcept
+        : Base { std::move(release) }
+    { std::forward<Fn>(fn)(); }
 
-    ~XSpace() override = default;
+    ~XScopeGuard() override = default;
 
-    X_DISABLE_COPY_MOVE(XSpace)
+    constexpr XScopeGuard(XScopeGuard &&) noexcept = default;
+
+    X_DISABLE_COPY(XScopeGuard)
 };
 
 XTD_INLINE_NAMESPACE_END

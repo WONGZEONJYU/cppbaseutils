@@ -282,7 +282,7 @@ int main()
     { std::cout << *it << "\t"; }
 #endif
 
-    XUtils::XSpace const r { XUtils::bind([](int const v){
+    XUtils::XScopeGuard const r { XUtils::bind([](int const v){
         std::cerr << v << std::endl;
     },1),XUtils::bind([](int const v){
         std::cerr << v << std::endl;
