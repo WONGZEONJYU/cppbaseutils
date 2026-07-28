@@ -60,6 +60,8 @@ public:
     X_DISABLE_COPY(AutoDestroyer)
 };
 
+template <typename F> AutoDestroyer(F(&)()) -> AutoDestroyer<F(*)()>;
+
 template<typename Release>
 class XScopeGuard final : public AutoDestroyer<Release> {
     using Base = AutoDestroyer<Release>;
@@ -79,6 +81,9 @@ public:
 
     X_DISABLE_COPY(XScopeGuard)
 };
+
+template <typename Fn, typename F>
+XScopeGuard(Fn&&, F(&)()) -> XScopeGuard<F(*)()>;
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
