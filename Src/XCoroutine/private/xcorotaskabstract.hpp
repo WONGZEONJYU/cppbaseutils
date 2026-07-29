@@ -82,6 +82,12 @@ namespace detail {
         template<typename ThenCallback> requires (
             std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
+        constexpr auto operator |(ThenCallback && callback) &
+        { return thenImplRef(*this, std::forward<ThenCallback>(callback),[](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
         constexpr auto then(ThenCallback && callback) &&
         { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
 
@@ -89,6 +95,12 @@ namespace detail {
             std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
         constexpr auto operator >>(ThenCallback && callback) &&
+        { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator |(ThenCallback && callback) &&
         { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
 
         template<typename ThenCallback, typename ErrorCallback> requires (

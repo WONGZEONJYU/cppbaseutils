@@ -129,6 +129,21 @@ struct QCoroLazyTaskTest
         QCORO_COMPARE(result, QStringLiteral("42"));
     }
 
+    XUtils::XCoroTask<> testThenNonCoroutineContinuation1_coro(QCoro::TestContext) {
+        auto constexpr coro {
+            []()-> XUtils::XCoroLazyTask<int> { co_await XUtils::sleepFor(1ms); co_return 42; }
+        };
+
+        auto const task {
+            coro() | [](int const result){ return QString::number(result);}
+        };
+
+        static_assert(std::is_same_v<decltype(task), const XUtils::XCoroLazyTask<QString>>);
+
+        auto const result{ co_await task };
+        QCORO_COMPARE(result, QStringLiteral("42"));
+    }
+
 private Q_SLOTS:
     addTest(SyncLazyCoroutineStarts)
     addTest(LazyCoroutineStarts)
@@ -138,6 +153,7 @@ private Q_SLOTS:
     addTest(ThenLazyContinuation)
     addTest(ThenEagerContinuation)
     addTest(ThenNonCoroutineContinuation)
+    addTest(ThenNonCoroutineContinuation1)
 
     void testWaitFor() {
         auto constexpr coro {
