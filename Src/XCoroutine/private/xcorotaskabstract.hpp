@@ -41,8 +41,8 @@ namespace detail {
         X_DISABLE_COPY(XCoroTaskAbstract)
 
         constexpr XCoroTaskAbstract(XCoroTaskAbstract && o) noexcept
-            : m_coroutine_ { o.m_coroutine_ }
-        { o.m_coroutine_ = {}; }
+            : m_coroutine_ { std::exchange(o.m_coroutine_,{}) }
+        {   }
 
         constexpr XCoroTaskAbstract & operator=(XCoroTaskAbstract && o) noexcept {
 #if 0
@@ -68,17 +68,27 @@ namespace detail {
         { std::swap(m_coroutine_, o.m_coroutine_); }
 
         template<typename ThenCallback> requires (
-            std::is_invocable_v<ThenCallback>
-            || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
         constexpr auto then(ThenCallback && callback) &
         { return thenImplRef(*this, std::forward<ThenCallback>(callback),[](auto const & ){ throw; }); }
 
         template<typename ThenCallback> requires (
-            std::is_invocable_v<ThenCallback>
-            || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator >>(ThenCallback && callback) &
+        { return thenImplRef(*this, std::forward<ThenCallback>(callback),[](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
         )
         constexpr auto then(ThenCallback && callback) &&
+        { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
+
+        template<typename ThenCallback> requires (
+            std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)
+        )
+        constexpr auto operator >>(ThenCallback && callback) &&
         { return thenImpl(std::move(*this), std::forward<ThenCallback>(callback), [](auto const & ){ throw; }); }
 
         template<typename ThenCallback, typename ErrorCallback> requires (
@@ -107,7 +117,10 @@ namespace detail {
 
         template<typename R, typename ErrorCallback , typename U = is_task_rt<R>>
         static constexpr U handleException(ErrorCallback && errCb, std::exception const & exception)
-        { std::invoke(std::forward<ErrorCallback>(errCb),exception); if constexpr (std::is_void_v<U>) { return ; } else { return U{}; } }
+        {
+            std::invoke(std::forward<ErrorCallback>(errCb),exception);
+            if constexpr (std::is_void_v<U>) { return; } else { return U{}; }
+        }
 
         template<typename ThenCallback, typename ...Arg>
         struct cb_invoke_result : std::conditional_t<
