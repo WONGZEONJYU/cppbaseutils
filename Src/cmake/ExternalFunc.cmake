@@ -24,9 +24,8 @@ function(xqt_helper_load TARGET_NAME XQtHelper_INCLUDE_DIRS)
 
     #message(STATUS "    XQtHelper_INCLUDE_DIRS = ${XQtHelper_INCLUDE_DIRS}")
 
-    file(GLOB_RECURSE Concurrency CONFIGURE_DEPENDS "${XQtHelper_INCLUDE_DIRS}/concurrency/*.h*")
     file(GLOB_RECURSE QCoroCore CONFIGURE_DEPENDS "${XQtHelper_INCLUDE_DIRS}/qcoro/core/*.h*")
-    list(APPEND HELPER_HEADER "${Concurrency}" "${QCoroCore}")
+    list(APPEND HELPER_HEADER "${QCoroCore}")
 
     target_links_qt_module(${TARGET_NAME} Network HASNetwork)
     if (HASNetwork)
