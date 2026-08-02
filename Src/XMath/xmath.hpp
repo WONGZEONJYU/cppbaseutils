@@ -1,9 +1,10 @@
 #ifndef XUTILS_XMATH_HPP
 #define XUTILS_XMATH_HPP 1
 
-#include <utility>
 #include <XGlobal/xversion.hpp>
+#include <utility>
 #include <cstdint>
+#include <cmath>
 
 XTD_NAMESPACE_BEGIN
 XTD_INLINE_NAMESPACE_BEGIN(v1)
@@ -90,6 +91,28 @@ using RangeLongLong = Range<long long>;
 using RangeUnsignedLongLong = Range<unsigned long long>;
 using RangeInt64 = Range<int64_t>;
 using RangeUInt64 = Range<uint64_t>;
+
+template<int const N = 2>
+constexpr double truncToN(double const val) noexcept {
+    auto constexpr pow10 { []() consteval{
+        auto result {1.0};
+        for (int i {}; i < N; ++i) {  result *= 10.0; }
+        return result;
+    } };
+    auto constexpr factor{ pow10() } ;
+    return std::trunc(val * factor) / factor;
+}
+
+template<int const N = 2>
+constexpr double roundToN(double const val) noexcept {
+    auto constexpr pow10 { []() consteval{
+        auto result {1.0};
+        for (int i {}; i < N; ++i) {  result *= 10.0; }
+        return result;
+    } };
+    auto constexpr factor{ pow10() } ;
+    return std::round(val * factor) / factor;
+}
 
 XTD_INLINE_NAMESPACE_END
 XTD_NAMESPACE_END
