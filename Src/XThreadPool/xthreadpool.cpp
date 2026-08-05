@@ -298,6 +298,7 @@ XThreadPool::XThreadPool() = default;
 bool XThreadPool::construct_() {
     auto dd{ makeUnique<XThreadPoolPrivate>() };
     CHECK_EMPTY(dd);
+    dd->m_x_ptr = this;
     m_d_ptr_ = std::move(dd);
     return true;
 }
